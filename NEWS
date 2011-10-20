@@ -1,0 +1,65 @@
+CHANGES IN VERSION 0.2.5
+------------------------
+
+ - MSnbase support: Added functions to coerce from MSnSet to IBSpectra and vice versa.
+   Added Msnbase to Suggests.
+ - support for multiple classes added
+ - updated Perl parsers: mascotParser2.pl and pidresParser2.pl instead of isobarXParser.pl
+   resulting XML files can be converted to id.csv using psx2tab2.pl
+ - prob otion for readIBSpectra worked errornous - fixed (thanks to Xavier Robin)
+ - added property use.na: Use NA values for quantification
+ - various Analysis Report beautifications (thanks to Xavier Robin)
+ - varous bug fixes
+
+
+CHANGES IN VERSION 0.2.4
+------------------------
+
+ - improved Vignette descriptions, added CITATION (still UTF-8 error)
+ - added possibility to revert Mascot escaped TITLEs
+ - if proteins are excluded w/ subsetIBSpectra, exclude all
+   it's peptides, not only reporter-specific ones
+ - fix error introduced in 0.2.3: When multiple MGFs were read,
+   an false error occured that not all id spectra could be matched
+ - add property 'author' for LaTeX reports
+ - section 'Significantly regulated proteins' not shown anymore by default
+   added property show.significant.proteins to reenable
+ - added properties isotope.impurities and fragment.outlier.prob
+ - bug fixes: 
+   - naming not correct when class labels contain NAs
+   - numeric class labels are not handled correctly
+ - added naRegion to noise model
+ - data is now stored before normalization. Those values are then used to normalize.
+   (Thanks to observation of Chris Bielow)
+
+CHANGES IN VERSION 0.2.3
+------------------------
+
+ - specify combination matrix for proteinRatios and in properties.conf
+ - improved logging of IBSpectra creation and normalization
+ - fix: maplot crashed on all NA channels
+ - NA names in PDF report section 'Not quantified proteins' removed
+ - allow for NA class labels - they are ignored in the comuptation of ratios
+
+CHANGES IN VERSION 0.2.2
+------------------------
+
+ - re-added ratio vs intensity plot in QC report
+ - issue warning when summarize property is incorrectly defined
+ - create cachedir if it does not exist 
+ - estimateRatio.group_specific_proteins renamed to quant.w.grouppeptides 
+ - sanitize analysisname, uniprotlink, and subsection names for LaTeX
+ - use fancyhdr instead of fanctheadings
+ - added argument require.reporter.specific to reporterProteins
+
+
+CHANGES IN VERSION 0.2.1
+------------------------
+
+Bug fix: as.data.frame generated ions/mass colnames with a 'X' in front
+
+
+CHANGES IN VERSION 0.2
+----------------------
+
+Published online with JPR Publication

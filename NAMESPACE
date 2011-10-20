@@ -1,0 +1,12 @@
+# IMPORT
+import("methods")
+importClassesFrom(Biobase, AnnotatedDataFrame, AssayData, eSet, 
+                  Versioned, VersionedBiobase, Versions)
+
+
+# EXPORT
+exportClasses(IBSpectra,ProteinGroup)
+exportMethods("as.data.frame")
+
+export(IBSpectraTypes)
+exportPattern("^[a-zA-Z]")

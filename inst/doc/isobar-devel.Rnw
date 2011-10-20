@@ -1,0 +1,77 @@
+%\VignetteIndexEntry{Isobar for developers}
+%\VignetteDepends{}
+%\VignetteKeywords{Documentation}
+%\VignettePackage{isobar}
+\documentclass[11pt]{article}
+
+\usepackage{times}
+\usepackage{hyperref}
+
+\textwidth=6.2in
+\textheight=8.5in
+%\parskip=.3cm
+\oddsidemargin=.1in
+\evensidemargin=.1in
+\headheight=-.3in
+
+\newcommand{\scscst}{\scriptscriptstyle}
+\newcommand{\scst}{\scriptstyle}
+\newcommand{\Rfunction}[1]{{\texttt{#1}}}
+\newcommand{\Robject}[1]{{\texttt{#1}}}
+\newcommand{\Rpackage}[1]{{\textit{#1}}}
+
+\author{Florian P.\ Breitwieser, Jacques Colinge}
+
+\bibliographystyle{plainnat}
+
+\begin{document}
+
+\title{Isobar for developers}
+\maketitle
+\tableofcontents
+
+\section{Introduction}
+This documents highlights the structure of the S4 classes and methods in the
+\texttt{isobar} pacakge.
+
+<<>>=
+  library(isobar)
+@
+
+\section{Classes}
+\subsection{IBSpectra}
+<<>>=
+  getClass("IBSpectra")
+@ 
+MSMS isobarically tagged proteomics data consists of spectrum identifications and quantitative values. Spectrums are identified as stemming from distinct peptides, and quantitative information of each spectrum are extracted from a certain \texttt{m/z} region.
+
+\Robject{IBSpectra} class holds this qualitative and quantitative information. It is a virtual class. It extends \Robject{eSet} from Biobase to store meta-information of spectrum identifications and quantitative information (\texttt{m/z} and \texttt{intensity}) of reporter tags. \Robject{eSet} is extended by slots for protein grouping, tag names, tag masses and isotope impurity correction matrix.
+
+\Robject{ProteinGroup} objects store the mapping and grouping of peptide level identifications to protein identifications. 
+
+\Robject{IBSpectra} is a virtual class. Currently used isobaric tagging kits iTRAQ 4plex and 8plex, and TMT 2plex and 6plex are implemented in the \Robject{iTRAQ4plexSpectra}, \Robject{iTRAQ8plexSpectra}, \Robject{TMT2plexSpectra}, and \Robject{TMT6plexSpectr}, respectively. These are subclasses of \Robject{iTRAQSpectra} and \Robject{TMTSpectra}, resp.\, which in turn are virtual subclasses of \Robject{IBSpectra}.
+
+\subsection{ProteinGroup}
+<<>>=
+  getClass("ProteinGroup")
+@ 
+Bottom-up MSMS proteomics experiments identify peptides which are mapped back to proteins. This mapping leads to protein groups, which explain the observed peptides according to the parsimony law.
+
+A \Robject{ProteinGroup} object is generated when a \Robject{IBSpectra} object is created by \Rfunction{readIBSpectra}. Protein to peptide to spectrum mapping is extracted from a suitable identication format\footnote{IBSpectra CSV, and MzIdentML format. Mascot DAT and Phenyx pidres.xml format converters to IBSpectra format are provided.}
+
+\subsection{NoiseModel}
+<<>>=
+  getClass("NoiseModel")
+@  
+\Robject{NoiseModel} objects model the technical variance observed in the spectrum-level ratios of a certain experimental setup.
+
+
+\section{Session Information}
+
+The version number of R and packages loaded for generating the vignette were:
+
+<<<echo=FALSE,results=tex>>=
+  toLatex(sessionInfo())
+@ 
+
+\end{document}

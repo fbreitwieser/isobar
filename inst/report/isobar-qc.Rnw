@@ -1,0 +1,110 @@
+% vim: set expandtab ts=3 sw=3:
+
+<<initialization,echo=FALSE,results=hide>>=
+
+options(SweaveHooks=list(fig=function()
+         par(mar=c(5.1, 4.1, 1.1, 2.1))))
+@
+\SweaveOpts{eps=FALSE}
+\documentclass[11pt,oneside]{article}
+
+\usepackage{amsmath}
+\usepackage{amsfonts}
+\usepackage{amssymb}
+\usepackage{longtable}
+
+\usepackage[margin=2cm]{geometry}
+\usepackage[pdftex]{graphicx}
+\usepackage{subfigure}
+\usepackage{float}
+\usepackage{verbatim}
+\usepackage{fancyheadings}
+\usepackage{tikz}
+\setlength{\headheight}{13.6pt}
+\pagestyle{fancy}
+\lfoot{\today}
+\cfoot{\thepage}
+
+<<echo=FALSE,results=tex>>=
+cat("\\newcommand{\\analysisname}{",sanitize(properties.env$name),"}")
+cat("\\newcommand{\\analysisauthor}{",sanitize(properties.env$author),"}")
+@
+
+\rfoot{Isobar QC Report \analysisname}
+
+\bibliography{isobar}
+\bibliographystyle{plain}
+
+\usepackage{hyperref}
+\hypersetup{
+  colorlinks=true,
+  pdfauthor=isobar
+}
+
+\renewcommand*{\thesubfigure}{}
+
+\title{Isobaric Tag QC Report \analysisname}
+\author{\analysisauthor}
+\date{\today}
+\raggedbottom
+\setcounter{tocdepth}{1}
+
+\begin{document}
+
+\maketitle
+
+%\section{IBSpectra object}
+%<<ibspectra,echo=FALSE>>=
+%ibspectra
+%@
+\section{Reporter Mass Precision}
+<<fig-reporterMassPrecision,fig = T, echo = F,width=5,height=5>>=
+ print(reporterMassPrecision(ibspectra))
+@
+
+\section{Ratio Intensity Plot}
+
+<<fig-maplot,echo=FALSE>>=
+#TODO: setup maplot so that here no ylim is needed
+png("fig_maplot.png",width=6,height=6,units="in",res=600,pointsize=8)
+maplot(ibspectra,noise.model=noise.model,ylim=c(0.1,10),bty="l")
+dev.off()
+   
+@
+\includegraphics{fig_maplot}
+
+\section{Protein Ratio distribution}
+<<show-ratiodistribution,echo=FALSE>>=
+ratiodistr
+@
+<<fig-ratiodistribution,fig=TRUE,echo=FALSE,width=4,height=3>>=
+#protein.tbl$ratio <- 10^ protein.tbl$lratio
+limits <- seq(from=min(protein.tbl$lratio,na.rm=TRUE),to=max(protein.tbl$lratio,na.rm=TRUE),length.out=1000)
+breaks=c(0.1,0.25,0.5,1,2,3,4,5,10)
+
+curve.distr <- data.frame(x=limits,y=d(ratiodistr)(limits))
+g <- ggplot(protein.tbl,aes(x=lratio)) +
+  geom_histogram(colour = "darkgreen", fill = "white",
+                 aes(y=..density..),alpha=0.8,binwidth=1/30*(max(limits)-min(limits))) +
+  geom_rug(alpha=0.1) +
+  geom_line(data=curve.distr,aes(x=x,y=y),colour="black") +
+  scale_x_continuous("Ratio",breaks=log10(breaks),labels=breaks) +
+  theme_bw()
+print(g)
+@
+
+%\section{Ratio Variance Plot}
+<<fig-ratio-variance,fig=TRUE,echo=FALSE,width=5,height=4,eval=FALSE>>=
+#if (ep("preselected.proteins"))
+
+protein.tbl <- merge(protein.tbl,ddply(protein.tbl,"sign.string",nrow),all.x=TRUE,by="sign.string")
+protein.tbl$sign <- paste(protein.tbl$sign.string,": ",protein.tbl$V1,sep="")
+#message(paste(unique(protein.tbl$sign),collapse="\n"))
+
+g <- ggplot(protein.tbl,aes(x=lratio,y=sqrt(variance))) +
+  geom_point(aes(colour=factor(sign),shape=factor(sign)),alpha=0.8) +
+  geom_rug(alpha=0.1) + scale_shape(solid=FALSE) + theme_bw()
+print(g)
+@
+
+\end{document}

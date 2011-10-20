@@ -1,0 +1,292 @@
+\newcommand{\minitab}[2][l]{\begin{tabular}{#1}#2\end{tabular}}
+\newcommand{\minipagec}[2][l]{\begin{minipage}{#1}#2\end{minipage}}
+\newcommand{\boxplot}[7]{
+  \begin{tikzpicture}[x=2cm,line width=0.5pt,node distance=0.1]
+      \tikzboxplot{#1}{#2}{#3}{#4}{#5}{#6}{#7}
+  \end{tikzpicture}
+}
+
+\newcommand{\uniprotlink}[1]{\href{http://www.uniprot.org/uniprot/#1}{#1}}
+\tikzset{
+  pentagon/.style = {
+    regular polygon,regular polygon sides=5
+  },
+  rectangle/.style = {
+    regular polygon,regular polygon sides=4
+  },
+  rs/.style={
+    thick,circle,draw,draw=black!80,fill=black!20
+  },
+  gs/.style={
+    thick,rectangle,draw,draw=black!50,fill=black!20
+  },
+  quant peptide/.style={
+    thick,rectangle,draw,draw=#1!50,fill=#1!20
+  },
+  quant peptide/.default=red,
+  us/.style={
+    thick,circle,draw,draw=black!30,fill=black!10
+  },
+  quant peptide red/.style={
+    thick,rectangle,draw,draw=red!50,fill=red!20
+  },
+  quant peptide green/.style={
+    thick,rectangle,draw,draw=green!50,fill=green!20
+  },
+  quant peptide blue/.style={
+    thick,rectangle,draw,draw=blue!50,fill=blue!20
+  },
+  quant peptide cyan/.style={
+    thick,rectangle,draw,draw=cyan!50,fill=cyan!20
+  },
+  quant peptide magenta/.style={
+    thick,rectangle,draw,draw=magenta!50,fill=magenta!20
+  },
+  quant peptide yellow/.style={
+    thick,rectangle,draw,draw=yellow!50,fill=yellow!20
+  }
+%colors <- c("red","green","blue","cyan","magenta","yellow")
+}
+
+% information in protein group
+%  - rows: proteins
+%    - gene name / protein name?
+%  - columns: peptides
+%    - peptide type: reporter specific, group specific, unspecific
+
+% parameters:
+%  #1: protein position
+%  #2: protein AC
+\newcommand{\proteincol}[5]{
+  \node [anchor=east,draw,minimum size=0.2cm] (prot#1) at (-3,#1) {#2};
+  \node [minimum size=0.2cm] at (-2,#1) {#3};
+  \node [minimum size=0.2cm] at (-1,#1) {#4};
+  \node [minimum size=0.2cm] at (0,#1) {#5};
+}
+
+% parameters:
+%  #1: protein position
+%  #2: style / parameters for node
+%  #3: peptide numbers
+%  #4: node text
+\newcommand{\proteinrow}[3]{
+    \foreach \x/\style in {#2}{
+    \node (prot#1 pep\x) at (\x,#1) [\style] {#3};
+  }
+}
+
+\renewcommand{\ll}{0.25}
+\newcounter{nplot}
+
+\newcommand{\sdboxplot}[6]
+{
+  \pgfmathsetmacro{\median}{#1}
+  \pgfmathsetmacro{\sd}{#2}
+  \pgfmathparse{max(-\bnd,\median-\sd)}
+  \pgfmathsetmacro{\ql}{\pgfmathresult} % first quartile
+  \pgfmathparse{max(-\bnd,\median-2*\sd)}
+  \pgfmathsetmacro{\cl}{\pgfmathresult} % lower border of CI
+  \pgfmathparse{min(\bnd,\median+\sd)}
+  \pgfmathsetmacro{\qh}{\pgfmathresult} % third quartile
+  \pgfmathparse{min(\bnd,\median+2*\sd)}
+  \pgfmathsetmacro{\ch}{\pgfmathresult} % upper border of CI
+  \pgfmathsetmacro{\hh}{0+2*\ll*\value{nplot}}
+  \def\divcol{#3}
+
+  \filldraw[fill=#3] (\ql,\hh) rectangle (\qh,\hh+\ll);% draw the box
+  \draw (\median,\hh) -- (\median,\hh+\ll) ;% draw the median
+  \draw (\qh,\hh+\ll/2) -- (\ch,\hh+\ll/2);% draw right whisker
+  \draw (\ql,\hh+\ll/2) -- (\cl,\hh+\ll/2);% draw left whisker
+  \draw (\ch,\hh+\ll/2-\ll/4) -- (\ch,\hh+\ll/2+\ll/4);% draw vertical tab
+  \draw (\cl,\hh+\ll/2-\ll/4) -- (\cl,\hh+\ll/2+\ll/4);% draw vertical tab
+  \draw [color=black!20] (-\bnd,-0.1) -- (\bnd,-0.1); % Axis
+  \node[#4] (bdr) at (-\bnd-0.1,\hh+\ll/2) {\tt{<}} ;
+  \node[#5] at (\bnd+0.1,\hh+\ll/2) {\tt{>}};
+  \node (reagent) [left=of bdr,text=black] {#6};
+
+  \addtocounter{nplot}{1}
+}
+
+\newcommand{\tikznode}[2]
+{
+	\begin{tikzpicture} \node(#1) {#2}; \end{tikzpicture}
+}
+
+\newcommand{\noboxplot}[2]
+{
+  \node (reagent) [text=black] {#1 \textbf{#2}};
+
+  \addtocounter{nplot}{1}
+}
+
+
+\newcommand{\rsdboxplot}[9]
+{
+  \pgfmathsetmacro{\median}{#1}
+  \pgfmathsetmacro{\sd}{#2}
+  \pgfmathparse{max(-\bnd,\median-\sd)}
+  \pgfmathsetmacro{\ql}{\pgfmathresult} % first quartile
+  \pgfmathparse{max(-\bnd,\median-1.96*\sd)}
+  \pgfmathsetmacro{\cl}{\pgfmathresult} % lower border of CI
+  \pgfmathparse{min(\bnd,\median+\sd)}
+  \pgfmathsetmacro{\qh}{\pgfmathresult} % third quartile
+  \pgfmathparse{min(\bnd,\median+1.96*\sd)}
+  \pgfmathsetmacro{\ch}{\pgfmathresult} % upper border of CI
+  \pgfmathsetmacro{\hh}{0+2*\ll*\value{nplot}}
+  \def\divcol{#3}
+
+  \draw[#9] [lightgray] (-\bnd,\hh+\ll/2) -- (\bnd,\hh+\ll/2); % Axis
+  \foreach \x in {-\bnd,0,\bnd}
+    \draw[#9] [color=black!20] (\x,\hh) -- (\x,\hh+\ll); % 
+
+  \filldraw[color=#9,fill=#3] (\ql,\hh) rectangle (\qh,\hh+\ll);% draw the box
+  \draw[#9] (\median,\hh) -- (\median,\hh+\ll) ;% draw the median
+  \draw[#9] (\qh,\hh+\ll/2) -- (\ch,\hh+\ll/2);% draw right whisker
+  \draw[#9] (\ql,\hh+\ll/2) -- (\cl,\hh+\ll/2);% draw left whisker
+  \draw[#9] (\ch,\hh+\ll/2-\ll/4) -- (\ch,\hh+\ll/2+\ll/4);% draw vertical tab
+  \draw[#9] (\cl,\hh+\ll/2-\ll/4) -- (\cl,\hh+\ll/2+\ll/4);% draw vertical tab
+  \node[#4] (bdr) at (-\bnd-0.1,\hh+\ll/2) {\tt{<}} ;
+  \node[#5] at (\bnd+0.1,\hh+\ll/2) {\tt{>}};
+  \node (reagent) [left=of bdr,text=black] {#6 \textbf{#7}};
+
+  \addtocounter{nplot}{1}
+}
+
+
+\newcommand{\rsdboxplotnoname}[7]
+{
+  \pgfmathsetmacro{\median}{#1}
+  \pgfmathsetmacro{\sd}{#2}
+  \pgfmathparse{max(-\bnd,\median-\sd)}
+  \pgfmathsetmacro{\ql}{\pgfmathresult} % first quartile 
+  \pgfmathparse{max(-\bnd,\median-1.96*\sd)}
+  \pgfmathsetmacro{\cl}{\pgfmathresult} % lower border of CI
+  \pgfmathparse{min(\bnd,\median+\sd)}
+  \pgfmathsetmacro{\qh}{\pgfmathresult} % third quartile
+  \pgfmathparse{min(\bnd,\median+1.96*\sd)}
+  \pgfmathsetmacro{\ch}{\pgfmathresult} % upper border of CI
+  \pgfmathsetmacro{\hh}{0+2*\ll*\value{nplot}}
+  \def\divcol{#3}
+  \draw[#7] [lightgray] (-\bnd,\hh+\ll/2) -- (\bnd,\hh+\ll/2); % Axis
+  \foreach \x in {-\bnd,0,\bnd}
+    \draw[#7] [color=black!20] (\x,\hh) -- (\x,\hh+\ll); %                                                                    
+
+  \filldraw[color=#7,fill=#3] (\ql,\hh) rectangle (\qh,\hh+\ll);% draw the box
+  \draw[#7] (\median,\hh) -- (\median,\hh+\ll) ;% draw the median
+  \draw[#7] (\qh,\hh+\ll/2) -- (\ch,\hh+\ll/2);% draw right whisker
+  \draw[#7] (\ql,\hh+\ll/2) -- (\cl,\hh+\ll/2);% draw left whisker
+  \draw[#7] (\ch,\hh+\ll/2-\ll/4) -- (\ch,\hh+\ll/2+\ll/4);% draw vertical tab
+  \draw[#7] (\cl,\hh+\ll/2-\ll/4) -- (\cl,\hh+\ll/2+\ll/4);% draw vertical tab
+  \node[#4] (bdr) at (-\bnd-0.1,\hh+\ll/2) {\tt{<}} ;
+  \node[#5] at (\bnd+0.1,\hh+\ll/2) {\tt{>}};
+
+  \addtocounter{nplot}{1}
+}
+
+\newcommand{\tikzboxplot}[7]
+{
+  \pgfmathsetmacro{\median}{#1}
+  \pgfmathsetmacro{\sd}{#2}
+  \pgfmathparse{max(-\bnd,\median-\sd)}
+  \pgfmathsetmacro{\ql}{\pgfmathresult} % first quartile 
+  \pgfmathparse{max(-\bnd,\median-1.96*\sd)}
+  \pgfmathsetmacro{\cl}{\pgfmathresult} % lower border of CI
+  \pgfmathparse{min(\bnd,\median+\sd)}
+  \pgfmathsetmacro{\qh}{\pgfmathresult} % third quartile
+  \pgfmathparse{min(\bnd,\median+1.96*\sd)}
+  \pgfmathsetmacro{\ch}{\pgfmathresult} % upper border of CI
+  \pgfmathsetmacro{\hh}{0+2*\ll}
+  \def\divcol{#3}
+  \draw[#7] [lightgray] (-\bnd,\hh+\ll/2) -- (\bnd,\hh+\ll/2); % Axis
+  \foreach \x in {-\bnd,0,\bnd}
+    \draw[#7] [color=black!20] (\x,\hh) -- (\x,\hh+\ll); %                                                                    
+  \filldraw[color=#7,fill=#3] (\ql,\hh) rectangle (\qh,\hh+\ll);% draw the box
+  \draw[#7] (\median,\hh) -- (\median,\hh+\ll) ;% draw the median
+  \draw[#7] (\qh,\hh+\ll/2) -- (\ch,\hh+\ll/2);% draw right whisker
+  \draw[#7] (\ql,\hh+\ll/2) -- (\cl,\hh+\ll/2);% draw left whisker
+  \draw[#7] (\ch,\hh+\ll/2-\ll/4) -- (\ch,\hh+\ll/2+\ll/4);% draw vertical tab
+  \draw[#7] (\cl,\hh+\ll/2-\ll/4) -- (\cl,\hh+\ll/2+\ll/4);% draw vertical tab
+  \node[#4] (bdr) at (-\bnd-0.1,\hh+\ll/2) {\tt{<}} ;
+  \node[#5] at (\bnd+0.1,\hh+\ll/2) {\tt{>}};
+}
+
+
+
+\newcommand{\rsdboxplotold}[9]
+{
+  \pgfmathsetmacro{\median}{#1}
+  \pgfmathsetmacro{\sd}{#2}
+  \pgfmathparse{max(-\bnd,\median-\sd)}
+  \pgfmathsetmacro{\ql}{\pgfmathresult} % first quartile
+  \pgfmathparse{max(-\bnd,\median-1.96*\sd)}
+  \pgfmathsetmacro{\cl}{\pgfmathresult} % lower border of CI
+  \pgfmathparse{min(\bnd,\median+\sd)}
+  \pgfmathsetmacro{\qh}{\pgfmathresult} % third quartile
+  \pgfmathparse{min(\bnd,\median+1.96*\sd)}
+  \pgfmathsetmacro{\ch}{\pgfmathresult} % upper border of CI
+  \pgfmathsetmacro{\hh}{0+2*\ll*\value{nplot}}
+  \def\divcol{#3}
+
+  \filldraw[color=#9,fill=#3] (\ql,\hh) rectangle (\qh,\hh+\ll);% draw the box
+  \draw[#9] (\median,\hh) -- (\median,\hh+\ll) ;% draw the median
+  \draw[#9] (\qh,\hh+\ll/2) -- (\ch,\hh+\ll/2);% draw right whisker
+  \draw[#9] (\ql,\hh+\ll/2) -- (\cl,\hh+\ll/2);% draw left whisker
+  \draw[#9] (\ch,\hh+\ll/2-\ll/4) -- (\ch,\hh+\ll/2+\ll/4);% draw vertical tab
+  \draw[#9] (\cl,\hh+\ll/2-\ll/4) -- (\cl,\hh+\ll/2+\ll/4);% draw vertical tab
+  \draw[#9] [color=black!20] (0,-0.1) -- (0,0); % 
+  \draw[#9] [color=black!20] (-\bnd,-0.1) -- (-\bnd,0); % 
+  \draw[#9] [color=black!20] (\bnd,-0.1) -- (\bnd,0); % 
+  \draw[#9] [color=black!20] (-\bnd,-0.1) -- (\bnd,-0.1); % Axis
+  \node[#4] (bdr) at (-\bnd-0.1,\hh+\ll/2) {\tt{<}} ;
+  \node[#5] at (\bnd+0.1,\hh+\ll/2) {\tt{>}};
+  \node (reagent) [left=of bdr,text=black] {#6 \textbf{#7}};
+
+  \addtocounter{nplot}{1}
+}
+
+\newcommand{\drawaxis}[2]{
+\scriptsize
+\begin{tikzpicture}[ x=2cm,font=\sffamily,color=black!60]
+  \draw (-\bnd,0) -- coordinate (x axis mid) (\bnd,0);
+  \draw (-\bnd,0pt) -- (-\bnd,#1) node[anchor=#2] {-\bndt};
+  \draw (0,0pt) -- (0,#1) node[anchor=#2] {1};
+  \draw (\bnd,0pt) -- (\bnd,#1) node[anchor=#2] {\bndt};
+  \node[black!1] (bdr) at (-\bnd-0.1,\ll/2) {\tt{ }} ;
+  \node[black!1] at (\bnd+0.1,\ll/2) {\tt{ }};
+\end{tikzpicture}
+\normalsize
+}
+
+\newcommand*\up{\textcolor{green}{%
+  \ensuremath{\blacktriangle}}}
+\newcommand*\down{\textcolor{red}{%
+  \ensuremath{\blacktriangledown}}}
+\newcommand*\const{\textcolor{darkgray}%
+  {\textbf{--}}}
+
+\newcommand{\drawbrace}[2]{
+\draw[snake=brace] (#1.south east) -- (#1.south west) node [pos=0.5,below] {\small #2};
+}
+
+\newcommand{\oldboxplot}[9]
+{
+  \pgfmathsetmacro{\median}{#1}
+  \pgfmathsetmacro{\sd}{#2}
+  \pgfmathsetmacro{\ql}{#3} % first quartile
+  \pgfmathsetmacro{\cl}{#4} % lower border of CI
+  \pgfmathsetmacro{\qh}{#5} % third quartile
+  \pgfmathsetmacro{\ch}{#6} % upper border of CI
+  \newcommand{\divcol}{#7}
+
+  \begin{tikzpicture}[x=3cm,color=black!60,line width=0.5pt]
+  \filldraw[fill=\divcol] (\ql,0) rectangle (\qh,\ll);% draw the box
+  \draw (\median,0) -- (\median,\ll) ;% draw the median
+  \draw (\qh,\ll/2) -- (\ch,\ll/2);% draw right whisker
+  \draw (\ql,\ll/2) -- (\cl,\ll/2);% draw left whisker
+  \draw (\ch,\ll/2-\ll/4) -- (\ch,\ll/2+\ll/4);% draw vertical tab
+  \draw (\cl,\ll/2-\ll/4) -- (\cl,\ll/2+\ll/4);% draw vertical tab
+  \draw [color=black!20] (-\bnd,-0.1) -- (\bnd,-0.1); % Axis
+  \fill[fill=#8] (-\bnd-0.1,0) rectangle (-\bnd-0.2,\ll);
+  \fill[fill=#9] (\bnd+0.1,0) rectangle (\bnd+0.2,\ll);
+  \end{tikzpicture}
+}

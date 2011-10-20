@@ -1,0 +1,20 @@
+citHeader("To cite package 'isobar' in publications use:")
+citEntry("Article",
+         title = "General statistical modeling of data from protein relative expression isobaric tags",
+         author = c(person(c("Florian","P"),"Breitwieser"), 
+                    person("Andre","Mueller"), person("Loic","Dayon"), 
+                    person("Thomas","Koecher"),person("Alexandre","Hainard"), 
+                    person("Peter","Pichler"), person("Ursula","Schmidt-Erfurth"), 
+                    person("Giulio","Superti-Furga"), person("Jean-Charles","Sanchez"), 
+                    person("Karl","Mechtler"), person(c("Keiryn","L"),"Bennett"), 
+                    person("Jacques","Colinge")),
+         journal = "Journal of Proteome Research",
+         institution = "Research Center of Molecular Medicine of the Austrian Academy of Sciences",
+         address = "Vienna, Austria",
+         year = 2011,
+         url = "http://bioinformatics.cemm.oeaw.ac.at/isobar",
+         textVersion="Breitwieser FP, Mueller A, Dayon L, Koecher T, Hainard A, Pichler P,
+Schmidt-Erfurth U, Superti-Furga G, Sanchez J, Mechtler K, Bennett KL
+and Colinge J (2011). 'General statistical modeling of data from
+protein relative expression isobaric tags.' _Journal of Proteome
+Research_. <URL: http://bioinformatics.cemm.oeaw.ac.at/isobar>.")

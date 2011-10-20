@@ -1,0 +1,456 @@
+%\VignetteIndexEntry{Isobar Overview}
+%\VignetteDepends{}
+%\VignetteKeywords{Documentation}
+%\VignettePackage{isobar}
+\documentclass[11pt]{article}
+
+<<init,echo=FALSE>>=
+  options(SweaveHooks=list(fig=function() par(pointsize=8)))
+@ 
+
+\usepackage{times}
+\usepackage{hyperref}
+\usepackage[utf8]{inputenc}
+
+\textwidth=6.2in
+\textheight=8.5in
+%\parskip=.3cm
+\oddsidemargin=.1in
+\evensidemargin=.1in
+\headheight=-.3in
+
+\newcommand{\scscst}{\scriptscriptstyle}
+\newcommand{\scst}{\scriptstyle}
+
+\newcommand{\Rfunction}[1]{{\texttt{#1}}}
+\newcommand{\Robject}[1]{{\texttt{#1}}}
+\newcommand{\Rpackage}[1]{{\texttt{#1}}}
+\newcommand{\isobar}{\Rpackage{isobar}}
+
+\SweaveOpts{keep.source=TRUE}
+
+\author{Florian P.\ Breitwieser, Jacques Colinge}
+
+\bibliographystyle{plainnat}
+
+\begin{document}
+
+\title{Isobar Vignette - iTRAQ and TMT Analysis}
+\maketitle
+\tableofcontents
+
+\section{Introduction}
+The \Rpackage{isobar} package is designed as an extensible and interactive environment for data analysis
+and exploration of data produced by Mass Spectrometry analysis of proteins
+and peptides labelled with isobaric tags, such as iTRAQ and TMT.
+\Rpackage{isobar} implements the theory presented in Breitwieser et al., submitted.
+
+\Rpackage{isobar} allows analyzing iTRAQ 4plex and 8plex, and TMT 2plex and
+6plex experiments representing them as \Robject{IBSpectra} objects. The respective
+classes are \Robject{iTRAQ4plexSpectra}, \Robject{iTRAQ8plexSpectra}, 
+\Robject{TMT2plexSpectra}, and \Robject{TMT6plexSpectra}.
+
+The first thing you need to do is load the package.
+<<load-isobar,results=hide>>=
+  library(isobar) ## load the isobar package
+@ 
+
+\section{Loading data}
+\Rpackage{isobar} supports as mass list format the Mascot generic format (MGF)
+\footnote{\url{http://www.matrixscience.com/help/data\_file\_help.html\#GEN}}
+and as database search result format the mzIdentML
+\footnote{\url{http://www.psidev.info/index.php?q=node/319}} standard format. 
+MzIdentML support is not thoroughly tested, please contact the authors in case of 
+problems.
+Mascot (\texttt{.dat}) and Phenyx (\texttt{.pidres.xml}) file formats are supported
+through Perl scripts \texttt{mascotParser2.pl} and \texttt{pidresParser2.pl}, 
+which are placed in the pl folder. Use \texttt{psx2tab2.pl} to convert their output 
+XML file format into a CSV file format readable by \textit{isobar}.
+
+See appendix \ref{sec:dependencies} for help on installing the neccessary
+prerequisites for the scripts. See also the on-line help of the Perl parsers
+for detailed help on the commands.
+
+The scripts create a \texttt{id.csv} file format which is a tabular version of the
+identifications. This file is together with peaklist files the input to the \texttt{readIBSpectra}
+function.
+
+<<echo=TRUE,eval=FALSE>>=
+  ib <- readIBSpectra("iTRAQ4plexSpectra",list.files(pattern=".id.csv"),
+          list.files(pattern=".mgf"))
+@
+
+In case the MGF file is very big, it can be advanteguous to generate a smaller version
+containing only meta- and quantitative information. On Linux, the tool grep is readily
+available.
+
+\begin{verbatim}
+egrep '^[A-Z]|^1[12][0-9]\.' BIG.mgf > SMALL.mgf
+\end{verbatim}
+
+Once a \texttt{IBSpectra} object has been created, it can be saved as tab-delimited file and given as sole
+argument to \texttt{readIBSpectra}.
+
+<<echo=TRUE,eval=FALSE>>=
+  write.table(as.data.frame(ib),sep="\t",row.names=F,
+          file="myexperiment.ibspectra.csv")
+  ib.2 <- readIBSpectra("iTRAQ4plexSpectra","myexperiment.ibspectra.csv")
+@
+
+The examples presented in this document are based on the dataset \Robject{ibspiked\_set1} whose MS data were searched against UniProtKB\footnote{\url{http://www.uniprot.org}} database. Hence, the protein identifiers are Uniprot ACs. \Robject{ibspiked\_set1} has been designed to assess sensitivity (true positive rate) and selectivity (false positive rate) of quantitative analyses performed with \Rpackage{isobar} (or other methods researchers might want to test). It also allows the investigation of issues such as shared peptides influence, outliers, etc.
+
+\Robject{ibspiked\_set1} is an iTRAQ 4-plex data set comprised of a complex background (albumin- and IgG-depleted human plasma) and spiked proteins. MS analysis was performed in ThermoFisher Scientific LTQ Orbitrap HCD instrument with 2D shotgun peptide separation (see Breitwieser et al., submitted, for more details). The four samples used for each iTRAQ channel are as follows:
+\begin{itemize}
+\item Depleted human plasma background (>150 protein detected);
+\item Spiked-in proteins with the following ratios
+  \begin{itemize}
+    \item \texttt{CERU\_HUMAN (P00450)} At 1:1:1:1;
+    \item \texttt{CERU\_RAT (P13635)} At 1:2:5:10;
+    \item \texttt{CERU\_MOUSE (Q61147)} At 10:5:2:1.
+  \end{itemize}
+\end{itemize}
+A second similar data set with ratios 1:10:50:100 is available as \Robject{ibspiked\_set2} additionally.
+
+The Ceruplasmins have been selected as the share peptides. Hereafter, we load the data pacakage and the ceru protein IDs are identified via the \Rfunction{protein.g} function, which provides a mean to retrieve data from \Robject{IBSpectra} objects.
+
+<<load-ibspiked>>=
+  data(ibspiked_set1)
+  ceru.human <- protein.g(proteinGroup(ibspiked_set1),"CERU_HUMAN")
+  ceru.rat <- protein.g(proteinGroup(ibspiked_set1),"CERU_RAT")
+  ceru.mouse <- protein.g(proteinGroup(ibspiked_set1),"CERU_MOUSE")
+  ceru.proteins <- c(ceru.human,ceru.rat,ceru.mouse)
+@ 
+
+\section{Data Analysis}
+\subsection{Reporter mass precision}
+To evaluate the fragment mass precision, it is necessary to visualize the deviation of the experimental tag masses from the theoretical tag masses. 
+
+The expected masses of the reporter tags are in the slot \Rfunction{reporterMasses}
+ of \Robject{IBSpectra} objects. The experimental masses are in the matrix \Robject{mass} of \Robject{AssayData}; they can also be accessed by the method \Rfunction{reporterMasses(x)}.
+
+<<show-reporterMasses>>=
+ibspiked_set1@reporterMasses  ## expected masses
+summary(assayData(ibspiked_set1)[["mass"]],digits=5) ## observerd masses
+@
+
+\Rfunction{reporterMassPrecision} provides a plot of the deviations.
+
+\begin{figure}[htp]
+<<print-reporterMasses,fig=TRUE>>=
+  print(reporterMassPrecision(ibspiked_set1))
+@ 
+\caption{Reporter mass precision plot.}
+\label{fig:reporterMassPrecision}
+\end{figure}
+
+\subsection{Normalization and isotope impurity correction}
+Due to differences between samples it is advisable to normalize data before further processing. By default, \Rfunction{normalize} corrects by a factor such that the median intensities all the reporter channels are equal. 
+
+Isotope impurity correction factors are supplied by labelling reagent manufacturers. Default values that can be modified by the user are available in \Rpackage{isobar} and corrections are obtained by simple linear algebra.
+
+See figure ~\ref{fig:normalization}.
+
+<<normalize-ibspiked>>=
+ib.old <- ibspiked_set1
+ibspiked_set1 <- correctIsotopeImpurities(ibspiked_set1)
+ibspiked_set1 <- normalize(ibspiked_set1)
+@ 
+
+
+\begin{figure}[htp]
+<<fig-maplot-normalize,fig=FALSE>>=
+png("fig_maplot_normalize.png",width=6.6,height=3,units="in",res=600,pointsize=8)
+par(mfrow=c(1,2))
+maplot(ib.old,channel1="114",channel2="117",ylim=c(0.5,2),
+       main="before normalization")
+abline(h=1,col="red",lwd=2)
+maplot(ibspiked_set1,channel1="114",channel2="117",ylim=c(0.5,2),
+       main="after normalization")
+abline(h=1,col="red",lwd=2)
+dev.off()
+@
+\includegraphics{fig_maplot_normalize}
+\caption{Ratio versus intensity plots ('MA plots') before and after applying normalization.}
+\label{fig:normalization}
+\end{figure}
+
+\subsection{Fitting a noise model}
+A noise model is a approximation of the expected technical variation based on signal intensity. It is stable for a certain experimental setup and thus can be learned once. Noise is observed directly when comparing identical samples in multiple channels (1:1 iTRAQ/TMT sample) and we can use \Robject{ibspiked\_set1} background proteins as a 1:1 sample. Therefore we exclude the ceruplasmins before fitting a noise model using \Rfunction{NoiseModel}. See figure ~\ref{fig:maplots}.
+
+<<calc-noisemodel>>=
+ib.background <- subsetIBSpectra(ibspiked_set1,protein=ceru.proteins,"exclude")
+noise.model <- NoiseModel(ib.background)
+@ 
+
+Though only recommended when sufficient data are available, a method exist for the estimation of a noise model without a 1:1 dataset. It takes longer time as it first computes all the protein ratios to shift spectrum ratios to 1:1. To examplify this procedure, we only take rat and mouse CERU proteins from \Robject{ibspiked\_set1}, see figure ~\ref{fig:maplots}. The resultant noise model is a rough approximation only because of the very limitted data, see Breitwieser et al. Supporting Information, submitted, for a real example.
+
+<<ceru-noisemodel>>=
+ib.ceru <- subsetIBSpectra(ibspiked_set1,protein=ceru.proteins,
+                            direction="exclude others",
+                            specificity="reporter-specific")
+nm.ceru <- NoiseModel(ib.ceru,one.to.one=FALSE,pool=TRUE)
+@ 
+
+
+\begin{figure}[htp]
+<<maplot-noisemodel,fig=FALSE,width=3.3,height=3.3>>=
+png("fig_maplot_noisemodel.png",width=3.3,height=3,units="in",res=600,pointsize=8)
+maplot(ib.background,noise.model=c(noise.model,nm.ceru),
+       channel1="114",channel2="115",ylim=c(0.2,5),
+       main="95% CI noise model")
+dev.off()
+@ 
+\includegraphics{fig_maplot_noisemodel}
+\caption{Red lines denote the 95 \% confidence interval as estimated by the noise model on background proteins. The blue line is estimated as non 1:1 noise model based on only spectra of CERU proteins.}
+\label{fig:maplots}
+\end{figure}
+
+\subsection{Protein and peptide ratio calculation}
+\Rfunction{estimateRatio} calculates the relative abundance of a peptide or protein in one tag compared to another. It calculates a weighted average (after outlier removal) of the spectrum ratios. The weights are the inverse of the spectrum ratio variances. It requires a \Robject{IBSpectra} and \Robject{NoiseModel} object and definitions of channel1, channel2, and the protein or peptide. The result is channel2/channel1.
+
+<<estimateRatio>>=
+## Calculate ratio based on all spectra of peptides specific 
+##  to CERU_HUMAN, CERU_RAT or CERU_MOUSE. Returns a named
+##  numeric vector.
+10^estimateRatio(ibspiked_set1,noise.model,
+                 channel1="114",channel2="115",
+                 protein=ceru.proteins)['lratio']
+
+## If argument 'combine=FALSE', estimateRatio returns a data.frame 
+##  with one row per protein
+10^estimateRatio(ibspiked_set1,noise.model,
+                 channel1="114",channel2="115",
+                 protein=ceru.proteins,combine=FALSE)[,'lratio']
+## spiked material channel 115 vs 114: 
+##                 CERU_HUMAN (P00450): 1:1
+##                 CERU_RAT   (P13635): 2:1  = 2
+##                 CERU_MOUSE (Q61147): 5:10 = 0.5
+
+## Peptides shared between rat and mouse
+pep.shared <- peptides(proteinGroup(ibspiked_set1),
+                       c(ceru.rat,ceru.mouse),set="intersect",
+                       columns=c('peptide','n.shared.groups'))
+## remove those which are shared with other proteins
+pep.shared <- pep.shared$peptide[pep.shared$n.shared.groups==2]
+
+## calculate ratio: it is between the rat and mouse ratios
+10^estimateRatio(ibspiked_set1,noise.model,
+                 channel1="114",channel2="115",
+                 peptide=pep.shared)['lratio']
+@ 
+
+When examining the global differences and differences in between classes, \Rfunction{proteinRatios} can be used. It is also suitable to inspect sample variability. The argument \Robject{cl} can be used to define class labels. If \Robject{method='interclass'} or \Robject{intraclass} and \Robject{summarize=TRUE}, \Rfunction{proteinRatios} return a single summarized ratio across and within classes, resp..
+
+<<protein-ratios>>=
+protein.ratios <- proteinRatios(ibspiked_set1,noise.model)
+str(protein.ratios)
+
+## defined class 114 and 115 as class 'T', 116 and 117 as class 'C'
+classLabels(ibspiked_set1) <- c("T","T","C","C")
+
+proteinRatios(ibspiked_set1,noise.model,protein=ceru.proteins,
+              cl=classLabels(ibspiked_set1),method="interclass",
+              summarize=T)[,c("protein","lratio","variance")]
+@ 
+
+\subsection{Protein ratio distribution and selection}
+To examine differentially expressed proteins, we usually use both sample variability information (random protein ratios) as a \emph{fold-change} constraint, and ratio variance as a \emph{precision} constraint. For a experimental setup with a different class in each reporter tag, a sample distribution should be learned by in advance by generating all possible ratio pairs between samples of the same class. A Cauchy distribution fits accurately this type of random protein ratio distribution: Cauchy is displayed in red, Gaussian in blue. In the case of \Robject{ibspiked\_set1}, the many 1:1 proteins provide us with adequate data to learn the random protein ratio distribution.
+
+<<ratiodistribution>>=
+#protein.ratios <- proteinRatios(ibspiked_set1,noise.model)
+protein.ratiodistr.wn <- fitWeightedNorm(protein.ratios[,'lratio'],
+                                         weights=1/protein.ratios[,'variance'])
+protein.ratiodistr.cauchy <- fitCauchy(protein.ratios[,"lratio"])
+@ 
+
+\begin{figure}[htp]
+<<plot-ratiodistr,fig=TRUE>>=
+limits=seq(from=-0.5,to=0.5,by=0.001)
+curve.wn <- data.frame(x=limits,y=d(protein.ratiodistr.wn)(limits))
+curve.cauchy<-data.frame(x=limits,y=d(protein.ratiodistr.cauchy)(limits))
+
+g <- ggplot(data.frame(protein.ratios),aes(x=lratio)) +
+  geom_histogram(colour = "darkgreen", fill = "white",aes(y=..density..),
+                 binwidth=0.02) + geom_rug() +
+  geom_line(data=curve.wn,aes(x=x,y=y),colour="blue") +
+  geom_line(data=curve.cauchy,aes(x=x,y=y),colour="red")
+print(g)
+@
+\caption{Histogram of all protein ratios in \Robject{ibspiked\_set1}. A fit with a Gaussian and Cauchy probability density function is shown in blue and red, respectively.}
+\label{fig:ratiodistr}
+\end{figure}
+
+Now, when supplying a \Robject{ratiodistr} parameter to \Rfunction{estimateRatio} and \Rfunction{proteinRatios}, sample and signal p-values are calculated, what we illustrate in the code below 
+
+<<significant-ratios>>=
+rat.list <-
+  estimateRatio(ibspiked_set1,noise.model=noise.model,channel1="114",channel2="115",
+                protein=reporterProteins(proteinGroup(ibspiked_set1)),combine=F,
+                ratiodistr=protein.ratiodistr.cauchy)
+rat.list[rat.list[,"is.significant"]==1,]
+@
+
+\subsection{Detection of proteins with no specific peptides}
+It is well known that MS analysis only reveals the presence of so-called 
+protein groups, defined as sets of proteins identified by the same set of 
+peptides. The protein that contains all the peptides is the group reporter 
+(there are possibly several group reporters) and if it has one specific 
+peptide at least then its presence in the sample is certain. The status of 
+the other proteins in the group is in general impossible to determine. 
+When quantitative information is available, there is a potential to elucidate 
+the structure of part of the protein groups.
+
+In the example below, a subset \Rfunction{IBSpectra} object is created, 
+   containing only peptides shared between CERU\_RAT and CERU\_MOUSE, 
+   and those specific to CERU\_RAT.
+
+<<shared-pep>>=
+## peptides shared between CERU_RAT and CERU_MOUSE have been computed before
+pep.shared
+## peptides specific to CERU_RAT
+pep.rat <- peptides(proteinGroup(ibspiked_set1),protein=ceru.rat,
+                    specificity="reporter-specific")
+
+## create an IBSpectra object with only CERU_RAT and shared peptides
+ib.subset <- subsetIBSpectra(ibspiked_set1,
+                             peptide=c(pep.rat,pep.shared),direction="include")
+
+## calculate shared ratios
+sr <- shared.ratios(ib.subset,noise.model,
+                    channel1="114",channel2="117",
+                    ratiodistr=protein.ratiodistr.cauchy)
+sr
+
+@ 
+\begin{figure}[htp]
+<<fig=TRUE,width=6.6,height=1.8>>=
+  ## plot significantly different protein groups where 90% CI does not overlap
+  ## CERU_MOUSE and CERU_RAT is detected, as expected.
+  shared.ratios.sign(sr,z.shared=1.282)
+@ 
+\caption{Peptides of spiked ceruplasmins have significantly different ratios 
+    between groups. Group \textit{reporter} consists of peptides specific 
+        to \texttt{CERU\_RAT (P13635)}, group \textit{member} are peptides 
+        shared between \texttt{CERU\_RAT} and \texttt{CERU\_MOUSE (Q61147)}.}
+\label{fig:sharedratios}
+\end{figure}
+
+
+
+\section{Report generation}
+Along with the package installation, files which faciliate report generation are provided. They are in the folder \texttt{report} of the package installation directory.
+
+Files are organized to be able calling \texttt{create\_reports.R} in a folder with the neccessary files - peaklist, identifications, and properties.
+
+<<eval=FALSE>>=
+## execute to find the path and file location in your installation.
+system.file("report",package="isobar") ## path
+list.files(system.file("report",package="isobar")) ## files
+@ 
+
+\begin{description}
+  \item[create\_reports.R] R script which can be used to create QC and PDF reports
+    It initializes the environment, reads properties and calls \Rfunction{Sweave}
+    on QC and DA Sweave files. Additionally it generates a Excel data analysis report
+    by calling \texttt{tab2xls.pl}.
+  \item[isobar-qc.Rnw] Sweave file with quality control plots.
+  \item[isobar-analysis.Rnw] Sweave file for generating a data analysis report
+    with the list of all protein ratios and list of significantly different proteins.
+  \item[properties.conf] Default configuration for \texttt{create\_reports.R}.
+    It is parsed as R code.
+  \item[report-utils.R] Helper R functions used in Sweave documents.
+  \item[report-utils.tex] Helper \LaTeX{} functions used in Sweave documents.
+\end{description}
+
+\begin{appendix}
+
+\section{File formats}
+\subsection{ID CSV file format}
+The Perl parsers create ID CSV files - identification information for all
+matched spectra without quantitative information. You can create your own parser, 
+the resulting file should be tab-delimited and contain the following columns.
+Only bold columns are obligatory. The information is redundant - that means if
+a peptide may stem from two different proteins the information of the identification
+is repeated.
+
+\begin{tabular}{r|l}
+\textbf{accession} & Protein AC \\
+\textbf{peptide} & Peptide sequence\\
+modif & Peptide modification string\\
+charge & Charge state\\
+theo.mass & Theoretical peptide mass\\
+exp.mass & Experimentally observed mass\\
+parent.intens & Parent intensity\\
+retention.time & Retention time\\
+\textbf{spectrum} & Spectrum identifier\\
+search.engine & Protein search engine and score\\
+\end{tabular}
+
+\subsection{IBSpectra CSV file format}
+IBSpectra file format has the same columns as the ID CSV format and additionally 
+columns containing the quantitation information, namely
+\texttt{X\textit{tagname}\_mass} and \texttt{X\textit{tagname}\_ions},
+for mass and intensity of each tag \textit{tagname}. Below an example of the 
+further columns for an \texttt{iTRAQ 4plex} IBSpectra.
+
+
+\begin{tabular}{r|l}
+\textbf{X114\_mass} & reporter ion mass\\
+\textbf{X115\_mass} & reporter ion mass\\
+\textbf{X116\_mass} & reporter ion mass\\
+\textbf{X117\_mass} & reporter ion mass\\
+\textbf{X114\_ions} & reporter ion intensity\\
+\textbf{X115\_ions} & reporter ion intensity\\
+\textbf{X116\_ions} & reporter ion intensity\\
+\textbf{X117\_ions} & reporter ion intensity\\
+\end{tabular}
+
+
+\section{Dependencies}\label{sec:dependencies}
+\subsection{\LaTeX{} and PGF/TikZ}
+\LaTeX{} is a high-quality typesetting system; it includes features designed for the production of technical and scientific documentation. It is available as free software\footnote{\url{http://www.latex-project.org}}. PGF is a \TeX{} macro package for generating graphics It comes with a user-friedly syntax layer called TikZ\footnote{\url{http://sourceforge.net/projects/pgf}}.
+
+\LaTeX{} is used for creating PDF analysis reports, with the PGF package creating the graphics. Go to \url{http://www.latex-project.org} to get information on how to download and install a \LaTeX{} system and packages.
+
+
+\subsection{Perl}\label{app:installing-perl}
+Perl is a high-level, general-purpose, interpreted, dynamic programming language. Perl is required for two tasks:
+\begin{itemize}
+  \item Conversion of Pidres XML and Mascot DAT files to ID CSV format;
+  \item Creation of Microsoft Excel format data analysis report.
+\end{itemize}
+Go to \url{http://www.perl.org} to download and get help on the installation of Perl on your Operating System.
+For file format conversion, perl module \texttt{Statistics::Lite} is required. For Excel export \texttt{Spreadsheet::WriteExcel}. All Perl scripts are in the subdirectory \texttt{pl} of the isobar package installation.
+
+<<eval=FALSE>>=
+## execute to find the path and file location in your installation.
+system.file("pl",package="isobar") ## path
+list.files(system.file("pl",package="isobar")) ## files
+@ 
+
+\texttt{mascotParser2.pl} and \texttt{pidresParser2.pl} convert from respective protein search outputfiles to a XML file format, which can be converted into a CSV file readable by \textit{isobar} by using \texttt{psx2tab2.pl}.
+
+\texttt{mascotParser2.pl} coverts from Mascot format, and requires the file \texttt{modifconv.csv} as a definition of modification names. \texttt{pidresParser2.pl} converts from Phenyx output and requires the file \texttt{parsersConfig.xml}. \texttt{tab2xls.pl} converts csv file to different sheets of an Excel spreadsheet.
+
+\label{app:itraqmascotparser-help}
+<<eval=FALSE>>=
+## execute on your system
+system(paste("perl",system.file("pl","mascotParser2.pl",package="isobar"),
+            "--help"))
+
+print(paste("perl",system.file("pl","pidresParser2.pl",package="isobar"),
+            "--help"))
+@
+
+
+\section{Session Information}
+
+The version number of R and packages loaded for generating the vignette were:
+
+<<<echo=FALSE,results=tex>>=
+  toLatex(sessionInfo())
+@ 
+\end{appendix}
+
+\end{document}
+

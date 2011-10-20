@@ -1,0 +1,243 @@
+<inSilicoDefinitions>
+
+<elements>
+  <oneElement symbol="H+" name="Hydrogen ion" monoisotopic="1.007276" average="1.00739"/>
+  <oneElement symbol="H" name="Hydrogen" monoisotopic="1.007825" average="1.00797594155"/>
+  <oneElement symbol="O" name="Oxygen" monoisotopic="15.994915" average="15.99930509008"/>
+</elements>
+
+<aminoAcids>
+  <oneAminoAcid name="Alanine" code3="Ala" code1="A" monoisotopic="71.037114" average="71.0788"/>
+  <oneAminoAcid name="Arginine" code3="Arg" code1="R" monoisotopic="156.101111" average="156.1875"/>
+  <oneAminoAcid name="Asparagine" code3="Asn" code1="N" monoisotopic="114.042927" average="114.1038"/>
+  <oneAminoAcid name="Aspartic_acid" code3="Asp" code1="D" monoisotopic="115.026943" average="115.0886"/>
+  <oneAminoAcid name="Cysteine" code3="Cys" code1="C" monoisotopic="103.009185" average="103.1388"/>
+  <oneAminoAcid name="Glutamic_acid" code3="Glu" code1="E" monoisotopic="129.042593" average="129.1155"/>
+  <oneAminoAcid name="Glutamine" code3="Gln" code1="Q" monoisotopic="128.058578" average="128.1307"/>
+  <oneAminoAcid name="Glycine" code3="Gly" code1="G" monoisotopic="57.021464" average="57.0519"/>
+  <oneAminoAcid name="Histidine" code3="His" code1="H" monoisotopic="137.058912" average="137.1411"/>
+  <oneAminoAcid name="Isoleucine" code3="Ile" code1="I" monoisotopic="113.084064" average="113.1594"/>
+  <oneAminoAcid name="Leucine" code3="Leu" code1="L" monoisotopic="113.084064" average="113.1594"/>
+  <oneAminoAcid name="Lysine" code3="Lys" code1="K" monoisotopic="128.094963" average="128.1741"/>
+  <oneAminoAcid name="Methionine" code3="Met" code1="M" monoisotopic="131.040485" average="131.1926"/>
+  <oneAminoAcid name="Phenylalanine" code3="Phe" code1="F" monoisotopic="147.068414" average="147.1766"/>
+  <oneAminoAcid name="Proline" code3="Pro" code1="P" monoisotopic="97.052764" average="97.1167"/>
+  <oneAminoAcid name="Serine" code3="Ser" code1="S" monoisotopic="87.032028" average="87.0782"/>
+  <oneAminoAcid name="Threonine" code3="Thr" code1="T" monoisotopic="101.047679" average="101.1051"/>
+  <oneAminoAcid name="Tryptophan" code3="Trp" code1="W" monoisotopic="186.079313" average="186.2132"/>
+  <oneAminoAcid name="Tyrosine" code3="Tyr" code1="Y" monoisotopic="163.063329" average="163.1760"/>
+  <oneAminoAcid name="Valine" code3="Val" code1="V" monoisotopic="99.068414" average="99.1326"/>
+</aminoAcids>
+
+<modRes>
+  <oneModRes type="ptm" name="ACET_nterm">
+    <description>Acetylation_nterm</description>
+    <delta monoisotopic="42.0106" average="42.0373"/>
+  </oneModRes>
+  <oneModRes type="ptm" name="ACET_core">
+    <description>Acetylation_core</description>
+    <delta monoisotopic="42.0106" average="42.0373"/>
+  </oneModRes>
+  <oneModRes type="ptm" name="PHOS">
+    <description>Phosphorylation</description>
+    <delta monoisotopic="79.9663" average="79.9799" />
+  </oneModRes>
+  <oneModRes type="ptm" name="PHOS_STY">
+    <description>Phosphorylation</description>
+    <delta monoisotopic="79.9663" average="79.9799" />
+  </oneModRes>
+  <oneModRes type="ptm" name="AMID">
+    <description>Amidation</description>
+    <delta monoisotopic="-0.9840" average="-0.9847"/>
+  </oneModRes>
+  <oneModRes type="ptm" name="DEAMID" description="Deamidation">
+    <description></description>
+    <delta monoisotopic="0.9840" average="0.9847"/>
+  </oneModRes>
+  <oneModRes type="ptm" name="DEAM_N">
+    <description>Deamidation_N</description>
+    <delta monoisotopic="0.9840" average="0.9847"/>
+  </oneModRes>
+  <oneModRes type="ptm" name="DEAM_Q">
+    <description>Deamidation_Q</description>
+    <delta monoisotopic="0.9840" average="0.9847"/>
+  </oneModRes>
+   <oneModRes type="ptm" name="BIOT">
+    <description>Biotin</description>
+    <delta monoisotopic="226.0776" average="226.2934"/>
+  </oneModRes>
+   <oneModRes type="ptm" name="BIOT_nterm">
+    <description>Biotin_nterm</description>
+   <delta monoisotopic="210.0827" average="210.2960"/>
+  </oneModRes>
+  <oneModRes type="ptm" name="CAM_nterm">
+    <description>Carbamylation_nterm</description>
+    <delta monoisotopic="43.00581" average="43.02504"/>
+  </oneModRes>
+  <oneModRes type="ptm" name="CAM_core">
+    <description>Carbamylation_core</description>
+    <delta monoisotopic="43.00581" average="43.02504"/>
+  </oneModRes>
+  <oneModRes type="ptm" name="CARB">
+    <description>Carboxylation</description>
+   <delta monoisotopic="43.9898" average="44.0098"/>
+  </oneModRes>
+  <oneModRes type="ptm" name="PYRR">
+    <description>Pyrrolidone_carboxylic_acid</description>
+    <delta monoisotopic="-17.0266" average="-17.0306"/>
+  </oneModRes>
+  <oneModRes type="ptm" name="HYDR">
+    <description>Hydroxylation</description>
+    <delta monoisotopic="15.9949" average="15.9994"/>
+  </oneModRes>
+  <oneModRes type="ptm" name="DIHYDR">
+    <description>Di-hydroxylation"</description>
+    <delta monoisotopic="31.9898" average="31.9988"/>
+  </oneModRes>
+  <oneModRes type="ptm" name="GGLU">	
+    <description>Gamma-carboxyglutamic_acid"</description>
+    <delta monoisotopic="43.98983" average="44.0098"/>
+  </oneModRes>
+  <oneModRes type="ptm" name="METH_nterm">
+    <description>Methylation_nterm</description>
+    <delta monoisotopic="14.0157" average="14.0269"/>
+  </oneModRes>
+  <oneModRes type="ptm" name="METH_cterm">
+    <description>Methylation_cterm</description>
+    <delta monoisotopic="14.0157" average="14.0269"/>
+  </oneModRes>
+  <oneModRes type="ptm" name="METH_core">
+    <description>Methylation_core</description>
+    <delta monoisotopic="14.0157" average="14.0269"/>
+  </oneModRes>
+  <oneModRes type="ptm" name="Ubiquitin_0mc">
+    <description>Ubiquitination no missed cleavage</description>
+    <delta monoisotopic="114.0429" average="114.1040"/>
+  </oneModRes>
+  <oneModRes type="ptm" name="Ubiquitin_1mc">
+    <description>Ubiquitination one missed cleavage</description>
+    <delta monoisotopic="383.2281" average="383.4511"/>
+  </oneModRes>
+  <oneModRes type="ptm" name="SULF_nterm">
+    <description>Sulfation_nterm</description>
+    <delta monoisotopic="79.9568" average="80.0642"/>
+  </oneModRes>
+  <oneModRes type="ptm" name="SULF_core">
+    <description>"Sulfation_core</description>
+    <delta monoisotopic="79.9568" average="80.0642"/>
+  </oneModRes>
+  <oneModRes type="ptm" name="FORM">
+    <description>Formylation</description>
+    <delta monoisotopic="27.9949" average="28.0104"/>
+  </oneModRes> 
+  <oneModRes type="aaModif" name="Oxidation">
+    <description>Oxidation</description>
+    <delta monoisotopic="15.994919" average="15.999"/>
+  </oneModRes>
+  <oneModRes type="aaModif" name="Oxidation_HW">
+    <description>Oxidation</description>
+    <delta monoisotopic="15.994919" average="15.999"/>
+  </oneModRes>
+  <oneModRes type="aaModif" name="Oxidation_M">
+    <description>Oxidation</description>
+    <delta monoisotopic="15.994919" average="15.999"/>
+  </oneModRes>
+  <oneModRes type="aaModif" name="Cys_CM">
+    <description>Carboxymethyl_cysteine</description>
+    <delta monoisotopic="58.00547" average="58.0367"/>
+  </oneModRes>
+  <oneModRes type="aaModif" name="Cys_CAM">
+    <description>Carboxyamidomethyl_cysteine</description>
+    <delta monoisotopic="57.021465" average="57.052"/>
+  </oneModRes>
+  <oneModRes type="aaModif" name="Cys_CAM_regexp">
+    <description>Carboxyamidomethyl_cysteine</description>
+    <delta monoisotopic="57.021465" average="57.052"/>
+  </oneModRes>
+  <oneModRes type="aaModif" name="Cys_PE">
+    <description>Pyridyl-ethyl_cysteine</description>
+    <delta monoisotopic="105.057849" average="105.1452"/>
+  </oneModRes>
+  <oneModRes type="aaModif" name="Cys_PAM">
+    <description>Propionamide_cysteine</description>
+   <delta monoisotopic="71.03712" average="71.0788"/>
+  </oneModRes>
+  <oneModRes type="aaModif" name="MSO">
+    <description>Methionine_sulfoxide</description>
+    <delta monoisotopic="15.99491" average="15.9994"/>
+  </oneModRes>
+  <oneModRes type="aaModif" name="HSL">
+    <description>Homoserine_Lactone</description>
+    <delta monoisotopic="12.96165" average="13.01894"/>
+  </oneModRes>
+  <oneModRes type="aaModif" name="O18">
+    <description>O18 label</description>
+    <delta monoisotopic="4.02912" average="4.02956"/>
+  </oneModRes>
+  <oneModRes type="aaModif" name="Guanidination">
+    <description>Guanidination</description>
+    <delta monoisotopic="42.0218" average="42.0382"/>
+  </oneModRes>
+  <oneModRes type="aaModif" name="ICAT_light">
+    <description>ICAT light</description>
+    <delta monoisotopic="227.1270" average="227.2644"/>
+  </oneModRes>
+  <oneModRes type="aaModif" name="ICAT_heavy">
+    <description>ICAT heavy</description>
+    <delta monoisotopic="236.1572" average="236.1983"/>
+  </oneModRes>
+  <oneModRes type="aaModif" name="iTRAQ_KY">
+    <description>iTRAQ KY</description>
+    <delta monoisotopic="144.102066" average="144.1543"/>
+  </oneModRes>
+  <oneModRes type="aaModif" name="iTRAQ_K">
+    <description>iTRAQ K</description>
+    <delta monoisotopic="144.102066" average="144.1543"/>
+  </oneModRes>
+  <oneModRes type="aaModif" name="iTRAQ_Y">
+    <description>iTRAQ Y</description>
+    <delta monoisotopic="144.102066" average="144.1543"/>
+  </oneModRes>
+  <oneModRes type="aaModif" name="iTRAQ_nterm">
+    <description>iTRAQ N-term</description>
+    <delta monoisotopic="144.102066" average="144.1543"/>
+  </oneModRes>
+  <oneModRes type="aaModif" name="iTRAQ_Nterm">
+    <description>iTRAQ N-term</description>
+    <delta monoisotopic="144.102066" average="144.1543"/>
+  </oneModRes>
+  <oneModRes type="aaModif" name="iTRAQ4plex_KY">
+    <description>iTRAQ KY</description>
+    <delta monoisotopic="144.102066" average="144.1543"/>
+  </oneModRes>
+  <oneModRes type="aaModif" name="iTRAQ4plex_K">
+    <description>iTRAQ K</description>
+    <delta monoisotopic="144.102066" average="144.1543"/>
+  </oneModRes>
+  <oneModRes type="aaModif" name="iTRAQ4plex_Y">
+    <description>iTRAQ Y</description>
+    <delta monoisotopic="144.102066" average="144.1543"/>
+  </oneModRes>
+  <oneModRes type="aaModif" name="iTRAQ4plex_nterm">
+    <description>iTRAQ N-term</description>
+    <delta monoisotopic="144.102066" average="144.1543"/>
+  </oneModRes>
+  <oneModRes type="aaModif" name="iTRAQ4plex_Nterm">
+    <description>iTRAQ N-term</description>
+    <delta monoisotopic="144.102066" average="144.1543"/>
+  </oneModRes>
+  <oneModRes type="aaModif" name="iTRAQ8plex_K">
+    <description>iTRAQ reagent on K (nominal of iTRAQ 116; iTRAQ114 is 0.0038 heavier, iTRAQ117 is 0.0025 lighter)</description>
+    <delta average="304.2022" monoisotopic="304.2022"/>
+  </oneModRes>
+  <oneModRes type="aaModif" name="iTRAQ8plex_Y">
+    <description>iTRAQ reagent on K (nominal of iTRAQ 116; iTRAQ114 is 0.0038 heavier, iTRAQ117 is 0.0025 lighter)</description>
+     <delta average="304.2022" monoisotopic="304.2022"/>
+  </oneModRes>
+  <oneModRes type="aaModif" name="iTRAQ8plex_Nterm">
+    <description>iTRAQ reagent on Nterm (nominal of iTRAQ 116; iTRAQ114 is 0.0038 heavier, iTRAQ117 is 0.0025 lighter)</description>
+    <delta average="304.2022" monoisotopic="304.2022"/>
+  </oneModRes>
+</modRes>
+
+</inSilicoDefinitions>
