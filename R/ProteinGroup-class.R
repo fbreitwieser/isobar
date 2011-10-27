@@ -482,6 +482,7 @@ setMethod("protein.g",signature("ProteinGroup","character","ANY"),
   ip <- indistinguishableProteins(x)
   result <- c()
   for (p in pattern) {
+    protein.acs <- c()
     if ("AC" %in% variables)
       result <- c(result,ip[grep(p,names(ip),...)])
     if ("name" %in% variables) {
