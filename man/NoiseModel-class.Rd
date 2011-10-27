@@ -90,22 +90,24 @@
 
 \examples{
 
-\dontrun{
 data(ibspiked_set1)
 
+ceru.proteins <- protein.g(proteinGroup(ibspiked_set1),"CERU")
+
 # normalize
-ibspiked_set1.noc <- normalize(ibspiked_set1)
+ibspiked_set1 <- normalize(correctIsotopeImpurities(ibspiked_set1))
 
 # remove spiked proteins
-ibspiked_set1.noc <- exclude(ibspiked_set1,c("P13635","Q61147"))
+ibspiked_set1.noceru <- exclude(ibspiked_set1,ceru.proteins)
+ibspiked_set1.justceru <- subsetIBSpectra(ibspiked_set1,protein=ceru.proteins,direction="include")
 
 # learn noise models
-nm.i <- new("InverseNoiseModel",ibspiked_set1.noc)
-nm.e <- new("ExponentialNoiseModel",ibspiked_set1.noc)
+nm.i <- new("InverseNoiseModel",ibspiked_set1.noceru)
+nm.e <- new("ExponentialNoiseModel",ibspiked_set1.noceru)
 
 #learn on non-one.to.one data: not normalized, with spiked proteins
-nm.n <- new("ExponentialNoiseModel",ibspiked_set1,one.to.one=F)
+nm.n <- new("ExponentialNoiseModel",ibspiked_set1.justceru,one.to.one=F)
 
-maplot(normalize(ibspiked_set1),noise.model=c(nm.e,nm.i,nm.n),smooth=TRUE)
-}
+maplot(ibspiked_set1,noise.model=c(nm.e,nm.i,nm.n),ylim=c(0.1,10))
+
 }

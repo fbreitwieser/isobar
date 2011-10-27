@@ -25,7 +25,7 @@
 \usage{
 estimateRatio(ibspectra, noise.model = NULL, channel1, channel2, protein, peptide, ...)
 estimateRatioForPeptide(peptide, ibspectra, noise.model, channel1, channel2, combine = TRUE, ...)
-estimateRatioForProtein(protein, ibspectra, noise.model, channel1, channel2, combine = TRUE, method = "isobar", quant.w.grouppeptides = NULL, ...)
+estimateRatioForProtein(protein, ibspectra, noise.model, channel1, channel2, combine = TRUE, method = "isobar", specificity = REPORTERSPECIFIC, quant.w.grouppeptides = NULL, ...)
 
 \S4method{estimateRatioNumeric}{numeric,numeric,missing}(channel1,channel2,summarize.f=median, ...)
 
@@ -61,6 +61,7 @@ estimateRatioForProtein(protein, ibspectra, noise.model, channel1, channel2, com
   \item{combine}{ If true, a single ratio is returned even for multiple
     peptides/spectra. If false, a data.frame with a row for each peptide/protein
     is returned.}
+  \item{specificity}{ See \code{\link{specificities}}. }
   \item{quant.w.grouppeptides}{Proteins which should be quantified with group specific peptides.
         Normally, only reporter specific peptides are used.}
   \item{ratiodistr}{\code{distr} object of ratio distribution.}

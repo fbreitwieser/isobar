@@ -13,75 +13,87 @@
 
 \description{
         Read ibspectra-csv files and peaklist files as an
-      IBSpectra object of type 'type' (see \code{\link{IBSpectra}},
-      e.g. iTRAQ4plexSpectra or TMT6plexSpectra). If
-      peaklist.file is missing, it assumes that id.file contains
-      intensity and m/z information for the reporter tags.
-
+	IBSpectra object of type 'type' (see \code{\link{IBSpectra}},
+	e.g. iTRAQ4plexSpectra or TMT6plexSpectra). If
+	peaklist.file is missing, it is assumed that id.file contains
+	intensity and m/z columns for the reporter tags.
 }
       
 \usage{
 \S4method{readIBSpectra}{character,character}(type,id.file)
-\S4method{readIBSpectra}{character,character,character}(type,id.file,
-peaklist.file,proteinGroupTemplate=NULL,mapping.file=NULL,
-mapping=c(peaklist=1,id=2),mapping.file.readopts = list(header = TRUE,
-stringsAsFactors = FALSE, sep = ","),peaklist.format=NULL,id.format=NULL,
-fragment.precision=NULL,fragment.outlier.prob=NULL,revert.titles=FALSE)
+\S4method{readIBSpectra}{character,character,character}(type, id.file,
+peaklist.file,
+              proteinGroupTemplate = NULL,
+              mapping.file = NULL,mapping = c(peaklist=1,id=2),
+              mapping.file.readopts = list(header=TRUE,stringsAsFactors=FALSE,sep=","),
+              peaklist.format = NULL, id.format = NULL,
+              fragment.precision = NULL,fragment.outlier.prob = NULL,
+              revert.titles = FALSE, scan.number = NULL)
 }
-
-
 
 \arguments{
   \item{type}{
+    Name of class of new IBSpectra object: 
     \code{\link{iTRAQ4plexSpectra}}, \code{\link{iTRAQ8plexSpectra}},
     \code{\link{TMT2plexSpectra}}, or \code{\link{TMT6plexSpectra}}
   }
   \item{id.file}{
-Database search results file in \code{ibspectra.csv} or
-\code{mzIdentML} format. See \code{id.format}. See the vignette for
-  information on converting Mascot dat and Phenyx pidres files into
-  ibspectra format.
+    Database search results file in \code{ibspectra.csv} or
+   \code{mzIdentML} format. See \code{id.format}. See the vignette for
+   information on converting Mascot dat and Phenyx pidres files into
+   ibspectra format.
   }
   \item{peaklist.file}{
-    Peaklist file, see \code{peaklist.format}.
+    Peaklist file, typically in MGF format, see \code{peaklist.format}.
+    MGF must be centroid!
   }
   \item{proteinGroupTemplate}{
-When having technical or
-biological repeats: First a template protein group is created
-which uses information from all runs, then this template is
-applied. It should increase comparability across runs.
-}
+    When having technical or biological repeats: First a template
+    protein group is created which uses information from all runs,
+    then this template is applied.
+    It should increase comparability across runs.
+  }
   \item{mapping.file}{
-If defined, spectum titles from the peaklist file are linked to
-the identifications via this file. This can be used when running short HCD runs for
-quantification and long CID runs for identification. See
-Koecher et al., 2009 for details. }
+    If defined, spectum titles from the peaklist file are linked to
+    the identifications via this file. This can be used when running HCD runs for
+    quantification and CID runs for identification. See
+    Koecher et al., 2009 for details.
+  }
   \item{mapping}{
-mapping columns of mapping.file.
-}
-  \item{mapping.file.readopts}{
-read options for read.table
+    mapping columns of mapping.file.
+  }
+  \item{mapping.file.readopts}{ 
+    read options for \code{\link{read.table}}.
   }
   \item{peaklist.format}{
-"mgf" (Mascot Generic format) or "mcn" (iTracker Machine Readable
- output). When NULL, it detects the format on file name extension.
-}
+    "mgf" (Mascot Generic format) or "mcn" (iTracker Machine Readable
+    output). When NULL, it detects the format on file name extension.
+  }
   \item{id.format}{
-"ibspectra.csv" or "mzid"  (PSI MzIdentML format). When NULL, file
-  format is guessed based on extension.
-}
-
-\item{fragment.precision}{
-    Fragment precision for import of isobaric masses.
-}
-\item{fragment.outlier.prob}{
-    Fragment outlier probability filter.
-}
-
-\item{revert.titles}{
-    Unescape spectrum titles in identification file. Use with Mascot which might transform
-    Spaces into \%20, etc.
-}
+    "ibspectra.csv" or "mzid"  (PSI MzIdentML format). When NULL, file
+    format is guessed based on extension.
+  }
+  \item{fragment.precision}{
+    Fragment precision for extraction of reporter tags: for each tag
+    and spectrum the m/z-intensity pair with it's mass closest to the
+    known reporter tag mass is extracted within the window
+    true_mass +/- fragment.precision/2.
+  }
+  \item{fragment.outlier.prob}{
+    Fragment outlier probability filter: After all m/z-intensity pairs
+    have been extracted, those pairs with the fragment.outlier.prob/2
+    most unprecise m/z values are filtered out.
+  }
+  \item{revert.titles}{
+    Unescape spectrum titles in identification file. When extracting the
+    DAT file from Mascot web interface, it's spectrum titles are
+    escaped - \%20 instead of space, etc. Set revert.titles to TRUE to
+    map these titles to the unescaped MGF titles.
+  }
+  \item{scan.number}{
+    Read files sequentially scan.number lines at a time. Can help in
+    case of memory issues, set to 10000 or higher, for example.
+  }
 }
 
 
@@ -96,12 +108,20 @@ read options for read.table
 }
 
 \examples{
-\dontrun{
 data(ibspiked_set1)
-write.table(as.data.frame(ibspiked_set1),sep="\t",file="ib1.tmp.ibspectra.csv")
-ib1 <- readIBSpectra("iTRAQ4plexSpectra","ib1.tmp.ibspectra.csv")
-ib1
-ibspiked_set1
-file.remove("ib1.tmp.ibspectra.csv")
-}
+
+# get identifier for Ceruplasmin proteins
+ceru.acs <- protein.g(proteinGroup(ibspiked_set1),"CERU")
+# create a smaller ibspectra w/ only Ceruplasmins
+ib.ceru <- subsetIBSpectra(ibspiked_set1,protein=ceru.acs,"include")
+
+# write it to a file
+tf <- tempfile("isobar")
+write.table(as.data.frame(ib.ceru),sep="\t",file=tf)
+
+# read it again into an IBSpectra object
+ib.ceru2 <- readIBSpectra("iTRAQ4plexSpectra",tf,id.format="ibspectra.csv")
+ib.ceru2
+
+unlink(tf)
 }

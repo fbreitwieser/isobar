@@ -33,6 +33,7 @@ fitGaussianMixture(x, n = 500)
   \link{proteinRatios}
 }
 \examples{
+library(distr)
 data(ibspiked_set1)
 data(noise.model.hcd)
 # calculate protein ratios of Trypsin and CERU_HUMAN. Note: this is only
