@@ -50,7 +50,7 @@ setValidity("ProteinGroup", .valid.ProteinGroup)
 UNSPECIFIC="unspecific"
 GROUPSPECIFIC="group-specific"
 REPORTERSPECIFIC="reporter-specific"
-PROTEINSPECIFIC="protein-specific"
+#PROTEINSPECIFIC="protein-specific"
 SPECIFICITIES=c(UNSPECIFIC,GROUPSPECIFIC,REPORTERSPECIFIC)
 
 ### - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -315,11 +315,11 @@ getProteinInfoFromBiomart <- function(x,database="Uniprot") {
   proteinInfo <- data.frame(accession=c(),name=c(),protein_name=c(),
                             gene_name=c(),organism=c())
   if (database == "Uniprot") {
-    require(biomaRt)
+    #require(biomaRt)
     tryCatch({
-      mart <- useMart("unimart",dataset="uniprot",
+      mart <- biomaRt::useMart("unimart",dataset="uniprot",
                       host="www.ebi.ac.uk",path="/uniprot/biomart/martservice")
-    proteinInfo <- getBM(attributes=c("accession","name","protein_name","gene_name","organism"),
+    proteinInfo <- biomaRt::getBM(attributes=c("accession","name","protein_name","gene_name","organism"),
           filter='accession',values=protein.acs,mart=mart)
     },error=function(e) warning("could not set Biomart"))
 
