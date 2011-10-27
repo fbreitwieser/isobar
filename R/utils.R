@@ -4,6 +4,7 @@ if(!isGeneric("as.data.frame")) setGeneric("as.data.frame", useAsDefault=as.data
 
   char.to.html <- 
     matrix(c(
+            "+","%2b",
             "%","%25",
             " ","%20",
             ",","%2c",
