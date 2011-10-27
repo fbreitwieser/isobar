@@ -1769,6 +1769,8 @@ initialize.report <- function(properties.file="properties.conf",args=commandArgs
   for (name in names(readIBSpectra.args)) {
       arg <- readIBSpectra.args[[name]]
       if (!is.null(arg)) {
+          if (!is.null(names(arg)))
+            arg <- paste(names(arg),arg,collapse="=")
           message("    ",name,": ",
                   paste(arg,collapse=ifelse(length(arg)>2,"\n\t",", ")))
       }
