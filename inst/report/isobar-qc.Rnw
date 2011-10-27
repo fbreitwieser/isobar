@@ -1,9 +1,7 @@
 % vim: set expandtab ts=3 sw=3:
 
 <<initialization,echo=FALSE,results=hide>>=
-
-options(SweaveHooks=list(fig=function()
-         par(mar=c(5.1, 4.1, 1.1, 2.1))))
+  library(distr)
 @
 \SweaveOpts{eps=FALSE}
 \documentclass[11pt,oneside]{article}
