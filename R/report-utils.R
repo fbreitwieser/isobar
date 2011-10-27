@@ -645,7 +645,7 @@ initialize.env <- function(env,report.type="protein",properties.env) {
 ##########################
 ## latex helper functions
 
-print.longtablehdr <- function(level,coldef,draw.channels,ncol.p,draw.signcol) {
+print_longtablehdr <- function(level,coldef,draw.channels,ncol.p,draw.signcol) {
   #cat("\n\n\\renewcommand{\\arraystretch}{0.75}\n")
   cat("\\begin{longtable}{",coldef,"}",'\n',sep="")
   cat("\t \\# ",
@@ -672,7 +672,7 @@ print.longtablehdr <- function(level,coldef,draw.channels,ncol.p,draw.signcol) {
       "\n \\endfoot \n")
 }
 
-print.longtablehdr.peptide <- function(coldef,draw.channels,ncol.p,draw.signcol) {
+.print_longtablehdr.peptide <- function(coldef,draw.channels,ncol.p,draw.signcol) {
   #cat("\n\n\\renewcommand{\\arraystretch}{0.75}\n")
   cat("\\begin{longtable}{",coldef,"}",'\n',sep="")
   cat("\t \\# ",paste(" & \\textbf{peptide}"))  
@@ -715,7 +715,7 @@ draw.boxplot <- function(lratio,sd,bnd) {
                   col))
 }
 
-transform.pepmodif <- function(pep.n.modif) {
+.transform.pepmodif <- function(pep.n.modif) {
   pep <- strsplit(pep.n.modif[1],"")[[1]]
   modif <- strsplit(pep.n.modif[2],":")[[1]]
   if (length(pep)+1 != length(modif))
@@ -863,7 +863,7 @@ tikz.proteingroup <- function(protein.group,reporter.protein.g,show.pos) {
                 sum(peptide.idx.sel&(group.sp.sel|quant.sel)),
                 sum(peptide.idx.sel&unspecific.sel))
    
-     print.proteinrow(
+     .print.proteinrow(
         -protein.i,paste(which(peptide.idx.sel),peptide.styles[peptide.idx.sel],sep="/")
      )
    
@@ -886,7 +886,7 @@ tikz.proteingroup <- function(protein.group,reporter.protein.g,show.pos) {
 
 }
 
-print.proteinrow <- function(protein.idx,peptides.sel) {
+.print.proteinrow <- function(protein.idx,peptides.sel) {
   if (length(peptides.sel)>0) {
       cat(sprintf("  \\proteinrow{%s}{%s}{}\n",
                   protein.idx,paste(peptides.sel,collapse=",")))

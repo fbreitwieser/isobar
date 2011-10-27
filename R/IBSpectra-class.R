@@ -905,7 +905,7 @@ setGeneric("isotopeImpurities<-", function(x,value) standardGeneric("isotopeImpu
 
 
 # reporterNames in package Biobase are defunct now
-setGeneric("reporterNames",function(object) standardGeneric("reporterNames"))
+#setGeneric("reporterNames",function(object) standardGeneric("reporterNames"))
 setMethod("reporterNames","IBSpectra",function(object) object@reporterNames)
 setMethod("proteinGroup","IBSpectra", function(x) x@proteinGroup)
 setMethod("isotopeImpurities","IBSpectra", function(x) x@isotopeImpurities)
@@ -991,13 +991,37 @@ setGeneric("spectrumSel", function(x,peptide,protein,...) standardGeneric("spect
 setMethod("spectrumSel",signature(x="IBSpectra",peptide="missing",protein="missing"),
     function(x) rep(TRUE,nrow(fData(x))))
 
-setMethod("spectrumSel",signature(x="IBSpectra",peptide="character",protein="missing"),
-    function(x,peptide,spectrum.titles=FALSE) {
+setMethod("spectrumSel",signature(x="IBSpectra",peptide="matrix",protein="missing"),
+    function(x,peptide,modif=NULL,spectrum.titles=FALSE) {
         if (length(peptide) == 0) {
           warning("0L peptide provided")
           return(FALSE)
         }
-	 	sel <- fData(x)[,.SPECTRUM.COLS['PEPTIDE']]  %in% peptide
+        if (ncol(peptide) != 2)
+          stop("don't know how to handle matrix with ",ncol(peptide)," columns!")
+        
+        sel <- fData(x)[,.SPECTRUM.COLS['PEPTIDE']]  %in% peptide[,1]
+        sel <- sel & fData(x)[,.SPECTRUM.COLS['MODIFSTRING']]  %in% peptide[,2]
+        
+        for (m in modif)
+          sel <- sel & grepl(m,fData(x)[,.SPECTRUM.COLS['MODIFSTRING']])
+        if (!any(sel)) warning("No spectra for peptide ",peptide)
+        if (spectrum.titles)
+          return(rownames(fData(x))[sel])
+        else
+  	      return(sel)
+    }
+)
+
+setMethod("spectrumSel",signature(x="IBSpectra",peptide="character",protein="missing"),
+    function(x,peptide,modif=NULL,spectrum.titles=FALSE) {
+        if (length(peptide) == 0) {
+          warning("0L peptide provided")
+          return(FALSE)
+        }
+        sel <- fData(x)[,.SPECTRUM.COLS['PEPTIDE']]  %in% peptide
+        for (m in modif)
+          sel <- sel & grepl(m,fData(x)[,.SPECTRUM.COLS['MODIFSTRING']])
         if (!any(sel)) warning("No spectra for peptide ",peptide)
         if (spectrum.titles)
           return(rownames(fData(x))[sel])
@@ -1007,16 +1031,16 @@ setMethod("spectrumSel",signature(x="IBSpectra",peptide="character",protein="mis
 )
 
 setMethod("spectrumSel",signature(x="IBSpectra",peptide="missing",protein="character"),
-    function(x,protein,specificity=REPORTERSPECIFIC,spectrum.titles=FALSE) {
+    function(x,protein,specificity=REPORTERSPECIFIC,modif=NULL,spectrum.titles=FALSE) {
       peptides <- peptides(x=proteinGroup(x),protein=protein,specificity=specificity,do.warn=FALSE)
       if (length(peptides) == 0)
         return(FALSE)
-      sel <- spectrumSel(x,peptide=peptides,spectrum.titles=spectrum.titles)
-      if ((spectrum.titles & length(sel)==0) |
-        (!spectrum.titles & !any(sel))) warning("No spectra for protein ",protein,
-				" with specificity ",paste(specificity,collapse=","))
-		return(sel)
-	}
+      sel <- spectrumSel(x,peptide=peptides,spectrum.titles=spectrum.titles,modif=modif)
+      if ((spectrum.titles & any(sel)) || (!spectrum.titles & !any(sel)))
+        warning("No spectra for protein ",protein,
+                " with specificity ",paste(specificity,collapse=","))
+      return(sel)
+    }
 )
 
 setGeneric("spectrumTitles", function(x,...) standardGeneric("spectrumTitles"))
@@ -1714,5 +1738,4 @@ setMethod("do.log",signature("IBSpectra","character","ANY"),function(x,name,msg)
     x@log <- rbind(x@log,tmp.matrix)
     return(x)
 })
-
 

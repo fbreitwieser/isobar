@@ -150,7 +150,7 @@ if (is.single.comparision) {
 
 if (any(quant.tbl$is.significant == 1,na.rm=TRUE)) {  
   cat("\\small")
-  print.longtablehdr("protein",coldef.s,!is.single.comparision,ncol.p-1,FALSE)
+  print_longtablehdr("protein",coldef.s,!is.single.comparision,ncol.p-1,FALSE)
   draw.hline <- FALSE
   
   for (cmb_i in seq_len(ncol(cmbn))) {

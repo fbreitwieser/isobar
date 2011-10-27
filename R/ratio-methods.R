@@ -445,14 +445,23 @@ estimateRatioForProtein <- function(protein,ibspectra,noise.model,channel1,chann
 
 estimateRatioForPeptide <- function(peptide,ibspectra,noise.model,channel1,channel2,combine=TRUE,...) {
       if (combine) {
-        .call.estimateRatio(peptide,"peptide",ibspectra,noise.model,
-                            channel1,channel2,...)
+        r <- .call.estimateRatio(peptide,"peptide",ibspectra,noise.model,
+                                 channel1,channel2,...)
       } else {
-        t(sapply(peptide,function(individual.peptide) 
-                 .call.estimateRatio(individual.peptide,"peptide",ibspectra,noise.model,
-                                    channel1,channel2,...)))
+        if (is.matrix(peptide)) {
+          r <- t(apply(peptide,1,function(individual.peptide) 
+                  .call.estimateRatio(matrix(individual.peptide,ncol=2),"peptide",ibspectra,noise.model,
+                                      channel1,channel2,...)))
+        
+        } else {
+          r <- t(sapply(peptide,function(individual.peptide) 
+                        .call.estimateRatio(individual.peptide,"peptide",ibspectra,noise.model,
+                                            channel1,channel2,...)))
+        }
       }
-    }
+      attr(r,"input") <- peptide
+      return(r)
+}
 
 
 ### Handling NULL protein or peptide argument
@@ -469,6 +478,15 @@ setMethod("estimateRatio",
     signature(ibspectra="IBSpectra",noise.model="ANY",
               channel1="character",channel2="character",
               protein="NULL",peptide="character"),
+    function(ibspectra,noise.model,channel1,channel2,protein=NULL,peptide,...) {
+      estimateRatio(ibspectra,noise.model,channel1,channel2,peptide=peptide,...)
+    }
+)
+
+setMethod("estimateRatio",
+    signature(ibspectra="IBSpectra",noise.model="ANY",
+              channel1="character",channel2="character",
+              protein="NULL",peptide="matrix"),
     function(ibspectra,noise.model,channel1,channel2,protein=NULL,peptide,...) {
       estimateRatio(ibspectra,noise.model,channel1,channel2,peptide=peptide,...)
     }
@@ -493,9 +511,19 @@ setMethod("estimateRatio",
     }
 )
 
+setMethod("estimateRatio",
+    signature(ibspectra="IBSpectra",noise.model="ANY",
+              channel1="character",channel2="character",
+              protein="missing",peptide="matrix"),
+    function(ibspectra,noise.model,channel1,channel2,peptide,...) {
+      estimateRatioForPeptide(peptide,ibspectra,noise.model,channel1,channel2,...)
+    }
+)
+
 ### Helper function to estimateRatioNumeric
 .call.estimateRatio <- function(x,level,ibspectra,noise.model,
-                               channel1,channel2,specificity=REPORTERSPECIFIC,...) {
+                                channel1,channel2,
+                                specificity=REPORTERSPECIFIC,modif=NULL,...) {
   if (is.null(channel1) || is.null(channel2))
     stop("channel1 and channel2 must not be NULL, but one of [",paste(reporterNames(ibspectra),collapse=", "),"] !")
   if (length(channel1) == 0 || length(channel1) > 1 || length(channel2) == 0 || length(channel2) > 1)
@@ -504,12 +532,12 @@ setMethod("estimateRatio",
     stop("channel1 and channel2 must be one of the reporter names: ",paste(reporterNames(ibspectra),collapse=", "),".")
   
   if (level=="protein") {
-    ri <- reporterIntensities(ibspectra,protein=x,specificity=specificity)
-    ri.raw <- reporterData(ibspectra,element="ions_not_normalized",protein=x,specificity=specificity)
+    ri <- reporterIntensities(ibspectra,protein=x,specificity=specificity,modif=modif)
+    ri.raw <- reporterData(ibspectra,element="ions_not_normalized",protein=x,specificity=specificity,modif=modif)
   }
   if (level=="peptide") {
-    ri <- reporterIntensities(ibspectra,peptide=x)
-    ri.raw <- reporterData(ibspectra,element="ions_not_normalized",peptide=x)
+    ri <- reporterIntensities(ibspectra,peptide=x,modif=modif)
+    ri.raw <- reporterData(ibspectra,element="ions_not_normalized",peptide=x,modif=modif)
   }
   i1 <- .get.ri(ri,channel1)
   i2 <- .get.ri(ri,channel2)
@@ -620,7 +648,7 @@ combn.matrix <- function(x,method="global",cl=NULL) {
 
 ## create a table with all protein ratios
 combn.protein.tbl <- function(ibspectra,noise.model,ratiodistr,
-                              proteins=NULL,cmbn,peptide=NULL,
+                              proteins=NULL,cmbn,peptide=NULL,modif=NULL,
                               symmetry=FALSE,reverse=FALSE,variance.function="maxi",...) {
   
   ratios <- do.call(rbind,apply(cmbn,2,function(x) {
@@ -631,8 +659,9 @@ combn.protein.tbl <- function(ibspectra,noise.model,ratiodistr,
         x <- rev(x)
 
     r <- estimateRatio(ibspectra=ibspectra,noise.model=noise.model,
-            channel1=x[1],channel2=x[2],protein=proteins,peptide=peptide,
-            ratiodistr=ratiodistr,variance.function=variance.function,...)
+                       channel1=x[1],channel2=x[2],protein=proteins,
+                       peptide=peptide,modif=modif,
+                       ratiodistr=ratiodistr,variance.function=variance.function,...)
     if (class(r)=="numeric") {
       r <- t(r)
       rownames(r) <- "prot1"

@@ -338,7 +338,7 @@ classLabels(ibspiked_set1) <- c("T","T","C","C")
 
 proteinRatios(ibspiked_set1,noise.model,protein=ceru.proteins,
               cl=classLabels(ibspiked_set1),method="interclass",
-              summarize=T)[,c("protein","lratio","variance")]
+              summarize=T)[,c("ac","lratio","variance")]
 @ 
 
 \subsection{Protein ratio distribution and selection}
