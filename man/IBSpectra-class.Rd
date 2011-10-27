@@ -162,10 +162,10 @@
       quantitation information. Proteins are concatenated - so the
       resulting \code{data.frame} has one line per spectrum.}
     \item{\code{as(x, "MSnSet")}:}{
-      Coerces to a \code{\link{MSnSet}} object (package
-      \code{\link{MSnbase}}). }
+      Coerces to a \code{\link[MSnbase]{MSnSet}} object (package
+      \code{\link[MSnbase]{MSnbase}}). }
     \item{\code{as(msnset,"IBSpectra")}:}{
-      Coerces a \code{\link{MSnSet}} to \code{IBSpectra} object.
+      Coerces a \code{\link[MSnbase]{MSnSet}} to \code{IBSpectra} object.
     }
   }
 }
@@ -174,12 +174,6 @@
   In the following code snippets, \code{x} is a IBSpectra object.
 
   \describe{
-    \item{\code{subsetIBSpectra(x, protein=NULL, peptide=NULL, direction="exclude",specificity)}:}{ 
-      Get a 'subset' of IBSpectra: include or exclude proteins
-      or peptides. When selection  is based on proteins, it can be
-    defined to exclude only peptides which are specific to the protein
-    ('reporter-specific'), specific to the group ('group-specific') or
-    which are shared with other proteins ('unspecific'). }
     \item{\code{proteinGroup(x)}:}{Gets and sets the ProteinGroup.}
     \item{\code{isotopeImpurities(x)}:}{Gets and sets the isotope
     impurities of the isobaric tags as defined by the manufacturers
@@ -197,13 +191,6 @@
       Convenience function, calls reporterData(...,element="mass")
     }
 
-    \item{\code{spectrumSel(x,peptide,protein,specificity="reporter-specific")}:}{
-      Gets a boolean vector selecting the corresponding spectra:
-      If peptide is given, all spectra assigned to this peptide.
-      If protein is given, all spectra assigned to peptides of this
-      protein with specificity 'specificity'.
-      See also \code{\link[isobar]{ProteinGroup}}.
-    }
     \item{\code{spectrumTitles(x,...)}:}{
       Gets the spectrum titles. '...' is passed down to spectrumSel.
     }
@@ -215,6 +202,25 @@
   }
 }
 
+\section{Methods}{
+  In the following code snippets, \code{x} is a IBSpectra object.
+
+  \describe{
+    \item{\code{subsetIBSpectra(x, protein=NULL, peptide=NULL, direction="exclude",specificity)}:}{
+      Get a 'subset' of IBSpectra: include or exclude proteins
+      or peptides. When selection  is based on proteins, it can be
+      defined to exclude only peptides which are specific to the protein
+      ('reporter-specific'), specific to the group ('group-specific') or
+      which are shared with other proteins ('unspecific').
+    }
+    \item{\code{spectrumSel(x,peptide,protein,specificity="reporter-specific")}:}{
+      Gets a boolean vector selecting the corresponding spectra:
+      If peptide is given, all spectra assigned to this peptide.
+      If protein is given, all spectra assigned to peptides of this
+      protein with specificity 'specificity'.
+      See also \code{\link[isobar]{ProteinGroup}}.
+    }
+}
 \author{Florian P. Breitwieser}
 
 \seealso{

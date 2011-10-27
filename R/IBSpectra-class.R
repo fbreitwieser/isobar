@@ -375,7 +375,7 @@ setMethod("readIBSpectra",
              mapping.file=NULL,mapping=c(peaklist=1,id=2),
              mapping.file.readopts=list(header=TRUE,stringsAsFactors=FALSE,sep=","),
              peaklist.format=NULL,id.format=NULL,fragment.precision=NULL,fragment.outlier.prob=NULL,
-             revert.titles=FALSE) {
+             revert.titles=FALSE,scan.lines=0) {
       
       log <- data.frame(key=c(),message=c())
 
@@ -458,7 +458,7 @@ setMethod("readIBSpectra",
           } else {
             intensities.f <- .read.mgf(peaklist.f,type,spectra=id.spectra,
                                        fragment.precision=fragment.precision,
-                                       prob=fragment.outlier.prob)
+                                       prob=fragment.outlier.prob,scan.lines=scan.lines)
           }
           if (nrow(intensities.f$ions) == 0) { stop("only NA data in ions/mass") }
           intensities$spectrumtitles <- 
@@ -687,7 +687,8 @@ read.mzid <- function(f) {
 ##' @return list(ions, mass, spectrumtitles)
 ##' @author Florian P Breitwieser
 .read.mgf <- function(filename,type,spectra=NULL,fragment.precision=0.05,
-                      prob=NULL,substitute.dta=FALSE,check.id.ok=FALSE) {
+                      prob=NULL,substitute.dta=FALSE,check.id.ok=FALSE,
+                      scan.lines=0) {
   if (is.null(fragment.precision)) { fragment.precision=0.05 }
   message("  reading mgf file ",filename,
           " [fragment precision: ",fragment.precision,"]")
@@ -703,13 +704,18 @@ read.mzid <- function(f) {
   ## read (and concatenate if multiple) mgf files
   input <- c()
   for (f in filename) {
-    con <- file(f)
-    if (substitute.dta)
-      input <- c(input,sub(".dta.*$",".dta",readLines(con)))
-    else
+    con <- file(f,'r')
+    if (scan.lines > 0) {
+      while(length(f.input <- readLines(con, n=scan.lines)) > 0){
+        input <- c(input,grep("^[A-Z]|^1[12][0-9]\\.",f.input,value=T))
+      }
+    } else {
       input <- c(input,readLines(con))
+    }
     close(con)
   }
+  if (substitute.dta)
+    input <- sub(".dta.*$",".dta",input)
   
   ## index mgf file content: positions of BEGIN and END IONS
   begin_ions <- which(input=="BEGIN IONS")
