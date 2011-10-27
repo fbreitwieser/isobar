@@ -226,7 +226,7 @@ proteins <- proteins.n.group[order(proteins.n.group$group),"ac"]
 <<proteintbl,echo=FALSE,results=tex>>=
 
 cat("\\small")
-print.longtablehdr("protein",coldef,!is.single.comparision,ncol.p,TRUE)
+print_longtablehdr("protein",coldef,!is.single.comparision,ncol.p,TRUE)
 
 proteins.notquantified <- c()
 

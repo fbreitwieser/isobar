@@ -60,6 +60,7 @@
 \alias{spectrumTitles,IBSpectra-method}
 \alias{spectrumSel}
 \alias{spectrumSel,IBSpectra,missing,missing-method}
+\alias{spectrumSel,IBSpectra,matrix,missing-method}
 \alias{spectrumSel,IBSpectra,character,missing-method}
 \alias{spectrumSel,IBSpectra,missing,character-method}
 \alias{IBSpectraTypes}
