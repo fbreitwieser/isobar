@@ -1,3 +1,11 @@
+CHANGES IN VERSION 0.2.6
+------------------------
+
+ - added option 'scan.lines' to readIBSpectra: read mgf files in parts
+   for large MGF files
+ - use a function for protein reporting
+ - first Bioconductor version!
+
 CHANGES IN VERSION 0.2.5
 ------------------------
 
@@ -56,10 +64,10 @@ CHANGES IN VERSION 0.2.2
 CHANGES IN VERSION 0.2.1
 ------------------------
 
-Bug fix: as.data.frame generated ions/mass colnames with a 'X' in front
+ - Bug fix: as.data.frame generated ions/mass colnames with a 'X' in front
 
 
 CHANGES IN VERSION 0.2
 ----------------------
 
-Published online with JPR Publication
+ - Published online with JPR Publication
