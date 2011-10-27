@@ -23,7 +23,7 @@ p.adjust = NULL, reverse=FALSE, combn=NULL, ...)
 
 combn.matrix(x, method = "global", cl = NULL)
 
-combn.protein.tbl(ibspectra, noise.model, ratiodistr, proteins = NULL, cmbn, peptide = NULL, symmetry = FALSE, reverse = FALSE, variance.function = "maxi", ...)
+combn.protein.tbl(ibspectra, noise.model, ratiodistr, proteins = NULL, cmbn, peptide = NULL, modif = NULL, symmetry = FALSE, reverse = FALSE, variance.function = "maxi", ...)
 
 summarize.ratios(ratios, summarize.method, min.detect, n.combination, strict.sample.pval = TRUE, strict.ratio.pval = TRUE, orient.div = 0, sign.level = 0.05, sign.level.rat = sign.level, sign.level.sample = sign.level, variance.function = "maxi", ratiodistr, p.adjust = NULL)
 
@@ -40,6 +40,7 @@ summarize.ratios(ratios, summarize.method, min.detect, n.combination, strict.sam
   \item{proteins}{proteins for which ratios are calculated - defaults to all 
      proteins with peptides specific to them.}
   \item{peptide}{peptides for which ratios are calculated.}
+  \item{modif}{Modification.}
   \item{cl}{Class labels. See also ?classLabels. }
   \item{method}{"global", "interclass", or "intra-class". Defines which ratios
      are computed, based on class labels cl}

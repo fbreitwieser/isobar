@@ -5,6 +5,8 @@
 % estimateRatio methods
 \alias{estimateRatio}
 \alias{estimateRatio,IBSpectra,ANY,character,character,character,missing-method}
+\alias{estimateRatio,IBSpectra,ANY,character,character,missing,matrix-method}
+\alias{estimateRatio,IBSpectra,ANY,character,character,NULL,matrix-method}
 \alias{estimateRatio,IBSpectra,ANY,character,character,character,NULL-method}
 \alias{estimateRatio,IBSpectra,ANY,character,character,missing,character-method}
 \alias{estimateRatio,IBSpectra,ANY,character,character,NULL,character-method}
