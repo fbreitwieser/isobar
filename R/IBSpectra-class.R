@@ -498,7 +498,7 @@ setMethod("readIBSpectra",
                         "\tx ... identified spectra\n",
                         "\ty ... mapped spectra\n")
   
-  intensities.f <- .read.mgf(peaklist.f,spectra=id.spectra,...)
+  intensities.f <- .read.mgf(peaklist.f,...)
   spectra.map <- .as.vect(mapping.quant2id,"id","peaklist")
 
   .stopiflengthnotequal(intensities.f$spectrumtitles,
