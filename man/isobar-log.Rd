@@ -9,12 +9,11 @@
     Log functions for IBSpectra objects
 }
 \description{
-    The slot log of IBSpectra objects contains a matrix with
+    The slot \code{log} of \code{IBSpectra} objects contains a matrix with
     two columns which contain a timestamp and message. Rownames
     relate to the item logged. 
 
-    For now, correctIsotopeImpurities and normalize use and write
-    to the log.
+    Used by \code{\link{correctIsotopeImpurities}} and \code{\link{normalize}}.
 }
 \usage{
 do.log(x, name, msg)
@@ -24,7 +23,6 @@ get.log(x, name)
 is.logged(x, name)
 
 }
-%- maybe also 'usage' for other objects documented here.
 \arguments{
   \item{x}{IBSpectra object}
   \item{name}{Name of property to be logged (translates to row name).}
@@ -35,7 +33,8 @@ is.logged(x, name)
     is logged again.
 }
 \value{
-    IBSpectra object with updated log.
+    do.log:  IBSpectra object with updated log.
+    get.log: 
 }
 \author{Florian P Breitwieser}
 
