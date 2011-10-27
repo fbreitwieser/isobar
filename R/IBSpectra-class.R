@@ -410,6 +410,7 @@ setMethod("readIBSpectra",
       if (revert.titles) {
         data[,.SPECTRUM.COLS['SPECTRUM']] <- .escape.url(data[,.SPECTRUM.COLS['SPECTRUM']],FALSE)
       }
+      data[,.SPECTRUM.COLS['SPECTRUM']] <- .trim(data[,.SPECTRUM.COLS['SPECTRUM']])
 
       ## mapping
       mapping.quant2id <- data.frame()
