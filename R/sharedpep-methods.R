@@ -4,7 +4,7 @@
 .proteins.w.shared.peptides <- function(protein.group) {
   proteins.w.shared.pep = lapply(reporterProteins(protein.group), function(reporter.protein.g) {    
     gmp <- groupMemberPeptides(protein.group,reporter.protein.g,TRUE)           
-    reporter.sp.sel <- gmp$peptide.info$specificity == "reporter-specific"      
+    reporter.sp.sel <- gmp$peptide.info$specificity == REPORTERSPECIFIC      
     quant.sel <- gmp$peptide.info$n.shared.groups == 1 &                        
                  gmp$peptide.info$n.shared.proteins == 2                        
     gd.proteins <- apply(gmp$group.member.peptides[quant.sel,,drop=FALSE],2,any)         
@@ -36,7 +36,7 @@ shared.ratios <- function(ibspectra,noise.model,channel1,channel2,...) {
   protein.group <- proteinGroup(ibspectra)
   l <- lapply(reporterProteins(protein.group), function(reporter.protein.g) {    
     gmp <- groupMemberPeptides(protein.group,reporter.protein.g,TRUE)           
-    reporter.sp.sel <- gmp$peptide.info$specificity == "reporter-specific"      
+    reporter.sp.sel <- gmp$peptide.info$specificity == REPORTERSPECIFIC      
     quant.sel <- gmp$peptide.info$n.shared.groups == 1 &                        
                  gmp$peptide.info$n.shared.proteins == 2                        
     gd.proteins <- apply(gmp$group.member.peptides[quant.sel,,drop=FALSE],2,any)

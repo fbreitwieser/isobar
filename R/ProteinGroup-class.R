@@ -47,6 +47,11 @@ setClass("ProteinGroup",
  
 setValidity("ProteinGroup", .valid.ProteinGroup)
 
+UNSPECIFIC="unspecific"
+GROUPSPECIFIC="group-specific"
+REPORTERSPECIFIC="reporter-specific"
+PROTEINSPECIFIC="protein-specific"
+SPECIFICITIES=c(UNSPECIFIC,GROUPSPECIFIC,REPORTERSPECIFIC)
 
 ### - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 ### Constructor and readProteinGroup.
@@ -224,9 +229,9 @@ setMethod("ProteinGroup",signature(from="data.frame",template="missing",proteinI
       
       peptideSpecificity <- .factor.as.character(ddply(tmp,"peptide",function(d) {
             data.frame(specificity=
-                    ifelse(length(unique(d[,"protein.g"]))==1,"reporter-specific",
-                    ifelse(length(unique(d[,"reporter.protein"]))==1,"group-specific",
-                    "unspecific")),
+                    ifelse(length(unique(d[,"protein.g"]))==1,REPORTERSPECIFIC,
+                    ifelse(length(unique(d[,"reporter.protein"]))==1,GROUPSPECIFIC,
+                    UNSPECIFIC)),
                        n.shared.proteins=length(unique(d[,"protein.g"])),
                        n.shared.groups=length(unique(d[,"reporter.protein"])),
               stringsAsFactors=FALSE)
@@ -411,7 +416,7 @@ setMethod("peptides",signature(x="ProteinGroup",protein="missing"),
 
 setMethod("peptides",signature(x="ProteinGroup",protein="character"),
     function(x,protein,
-             specificity=c("unspecific","group-specific","reporter-specific"),
+             specificity=c(UNSPECIFIC,GROUPSPECIFIC,REPORTERSPECIFIC),
              columns=c('peptide'),set=union,drop=TRUE,do.warn=TRUE) {
 
       pnp <- peptideNProtein(x)
@@ -524,8 +529,8 @@ get.pep.group <- function(x,protein) {
 
   message(protein)
   speci <- rep(3,length(pep.specificity$peptide))
-  speci[pep.specificity$specificity=="group-specific"] <-  2
-  speci[pep.specificity$specificity=="reporter-specific"] <- 1
+  speci[pep.specificity$specificity==GROUPSPECIFIC] <-  2
+  speci[pep.specificity$specificity==REPORTERSPECIFIC] <- 1
   names(speci) <- pep.specificity$peptide
 
   protein.group <- protein.group.table[protein.group.table$reporter.protein==protein,]

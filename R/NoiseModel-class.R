@@ -139,7 +139,7 @@ setMethod("initialize","NoiseModel",
           pnp <- peptideNProtein(pg)
           pepnprot <- as.data.frame(pnp[pnp[,'peptide'] %in% 
               peptides(pg,protein=reporterProteins(pg),
-                       specificity="reporter-specific"),],
+                       specificity=REPORTERSPECIFIC),],
               stringsAsFactors=FALSE)
           
           pepnspec <-

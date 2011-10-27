@@ -385,7 +385,7 @@ setMethod("estimateRatioNumeric",signature(channel1="numeric",channel2="numeric"
 }
 
 estimateRatioForProtein <- function(protein,ibspectra,noise.model,channel1,channel2,
-        combine=TRUE,method="isobar",quant.w.grouppeptides=NULL,...) {
+        combine=TRUE,method="isobar",specificity=REPORTERSPECIFIC,quant.w.grouppeptides=NULL,...) {
       if (combine) {
         if (method == "multiq" || method == "libra" || method=="pep") {
           ## first compute peptide ratios, summarize then
@@ -430,9 +430,7 @@ estimateRatioForProtein <- function(protein,ibspectra,noise.model,channel1,chann
       } else {
         res <- do.call(rbind,lapply(protein,function(individual.protein) {
              if (individual.protein %in% quant.w.grouppeptides) 
-               specificity <- c("group-specific","reporter-specific")
-             else
-               specificity <- "reporter-specific"
+               specificity <- c(GROUPSPECIFIC,specificity)
 
              .call.estimateRatio(individual.protein,"protein",ibspectra,
                                 noise.model,channel1,channel2,method=method,...,
@@ -497,7 +495,7 @@ setMethod("estimateRatio",
 
 ### Helper function to estimateRatioNumeric
 .call.estimateRatio <- function(x,level,ibspectra,noise.model,
-                               channel1,channel2,specificity="reporter-specific",...) {
+                               channel1,channel2,specificity=REPORTERSPECIFIC,...) {
   if (is.null(channel1) || is.null(channel2))
     stop("channel1 and channel2 must not be NULL, but one of [",paste(reporterNames(ibspectra),collapse=", "),"] !")
   if (length(channel1) == 0 || length(channel1) > 1 || length(channel2) == 0 || length(channel2) > 1)

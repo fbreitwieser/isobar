@@ -1000,7 +1000,7 @@ setMethod("spectrumSel",signature(x="IBSpectra",peptide="character",protein="mis
 )
 
 setMethod("spectrumSel",signature(x="IBSpectra",peptide="missing",protein="character"),
-    function(x,protein,specificity="reporter-specific",spectrum.titles=FALSE) {
+    function(x,protein,specificity=REPORTERSPECIFIC,spectrum.titles=FALSE) {
       peptides <- peptides(x=proteinGroup(x),protein=protein,specificity=specificity,do.warn=FALSE)
       if (length(peptides) == 0)
         return(FALSE)
@@ -1089,10 +1089,10 @@ normalize <- function(x,f=median,target="intensity",exclude.protein=NULL,
        
        if (!is.null(exclude.protein))
          ri <- ri[!spectrumSel(x,protein=exclude.protein,
-                               specificity=c("reporter-specific","group-specific","unspecific")),]
+                               specificity=c(REPORTERSPECIFIC,GROUPSPECIFIC,UNSPECIFIC)),]
 
        if (!is.null(use.protein))
-         ri <- ri[spectrumSel(x,protein=use.protein,specificity="reporter-specific"),]
+         ri <- ri[spectrumSel(x,protein=use.protein,specificity=REPORTERSPECIFIC),]
   
        ## TODO: warning when ri is empty
        
@@ -1175,7 +1175,7 @@ setMethod("subtractAdditiveNoise",signature(x="IBSpectra"),
 
 setMethod("exclude",
     signature(x="IBSpectra",protein="character",peptide="ANY"),
-    function(x,protein,peptide=NULL,specificity=c("unspecific","group-specific","reporter-specific")) {
+    function(x,protein,peptide=NULL,specificity=c(UNSPECIFIC,GROUPSPECIFIC,REPORTERSPECIFIC)) {
       
       # select peptides for removal
       sel.peptides <- c(peptides(proteinGroup(x),protein=protein,
@@ -1184,7 +1184,7 @@ setMethod("exclude",
       # select spectra to keep
       sel.spectra <- !spectrumSel(x,peptide=sel.peptides)
       #sel.spectra <- !spectrumSel(x,protein=proteins.to.exclude,
-      #                            specificity=c("reporter-specific","group-specific","unspecific"))
+      #                            specificity=c(REPORTERSPECIFIC,GROUPSPECIFIC,UNSPECIFIC))
       
       # remove spectra from assayData
       for (aden in assayDataElementNames(x)) {
@@ -1205,8 +1205,8 @@ setMethod("exclude",
 
 
 subsetIBSpectra <- function(x, protein=NULL, peptide=NULL, direction="exclude",
-                            specificity=c("reporter-specific","group-specific",
-                                             "unspecific"),...) {
+                            specificity=c(REPORTERSPECIFIC,GROUPSPECIFIC,
+                                             UNSPECIFIC),...) {
 
   if (is.null(protein))
     sel.spectra <- spectrumSel(x,peptide=peptide,...)
@@ -1320,9 +1320,9 @@ setMethod("plotRatio",
         }
       }
       
-      unspecific.spectra.sel    <- names(A) %in% spectrumSel(x,protein=protein,specificity="unspecific")
-      groupspecific.spectra.sel <- names(A) %in% spectrumSel(x,protein=protein,specificity="group-specific")
-      specific.spectra.sel      <- names(A) %in% spectrumSel(x,protein=protein,specificity="reporter-specific")
+      unspecific.spectra.sel    <- names(A) %in% spectrumSel(x,protein=protein,specificity=UNSPECIFIC)
+      groupspecific.spectra.sel <- names(A) %in% spectrumSel(x,protein=protein,specificity=GROUPSPECIFIC)
+      specific.spectra.sel      <- names(A) %in% spectrumSel(x,protein=protein,specificity=REPORTERSPECIFIC)
         
       points(A[unspecific.spectra.sel],M[unspecific.spectra.sel],pch=pch.p,col="yellow",...)
       points(A[groupspecific.spectra.sel],M[groupspecific.spectra.sel],pch=pch.p,col="orange",...)
@@ -1552,10 +1552,10 @@ setMethod("maplot",
                    cp.legend.col <- c(cp.legend.col,p.col)
 
                    protein.sel <- names(A) %in% spectrumSel(x,protein=protein,
-                                                            specificity=c("group-specific","reporter-specific"),
+                                                            specificity=c(GROUPSPECIFIC,REPORTERSPECIFIC),
                                                             spectrum.titles=TRUE)
 
-                   protein.us.sel <- names(A) %in% spectrumSel(x,protein=protein,specificity="unspecific",
+                   protein.us.sel <- names(A) %in% spectrumSel(x,protein=protein,specificity=UNSPECIFIC,
                                                                 spectrum.titles=TRUE)
 
 
@@ -1564,9 +1564,9 @@ setMethod("maplot",
                 }
                 legend("topright",legend=cp.legend,col=cp.legend.col,pch=pch.p)
               } else {
-                unspecific.spectra.sel    <- names(A) %in% spectrumSel(x,protein=colorize.protein,specificity="unspecific",spectrum.titles=T)
-                groupspecific.spectra.sel <- names(A) %in% spectrumSel(x,protein=colorize.protein,specificity="group-specific",spectrum.titles=T)
-                specific.spectra.sel      <- names(A) %in% spectrumSel(x,protein=colorize.protein,specificity="reporter-specific",spectrum.titles=T)
+                unspecific.spectra.sel    <- names(A) %in% spectrumSel(x,protein=colorize.protein,specificity=UNSPECIFIC,spectrum.titles=T)
+                groupspecific.spectra.sel <- names(A) %in% spectrumSel(x,protein=colorize.protein,specificity=GROUPSPECIFIC,spectrum.titles=T)
+                specific.spectra.sel      <- names(A) %in% spectrumSel(x,protein=colorize.protein,specificity=REPORTERSPECIFIC,spectrum.titles=T)
                 other.sel <- !unspecific.spectra.sel & !groupspecific.spectra.sel & !specific.spectra.sel
               
                 points(A[unspecific.spectra.sel],M[unspecific.spectra.sel],pch=pch.p,col="yellow",...)
@@ -1945,8 +1945,8 @@ initialize.report <- function(properties.file="properties.conf",args=commandArgs
     collapsed.gene_name <- human.protein.names(reporter.protein.info)
 
     peptides <- peptides(protein.group,protein=x,do.warn=FALSE)
-    peptides.gs <- peptides(protein.group,protein=x,specificity="group-specific",do.warn=FALSE)
-    peptides.rs <- peptides(protein.group,protein=x,specificity="report-specific",do.warn=FALSE)
+    peptides.gs <- peptides(protein.group,protein=x,specificity=GROUPSPECIFIC,do.warn=FALSE)
+    peptides.rs <- peptides(protein.group,protein=x,specificity=REPORTERSPECIFIC,do.warn=FALSE)
     n.spectra <- length(names(spectrumToPeptide(protein.group))[spectrumToPeptide(protein.group)%in%peptides])
 
     tbl.protein.name <- sort(collapsed.gene_name$protein_name)[1];
@@ -1984,7 +1984,7 @@ initialize.report <- function(properties.file="properties.conf",args=commandArgs
                  Description=proteinInfo(protein.group,protein.tbl$protein,"protein_name"),
                  Gene=proteinInfo(protein.group,protein.tbl$protein,"gene_name"),
                  "Unique peptides"=sapply(protein.tbl$protein,function(p)
-                   length(peptides(protein.group,protein=as.character(p),specificity="reporter-specific",do.warn=FALSE))),
+                   length(peptides(protein.group,protein=as.character(p),specificity=REPORTERSPECIFIC,do.warn=FALSE))),
                  "Unique.peptide.matches"=protein.tbl$n.spectra,stringsAsFactors=FALSE)
     ##xls.protein.tbl <- xls.protein.tbl[order(xls.protein.tbl$n,-xls.protein.tbl$Unique.peptide.matches),]
     ##xls.protein.tbl <- xls.protein.tbl[order(-xls.protein.tbl$Unique.peptide.matches, xls.protein.tbl$ID),]
@@ -1993,7 +1993,7 @@ initialize.report <- function(properties.file="properties.conf",args=commandArgs
         ri <- reporterIntensities(ib)
         t(sapply(proteins,
                  function(p) {
-                   sel <- spectrumSel(ib,protein=as.character(p),specificity="reporter-specific")
+                   sel <- spectrumSel(ib,protein=as.character(p),specificity=REPORTERSPECIFIC)
                    if(sum(sel) < 2)
                      ri[sel,]
                    else
