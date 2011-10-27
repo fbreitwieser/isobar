@@ -851,7 +851,7 @@ setAs("IBSpectra","data.frame",
       fdata.df[,.SPECTRUM.COLS['PEPTIDE']] <- NULL
 
       # merge data.frames
-      res <- unique(merge(pg.df,fdata.df,by=.SPECTRUM.COLS['SPECTRUM'],all=TRUE))
+      res <- unique(merge(pg.df,fdata.df,by=.SPECTRUM.COLS['SPECTRUM'],all.y=TRUE,sort=FALSE))
 
       # return in order
       res[order(res[,.PROTEIN.COLS['PROTEINAC']],res[,.PEPTIDE.COLS['STARTPOS']],res[,.SPECTRUM.COLS['PEPTIDE']]),
@@ -875,7 +875,7 @@ setAs("IBSpectra","data.frame.concise",
       fdata.df <- cbind(fData(from),rm,ri)
 
       # merge data.frames
-      res <- unique(merge(pg.df,fdata.df,by=.SPECTRUM.COLS['PEPTIDE'],all=TRUE))
+      res <- unique(merge(pg.df,fdata.df,by=.SPECTRUM.COLS['PEPTIDE'],all=TRUE,sort=FALSE))
 
       # return in order
       res[order(res[,.PROTEIN.COLS['PROTEINAC_CONCISE']],res[,.SPECTRUM.COLS['PEPTIDE']]),
