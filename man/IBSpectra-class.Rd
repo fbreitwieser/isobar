@@ -55,7 +55,7 @@
 \alias{classLabels<-,IBSpectra-method}
 
 % Util methods:
-\alias{subsetIBSpectra}
+
 \alias{spectrumTitles}
 \alias{spectrumTitles,IBSpectra-method}
 \alias{spectrumSel}
@@ -211,8 +211,7 @@
       or peptides. When selection  is based on proteins, it can be
       defined to exclude only peptides which are specific to the protein
       ('reporter-specific'), specific to the group ('group-specific') or
-      which are shared with other proteins ('unspecific').
-    }
+      which are shared with other proteins ('unspecific'). See \code{\link{subsetIBSpectra}}.}
     \item{\code{spectrumSel(x,peptide,protein,specificity="reporter-specific")}:}{
       Gets a boolean vector selecting the corresponding spectra:
       If peptide is given, all spectra assigned to this peptide.
@@ -220,6 +219,7 @@
       protein with specificity 'specificity'.
       See also \code{\link[isobar]{ProteinGroup}}.
     }
+}
 }
 \author{Florian P. Breitwieser}
 

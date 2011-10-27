@@ -53,7 +53,7 @@
 
 \section{Constructor}{
   \describe{
-    \item{\code{new(type,ibspectra,reporterNames=NULL,one.to.one=TRUE,min.spectra=10,plot=F,
+    \item{\code{new(type,ibspectra,reporterNames=NULL,one.to.one=TRUE,min.spectra=10,plot=FALSE,
                     pool=FALSE)}:}{
     Creates a new NoiseModel object based on ibspectra object.
       \describe{
@@ -106,7 +106,7 @@ nm.i <- new("InverseNoiseModel",ibspiked_set1.noceru)
 nm.e <- new("ExponentialNoiseModel",ibspiked_set1.noceru)
 
 #learn on non-one.to.one data: not normalized, with spiked proteins
-nm.n <- new("ExponentialNoiseModel",ibspiked_set1.justceru,one.to.one=F)
+nm.n <- new("ExponentialNoiseModel",ibspiked_set1.justceru,one.to.one=FALSE)
 
 maplot(ibspiked_set1,noise.model=c(nm.e,nm.i,nm.n),ylim=c(0.1,10))
 

@@ -1,7 +1,16 @@
 \name{isobar-reports}
 
 \alias{isobar-reports}
-\alias{initialize.report}
+\alias{connect.nodes}
+\alias{create.reports}
+\alias{draw.boxplot}
+\alias{draw.protein.group}
+\alias{initialize.env}
+\alias{load.properties}
+\alias{modifs}
+\alias{print_longtablehdr}
+\alias{tikz.proteingroup}
+\alias{write.xls.report}
 
 \title{Isobar reports}
 
@@ -13,8 +22,7 @@
 }
 
 \usage{
-  initialize.report(properties.file = "properties.conf",
-                    args = commandArgs(TRUE), env = .GlobalEnv)
+create.reports(properties.file = "properties.R", args, report.type = "protein", compile = FALSE)
 }
 
 \arguments{
@@ -23,7 +31,8 @@
     etc. See \code{system.file("report","properties.conf",package="isobar")} for 
     a full set of possible values. It is parsed using \code{\link{sys.source}}.}
   \item{args}{Additional parameters which overrids those in \code{properties.file}. }
-  \item{env}{Environment to which the results are written.}
+  \item{report.type}{Currently, only protein is implemented.}
+  \item{compile}{Compile LaTeX source to PDF?}
 }
 
 \details{
@@ -40,14 +49,12 @@
     the working directory.}
     \item{isobar-qc.Rnw}{Quality control Sweave file.}
     \item{isobar-analysis.Rnw}{Data analysis Sweave file.}
-    \item{properties.conf}{Default configuration for data analysis.}
-    \item{report-utils.R}{Helper functions which are used in the Sweave files
-    and generate TeX output}
+    \item{properties.R}{Default configuration for data analysis.}
     \item{report-utils.tex}{LaTeX functions for plotting tikz graphics, etc.}
   }
 }
 
-\author{Florian P. Breitwieser, Jacques Colinge}
+\author{Florian P. Breitwieser}
 
 \seealso{
   \link{IBSpectra},

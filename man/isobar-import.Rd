@@ -28,7 +28,7 @@ peaklist.file,
               mapping.file.readopts = list(header=TRUE,stringsAsFactors=FALSE,sep=","),
               peaklist.format = NULL, id.format = NULL,
               fragment.precision = NULL,fragment.outlier.prob = NULL,
-              revert.titles = FALSE, scan.number = NULL)
+              revert.titles = FALSE, scan.lines = 0)
 }
 
 \arguments{
@@ -90,8 +90,8 @@ peaklist.file,
     escaped - \%20 instead of space, etc. Set revert.titles to TRUE to
     map these titles to the unescaped MGF titles.
   }
-  \item{scan.number}{
-    Read files sequentially scan.number lines at a time. Can help in
+  \item{scan.lines}{
+    Read files sequentially scan.lines lines at a time. Can help in
     case of memory issues, set to 10000 or higher, for example.
   }
 }
