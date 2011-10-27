@@ -1,7 +1,22 @@
 % vim: set expandtab ts=3 sw=3:
 
 <<initialization,echo=FALSE,results=hide>>=
-  library(distr)
+ 
+suppressPackageStartupMessages(library(distr))
+suppressPackageStartupMessages(library(isobar))
+
+if (!exists("properties.env",inherits=FALSE)) {
+  stop("No properties.env?")
+  properties.env <- load.properties()
+}
+needed.objects <- c('ibspectra','noise.model','quant.tbl','ratiodistr')
+if (!all(needed.objects %in% objects())) {
+  message("Initializing environment ...")
+  initialize.env(.GlobalEnv,"protein",properties.env)
+}
+
+get.property <- function(name) { get(name,properties.env,inherits=FALSE) }
+
 @
 \SweaveOpts{eps=FALSE}
 \documentclass[11pt,oneside]{article}
@@ -24,8 +39,8 @@
 \cfoot{\thepage}
 
 <<echo=FALSE,results=tex>>=
-cat("\\newcommand{\\analysisname}{",sanitize(properties.env$name),"}")
-cat("\\newcommand{\\analysisauthor}{",sanitize(properties.env$author),"}")
+cat("\\newcommand{\\analysisname}{",sanitize(get.property('name')),"}")
+cat("\\newcommand{\\analysisauthor}{",sanitize(get.property('author')),"}")
 @
 
 \rfoot{Isobar QC Report \analysisname}
@@ -71,17 +86,17 @@ dev.off()
 @
 \includegraphics{fig_maplot}
 
-\section{Protein Ratio distribution}
+\section{Ratio distribution}
 <<show-ratiodistribution,echo=FALSE>>=
 ratiodistr
 @
 <<fig-ratiodistribution,fig=TRUE,echo=FALSE,width=4,height=3>>=
-#protein.tbl$ratio <- 10^ protein.tbl$lratio
-limits <- seq(from=min(protein.tbl$lratio,na.rm=TRUE),to=max(protein.tbl$lratio,na.rm=TRUE),length.out=1000)
+#quant.tbl$ratio <- 10^ quant.tbl$lratio
+limits <- seq(from=min(quant.tbl$lratio,na.rm=TRUE),to=max(quant.tbl$lratio,na.rm=TRUE),length.out=1000)
 breaks=c(0.1,0.25,0.5,1,2,3,4,5,10)
 
 curve.distr <- data.frame(x=limits,y=d(ratiodistr)(limits))
-g <- ggplot(protein.tbl,aes(x=lratio)) +
+g <- ggplot(quant.tbl,aes(x=lratio)) +
   geom_histogram(colour = "darkgreen", fill = "white",
                  aes(y=..density..),alpha=0.8,binwidth=1/30*(max(limits)-min(limits))) +
   geom_rug(alpha=0.1) +
@@ -95,11 +110,11 @@ print(g)
 <<fig-ratio-variance,fig=TRUE,echo=FALSE,width=5,height=4,eval=FALSE>>=
 #if (ep("preselected.proteins"))
 
-protein.tbl <- merge(protein.tbl,ddply(protein.tbl,"sign.string",nrow),all.x=TRUE,by="sign.string")
-protein.tbl$sign <- paste(protein.tbl$sign.string,": ",protein.tbl$V1,sep="")
-#message(paste(unique(protein.tbl$sign),collapse="\n"))
+quant.tbl <- merge(quant.tbl,ddply(quant.tbl,"sign.string",nrow),all.x=TRUE,by="sign.string")
+quant.tbl$sign <- paste(quant.tbl$sign.string,": ",quant.tbl$V1,sep="")
+#message(paste(unique(quant.tbl$sign),collapse="\n"))
 
-g <- ggplot(protein.tbl,aes(x=lratio,y=sqrt(variance))) +
+g <- ggplot(quant.tbl,aes(x=lratio,y=sqrt(variance))) +
   geom_point(aes(colour=factor(sign),shape=factor(sign)),alpha=0.8) +
   geom_rug(alpha=0.1) + scale_shape(solid=FALSE) + theme_bw()
 print(g)

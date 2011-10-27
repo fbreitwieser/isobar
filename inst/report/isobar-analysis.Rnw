@@ -4,14 +4,27 @@
 # initializes the correct data objects to be used in the report.
 options(SweaveHooks=list(fig=function()
          par(mar=c(5.1, 4.1, 1.1, 2.1))))
+
+suppressPackageStartupMessages(library(isobar))
+
+if (!exists("properties.env")) {
+  stop("no properties.env??")
+  properties.env <- load.properties()
+}
+needed.objects <- c('ibspectra','noise.model','quant.tbl','ratiodistr')
+if (!all(needed.objects %in% objects())) {
+  initialize.env(.GlobalEnv,"protein",properties.env)
+}
+
+get.property <- function(name) { get(name,properties.env,inherits=FALSE) }
 @
 
 \SweaveOpts{eps=FALSE}
 \documentclass[10pt,oneside]{article}
 
 \usepackage{amsmath}
-\usepackage{amsfonts}
-\usepackage{amssymb}
+%\usepackage{amsfonts}
+%\usepackage{amssymb}
 \usepackage[margin=2cm]{geometry}
 \usepackage{graphicx}
 \usepackage{verbatim}
@@ -34,9 +47,10 @@ options(SweaveHooks=list(fig=function()
 %\setlength{\tabcolsep}{5pt} %default value: 6pt
 
 <<echo=FALSE,results=tex>>=
-cat("\\newcommand{\\analysisname}{",sanitize(properties.env$name),"}")
-cat("\\newcommand{\\analysisauthor}{",sanitize(properties.env$author),"}")
+cat("\\newcommand{\\analysisname}{",sanitize(get.property('name')),"}")
+cat("\\newcommand{\\analysisauthor}{",sanitize(get.property('author')),"}")
 @
+
 \newcommand{\rr}{\raggedright}
 \newcolumntype{x}[1]{>{\raggedright}p{#1}}
 \newcommand{\tn}{\tabularnewline}
@@ -62,7 +76,7 @@ cat("\\newcommand{\\analysisauthor}{",sanitize(properties.env$author),"}")
 \bibliography{isobar}
 \bibliographystyle{plain}
 
-\title{Isobaric Tag Data Analysis Report\\ \analysisname}
+\title{Isobaric Tag Analysis Report\\ \analysisname}
 \author{\analysisauthor}
 \date{\today}
 \raggedbottom
@@ -82,24 +96,27 @@ cat(sprintf("\\newcommand{\\bnd}{%s}",bnd),"\n")
 cat(sprintf("\\newcommand{\\bndt}{%s}\n",bndt),"\n")
 cat(sprintf("\\input{%s}\n",system.file("report","report-utils.tex",package="isobar")))
 
-cmbn <- t(unique(protein.tbl[,c("r1","r2")]))
+cmbn <- t(unique(quant.tbl[,c("r1","r2")]))
 is.single.comparision <- ncol(cmbn) ==1
 
 if (is.single.comparision) {
-    name.w <- "8cm"
-    coldef <- "@{}rp{8cm}rrrrr@{}r@{}r@{}"
-    coldef.s <- "@{}rp{8cm}rrrrr@{}r@{}"
-    ncol.p <- 9
+  name.w <- "8cm"
+  coldef <- "@{}rp{8cm}rrrrr@{}r@{}r@{}"
+  coldef.s <- "@{}rp{8cm}rrrrr@{}r@{}"
+  ncol.p <- 9
+  mr <- function(text,width=NULL) text  
 } else {
-    name.w <- "5cm"
-    coldef <- "@{}rp{5cm}rrrrrrrr@{}r@{}"
-    coldef.s <- "@{}rp{5cm}rrrrrrrr@{}"
-    ncol.p <- 11
+  name.w <- "5cm"
+  coldef <- "@{}rp{5cm}rrrrrrrr@{}r@{}"
+  coldef.s <- "@{}rp{5cm}rrrrrrrr@{}"
+  ncol.p <- 11
+  mr <- function(text,width="*")
+    sprintf("\\multirow{%s}{%s}{%s}",ncol(cmbn),width,text)  
 }
 @
 
 <<echo=FALSE,results=tex>>=
-cl <- attr(protein.tbl,"classLabels")
+cl <- attr(quant.tbl,"classLabels")
 if (!is.null(cl)) {
   cat("\\begin{tabular}{rr}\n")
   cat("\\multicolumn{2}{c}{Class Labels} \\bigstrut \\\\ \n")
@@ -131,16 +148,15 @@ if (is.single.comparision) {
 }
 
 
-if (any(protein.tbl$is.significant == 1,na.rm=TRUE)) {
-  
+if (any(quant.tbl$is.significant == 1,na.rm=TRUE)) {  
   cat("\\small")
-  print.longtablehdr(coldef.s,!is.single.comparision,ncol.p-1,FALSE)
+  print.longtablehdr("protein",coldef.s,!is.single.comparision,ncol.p-1,FALSE)
   draw.hline <- FALSE
   
   for (cmb_i in seq_len(ncol(cmbn))) {
-    sel <- protein.tbl$r1==cmbn[1,cmb_i] &
-           protein.tbl$r2==cmbn[2,cmb_i] &
-           protein.tbl$is.significant == 1
+    sel <- quant.tbl$r1==cmbn[1,cmb_i] &
+           quant.tbl$r2==cmbn[2,cmb_i] &
+           quant.tbl$is.significant == 1
     sel[is.na(sel)] <- FALSE
     if (any(sel)) {
       if (draw.hline) {
@@ -150,12 +166,12 @@ if (any(protein.tbl$is.significant == 1,na.rm=TRUE)) {
       }
       prot_i <- 1
   
-      proteins <- protein.tbl[sel,"protein"][order(protein.tbl[sel,"lratio"])]
+      proteins <- quant.tbl[sel,"ac"][order(quant.tbl[sel,"lratio"])]
       for (protein in proteins) {
         prot.info <- my.protein.infos[[protein]]
-        protein.row <- protein.tbl[protein.tbl$protein==protein & sel,,drop=FALSE]
-        reporter.peptides <- peptides(pg,protein=protein)
-        n.spectra <- length(names(spectrumToPeptide(pg))[spectrumToPeptide(pg)%in%reporter.peptides])
+        protein.row <- quant.tbl[quant.tbl$ac==protein & sel,,drop=FALSE]
+        reporter.peptides <- peptides(protein.group,protein=protein)
+        n.spectra <- length(names(spectrumToPeptide(protein.group))[spectrumToPeptide(protein.group)%in%reporter.peptides])
         cat("\n")
         cat(" \t",sprintf("\\hyperref[protein.%s]{%s}",
                           protein.row[,"group"],prot_i),
@@ -167,9 +183,10 @@ if (any(protein.tbl$is.significant == 1,na.rm=TRUE)) {
         if (!is.single.comparision) {
             cat(" & ",cmbn[1,cmb_i]," & ",cmbn[2,cmb_i])
         }
-            cat(" & ",sprintf("\\textbf{%.2f}",10^protein.row[1,"lratio"]),
-            " & ",sep=" ")
-        cat(draw.protein.ratio2(protein.row[1,],bnd,diff=TRUE,ratiodistr=ratiodistr))
+            cat(" & ",sprintf("\\textbf{%.2f}",10^protein.row[1,"lratio"]),sep=" ")
+        cat(" & ",draw.boxplot(protein.row[1,'lratio'],
+                               protein.row[1,'sd'],bnd))
+
         cat(" \\\\  \n")
         prot_i <- prot_i + 1
       }
@@ -194,8 +211,8 @@ if (is.single.comparision) {
 
 <<allproteins.init,echo=FALSE,results=hide>>=
 
-proteins.n.group <- unique(protein.tbl[,c('protein','group')])
-proteins <- proteins.n.group$protein[order(proteins.n.group$group)]
+proteins.n.group <- unique(quant.tbl[,c('ac','group')])
+proteins <- proteins.n.group[order(proteins.n.group$group),"ac"]
 
 @
 
@@ -209,19 +226,19 @@ proteins <- proteins.n.group$protein[order(proteins.n.group$group)]
 <<proteintbl,echo=FALSE,results=tex>>=
 
 cat("\\small")
-print.longtablehdr(coldef,!is.single.comparision,ncol.p,TRUE)
+print.longtablehdr("protein",coldef,!is.single.comparision,ncol.p,TRUE)
 
 proteins.notquantified <- c()
 
 message("Writing protein quantifications table ...")
 for (protein in proteins) {
-  protein.rows <- protein.tbl[protein.tbl$protein==protein,,drop=FALSE]
+  protein.rows <- quant.tbl[quant.tbl$ac==protein,,drop=FALSE]
   protein.rows <- protein.rows[order(protein.rows$r1,protein.rows$r2),,drop=FALSE]
   protein.groupnumber <- protein.rows[1,"group"]
   prot.info <- my.protein.infos[[protein]]
 
-  reporter.peptides <- peptides(pg,protein=protein)
-  spectra <- names(spectrumToPeptide(pg))[spectrumToPeptide(pg)%in%reporter.peptides]
+  reporter.peptides <- peptides(protein.group,protein=protein)
+  spectra <- names(spectrumToPeptide(protein.group))[spectrumToPeptide(protein.group)%in%reporter.peptides]
 
   if (all(is.na(protein.rows[,'lratio']))) {
     proteins.notquantified <- c(proteins.notquantified,protein)
@@ -266,7 +283,7 @@ for (protein in proteins) {
       cat(" & ",sprintf("\\textbf{%.2f}",10^protein.rows[i,"lratio"]))
       cat(" & ",ifelse(protein.rows[i,"is.significant"] == 1,"*",""))
       cat(" & ",draw.boxplot(protein.rows[i,'lratio'],
-                             protein.rows[i,'variance'],bnd))
+                             protein.rows[i,'sd'],bnd))
     }
     cat(" \\\\")
     if (i < ncol(cmbn)) cat("*\n")
@@ -293,13 +310,13 @@ cat("\\begin{longtable}{rp{12cm}rrr}",
 "\\endhead",sep="\n")
 
 for (protein in proteins.notquantified) {
-  protein.rows <- protein.tbl[protein.tbl$protein==protein,,drop=FALSE]
+  protein.rows <- quant.tbl[quant.tbl$protein==protein,,drop=FALSE]
   protein.rows <- protein.rows[order(protein.rows$r1,protein.rows$r2),,drop=FALSE]
   protein.groupnumber <- protein.rows[1,"group"]
   prot.info <- my.protein.infos[[protein]]
 
-  reporter.peptides <- peptides(pg,protein=protein)
-  spectra <- names(spectrumToPeptide(pg))[spectrumToPeptide(pg)%in%reporter.peptides]
+  reporter.peptides <- peptides(protein.group,protein=protein)
+  spectra <- names(spectrumToPeptide(protein.group))[spectrumToPeptide(protein.group)%in%reporter.peptides]
 
   protein.names <- prot.info$collapsed.gene_name$protein_name
   gene.names <- c()
@@ -358,7 +375,7 @@ message("Writing protein group details ...")
 colors <- c("blue","red","green","cyan","magenta","yellow")
 prot_i <- 1
 for (reporter.protein.g in proteins) {
-#  protein.name.i <- unique(protein.tbl$latex.protein.name.2[protein.tbl$protein==protein])
+#  protein.name.i <- unique(quant.tbl$latex.protein.name.2[quant.tbl$protein==protein])
   group.section.name <- my.protein.infos[[reporter.protein.g]]$gene.name
   gene.name <- my.protein.infos[[reporter.protein.g]]$gene.name
   if (length(gene.name) == 0 || is.null(gene.name) || 
