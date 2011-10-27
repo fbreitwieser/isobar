@@ -831,15 +831,15 @@ summarize.ratios <-
 
           ## significance
           is.significant <- (p.value.sample <= sign.level.sample) &&
-          (p.value.rat <= sign.level.rat) &&
-          (sum(protein.sel) >= min.detect) &&
-          (is.pos | is.neg)
+            (p.value.rat <= sign.level.rat) &&
+            (sum(protein.sel) >= min.detect) &&
+            (is.pos | is.neg)
 
           return(list(protein=ac,lratio=lratio,variance=variance,
                       n.spectra=min(ratios$n.spectra[protein.sel]),
                       n.pos=n.pos,n.neg=n.neg,
                       p.value.rat=p.value.rat,p.value.sample=p.value.sample,
-                      is.signigicant=is.significant,r1=class1,r2=class2))
+                      is.significant=is.significant,r1=class1,r2=class2))
         }))
       }))
       
