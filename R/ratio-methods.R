@@ -618,7 +618,7 @@ combn.matrix <- function(x,method="global",cl=NULL) {
   return(combn)
 }
 
-# create a table with all protein ratios
+## create a table with all protein ratios
 combn.protein.tbl <- function(ibspectra,noise.model,ratiodistr,
                               proteins=NULL,cmbn,peptide=NULL,
                               symmetry=FALSE,reverse=FALSE,variance.function="maxi",...) {
@@ -637,9 +637,14 @@ combn.protein.tbl <- function(ibspectra,noise.model,ratiodistr,
       r <- t(r)
       rownames(r) <- "prot1"
     }
-    df=as.data.frame(r,stringsAsFactors=F)
-    df$protein <- rownames(df)
-    rownames(df) <- paste(df$protein,paste(x[2],x[1],sep=":"),sep="_")
+    df <- as.data.frame(r,stringsAsFactors=FALSE)
+    df$ac <- rownames(df)
+
+    if (is.matrix(attr(r,"input")))
+      df <- cbind(as.data.frame(attr(r,"input"),stringsAsFactors=FALSE),df)
+    
+    #rownames(df) <- paste(df$ac,paste(x[2],x[1],sep=":"),sep="_")
+    rownames(df) <- NULL
     df$r1 <- x[1]
     df$r2 <- x[2]
     if (length(x) == 4) {
@@ -648,7 +653,7 @@ combn.protein.tbl <- function(ibspectra,noise.model,ratiodistr,
     }
     return(df)
   }))
-  ratios <- ratios[order(ratios$protein,ratios$r1,ratios$r2),]
+  ratios <- ratios[order(ratios$ac,ratios$r1,ratios$r2),]
   
   if (symmetry) {
     ratios.inv <- ratios
@@ -674,6 +679,10 @@ proteinRatios <-
            combine=FALSE,p.adjust=NULL,reverse=FALSE,
            combn=NULL,...) {
 
+    if ((!is.null(proteins) && !is.null(peptide)) ||
+        (is.null(proteins) && is.null(peptide)))
+      stop("supply either protein or peptides!")      
+    
     if (!is.null(p.adjust) && !p.adjust %in% p.adjust.methods)
       stop("p.adjust parameter must be one of '",paste(p.adjust.methods,collapse="','"),"'")
     
@@ -708,7 +717,8 @@ proteinRatios <-
       
       df <- summarize.ratios(ratios,summarize.method,min.detect,n.combination,
                              strict.sample.pval,strict.ratio.pval,orient.div,
-                             sign.level,sign.level.rat,sign.level.sample,variance.function=variance.function,
+                             sign.level,sign.level.rat,sign.level.sample,
+                             variance.function=variance.function,
                              ratiodistr=ratiodistr)
 
       attributes(df) = c(attributes(df),list(
@@ -761,29 +771,29 @@ summarize.ratios <-
     mean.r <- ifelse(is.null(ratiodistr),0,distr::q(ratiodistr)(0.5))
     if (summarize.method == "mult.pval") {
 #      usable <- ratios$p.value.rat <= orient.p.value & !is.na(ratios$lratio)
-#      val.acs <- unique(ratios$protein[usable])
+#      val.acs <- unique(ratios$ac[usable])
       
-      result <- do.call(rbind,lapply(unique(ratios$protein),function(ac) {
-        protein.sel.1 <- (ratios$protein==ac) & !is.na(ratios$lratio)
+      result <- do.call(rbind,lapply(unique(ratios$ac),function(ac) {
+        ac.sel.1 <- (ratios$ac==ac) & !is.na(ratios$lratio)
         do.call(rbind,lapply(seq_len(nrow(classes)),function(class_i) {
           class1 <- classes[class_i,1]
           class2 <- classes[class_i,2]
-          protein.sel <-protein.sel.1 & ratios$class1 == class1 & ratios$class2 == class2
-          if (!any(protein.sel)) {
-            ## no data for protein
-            return(list(protein=ac,lratio=NA,variance=NA,
+          ac.sel <-ac.sel.1 & ratios$class1 == class1 & ratios$class2 == class2
+          if (!any(ac.sel)) {
+            ## no data for ac
+            return(list(ac=ac,lratio=NA,variance=NA,
                               n.spectra=0,n.pos=0,n.neg=0,
                               p.value.rat=1,p.value.sample=1,
                               is.significant=FALSE,r1=class1,r2=class2))
           }
           
-          n.pos <- sum(ratios$lratio[protein.sel]>mean.r,na.rm=T)
-          n.neg <- sum(ratios$lratio[protein.sel]<mean.r,na.rm=T)
+          n.pos <- sum(ratios$lratio[ac.sel]>mean.r,na.rm=T)
+          n.neg <- sum(ratios$lratio[ac.sel]<mean.r,na.rm=T)
           is.pos <- (n.pos > n.neg && n.neg <= orient.div)
           is.neg <- (n.neg > n.pos && n.pos <= orient.div)
 
           ## ratio summarization
-          good.sel <- protein.sel
+          good.sel <- ac.sel
           if (!strict.ratio.pval) {
             ## take only positive/negative spectra for ratio summarization
             if (is.pos) 
@@ -792,22 +802,22 @@ summarize.ratios <-
               good.sel <- good.sel & ratios$lratio<mean.r
           }
 
-          protein.ratios <- ratios$lratio[good.sel]
-          protein.vars <- ratios$variance[good.sel]
+          ac.ratios <- ratios$lratio[good.sel]
+          ac.vars <- ratios$variance[good.sel]
           
-          sample.var <- weightedVariance(protein.ratios,weights=1/protein.vars)
-          estim.var <- 1/sum(1/protein.vars)
+          sample.var <- weightedVariance(ac.ratios,weights=1/ac.vars)
+          estim.var <- 1/sum(1/ac.vars)
           
           variance <- switch(variance.function,
                              maxi = max(estim.var,sample.var,na.rm=T),
                              ev = estim.var,
                              wsv = sample.var
                              )  
-          lratio <- weightedMean(protein.ratios,weights=1/protein.vars)
+          lratio <- weightedMean(ac.ratios,weights=1/ac.vars)
           
           if (is.null(ratiodistr))
-            return(list(protein=ac,lratio=lratio,variance=variance,
-                              n.spectra=min(ratios$n.spectra[protein.sel]),
+            return(list(ac=ac,lratio=lratio,variance=variance,
+                              n.spectra=min(ratios$n.spectra[ac.sel]),
                               n.pos=n.pos,n.neg=n.neg,p.value.rat=NA,p.value.sample=NA,
                               is.significant=NA,r1=class1,r2=class2))
 
@@ -820,23 +830,23 @@ summarize.ratios <-
           }
           
           product.p.vals <-
-            prod(p(ratiodistr)(protein.ratios,lower.tail=n.neg>n.pos))
+            prod(p(ratiodistr)(ac.ratios,lower.tail=n.neg>n.pos))
         
           if (strict.sample.pval) {
-            p.value.sample <- getMultUnifPValues(product.p.vals*0.5^(n.combination-sum(protein.sel)),n=n.combination)
+            p.value.sample <- getMultUnifPValues(product.p.vals*0.5^(n.combination-sum(ac.sel)),n=n.combination)
           } else {
             p.value.sample <- getMultUnifPValues(product.p.vals,
-                                                 n=sum(protein.sel))
+                                                 n=sum(ac.sel))
           }
 
           ## significance
           is.significant <- (p.value.sample <= sign.level.sample) &&
             (p.value.rat <= sign.level.rat) &&
-            (sum(protein.sel) >= min.detect) &&
+            (sum(ac.sel) >= min.detect) &&
             (is.pos | is.neg)
 
-          return(list(protein=ac,lratio=lratio,variance=variance,
-                      n.spectra=min(ratios$n.spectra[protein.sel]),
+          return(list(ac=ac,lratio=lratio,variance=variance,
+                      n.spectra=min(ratios$n.spectra[ac.sel]),
                       n.pos=n.pos,n.neg=n.neg,
                       p.value.rat=p.value.rat,p.value.sample=p.value.sample,
                       is.significant=is.significant,r1=class1,r2=class2))
@@ -846,12 +856,12 @@ summarize.ratios <-
       return(do.call(rbind,apply(result,1,as.data.frame,stringsAsFactors=FALSE)))
       
     } else if (summarize.method=="mean") {
-      do.call(rbind,lapply(unique(ratios$protein),function(ac) {
-        protein.sel <- (ratios$protein==ac) & !is.na(ratios$lratio)
-        if (!any(protein.sel)) {
-            return(data.frame(protein=ac,lratio=NA,stringsAsFactors=FALSE))
+      do.call(rbind,lapply(unique(ratios$ac),function(ac) {
+        ac.sel <- (ratios$ac==ac) & !is.na(ratios$lratio)
+        if (!any(ac.sel)) {
+            return(data.frame(ac=ac,lratio=NA,stringsAsFactors=FALSE))
         }
-        return(data.frame(protein=ac,lratio=mean(ratios$lratio[protein.sel]),stringsAsFactors=FALSE))
+        return(data.frame(ac=ac,lratio=mean(ratios$lratio[ac.sel]),stringsAsFactors=FALSE))
 
       }))
 
