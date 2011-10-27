@@ -288,8 +288,8 @@ setMethod("initialize","IBSpectra",
           reporterMasses <- .Object@reporterMasses
           min.masses <- reporterMasses - fragment.precision/2
           max.masses <- reporterMasses + fragment.precision/2
-          for (i in seq_len(nrow(mass))) {
-            bad.mass <- assayDataElements$mass[i,]<min.masses | mass[i,] > max.masses
+          for (i in seq_len(nrow(assayDataElements$mass))) {
+            bad.mass <- assayDataElements$mass[i,]<min.masses |  assayDataElements$mass[i,] > max.masses
             if (any(bad.mass,na.rm=TRUE)) {
               for (elem in names(assayDataElements)) {
                 assayDataElements[[elem]][i,bad.mass] <- NA
