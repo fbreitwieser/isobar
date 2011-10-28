@@ -697,7 +697,7 @@ combn.protein.tbl <- function(ibspectra,noise.model,ratiodistr,
 
 proteinRatios <-
   function(ibspectra,noise.model,
-           reporterTagNames=reporterTagNames(ibspectra),
+           reporterTagNames=NULL,
            proteins=reporterProteins(proteinGroup(ibspectra)),peptide=NULL,
            cl=classLabels(ibspectra),
            method="global",symmetry=FALSE,
@@ -718,6 +718,8 @@ proteinRatios <-
     #if (summarize && method=="interclass" && length(unique(cl[!is.na(cl)])) != 2)
     #  stop("Usage of inter-class ratios with summarize when having more than two classes is not supported ATM, sorry.",
     #       " class labels: ",paste(cl,collapse=", "))
+
+    if (is.null(reporterTagNames)) reporterTagNames <- reporterTagNames(ibspectra)
 
     if (is.null(combn))
       combn <- combn.matrix(reporterTagNames,method,cl)
