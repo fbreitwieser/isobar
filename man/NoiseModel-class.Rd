@@ -53,14 +53,14 @@
 
 \section{Constructor}{
   \describe{
-    \item{\code{new(type,ibspectra,reporterNames=NULL,one.to.one=TRUE,min.spectra=10,plot=FALSE,
+    \item{\code{new(type,ibspectra,reporterTagNames=NULL,one.to.one=TRUE,min.spectra=10,plot=FALSE,
                     pool=FALSE)}:}{
     Creates a new NoiseModel object based on ibspectra object.
       \describe{
         \item{\code{type}:}{A non-virtual class deriving from NoiseModel:
           \code{ExponentialNoiseModel}, \code{ExponentialNoANoiseModel},
           \code{InverseNoiseModel}, \code{InverseNoANoiseModel}}
-        \item{\code{reporterNames}:}{When NULL, all channels from ibspectra are taken
+        \item{\code{reporterTagNames}:}{When NULL, all channels from ibspectra are taken
           (i.e. \code{sampleNames(ibspectra)}). Otherwise, specify
 	  subset of names}
 	\item{\code{one.to.one}:}{Set to false to learn noise model one a non

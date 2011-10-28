@@ -8,8 +8,8 @@ setClass("IBSpectra",
          contains = "eSet",
          representation(
              proteinGroup = "ProteinGroup",
-             reporterNames = "character",
-             reporterMasses = "numeric",
+             reporterTagNames = "character",
+             reporterTagMasses = "numeric",
              isotopeImpurities ="matrix",
              log = "matrix",
              "VIRTUAL"),
@@ -27,8 +27,8 @@ setClass("iTRAQSpectra",
 setClass("iTRAQ4plexSpectra",
     contains = "iTRAQSpectra",
     prototype = prototype(
-        reporterNames = as.character(114:117),
-        reporterMasses = c(114.1112,115.1083,116.1116,117.1150),
+        reporterTagNames = as.character(114:117),
+        reporterTagMasses = c(114.1112,115.1083,116.1116,117.1150),
         isotopeImpurities = matrix(1/100*c(
                 c( 92.90,  5.90,  0.20,  0.00 ),
                 c(  2.00, 92.30,  5.60,  0.10 ),
@@ -41,8 +41,8 @@ setClass("iTRAQ4plexSpectra",
 setClass("iTRAQ8plexSpectra",
     contains = "iTRAQSpectra",
     prototype = prototype(
-      reporterNames = as.character(c(113:119,121)),
-      reporterMasses = c(113.1078,114.1112,115.1082,116.1116,
+      reporterTagNames = as.character(c(113:119,121)),
+      reporterTagMasses = c(113.1078,114.1112,115.1082,116.1116,
                          117.1149,118.1120,119.1153,121.1220),
       isotopeImpurities = diag(nrow=8)
     )
@@ -56,8 +56,8 @@ setClass("TMTSpectra",
 setClass("TMT2plexSpectra",
     contains = "TMTSpectra",
     prototype = prototype(
-      reporterNames = c("126","127"),
-      reporterMasses = c(126.127725,127.131079),
+      reporterTagNames = c("126","127"),
+      reporterTagMasses = c(126.127725,127.131079),
       isotopeImpurities = diag(nrow=2)
     )
 )
@@ -65,8 +65,8 @@ setClass("TMT2plexSpectra",
 setClass("TMT6plexSpectra",
     contains = "TMTSpectra",
     prototype = prototype(
-      reporterNames = as.character(126:131),
-      reporterMasses = c(126.127725,127.131079,128.134433,
+      reporterTagNames = as.character(126:131),
+      reporterTagMasses = c(126.127725,127.131079,128.134433,
                          129.137787,130.141141,131.138176),
        isotopeImpurities = matrix(c( 
          c(1.109617218,-0.07775147757,0.0009341027657,
@@ -91,9 +91,9 @@ setClass("TMT6plexSpectra",
 ###
 
 .valid.IBSpectra.slots <- function(object) {
-    n <- length(object@reporterNames)
-    if (length(object@reporterMasses) != n) 
-        stop("[IBSpectra: validation] Slot reportMasses [",length(object@reporterMasses),"] has different length then reporterNames [",n,"]!")
+    n <- length(object@reporterTagNames)
+    if (length(object@reporterTagMasses) != n) 
+        stop("[IBSpectra: validation] Slot reportMasses [",length(object@reporterTagMasses),"] has different length then reporterTagNames [",n,"]!")
     if (!all(dim(object@isotopeImpurities) == n))
         stop("[IBSpectra: validation] isotopeImpurities has dimensions ",paste(dim(object@isotopeImpurities),collapse="x"),
              "! Expected is ",n,"x",n,".")
@@ -145,7 +145,7 @@ setMethod("initialize","IBSpectra",
         callNextMethod(.Object,...)
       } else {
 
-        reporterNames <- reporterNames(.Object)
+        reporterTagNames <- reporterTagNames(.Object)
 
         data <- .factor.to.chr(data)
 
@@ -161,8 +161,8 @@ setMethod("initialize","IBSpectra",
           if (!is.element(.PROTEIN.COLS[col],PC))
             missing.cols <- c(missing.cols,.PROTEIN.COLS[col])
         if (is.null(data.ions) || is.null(data.mass)) {
-          reagentfields <- c(sprintf(.PEAKS.COLS['MASSFIELD'],reporterNames),
-                             sprintf(.PEAKS.COLS['IONSFIELD'],reporterNames))
+          reagentfields <- c(sprintf(.PEAKS.COLS['MASSFIELD'],reporterTagNames),
+                             sprintf(.PEAKS.COLS['IONSFIELD'],reporterTagNames))
           if (!all(reagentfields %in% colnames(data))) {
             missing.cols <- c(missing.cols,
                               reagentfields[!reagentfields %in% colnames(data)])
@@ -172,7 +172,7 @@ setMethod("initialize","IBSpectra",
         # handle missing columns
         if (length(missing.cols) > 0) {
             msg <- paste("not all required columns in data, the following are missing: \n\n\t",
-                     paste(reagentfields,collapse="\n\t"))
+                     paste(missing.cols,collapse="\n\t"))
             if (allow.missing.columns) {
                 warning(msg)
                 data[,missing.cols] <- NA
@@ -233,14 +233,14 @@ setMethod("initialize","IBSpectra",
         # featureData: only keep 'spectrum columns'
         # assayData: create mass and ions matrices
         if (is.null(data.ions) || is.null(data.mass)) {
-          reagentfields.mass <- sprintf(.PEAKS.COLS['MASSFIELD'],reporterNames)
-          reagentfields.ions <- sprintf(.PEAKS.COLS['IONSFIELD'],reporterNames)
+          reagentfields.mass <- sprintf(.PEAKS.COLS['MASSFIELD'],reporterTagNames)
+          reagentfields.ions <- sprintf(.PEAKS.COLS['IONSFIELD'],reporterTagNames)
           data <- unique(data[,c(SC,reagentfields.mass,reagentfields.ions)])
           rownames(data) <- data[,SC['SPECTRUM']]
           assayDataElements$mass <- as.matrix(data[,reagentfields.mass])
           assayDataElements$ions <- as.matrix(data[,reagentfields.ions])
-          dimnames(assayDataElements$mass) <- list(data$spectrum,reporterNames)
-          dimnames(assayDataElements$ions) <- list(data$spectrum,reporterNames)
+          dimnames(assayDataElements$mass) <- list(data$spectrum,reporterTagNames)
+          dimnames(assayDataElements$ions) <- list(data$spectrum,reporterTagNames)
         } else {
           data <- unique(data[,SC])
           rownames(data) <- data[,SC['SPECTRUM']]
@@ -257,6 +257,8 @@ setMethod("initialize","IBSpectra",
             if (!identical(dim(data.ions),dim(elem)))
               stop("all assayDataElemetns must have the same dim")
           }
+          colnames(data.ions) <- reporterTagNames
+          colnames(data.mass) <- reporterTagNames
           assayDataElements$ions <- data.ions
           assayDataElements$mass <- data.mass
           
@@ -285,7 +287,7 @@ setMethod("initialize","IBSpectra",
 
         # filter based on fragment precision
         if (!is.null(fragment.precision)) {
-          reporterMasses <- .Object@reporterMasses
+          reporterMasses <- reporterTagMasses(.Object)
           min.masses <- reporterMasses - fragment.precision/2
           max.masses <- reporterMasses + fragment.precision/2
           for (i in seq_len(nrow(assayDataElements$mass))) {
@@ -330,7 +332,7 @@ setMethod("initialize","IBSpectra",
             assayData=assayData,
             featureData=featureData,
             proteinGroup=proteinGroup,
-            reporterNames=reporterNames,...)
+            reporterTagNames=reporterTagNames,...)
       }
     }
 )
@@ -695,8 +697,8 @@ read.mzid <- function(f) {
 
   ## get reporter masses and names from type
   .Object <- new(type)
-  reporterMasses <- .Object@reporterMasses
-  reporterNames <- .Object@reporterNames
+  reporterMasses <- .Object@reporterTagMasses
+  reporterTagNames <- .Object@reporterTagNames
   nReporter <- length(reporterMasses)
   min.mass <- min(reporterMasses)-fragment.precision/2
   max.mass <- max(reporterMasses)+fragment.precision/2
@@ -818,8 +820,8 @@ read.mzid <- function(f) {
   mass <- mass[sel,,drop=FALSE]    
  
   spectrumtitles <- .trim(result[sel,1])
-  dimnames(ions) <- list(spectrumtitles,reporterNames)
-  dimnames(mass) <- list(spectrumtitles,reporterNames)
+  dimnames(ions) <- list(spectrumtitles,reporterTagNames)
+  dimnames(mass) <- list(spectrumtitles,reporterTagNames)
   rm(result)
   
   return(list(ions=ions, mass=mass,
@@ -843,9 +845,9 @@ setAs("IBSpectra","data.frame",
 
       # prepare fData data.frame
       ri <-reporterIntensities(from)
-      colnames(ri) <- paste("X",reporterNames(from),"_ions",sep="")
+      colnames(ri) <- paste("X",reporterTagNames(from),"_ions",sep="")
       rm <- reporterMasses(from)
-      colnames(rm) <- paste("X",reporterNames(from),"_mass",sep="")
+      colnames(rm) <- paste("X",reporterTagNames(from),"_mass",sep="")
 
       fdata.df <- cbind(fData(from),rm,ri)
       fdata.df[,.SPECTRUM.COLS['PEPTIDE']] <- NULL
@@ -869,9 +871,9 @@ setAs("IBSpectra","data.frame.concise",
 
       # prepare fData data.frame
       ri <-reporterIntensities(from)
-      colnames(ri) <- paste("X",reporterNames(from),"_ions",sep="")
+      colnames(ri) <- paste("X",reporterTagNames(from),"_ions",sep="")
       rm <- reporterMasses(from)
-      colnames(rm) <- paste("X",reporterNames(from),"_mass",sep="")
+      colnames(rm) <- paste("X",reporterTagNames(from),"_mass",sep="")
       fdata.df <- cbind(fData(from),rm,ri)
 
       # merge data.frames
@@ -904,9 +906,11 @@ setGeneric("proteinGroup<-", function(x,value) standardGeneric("proteinGroup<-")
 setGeneric("isotopeImpurities<-", function(x,value) standardGeneric("isotopeImpurities<-"))
 
 
-# reporterNames in package Biobase are defunct now
-setGeneric("reporterNames",function(object) standardGeneric("reporterNames"))
-setMethod("reporterNames","IBSpectra",function(object) object@reporterNames)
+# reporterTagNames in package Biobase are defunct now
+setGeneric("reporterTagNames",function(object) standardGeneric("reporterTagNames"))
+setMethod("reporterTagNames","IBSpectra",function(object) object@reporterTagNames)
+setGeneric("reporterTagMasses",function(object) standardGeneric("reporterTagMasses"))
+setMethod("reporterTagMasses","IBSpectra",function(object) object@reporterTagMasses)
 setMethod("proteinGroup","IBSpectra", function(x) x@proteinGroup)
 setMethod("isotopeImpurities","IBSpectra", function(x) x@isotopeImpurities)
 
@@ -1047,7 +1051,7 @@ setGeneric("spectrumTitles", function(x,...) standardGeneric("spectrumTitles"))
 setMethod("spectrumTitles","IBSpectra",function(x,...) 
     function(x) fData(x)[spectrumSel(x,...),.SPECTRUM.COLS['SPECTRUM']])
 
-#setMethod("reporterNames","IBSpectra",function(x) x@reporterNames)
+#setMethod("reporterTagNames","IBSpectra",function(x) x@reporterTagNames)
 
 setGeneric("classLabels", function(x) standardGeneric("classLabels"))
 setGeneric("classLabels<-", function(x,value) standardGeneric("classLabels<-"))
@@ -1089,7 +1093,8 @@ setMethod("correctIsotopeImpurities",signature(x="IBSpectra"),
             return(b)
           }
       ))
-      colnames(ri.corrected) <- reporterNames(x)
+      print(ri.corrected)
+      colnames(ri.corrected) <- reporterTagNames(x)
       ri.corrected[ri.corrected<0] <- NA
       reporterIntensities(x) <- ri.corrected
 
@@ -1252,7 +1257,7 @@ subsetIBSpectra <- function(x, protein=NULL, peptide=NULL, direction="exclude",
 
   pg.df <- as.data.frame(proteinGroup(x))
   # remove peptides and proteins from proteinGroup
-  proteinGroup(x) <- ProteinGroup(pg.df[pg.df$spectrum %in% 
+  proteinGroup(x) <- ProteinGroup(pg.df[pg.df[,"spectrum"] %in% 
                                         fData(x)[sel.spectra,"spectrum"],] )
 
 
@@ -1295,13 +1300,13 @@ setMethod("reporterMassPrecision",
                            mass=as.numeric(masses),stringsAsFactors=FALSE)
               
               melt.masses$mass <-
-                melt.masses$mass - rep(x@reporterMasses,each=nrow(masses))
+                melt.masses$mass - rep(reporterTagMasses(x),each=nrow(masses))
 
               melt.masses$reporter <-
                 factor(melt.masses$reporter,
-                       levels=reporterNames(x),
+                       levels=reporterTagNames(x),
                        labels=sprintf("tag %s: m/z %.2f",
-                         reporterNames(x),x@reporterMasses))
+                         reporterTagNames(x),reporterTagMasses(x)))
               
               ggplot(melt.masses,aes(x=mass)) + geom_vline(xintercept=0,alpha=0.8) +
                 geom_histogram(fill="white",aes(colour=factor(reporter)),alpha=0.8,
@@ -1311,7 +1316,7 @@ setMethod("reporterMassPrecision",
                          axis.text.x = theme_text(angle=330,hjust=0,colour="grey50"))
             }
 
-            #return(summary(masses-matrix(x@reporterMasses,byrow=T,
+            #return(summary(masses-matrix(reporterTagMasses(x),byrow=T,
             #       nrow=nrow(masses),ncol=ncol(masses))))
           }
 )
@@ -1372,7 +1377,7 @@ maplot.protein <- function(x,relative.to,protein,noise.model=NULL,
       i <- 1
 	  if (is(x,"IBSpectra"))
         x <- c(x)
-      if (is.null(channels)) channels <- setdiff(reporterNames(x[[1]]),relative.to)
+      if (is.null(channels)) channels <- setdiff(reporterTagNames(x[[1]]),relative.to)
       if (is.null(pchs)) pchs <- seq_along(channels)
 
       for (ib in x) {
@@ -1435,7 +1440,7 @@ maplot.protein <- function(x,relative.to,protein,noise.model=NULL,
 setMethod("protGgdata",
     signature(x="ANY",relative.to="character",protein="character"),
     function(x,relative.to,protein,noise.model=NULL,
-        channels=setdiff(reporterNames(x),relative.to),
+        channels=setdiff(reporterTagNames(x),relative.to),
         names=NULL,legend.cex=0.8,...) {
       
       dfs <- data.frame()

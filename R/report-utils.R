@@ -74,7 +74,7 @@ write.xls.report <- function(properties.env,report.env,file="isobar-analysis.xls
     mm.df <- mm.df[,c("group",colnames(ibs))]
 
     ## Analysis Properties:
-    nn <- reporterNames(get.val('ibspectra'))
+    nn <- reporterTagNames(get.val('ibspectra'))
     ii <- rbind(c(":centeracross:Analysis Properties",rep(":centeracross:",length(nn))),
                 "",
                 c(":centeracross:Isotope Impurity Correction Matrix",
@@ -349,7 +349,7 @@ initialize.env <- function(env,report.type="protein",properties.env) {
     if (!file.exists(noise.model.f)) {
       message("estimating noise model as non one-to-one ...")
       noise.model <- new("ExponentialNoiseModel",env,one.to.one=F,
-                         reporterNames=noise.model.channels,
+                         reporterTagNames=noise.model.channels,
                          min.spectra=properties.env$noise.model.minspectra)
       save(noise.model,file=noise.model.f,compress=TRUE)
     } else {

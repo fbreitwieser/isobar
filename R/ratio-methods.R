@@ -525,11 +525,11 @@ setMethod("estimateRatio",
                                 channel1,channel2,
                                 specificity=REPORTERSPECIFIC,modif=NULL,...) {
   if (is.null(channel1) || is.null(channel2))
-    stop("channel1 and channel2 must not be NULL, but one of [",paste(reporterNames(ibspectra),collapse=", "),"] !")
+    stop("channel1 and channel2 must not be NULL, but one of [",paste(reporterTagNames(ibspectra),collapse=", "),"] !")
   if (length(channel1) == 0 || length(channel1) > 1 || length(channel2) == 0 || length(channel2) > 1)
     stop("channel1 and channel2 must be of length one! Lengths: [",length(channel1),",",length(channel2),"]")
-  if (!channel1 %in% reporterNames(ibspectra) || !channel2 %in% reporterNames(ibspectra))
-    stop("channel1 and channel2 must be one of the reporter names: ",paste(reporterNames(ibspectra),collapse=", "),".")
+  if (!channel1 %in% reporterTagNames(ibspectra) || !channel2 %in% reporterTagNames(ibspectra))
+    stop("channel1 and channel2 must be one of the reporter names: ",paste(reporterTagNames(ibspectra),collapse=", "),".")
   
   if (level=="protein") {
     ri <- reporterIntensities(ibspectra,protein=x,specificity=specificity,modif=modif)
@@ -697,7 +697,7 @@ combn.protein.tbl <- function(ibspectra,noise.model,ratiodistr,
 
 proteinRatios <-
   function(ibspectra,noise.model,
-           reporterNames=Biobase::sampleNames(ibspectra),
+           reporterTagNames=reporterTagNames(ibspectra),
            proteins=reporterProteins(proteinGroup(ibspectra)),peptide=NULL,
            cl=classLabels(ibspectra),
            method="global",symmetry=FALSE,
@@ -720,10 +720,10 @@ proteinRatios <-
     #       " class labels: ",paste(cl,collapse=", "))
 
     if (is.null(combn))
-      combn <- combn.matrix(reporterNames,method,cl)
+      combn <- combn.matrix(reporterTagNames,method,cl)
 
     if (ncol(combn) < 1) 
-      stop("No possible combination for reporters [",paste(reporterNames,sep=","),"]",
+      stop("No possible combination for reporters [",paste(reporterTagNames,sep=","),"]",
            " w/ classes [",paste(cl,sep=","),"] and method ",method," possible.",
            " summarize=",ifelse(summarize,"TRUE","FALSE"))
     

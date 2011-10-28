@@ -121,8 +121,8 @@ if (!is.null(cl)) {
   cat("\\begin{tabular}{rr}\n")
   cat("\\multicolumn{2}{c}{Class Labels} \\bigstrut \\\\ \n")
   cat("channel & class \\\\ \\hline \\bigstrut[t]\n")
-  for (i in seq_along(reporterNames(ibspectra))) {
-    cat(reporterNames(ibspectra)[i]," & ",ifelse(is.na(cl[i]),"",cl[i]),"\\\\ \n")
+  for (i in seq_along(reporterTagNames(ibspectra))) {
+    cat(reporterTagNames(ibspectra)[i]," & ",ifelse(is.na(cl[i]),"",cl[i]),"\\\\ \n")
   }
   cat("\\end{tabular}\n")
 }

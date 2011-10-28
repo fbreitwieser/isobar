@@ -503,7 +503,10 @@ setMethod("protein.g",signature("ProteinGroup","character","ANY"),
       result <- c(result,protein.gs)
    }
  }
- return(unique(as.character(result)))
+ result <- unique(as.character(result))
+ if (length(result) == 0)
+   warning("Could not find protein group identifier for ",pattern)
+ return(result)
 })
 
 setGeneric("protein.ac",function(x,protein.g) standardGeneric("protein.ac"))

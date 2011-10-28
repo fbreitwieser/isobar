@@ -43,8 +43,10 @@
 \alias{reporterMasses,IBSpectra-method}
 \alias{reporterMasses<-}
 \alias{reporterMasses<-,IBSpectra-method}
-\alias{reporterNames}
-\alias{reporterNames,IBSpectra-method}
+\alias{reporterTagNames}
+\alias{reporterTagNames,IBSpectra-method}
+\alias{reporterTagMasses}
+\alias{reporterTagMasses,IBSpectra-method}
 \alias{reporterData}
 \alias{reporterData,IBSpectra-method}
 \alias{reporterData<-}
@@ -86,7 +88,7 @@
 \section{Objects from the Class}{
   \code{IBSpectra} objects are typically created using the
   \code{\link{readIBSpectra}} method or by calls of the form
-  \code{new("iTRAQ4plexSpectra",data.ions, ...).}
+  \code{new("iTRAQ4plexSpectra",data=NULL,data.ions=NULL,...).}
 }
 
 \section{Slots}{
@@ -120,7 +122,7 @@
     \item{\code{proteinGroup}:}{A \code{\link{ProteinGroup}}
       object describing peptide and protein identifications
       grouped by shared peptides.}
-    \item{\code{reporterNames}:}{A character vector denoting the
+    \item{\code{reporterTagNames}:}{A character vector denoting the
       reporter tag labels.}
     \item{\code{reporterMasses}:}{The 'true' m/z of the reporter tags
       in the MS/MS spectrum, used to isolate m/z-intensity pairs from
@@ -232,8 +234,27 @@
 }
 
 \examples{
+
+
 data(ibspiked_set1)
 ibspiked_set1
 head(reporterIntensities(ibspiked_set1))
+head(reporterMasses(ibspiked_set1))
+proteinGroup(ibspiked_set1)
+isotopeImpurities(ibspiked_set1)
 
+# create new object
+set.seed(123)
+data <- data.frame(spectrum=letters,
+                   peptide=sample(c("pepA","pepB","pepC"),26,TRUE),
+                   accession=c("protein1","protein2"))
+data.ions <- matrix(rnorm(26*2,1000,50),
+                    ncol=2,dimnames=list(letters,NULL))
+data.mass <- matrix(rep(c(126.1,127.1),26),
+                    ncol=2,byrow=TRUE,dimnames=list(letters,NULL))
+ib <- new("TMT2plexSpectra",data,data.ions,data.mass)
+ib
+reporterIntensities(ib)
+isotopeImpurities(ib) <- matrix(c(0.8,0.1,0.2,0.9),nrow=2)
+reporterIntensities(correctIsotopeImpurities(ib))
 }

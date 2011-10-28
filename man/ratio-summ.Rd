@@ -18,7 +18,7 @@
   variability within and over cases.
 }
 \usage{
-proteinRatios(ibspectra, noise.model, reporterNames = Biobase::sampleNames(ibspectra), proteins = reporterProteins(proteinGroup(ibspectra)), peptide = NULL, cl = classLabels(ibspectra), method = "global", symmetry = FALSE, summarize = FALSE, summarize.method = "mult.pval", min.detect = NULL, strict.sample.pval = TRUE, strict.ratio.pval = TRUE, orient.div = 0, sign.level = 0.05, sign.level.rat = sign.level, sign.level.sample = sign.level, ratiodistr = NULL, variance.function = "maxi", combine=FALSE,
+proteinRatios(ibspectra, noise.model, reporterTagNames = Biobase::sampleNames(ibspectra), proteins = reporterProteins(proteinGroup(ibspectra)), peptide = NULL, cl = classLabels(ibspectra), method = "global", symmetry = FALSE, summarize = FALSE, summarize.method = "mult.pval", min.detect = NULL, strict.sample.pval = TRUE, strict.ratio.pval = TRUE, orient.div = 0, sign.level = 0.05, sign.level.rat = sign.level, sign.level.sample = sign.level, ratiodistr = NULL, variance.function = "maxi", combine=FALSE,
 p.adjust = NULL, reverse=FALSE, combn=NULL, ...)
 
 combn.matrix(x, method = "global", cl = NULL)
@@ -31,12 +31,12 @@ summarize.ratios(ratios, summarize.method, min.detect, n.combination, strict.sam
 %- maybe also 'usage' for other objects documented here.
 \arguments{
   \item{ibspectra}{IBSpectra object}
-  \item{x}{for combn.matrix: reporter names. See reporterNames argument of proteinRatios.}
+  \item{x}{for combn.matrix: reporter names. See reporterTagNames argument of proteinRatios.}
   \item{ratios}{result of combn.protein.tbl}
   \item{cmbn}{result of combn.matrix}
   \item{combn}{result of combn.matrix}
   \item{noise.model}{NoiseModel for spectra variances}
-  \item{reporterNames}{reporter tags to use}
+  \item{reporterTagNames}{reporter tags to use}
   \item{proteins}{proteins for which ratios are calculated - defaults to all 
      proteins with peptides specific to them.}
   \item{peptide}{peptides for which ratios are calculated.}

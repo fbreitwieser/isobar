@@ -169,14 +169,14 @@ to visualize the precision of the MS setup on the fragment level and
 used to set the correct window for isolation.
 
 The expected masses of the reporter tags are in the slot
-\Rfunction{reporterMasses} of the implementations of the
+\Rfunction{reporterTagMasses} of the implementations of the
 \Robject{IBSpectra} class. The experimental masses are in the matrix
 \Robject{mass} of \Robject{AssayData}; they can also be accessed by
 the method \Rfunction{reporterMasses(x)}.
 
 <<show-reporterMasses>>=
-sprintf("%.4f",ibspiked_set1@reporterMasses)  ## expected masses
-mass <- reporterMasses(ibspiked_set1) ## observerd masses
+sprintf("%.4f",reporterTagMasses(ibspiked_set1))  ## expected masses
+mass <- assayData(ibspiked_set1)[["mass"]] ## observerd masses
 apply(mass,2,function(x) sprintf("%.4f",quantile(x,na.rm=TRUE,probs=c(0.025,0.975))))
 @
 
@@ -200,7 +200,7 @@ linear algebra.
 
 Due to differences between samples it is advisable to normalize data
 before further processing. By default, \Rfunction{normalize} corrects
-by a factor such that the median intensities all the reporter channels
+by a factor such that the median intensities in all reporter channels
 are equal.
 
 See figure ~\ref{fig:normalization}.
@@ -214,8 +214,10 @@ ibspiked_set1 <- normalize(ibspiked_set1)
 
 \begin{center}
 \begin{figure}[htp]
-<<fig-maplot-normalize,fig=FALSE>>=
+<<fig-maplot-normalize1,echo=FALSE>>=
 png("fig_maplot_normalize.png",width=6.6,height=3,units="in",res=300,pointsize=8)
+@
+<<fig-maplot-normalize2>>=
 par(mfrow=c(1,2))
 maplot(ib.old,channel1="114",channel2="117",ylim=c(0.5,2),
        main="before normalization")
@@ -223,6 +225,8 @@ abline(h=1,col="red",lwd=2)
 maplot(ibspiked_set1,channel1="114",channel2="117",ylim=c(0.5,2),
        main="after normalization")
 abline(h=1,col="red",lwd=2)
+@
+<<fig-maplot-normalize3,echo=FALSE>>= 
 dev.off()
 @
 \includegraphics{fig_maplot_normalize}
@@ -264,11 +268,15 @@ nm.ceru <- NoiseModel(ib.ceru,one.to.one=FALSE,pool=TRUE)
 
 \begin{center}
 \begin{figure}[htp]
-<<maplot-noisemodel,fig=FALSE,width=3.3,height=3.3>>=
-png("fig_maplot_noisemodel.png",width=3.3,height=3,units="in",res=600,pointsize=8)
+<<maplot-noisemodel1,echo=FALSE>>=
+png("fig_maplot_noisemodel.png",width=3.3,height=3,units="in",res=300,pointsize=8)
+@
+<<maplot-noisemodel2,echo=TRUE>>=
 maplot(ib.background,noise.model=c(noise.model,nm.ceru),
        channel1="114",channel2="115",ylim=c(0.2,5),
        main="95% CI noise model")
+@ 
+<<maplot-noisemodel3,echo=FALSE>>=
 dev.off()
 @ 
 \includegraphics{fig_maplot_noisemodel}

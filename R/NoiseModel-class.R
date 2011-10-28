@@ -88,23 +88,23 @@ setValidity("NoiseModel",.valid.NoiseModel)
 ###
 
 setMethod("initialize","NoiseModel",
-    function(.Object,ibspectra=NULL,reporterNames=NULL,one.to.one=TRUE,
+    function(.Object,ibspectra=NULL,reporterTagNames=NULL,one.to.one=TRUE,
              min.spectra=10,max.n.proteins=50,plot=F,pool=FALSE,
              nm.col=c("#E41A1C","#377EB8","#4DAF4A","#984EA3","#FF7F00","#FFFF33","#A65628","#F781BF","#999999"),nm.cmp=NULL,...) {
       if (!is.null(ibspectra))
       {
-        if (is.null(reporterNames)) reporterNames <- sampleNames(ibspectra)
+        if (is.null(reporterTagNames)) reporterTagNames <- sampleNames(ibspectra)
         
         ri <- reporterIntensities(ibspectra,na.rm=FALSE)  
-        reporterNames.combn <- combn(reporterNames,2)
+        reporterTagNames.combn <- combn(reporterTagNames,2)
         
         if (plot & !pool)
-          par(mfrow=rep(ceiling(sqrt(ncol(reporterNames.combn))),2))
+          par(mfrow=rep(ceiling(sqrt(ncol(reporterTagNames.combn))),2))
 
         # matrix to store fitted paramters of reporter combinations
         # will be averaged in the end
         all.parameters <-
-          matrix(nrow=ncol(reporterNames.combn),ncol=length(parameter(.Object)))
+          matrix(nrow=ncol(reporterTagNames.combn),ncol=length(parameter(.Object)))
         
         pool.ch1 <- c()
         pool.ch2 <- c()
@@ -112,9 +112,9 @@ setMethod("initialize","NoiseModel",
         if (one.to.one) {
           
           # for each reporter combination, fit a noise function on the ratios
-          for (ch_i in seq_len(ncol(reporterNames.combn))) {
-            ch1 <- ri[,reporterNames.combn[1,ch_i]]
-            ch2 <- ri[,reporterNames.combn[2,ch_i]]
+          for (ch_i in seq_len(ncol(reporterTagNames.combn))) {
+            ch1 <- ri[,reporterTagNames.combn[1,ch_i]]
+            ch2 <- ri[,reporterTagNames.combn[2,ch_i]]
             pool.ch1 <- c(pool.ch1,ch1)
             pool.ch2 <- c(pool.ch2,ch2)
 
@@ -124,8 +124,8 @@ setMethod("initialize","NoiseModel",
              if (plot) {
                 x.data <- log10(sqrt(ch1*ch2))
                 plot(x.data,ch1/ch2,log="y",
-                       main=sprintf("%s vs %s",reporterNames.combn[1,ch_i],
-                       reporterNames.combn[2,ch_i]),ylim=c(0.2,5))
+                       main=sprintf("%s vs %s",reporterTagNames.combn[1,ch_i],
+                       reporterTagNames.combn[2,ch_i]),ylim=c(0.2,5))
                 .lines.nf(noiseFunction(.Object),parameter=all.parameters[ch_i,],xlim=range(x.data,na.rm=TRUE))
               }
 
@@ -163,22 +163,22 @@ setMethod("initialize","NoiseModel",
           pgdf <- cbind(pgdf[sel,],ri[pgdf[sel,"spectrum"],])
           
 
-          for (ch_i in seq_len(ncol(reporterNames.combn))) {
+          for (ch_i in seq_len(ncol(reporterTagNames.combn))) {
             ch1 <- c()
             ch2 <- c()
             pool.ch1 <- c(pool.ch1,ch1)
             pool.ch2 <- c(pool.ch2,ch2)
             # compute protein ratios
             protein.ratios <- estimateRatio(ibspectra=ibspectra, 
-                channel1=reporterNames.combn[1,ch_i],
-                channel2=reporterNames.combn[2,ch_i],
+                channel1=reporterTagNames.combn[1,ch_i],
+                channel2=reporterTagNames.combn[2,ch_i],
                 protein=unique(pgdf$protein.g),combine=F)
             
             # bring protein ratio to ratio 1
             for (protein in rownames(protein.ratios)) {
               if (abs(protein.ratios[protein,"lratio"]) < 1) {
-              ch1 <- c(ch1,pgdf[pgdf$protein.g==protein,reporterNames.combn[1,ch_i]])
-              ch2 <- c(ch2,pgdf[pgdf$protein.g==protein,reporterNames.combn[2,ch_i]] * 
+              ch1 <- c(ch1,pgdf[pgdf$protein.g==protein,reporterTagNames.combn[1,ch_i]])
+              ch2 <- c(ch2,pgdf[pgdf$protein.g==protein,reporterTagNames.combn[2,ch_i]] * 
                   10^protein.ratios[protein,"lratio"])
               }
             }
@@ -190,8 +190,8 @@ setMethod("initialize","NoiseModel",
              if (plot) {
                 x.data <- log10(sqrt(ch1*ch2))
                 plot(x.data,ch1/ch2,log="y",
-                       main=sprintf("%s vs %s",reporterNames.combn[1,ch_i],
-                       reporterNames.combn[2,ch_i]),ylim=c(0.2,5))
+                       main=sprintf("%s vs %s",reporterTagNames.combn[1,ch_i],
+                       reporterTagNames.combn[2,ch_i]),ylim=c(0.2,5))
                 .lines.nf(noiseFunction(.Object),parameter=all.parameters[ch_i,],xlim=range(x.data))
               }
               
@@ -227,7 +227,7 @@ setMethod("initialize","NoiseModel",
         na.val <- na.val[!is.na(na.val)]
 
         print(parameter(.Object))
-        lowIntensity(.Object) <- quantile(unlist(ri[,reporterNames]),prob=0.05,na.rm=T)
+        lowIntensity(.Object) <- quantile(unlist(ri[,reporterTagNames]),prob=0.05,na.rm=T)
         naRegion(.Object) <- na.val
       }
       callNextMethod(.Object)

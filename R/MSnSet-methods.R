@@ -19,14 +19,14 @@ setAs("MSnSet","IBSpectra",function(from) {
          
   o <- new(my.class)
   rownames(ions) <- data$spectrum
-  colnames(ions) <- o@reporterNames
+  colnames(ions) <- o@reporterTagNames
   mass <- 0.5*(lowerMz+upperMz)
   rownames(mass) <- data$spectrum
-  colnames(mass) <- o@reporterNames
+  colnames(mass) <- o@reporterTagNames
   assayDataElements <- list(lowerMz=lowerMz,upperMz=upperMz,maxInt=maxInt)
   for (elem in names(assayDataElements)) {
     rownames(assayDataElements[[elem]]) <- data$spectrum
-    colnames(assayDataElements[[elem]]) <- o@reporterNames
+    colnames(assayDataElements[[elem]]) <- o@reporterTagNames
   }
 
   ib <- new(my.class,data,ions,mass,
@@ -76,7 +76,7 @@ setAs("IBSpectra","MSnSet",function(from) {
                   precursor=rep(fData(from)$exp.mass,each=length(mz(o))))
 
   .exprs <- reporterIntensities(from)
-  colnames(.exprs) <- reporters@reporterNames
+  colnames(.exprs) <- reporters@reporterTagNames
   mapping <- c(spectrum="spectrum",
                ProteinAccession="accessions",
                ProteinDescription="NA",
@@ -100,7 +100,7 @@ setAs("IBSpectra","MSnSet",function(from) {
   .phenoData <- new("AnnotatedDataFrame",
                     data=data.frame(mz=reporters@mz,
                       reporters=reporters@name,
-                      row.names=reporters@reporterNames))
+                      row.names=reporters@reporterTagNames))
   
   msnset <- new("MSnSet",
                 qual=.qual,
