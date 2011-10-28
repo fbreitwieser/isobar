@@ -1,13 +1,15 @@
-CHANGES IN VERSION 0.2.6
+CHANGES IN VERSION 1.0.0
 ------------------------
 
- - added option 'scan.lines' to readIBSpectra: read mgf files in parts
-   for large MGF files
- - use a function for protein reporting: create.reports.R
-     properties.conf will be replaced by properties.R
+ - first Bioconductor version (version bump to 1.0.0)!
  - slot name reporterMasses is renamed to reporterTagMasses
+    to fix clash with method reporterMasses which fetches assayData(ibspectra)[["mass"]]
  - slot name reporterNames is renamed to reporterTagNames
- - first Bioconductor version!
+    to distinguish from deprecated Biobase::reporterNames
+ - added option 'scan.lines' to readIBSpectra: read mgf files in parts
+    for large MGF files
+ - use a function for protein reporting: create.reports.R
+    properties.conf will be replaced by properties.R
 
 CHANGES IN VERSION 0.2.5
 ------------------------
