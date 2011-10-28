@@ -905,7 +905,7 @@ setGeneric("isotopeImpurities<-", function(x,value) standardGeneric("isotopeImpu
 
 
 # reporterNames in package Biobase are defunct now
-#setGeneric("reporterNames",function(object) standardGeneric("reporterNames"))
+setGeneric("reporterNames",function(object) standardGeneric("reporterNames"))
 setMethod("reporterNames","IBSpectra",function(object) object@reporterNames)
 setMethod("proteinGroup","IBSpectra", function(x) x@proteinGroup)
 setMethod("isotopeImpurities","IBSpectra", function(x) x@isotopeImpurities)
