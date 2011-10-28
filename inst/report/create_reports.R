@@ -35,7 +35,7 @@ get.arg <- function(name) {
   }
 }
 properties.file <- "properties.R"
-if (file.exists(args[length(args)])) {
+if (length(args) > 0 && file.exists(args[length(args)])) {
   properties.file <- args[length(args)]
   args[length(args)] <- NULL
 }
@@ -47,10 +47,6 @@ peptide.report <- get.arg("--peptide")
 
 message("Loading package isobar ...")
 suppressPackageStartupMessages(library(isobar))
-source("~/projects/quant/isobar/R/report-utils.R")
-source("~/projects/quant/isobar/R/utils.R")
-suppressPackageStartupMessages(library(distr))
-source("~/projects/quant/isobar/R/ratio-methods.R")
 
 if (!exists("properties.env",inherits=FALSE)) {
   properties.env <- load.properties(properties.file,
