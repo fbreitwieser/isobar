@@ -215,7 +215,7 @@ ibspiked_set1 <- normalize(ibspiked_set1)
 \begin{center}
 \begin{figure}[htp]
 <<fig-maplot-normalize,fig=FALSE>>=
-png("fig_maplot_normalize.png",width=6.6,height=3,units="in",res=600,pointsize=8)
+png("fig_maplot_normalize.png",width=6.6,height=3,units="in",res=300,pointsize=8)
 par(mfrow=c(1,2))
 maplot(ib.old,channel1="114",channel2="117",ylim=c(0.5,2),
        main="before normalization")
