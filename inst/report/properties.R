@@ -116,6 +116,7 @@ min.detect=NULL
 datbase="Uniprot"
 preselected=c()
 
+ratiodistr=NULL
 ratiodistr.summarize=FALSE
 ratiodistr.summarize.method="global"
 

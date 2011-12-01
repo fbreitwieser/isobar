@@ -202,21 +202,42 @@ initialize.env <- function(env,report.type="protein",properties.env) {
 }
 
 #- property loading helper functions
+.DOES.NOT.EXIST = "NOT AVAILABLE"
 
-.create.or.load <- function(name,envir,f,msg.f=name,do.load=FALSE,...) {
-  file <- ifelse(.exists.property(name,envir),
-                 .get.property(name,envir),
-                 sprintf("%s/%s.rda",.get.property('cachedir',envir),name))
-
-  if (file.exists(file) & (!envir$regen || do.load)) {
-    message(sprintf("loading %s from %s ...",msg.f, file))
-    x <- .load.property(name,file)
+.get.or.load <- function(name,envir,msg.f=name,class=NULL) {
+  if (.exists.property(name,envir)) {
+    o <- .get.property(name,envir)
+    if (!is.null(class) && is(o,class)) {
+      return(o)
+    } else if (is(o,"character")) {
+      file.name <- o
+    } else {
+      stop("property ",name," is neither character nor of a specified class")
+    }
   } else {
+    file.name <- sprintf("%s/%s.rda",.get.property('cachedir',envir),name)
+  }
+  if (file.exists(file.name) & (!envir$regen || do.load)) {
+    message(sprintf("loading %s from %s ...",msg.f, file.name))
+    x <- .load.property(name,file.name)
+    return(x)
+  } else {
+    stop("Cannot get or load property ",name)
+  }
+}
+
+.create.or.load <- function(name,envir,f,msg.f=name,do.load=FALSE,class=NULL,...) {
+  x <- tryCatch(.get.or.load(name,envir,msg.f,class),error=function(e) .DOES.NOT.EXIST)
+  if (identical(x,.DOES.NOT.EXIST)) {
     message(paste("creating",msg.f,"..."))
     x <- f(...)
     assign(name,x)
-    save(list=c(name),file=file)
+    file.name <- sprintf("%s/%s.rda",.get.property('cachedir',envir),name)
+    save(list=c(name),file=file.name)
   }
+  if (!is.null(class) && !is(x,class)) 
+    stop("property [",name,"] should be of class [",class,"] but is of class [",class(x),"]")
+
   return(x)
 }
  
@@ -375,7 +396,7 @@ initialize.env <- function(env,report.type="protein",properties.env) {
 
 .create.or.load.ratiodistr <- function(env,properties.env,level) {
   
-  return(.create.or.load("ratiodistr",envir=properties.env,
+  return(.create.or.load("ratiodistr",envir=properties.env,class="Distribution",
                          msg.f="protein ratio distribution",f=function(){
     if (!properties.env$summarize)
       stop("ratiodistr must be set to a file containg a distr object - \n",
@@ -406,7 +427,7 @@ initialize.env <- function(env,report.type="protein",properties.env) {
   protein.info <- proteinInfo(protein.group)
   isoforms <- protein.group@isoformToGeneProduct
   
-  .create.or.load("quant.tbl",envir=properties.env,
+  .create.or.load("quant.tbl",envir=properties.env,class="data.frame",
                   msg.f=paste("table of ratios of",level),f=function() {
     if (!is.null(properties.env$ratios.opts$summarize)) {
         message("WARNING: ratio.opts$summarize will be overwritten,",
