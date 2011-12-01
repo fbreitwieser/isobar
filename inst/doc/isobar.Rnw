@@ -11,6 +11,8 @@
 \usepackage{times}
 \usepackage{hyperref}
 \usepackage[utf8]{inputenc}
+\usepackage{xcolor}
+\usepackage{listings}
 
 \textwidth=6.2in
 \textheight=8.5in
@@ -134,7 +136,9 @@ A second data set with ratios 1:10:50:100 is available as
 The Ceruplasmins have been selected as the share peptides. Hereafter,
 we load the data pacakage and the ceru protein IDs are identified via
 the \Rfunction{protein.g} function, which provides a mean to retrieve
-data from \Robject{IBSpectra} objects.
+data from \Robject{ProteinGroup} objects. \Robject{ProteinGroup} is a 
+slot of \Robject{IBSpectra} objects and contains informations on proteins
+and their grouping. See \ref{ss:proteingrouping}.
 
 <<load-ibspiked>>=
   data(ibspiked_set1)
@@ -143,6 +147,30 @@ data from \Robject{IBSpectra} objects.
   ceru.mouse <- protein.g(proteinGroup(ibspiked_set1),"CERU_MOUSE")
   ceru.proteins <- c(ceru.human,ceru.rat,ceru.mouse)
 @ 
+
+\subsection{Protein information and grouping in \Robject{ProteinGroup}}
+\label{ss:proteingrouping}
+When an \texttt{ibspectra.csv} is read, protein are grouped to
+identify proteins which have unique peptides. By default, only
+peptides with unique peptides are grouped.
+
+The algorithm to infer protein groups works as follows:
+\begin{enumerate}
+\item Group proteins together which have been seen with exactly the
+  same peptides (\Robject{indistinguishableProteins}) - these are 
+  the \Robject{protein.g} identifiers.
+\item Create protein groups (\Robject{proteinGroupTable}):
+  \begin{enumerate}
+  \item Define proteins with specific peptides as reporters
+    (\Robject{reporterProteins})
+  \item Get proteins which are contained \footnote{That means these
+      proteins have a subset of the peptides of the reporter} by
+    reporterProteins and group them below.
+  \end{enumerate}
+\item Create protein groups for proteins without specific peptides as
+  above.
+\end{enumerate}
+
 
 \subsection{\Rpackage{MSnbase} integration}
 \Rpackage{MSnbase} by Laurent Gatto provides data manipulation and
@@ -184,7 +212,7 @@ apply(mass,2,function(x) sprintf("%.4f",quantile(x,na.rm=TRUE,probs=c(0.025,0.97
 
 \begin{center}
 \begin{figure}[htp]
-<<print-reporterMasses,fig=TRUE>>=
+<<print-reporterMasses,fig=TRUE,width=6.6,height=3>>=
   print(reporterMassPrecision(ibspiked_set1))
 @ 
 \caption{Reporter mass precision plot.}
@@ -226,7 +254,7 @@ maplot(ibspiked_set1,channel1="114",channel2="117",ylim=c(0.5,2),
        main="after normalization")
 abline(h=1,col="red",lwd=2)
 @
-<<fig-maplot-normalize3,echo=FALSE>>= 
+<<fig-maplot-normalize3,echo=FALSE,results=hide>>= 
 dev.off()
 @
 \includegraphics{fig_maplot_normalize}
@@ -276,7 +304,7 @@ maplot(ib.background,noise.model=c(noise.model,nm.ceru),
        channel1="114",channel2="115",ylim=c(0.2,5),
        main="95% CI noise model")
 @ 
-<<maplot-noisemodel3,echo=FALSE>>=
+<<maplot-noisemodel3,echo=FALSE,results=hide>>=
 dev.off()
 @ 
 \includegraphics{fig_maplot_noisemodel}
@@ -350,17 +378,26 @@ proteinRatios(ibspiked_set1,noise.model,protein=ceru.proteins,
 @ 
 
 \subsection{Protein ratio distribution and selection}
-To examine differentially expressed proteins, we usually use both
-sample variability information (random protein ratios) as a
-\emph{fold-change} constraint, and ratio variance as a
-\emph{precision} constraint. For a experimental setup with a different
-class in each reporter tag, a sample distribution should be learned by
-in advance by generating all possible ratio pairs between samples of
-the same class. A Cauchy distribution fits accurately this type of
-random protein ratio distribution: Cauchy is displayed in red,
-Gaussian in blue. In the case of \Robject{ibspiked\_set1}, the many
-1:1 proteins provide us with adequate data to learn the random protein
-ratio distribution.
+Protein ratio distributions can be calculated ideally on biological
+replicated. To examine differentially expressed proteins, both sample
+variability information (random protein ratios) as a
+\emph{fold-change} constraint, and ratio \emph{precision} can be used.
+For a experimental setup with biolgical replicates in the same
+experiment (but different channels), the distribution of biological
+variability can be learned by computing the ratios between the
+replicates. With no replicates available, one has the choice to (a)
+model the actual protein ratios and just select the most extreme
+ratios; (b) learn the distribution from a previous experiment; or (c)
+assume a standard Cauchy distribution with location $0$ and scale
+$0.1$, $0.05$, and $0.025$, which correspond with $\alpha=0.05$
+roughly to fold changes of $4$, $2$, and $1.5$. 
+
+A Cauchy distribution fits accurately this type of random protein
+ratio distribution: Cauchy is displayed in red, Gaussian in blue. In
+the case of \Robject{ibspiked\_set1}, the many 1:1 proteins provide us
+with adequate data to learn the random protein ratio distribution,
+however only of the \textit{technical} variation.
+
 
 <<ratiodistribution>>=
 #protein.ratios <- proteinRatios(ibspiked_set1,noise.model)
@@ -371,7 +408,8 @@ protein.ratiodistr.cauchy <- fitCauchy(protein.ratios[,"lratio"])
 
 \begin{center}
 \begin{figure}[htp]
-<<plot-ratiodistr,fig=TRUE>>=
+<<plot-ratiodistr,fig=TRUE,width=4,height=2.5>>=
+library(distr) # required library
 limits=seq(from=-0.5,to=0.5,by=0.001)
 curve.wn <- data.frame(x=limits,y=d(protein.ratiodistr.wn)(limits))
 curve.cauchy<-data.frame(x=limits,y=d(protein.ratiodistr.cauchy)(limits))
@@ -456,13 +494,15 @@ sr
 \section{Report generation}
 Analysis of reports can be analyzed with \Rpackage{isobar} by usage
 of the Rscript \texttt{create\_reports.R}. This script reads command
-line options and a \texttt{properties.conf} file to allow a complete
+line options and a \texttt{properties.R} file to allow a complete
 analysis generating \LaTeX (and thus PDF) and Excel reports containing
 all protein ratios and quality control.
 
-The \texttt{properties.conf} file in the current folder overwrite the 
-settings set in the global file in the installation directory. See
-appendix \ref{sec:properties} for the available settings.
+The \texttt{properties.R} file in the current folder overwrite the 
+settings set in the global file in the installation directory. Certain
+properties must be set (such as \texttt{type} and \texttt{ibspectra}), others specify the
+type of report to be generated. See appendix 
+\ref{sec:properties} for the available settings.
 
 <<eval=FALSE>>=
 ## execute to find the path and file location in your installation.
@@ -528,13 +568,34 @@ further columns for an \texttt{iTRAQ 4plex} IBSpectra.
 \textbf{X117\_ions} & reporter ion intensity\\
 \end{tabular}
 
-\section{\texttt{properties.conf} for report generation}
+\section{\texttt{properties.R} for report generation}
 \label{sec:properties}
-\small
-<<>>=
-cat(readLines(system.file("report","properties.conf",package="isobar")),sep="\n")
+\definecolor{comment}{HTML}{000065}
+\definecolor{string}{HTML}{DD0000}
+\definecolor{special}{HTML}{0A0AF0}
+{
+\lstset{ %
+language=R,                % the language of the code
+basicstyle={\footnotesize \tt},       % the size of the fonts that are used for the code
+commentstyle=\color{comment},
+stringstyle=\color{string},
+linewidth=\textwidth
+}
+<<echo=FALSE,results=tex>>=
+#p <- readLines(system.file("report","properties.R",package="isobar"))
+#p <- sub("(#.*)","\\\\textcolor{comment}{\\1}",p)
+#for (i in c("TRUE","FALSE","NULL"))
+#  p <- sub(i,paste("\\\\textcolor{special}{",i,"}",sep=""),p)
+#p <- sub('(".*?")',"\\\\textcolor{string}{\\1}",p)
+#p <- gsub("#","\\#",p,fixed=TRUE)
+#p <- gsub("_","\\_",p,fixed=TRUE)
+#cat("\\begin{lstlisting}")
+#cat(p,sep="\n")
+#cat("\\end{lstlisting}")
+cat(sprintf("\\lstinputlisting{%s}\n",system.file("report","properties.R",package="isobar")))
 @ 
-\normalsize
+
+}
 
 \section{Dependencies}\label{sec:dependencies}
 \subsection{\LaTeX{} and PGF/TikZ}
