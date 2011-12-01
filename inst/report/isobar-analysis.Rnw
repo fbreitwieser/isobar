@@ -178,11 +178,11 @@ if (any(quant.tbl$is.significant == 1,na.rm=TRUE)) {
             " & ",sprintf("\\parbox{4cm}{%s}",prot.info$table.name),
             " & ",paste(prot.info$n.reporter,prot.info$n.groupmember,sep="/"),
             " & ",length(reporter.peptides),
-            " & ",n.spectra,
-            " & ",protein.row[1,"n.spectra"])
+            " & ",n.spectra)
         if (!is.single.comparision) {
             cat(" & ",cmbn[1,cmb_i]," & ",cmbn[2,cmb_i])
         }
+            cat(" & ",protein.row[1,"n.spectra"])
             cat(" & ",sprintf("\\textbf{%.2f}",10^protein.row[1,"lratio"]),sep=" ")
         cat(" & ",draw.boxplot(protein.row[1,'lratio'],
                                protein.row[1,'sd'],bnd))
