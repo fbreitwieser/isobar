@@ -537,7 +537,7 @@ setMethod("protein.g",signature("ProteinGroup","character","ANY"),
 setGeneric("protein.ac",function(x,protein.g) standardGeneric("protein.ac"))
 setMethod("protein.ac",signature("ProteinGroup","character"),
   function(x,protein.g) {
-   x@isoformToGeneProduct[indistinguishableProteins(x,protein.g=protein.g),"proteinac.wo.splicevariant"]
+   unique(x@isoformToGeneProduct[indistinguishableProteins(x,protein.g=protein.g),"proteinac.wo.splicevariant"])
 }) 
 
 setMethod("protein.ac",signature("ProteinGroup","missing"),
