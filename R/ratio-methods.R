@@ -32,6 +32,17 @@ fitNorm <- function(x,portion=0.75) {
   )
 }
 
+fitGumbel <- function(x) {
+  gumbel.fit <- function(theta,x){
+    -sum(d(Gumbel(loc=theta[1],scale=theta[2]))(x,log=TRUE),na.rm=T)
+  }
+  good <- !is.na(x) & !is.nan(x)
+  theta.start <- c(median(x[good]),IQR(x[good])/2)
+  res <- nlminb(theta.start,gumbel.fit,x=x[good])
+#                lower=c(-10,1e-20),upper=c(10,10)) 
+  new("Gumbel",loc=res$par[1],scale=res$par[2])
+}
+
 
 fitCauchy <- function(x) {
   cauchy.fit <- function(theta,x){
