@@ -15,24 +15,45 @@
 \title{Isobar reports}
 
 \description{
-  Generation of LaTeX and XLS reports is helped with functions
-  which facilitate the gathering of relevant information and creation
-  of tikz plots. \code{initialize.report} is the main function establishing 
-  an environment with all neccessary data and computations.
+  Generation of LaTeX and XLS reports is helped with
+  functions which facilitate the gathering of relevant information and
+  creation of tikz plots. \code{create.reports} parses properties (by
+  calling \code{load.properties}) and initialize environments and
+  computations (by calling \code{initialize.env}) required by the
+  reports, calls Sweave and pdflatex.
 }
 
 \usage{
-create.reports(properties.file = "properties.R", args, report.type = "protein", compile = FALSE)
+create.reports(properties.file = "properties.R", args,
+               report.type = "protein",
+               compile = FALSE, zip = FALSE)
+
+load.properties(properties.file = "properties.R",
+                global.properties.file = system.file("report","properties.R",package="isobar"),
+                args = NULL)
+
+initialize.env(env, report.type = "protein", properties.env)
+
 }
 
 \arguments{
-  \item{properties.file}{File which holds the parameters for data analysis and report generation.
-    It is written in standard R code and defines peaklists, identification files, significance levels,
-    etc. See \code{system.file("report","properties.conf",package="isobar")} for 
-    a full set of possible values. It is parsed using \code{\link{sys.source}}.}
-  \item{args}{Additional parameters which overrids those in \code{properties.file}. }
+  \item{properties.file}{File which holds the parameters for data
+    analysis and report generation. It is parsed as R code after the
+    global report configuration file \code{global.properties.file}  
+    and defines peaklists, identification files, significance levels,
+    etc. See the global properties file for the available options and
+    values.}
+  \item{global.properties.file}{\code{system.file("report","properties.R",package="isobar")}}
+  \item{args}{Additional (command line) arguments which overrids those
+    in \code{properties.file}. }
   \item{report.type}{Currently, only protein is implemented.}
-  \item{compile}{Compile LaTeX source to PDF?}
+  \item{compile}{Compile LaTeX source to PDF? Requires pdflatex to be
+    present. \code{R CMD pdflatex} will be executed twice on the
+    Sweave result tex file.}
+  \item{zip}{If true, tex, xls, and pdf files of all created reports
+    and the properties.file are archived in a file named
+    \code{name.zip} (name as defined as property) using
+    \code{\link{zip}.}}
 }
 
 \details{
@@ -40,13 +61,20 @@ create.reports(properties.file = "properties.R", args, report.type = "protein", 
   \code{system.file("inst",package="isobar")} contains R, Sweave, and LaTeX
   files as examples of how to create XLS and PDF reports using \code{isobar}.
   \describe{
-    \item{create_reports.R}{Call with Rscript. It is the main file which 
-    1) calls a perl script to generate
-    a XLS report, 2) generates a LaTeX quality control and analysis report.
-    for the XLS report the script pl/tab2xls.pl is used, which concetenates 
-    CSV files to a XLS. See Perl requirements. Sweave is called on 
-    report/isobar-qc.Rnw and report/isobar-analysis.Rnw. All files are written
-    the working directory.}
+    \item{create_reports.R}{Call with Rscript. It is the main file which
+      \enumerate{
+	\item{parses command line options. \code{--compile} and
+	  \code{--zip} are parsed directly and given as arguments to
+	  \code{create.reports}. Other arguments are given
+	  \code{\link{load.properties}}.}	
+	\item{calls a perl script to generate a XLS report}
+	\item{generates a LaTeX quality control and analysis report}
+	}
+	for the XLS report the script pl/tab2xls.pl is used, which
+	concetenates CSV files to a XLS. See Perl requirements.
+	Sweave is called on report/isobar-qc.Rnw and
+	report/isobar-analysis.Rnw. All files are written the
+	working directory.}
     \item{isobar-qc.Rnw}{Quality control Sweave file.}
     \item{isobar-analysis.Rnw}{Data analysis Sweave file.}
     \item{properties.R}{Default configuration for data analysis.}
@@ -54,7 +82,7 @@ create.reports(properties.file = "properties.R", args, report.type = "protein", 
   }
 }
 
-\author{Florian P. Breitwieser}
+\author{Florian P Breitwieser}
 
 \seealso{
   \link{IBSpectra},
