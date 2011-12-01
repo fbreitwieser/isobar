@@ -1,6 +1,6 @@
 
 
-create.reports <- function(properties.file="properties.R",args,
+create.reports <- function(properties.file="properties.R",args=NULL,
                            report.type="protein",compile=FALSE,zip=FALSE) {
   if (!exists("properties.env")) {
     properties.env <- load.properties(properties.file,
@@ -17,29 +17,18 @@ create.reports <- function(properties.file="properties.R",args,
   ## generate XLS report
   if(properties.env$write.xls.report) {
     message("Writing isobar-analysis.xls")
-    write.xls.report(properties.env,.GlobalEnv)
+    write.xls.report(report.type,properties.env,.GlobalEnv)
     zip.files <- c(zip.files,"isobar-analysis.xls")
   }
   
-  .compile.tex <- function(name) {
-    .call.cmd <- function(cmd) if (system(cmd,ignore.stdout=TRUE) != 0) stop("\nError executing [",cmd,"]")
-    dir <- tempdir()
-    cat("compiling ",name,".tex ...  1",sep="")
-    .call.cmd(sprintf("R CMD pdflatex -interaction=batchmode -output-directory=%s %s.tex",dir,name))
-    cat(" 2")
-    .call.cmd(sprintf("R CMD pdflatex -interaction=batchmode -output-directory=%s %s.tex",dir,name))
-    cat(" done!\n\n")
-    .call.cmd(sprintf("mv %s/%s.pdf .",dir,name))
-    zip.files <- c(zip.files,sprintf("%s.pdf",name))
-  }
-  
+ 
   ## generate Latex/Sweave report
   if(properties.env$write.qc.report) {
     message("Weaving isobar-qc report")
     Sweave(system.file("report","isobar-qc.Rnw",package="isobar"))
     zip.files <- c(zip.files,"isobar-qc.tex")
     if (compile) 
-      .compile.tex("isobar-qc")
+      zip.files <- .compile.tex("isobar-qc",zip.files)
   }
 
   if(properties.env$write.report) {
@@ -53,7 +42,7 @@ create.reports <- function(properties.file="properties.R",args,
     Sweave(system.file("report",paste(name,".Rnw",sep=""),package="isobar"))
     zip.files <- c(zip.files,sprintf("%s.tex",name))
     if (compile)
-      .compile.tex(name)
+      zip.files <- .compile.tex(name,zip.files)
   }
 
   if (zip) {
@@ -65,7 +54,7 @@ create.reports <- function(properties.file="properties.R",args,
   message("\nSUCCESSFULLY CREATED REPORTS\n")
 }
 
-write.xls.report <- function(properties.env,report.env,file="isobar-analysis.xls") {
+write.xls.report <- function(report.type,properties.env,report.env,file="isobar-analysis.xls") {
     write.t <- function(...,sep="\t",row.names=FALSE,quote=FALSE)
       write.table(...,sep=sep,row.names=row.names,quote=quote)
 
@@ -74,16 +63,23 @@ write.xls.report <- function(properties.env,report.env,file="isobar-analysis.xls
     protein.group <- proteinGroup(get.val('ibspectra'))
     indist.proteins <- indistinguishableProteins(protein.group)
     
-    ## add 'group' to protein identification table:
-    ibs <- as.data.frame(get('ibspectra',report.env))
-    protein.group.df <- unique(data.frame(group=get.val('quant.tbl')[,'group'],
-                                          protein.g=get.val('quant.tbl')[,'ac'],stringsAsFactors=FALSE))
-    indist.proteins.df <- data.frame(accession=names(indist.proteins),
-                                     protein.g=indist.proteins,stringsAsFactors=FALSE)
-    
-    mm.df <- merge(protein.group.df,indist.proteins.df,by="protein.g",all.x=TRUE,all.y=FALSE)
-    mm.df <- merge(mm.df,ibs,all.x=TRUE,all.y=FALSE,by="accession")
-    mm.df <- mm.df[,c("group",colnames(ibs))]
+    if (identical(report.type,"protein")) {
+      ## add 'group' to protein identification table:
+      ibs <- as(get('ibspectra',report.env),"data.frame")
+      protein.group.df <- unique(data.frame(group=get.val('quant.tbl')[,'group'],
+                                            protein.g=get.val('quant.tbl')[,'ac'],
+                                            stringsAsFactors=FALSE))
+      indist.proteins.df <- data.frame(accession=names(indist.proteins),
+                                       protein.g=indist.proteins,stringsAsFactors=FALSE)
+      
+      protein.id.df <- merge(protein.group.df,indist.proteins.df,
+                             by="protein.g",all.x=TRUE,all.y=FALSE,sort=FALSE)
+      protein.id.df <- merge(protein.id.df,ibs,
+                             all.x=TRUE,all.y=FALSE,by="accession",sort=FALSE)
+      protein.id.df <- protein.id.df[,c("group",colnames(ibs))]
+    } else {
+      protein.id.df <- as(get('ibspectra',report.env),"data.frame.concise")
+    }
 
     ## Analysis Properties:
     nn <- reporterTagNames(get.val('ibspectra'))
@@ -109,8 +105,16 @@ write.xls.report <- function(properties.env,report.env,file="isobar-analysis.xls
     protein.id.f <- paste(get.property('cachedir'),"protein_id.csv",sep="/")
     analysis.properties.f <- paste(get.property('cachedir'),"analysis_properties.csv",sep="/")
     log.f <- paste(get.property('cachedir'),"logged_operations.csv",sep="/")
-    write.t(get.val('xls.protein.tbl'),file=protein.quant.f)
-    write.t(mm.df,file=protein.id.f)  
+    if (report.type == "protein") {
+      xls.protein.tbl <- get.val('xls.protein.tbl')
+      write.t(xls.protein.tbl[order(xls.protein.tbl[,"group"],
+                                     xls.protein.tbl[,"Channels"]),],file=protein.quant.f)
+    } else {
+      xls.peptide.tbl <- get.val('xls.peptide.tbl')
+      write.t(xls.peptide.tbl,file=protein.quant.f)
+
+    }
+    write.t(protein.id.df,file=protein.id.f)  
     write.t(ii,file=analysis.properties.f,col.names=FALSE)
     write.t(get.val('ibspectra')@log,file=log.f,col.names=NA,row.names=TRUE)
 
@@ -126,7 +130,18 @@ write.xls.report <- function(properties.env,report.env,file="isobar-analysis.xls
     system(perl.cl)
 }
 
-
+  .compile.tex <- function(name,zip.files) {
+    .call.cmd <- function(cmd) if (system(cmd,ignore.stdout=TRUE) != 0) stop("\nError executing [",cmd,"]")
+    dir <- tempdir()
+    cat("compiling ",name,".tex ...  1",sep="")
+    .call.cmd(sprintf("R CMD pdflatex -interaction=batchmode -output-directory=%s %s.tex",dir,name))
+    cat(" 2")
+    .call.cmd(sprintf("R CMD pdflatex -interaction=batchmode -output-directory=%s %s.tex",dir,name))
+    cat(" done!\n\n")
+    .call.cmd(sprintf("mv %s/%s.pdf .",dir,name))
+    c(zip.files,sprintf("%s.pdf",name))
+  }
+ 
 #- load properties
 
 load.properties <- function(properties.file="properties.R",
@@ -147,6 +162,8 @@ load.properties <- function(properties.file="properties.R",
     tryCatch(sys.source(properties.file,tmp.properties.env),
              error=function(e) stop("\nCould not read properties file:\n", e) )
     .env.copy(properties.env,tmp.properties.env)
+    properties.env$properties.file <- properties.file
+    properties.env$properties.file.content <- readLines(properties.file)
   } else {
     message("  No local properties file.")
   }
@@ -157,11 +174,11 @@ load.properties <- function(properties.file="properties.R",
   for (arg in args) {
     
     if (grepl("^--",arg)) {
-      arg.n.val <- split(substring(arg,3),"=")[[1]]
+      arg.n.val <- strsplit(substring(arg,3),"=")[[1]]
       if (length(arg.n.val) == 1)
         tmp.properties.env[[arg.n.val]] <- TRUE
-      else if (length(arg.n.val) == 2)
-        tmp.properties.env[[arg.n.val[1]]] <- arg.n.val[2]
+      else if (length(arg.n.val) == 2) 
+        tmp.properties.env[[arg.n.val[1]]] <- switch(arg.n.val[2],'TRUE'=TRUE,'FALSE'=FALSE,arg.n.val[2])
       else
         stop("Could not parse command line argument ",arg)
     } else {
@@ -197,7 +214,9 @@ initialize.env <- function(env,report.type="protein",properties.env) {
     env$xls.protein.tbl <- .create.or.load.xls.protein.tbl(env,properties.env)
   } else if (report.type == "peptide") {
     ## compute peptide ratios
-    
+    env$xls.peptide.tbl <- .create.or.load.xls.peptide.tbl(env,properties.env)
+  } else {
+    stop("report type [",report.type,"] not known - choose protein or peptide")
   }
 }
 
@@ -247,14 +266,23 @@ initialize.env <- function(env,report.type="protein",properties.env) {
   exists(x,envir=envir,inherits=FALSE) &&
     (null.ok || !is.null(.get.property(x,envir)))
 
-.check.property <- function(x,envir,inherits=FALSE,msg="",print=TRUE,valid=NULL,...) {
+.check.property <- function(x,envir,inherits=FALSE,msg="",print=TRUE,valid=NULL,check.file=FALSE,...) {
+  def <- grep(x,envir$properties.file.content,value=TRUE)
+  if (length(def) > 0)
+    def <- paste("\n  Corresponding line in ",envir$properties.file,":\n\t",
+                 paste(def,collapse="\n\t"),"\n\n",sep="")
+
   does.not.exist <- !exists(x,envir=envir,inherits=inherits,...)
-  is.null.p <- is.null(.get.property(x,envir=envir))
-  length.0 <- length(.get.property(x,envir=envir))==0
+  is.null.p <- does.not.exist || is.null(.get.property(x,envir=envir))
+  length.0 <- does.not.exist || length(.get.property(x,envir=envir))==0
   if (does.not.exist || is.null.p || length.0) 
-    stop ("  property '",x,"' not defined in properties file, but is required",
-          ifelse(is.null(valid),"",paste(" to be one of \n\t",paste(valid,collapse="\n\t"),sep="")))
+    stop ("  property '",x,"' not defined or did not evaluate in the properties file, but it is required",
+          ifelse(is.null(valid),"",paste(" to be one of \n\t",paste(valid,collapse="\n\t"),
+          sep="")),def)
   
+  if (check.file && !file.exists(.get.property(x,envir=envir)))
+    stop("  property '",x,"' should be assigned to a file, but it is not:",def)
+
   if (!is.null(valid)) {
     p <- .get.property(x,envir=envir)
     isnt.valid <- !p %in% valid
@@ -318,8 +346,8 @@ initialize.env <- function(env,report.type="protein",properties.env) {
   } else {
     # create ibspectra file
     message(sprintf('\n  file %s does not exist, creating ibspectra',get.property('ibspectra')))
-    check.property('peaklist',print=FALSE)
-    check.property('identifications',print=FALSE)
+    check.property('peaklist',print=FALSE,check.file=TRUE)
+    check.property('identifications',print=FALSE,check.file=TRUE)
     message(sprintf('    id.files = %s%s\n    peaklist.files = %s%s\n',
           ifelse(length(get.property('identifications'))>1,"\n      ",""),
           paste(get.property('identifications'),collapse="\n      "),
@@ -453,7 +481,7 @@ initialize.env <- function(env,report.type="protein",properties.env) {
     
     if(identical(level,"peptide")){
       set.ratioopts(list(
-                         peptide=as.matrix(unique(fData(env$ibspectra)[,c("peptide","modif")])),
+                         peptide=unique(apply(fData(env$ibspectra)[,c("peptide","modif")],2,cbind)),
                          proteins=NULL))
     } else if (identical(level,"protein")) {
       set.ratioopts(list(peptide=NULL,
@@ -492,9 +520,9 @@ initialize.env <- function(env,report.type="protein",properties.env) {
         paste(sort(unique(protein.info[protein.info$accession %in% acs,"gene_name"])),
               collapse=", ")
       })
-      sort.pt <- quant.tbl[,"gene_names"]
-      sort.pt[sort.pt==""] <- quant.tbl[sort.pt=="","ac"]
-      quant.tbl <- quant.tbl[order(sort.pt,quant.tbl[,"r1"],quant.tbl[,"r2"]),]
+      sort.genenames <- quant.tbl[,"gene_names"]
+      sort.genenames[sort.genenames==""] <- quant.tbl[sort.genenames=="","ac"]
+      quant.tbl <- quant.tbl[order(sort.genenames,quant.tbl[,"r1"],quant.tbl[,"r2"]),]
       quant.tbl[,"group"] <- as.numeric(factor(quant.tbl[,"ac"],levels=unique(quant.tbl[,"ac"])))
     }
     return(quant.tbl)
@@ -541,7 +569,7 @@ initialize.env <- function(env,report.type="protein",properties.env) {
       xls.protein.tbl <-
         cbind(xls.protein.tbl,data.frame(
               "Channels"=paste(env$quant.tbl$r2,"/",env$quant.tbl$r1),
-              "is significant"=identical(env$quant.tbl$is.significant,1),
+              "is significant"=env$quant.tbl$is.significant == 1,
               "ratio"=10^env$quant.tbl$lratio,
               "CI95.lower"=10^qnorm(0.025,env$quant.tbl$lratio,sqrt(env$quant.tbl$variance)),
               "CI95.upper"=10^qnorm(0.975,env$quant.tbl$lratio,sqrt(env$quant.tbl$variance)),
@@ -562,10 +590,29 @@ initialize.env <- function(env,report.type="protein",properties.env) {
 ##      xls.protein.tbl <- cbind(xls.protein.tbl,"is.preselected"=env$quant.tbl$is.preselected)
     }
     
-    return(xls.protein.tbl)
+    return(xls.protein.tbl[order(xls.protein.tbl[,"group"],xls.protein.tbl[,"Channels"]),])
   })
 }
 
+.create.or.load.xls.peptide.tbl <- function(env,properties.env) {
+  .create.or.load("xls.peptide.tbl",envir=properties.env,
+                  msg.f="peptide table for Excel export",f=function() {
+                    
+    protein.group <- proteinGroup(env$ibspectra)
+    indist.proteins <- indistinguishableProteins(protein.group)
+    df.pg <- as(protein.group,"data.frame.concise")    
+
+    xls.peptide.tbl <- merge(df.pg,quant.tbl,by="peptide")
+    xls.peptide.tbl$Channels <- paste(xls.peptide.tbl$r2,"/",xls.peptide.tbl$r1)
+    message(paste(colnames(xls.peptide.tbl),collapse=":"))
+    return(xls.peptide.tbl)
+#    return(xls.peptide.tbl[,order(xls.peptide.tbl[,"proteins"],
+#                                  xls.peptide.tbl[,"peptide"],
+#                                  xls.peptide.tbl[,"modif"],
+#                                  xls.peptide.tbl[,"Channels"]
+#                              )])
+  })
+}
 .protein.acc <- function(prots,protein.info=NULL,ip=NULL) {
   if (is.null(ip)) {
     proteins <- list(prots)
@@ -706,7 +753,7 @@ print_longtablehdr <- function(level,coldef,draw.channels,ncol.p,draw.signcol) {
       "\n \\endfoot \n")
 }
 
-.print_longtablehdr.peptide <- function(coldef,draw.channels,ncol.p,draw.signcol) {
+print_longtablehdr_peptide <- function(coldef,draw.channels,ncol.p,draw.signcol) {
   #cat("\n\n\\renewcommand{\\arraystretch}{0.75}\n")
   cat("\\begin{longtable}{",coldef,"}",'\n',sep="")
   cat("\t \\# ",paste(" & \\textbf{peptide}"))  
@@ -749,7 +796,7 @@ draw.boxplot <- function(lratio,sd,bnd) {
                   col))
 }
 
-.transform.pepmodif <- function(pep.n.modif) {
+transform_pepmodif <- function(pep.n.modif) {
   pep <- strsplit(pep.n.modif[1],"")[[1]]
   modif <- strsplit(pep.n.modif[2],":")[[1]]
   if (length(pep)+1 != length(modif))
