@@ -602,8 +602,17 @@ getMultUnifDensity <- function(x,n=NULL){
 ### proteinRatios generic and function.
 ###
 
-# method might be: global, interclass, intraclass
-combn.matrix <- function(x,method="global",cl=NULL) {
+## combn.matrix generates pairwise combinations 
+##  of the values in 'x':
+##  - all against all (using combn, methd="global")
+##  - all combinations across classes (method="interclass")
+##     used when computing ratios class A against class B
+##  - all combinations within classes (method="intraclass")
+##     used when computing a intra-class ratio distribution 
+##     for estimation of biological variability
+##  - method "versus.class": all combinations against class vs
+##  - method "verus.channel": all combinations against channel vs
+combn.matrix <- function(x,method="global",cl=NULL,vs=NULL) {
   if (method != "global" & is.null(cl))
     stop("No class labels cl provided.")
   if (method != "global" & !is.character(cl)) {
@@ -613,9 +622,23 @@ combn.matrix <- function(x,method="global",cl=NULL) {
   if (method != "global" & length(cl) != length(x))
     stop(sprintf("cl argument does not have the same length as x (cl: %s, x: %s).",
                  length(cl),length(x)))
-      
+
   # create a combn matrix with all combinations of channels to consider 
-  if (method == "global") {
+  if (method == "versus.class" || method == "versus.channel") {
+    if (is.null(vs)) stop("vs argument may not be null when method is versus")
+    if (method == "versus.channel") {
+      if (!vs %in% x) stop("vs argument must be one of [",paste(x,collapse=", "),"]")
+      pos <- which(x==vs)
+      combn <- rbind(vs,x[-pos])
+      if (!is.null(cl)) {
+        vs.class <- cl[pos]
+        combn <- rbind(combn,vs.class,cl[-pos])
+      }
+    }
+    if (method == "versus.class") {
+      # TODO
+    }
+  } else if (method == "global") {
     combn <- combn(x,2) # take all combinations
     if (!is.null(cl))
       combn <- rbind(combn,combn(cl,2))
