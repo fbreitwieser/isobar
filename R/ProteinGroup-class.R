@@ -99,9 +99,10 @@ setMethod("ProteinGroup",signature(from="data.frame",template="ProteinGroup",pro
     }
 )
 
-readProteinGroup <- function(id.file) {
+readProteinGroup <- function(id.file,...) {
   # TODO: check if this works
-pp <- read.table(id.file,header=T,stringsAsFactors=FALSE,sep="\t")
+  pp <- do.call(rbind,lapply(id.file,function(id.f)
+                read.table(id.f,header=T,stringsAsFactors=FALSE,sep="\t")))
 #mzident <- lapply(id.file,read.table,header=T,stringsAsFactors=FALSE,sep="\t")
 # si <- do.call(rbind,lapply(mzident,function(x) x$spectrum.identifications))
 # rownames(si) <- NULL
@@ -116,7 +117,7 @@ pp <- read.table(id.file,header=T,stringsAsFactors=FALSE,sep="\t")
            .PEPTIDE.COLS['STARTPOS'],
            .PROTEIN.COLS['PROTEINAC'])]
   
-  return(ProteinGroup(from=pp))
+  return(ProteinGroup(from=pp,...))
 }
 
 setMethod("ProteinGroup",signature(from="data.frame",template="NULL",proteinInfo="ANY"),
