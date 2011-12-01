@@ -64,37 +64,38 @@ setMethod("ProteinGroup",signature(from="data.frame",template="ProteinGroup",pro
           function(from,template,proteinInfo) {      
       # TODO: exclude groups from beeing reporters when
       #       there's no reporter-specific peptide ?
-      # TODO: might not work ATM
+      # TODO: add isoformToGeneProduct
       if (ncol(from) == 3) {
           colnames(from) <- c("spectrum","peptide","protein")
       }
       if (ncol(from) == 4) {
           colnames(from) <- c("spectrum","peptide","startpos","protein")
       }
-      peptideNProtein <-
-        subset(data.frame(peptideNProtein(template),stringsAsFactors=F),
-               peptide %in% from[,'peptide'])
+      peptideNProtein <- peptideNProtein(template)[peptideNProtein(template)[,"peptide"] %in% from[,'peptide'],]
       protein.group.table <-
         subset(proteinGroupTable(template),protein.g %in% peptideNProtein[,"protein.g"])
-      indistinguishableProteins <-
-        subset(data.frame(indistinguishableProteins(template),stringsAsFactors=F),
-               protein %in% from[,"protein.group"])
+      ipt <- indistinguishableProteins(template)
+      indistinguishableProteins <- ipt[ipt %in% peptideNProtein[,"protein.g"]]
       peptideSpecificity <-
-        subset(data.frame(peptideSpecificity(template)),peptide %in% from[,"peptide"])
+        subset(peptideSpecificity(template),peptide %in% from[,"peptide"])
       spectrumToPeptide <- spectrumToPeptide(template)[
                      names(spectrumToPeptide(template)) %in% from[,"spectrum"]]
       
-     # TODO: overlappingProteins are missing
+      isoforms <-template@isoformToGeneProduct[names(indistinguishableProteins),]
+      peptideInfo <- subset(template@peptideInfo, peptide %in% from[,'peptide'])
+      ## TODO: overlappingProteins are missing
 
       return(
           new("ProteinGroup",
-              peptideNProtein = as.matrix(peptideNProtein),
-              peptideSpecificity = as.matrix(peptideSpecificity),
+              peptideNProtein = peptideNProtein,
+              peptideSpecificity = peptideSpecificity,
               proteinGroupTable = protein.group.table,
-              indistinguishableProteins = as.matrix(indistinguishableProteins),
+              indistinguishableProteins = indistinguishableProteins,
               spectrumToPeptide = spectrumToPeptide,
-              proteinInfo = proteinInfo)
-      )      
+              isoformToGeneProduct = isoforms,
+              proteinInfo = proteinInfo,
+              peptideInfo = peptideInfo)
+      )
     }
 )
 
