@@ -881,7 +881,7 @@ setAs("IBSpectra","data.frame.concise",
 
       # return in order
       res[order(res[,.PROTEIN.COLS['PROTEINAC_CONCISE']],res[,.SPECTRUM.COLS['PEPTIDE']]),
-          c(intersect(c(.PROTEIN.COLS,.PEPTIDE.COLS,.SPECTRUM.COLS),colnames(res)),
+          c(intersect(c(.PROTEIN.COLS,.PEPTIDE.COLS,"n.groups","n.acs","n.variants",.SPECTRUM.COLS),colnames(res)),
             colnames(rm),colnames(ri))]
     }
 )
