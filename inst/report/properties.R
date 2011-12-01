@@ -18,6 +18,11 @@ name=basename(getwd())
 author="isobar R package"
 ibspectra=paste(name,"ibspectra.csv",sep=".")
 
+## When replicates or 'samples belonging together' are analyzed,
+## a ProteinGroup object based on all data should be constructed
+## beforehand. This then acts as a template and a subset is used.
+protein.group.template=NULL
+
 ## Where should cached files be saved?
 # cachedir="cache"
 cachedir="."
