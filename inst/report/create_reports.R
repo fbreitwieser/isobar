@@ -56,4 +56,5 @@ if (!exists("properties.env",inherits=FALSE)) {
 }
 
 
-create.reports(compile=do.compile,zip=do.zip)
+create.reports(report.type=ifelse(peptide.report,"peptide","protein"),
+               compile=do.compile,zip=do.zip)
