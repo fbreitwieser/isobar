@@ -341,8 +341,8 @@ setGeneric("readIBSpectra", function(type,id.file,peaklist.file,...)
            standardGeneric("readIBSpectra"))
 setMethod("readIBSpectra",
           signature(type="character",id.file="character",peaklist.file="missing"),
-    function(type,id.file,...) {   
-      new(type,data=read.table(id.file,header=T,sep="\t"),...
+    function(type,id.file,...) {
+      new(type,data=do.call(rbind,lapply(id.file,read.table,header=T,sep="\t")),...
       )
     }
 )
