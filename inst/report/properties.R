@@ -1,8 +1,8 @@
 ##
-## Isobar properties.conf file
+## Isobar properties.R file
 ##     for automatic report generation
 ## 
-## It is standard R code and parsed using system.file
+## It is standard R code and parsed using sys.source
 
 ## Isobaric tagging type. Use one of the following:
 # type='iTRAQ4plexSpectra'
@@ -109,7 +109,7 @@ ratios.opts = list(
     sign.level.sample=0.01,
     sign.level.rat=0.01)
 
-quant.w.grouppeptides=c("bcrabl","bcrabl,bcrabl_p185,bcrabl_t315i")
+quant.w.grouppeptides=c("bcrabl","bcrabl,bcrabl_p185,bcrabl_t315i","mgtagzhCorr")
 
 min.detect=NULL
 
