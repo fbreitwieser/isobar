@@ -1309,8 +1309,9 @@ setMethod("reporterMassPrecision",
               
               ggplot(melt.masses,aes(x=mass)) + geom_vline(xintercept=0,alpha=0.8) +
                 geom_histogram(fill="white",aes(colour=factor(reporter)),alpha=0.8,
-                               binwidth=1/30*(max(melt.masses$mass,na.rm=TRUE)-min(melt.masses$mass,na.rm=TRUE))) + 
-                  facet_wrap(~reporter,scales="fixed") + theme_bw() +
+                               binwidth=1/20*(max(melt.masses$mass,na.rm=TRUE)-min(melt.masses$mass,na.rm=TRUE))) + 
+                  facet_wrap(~reporter,scales="fixed",nrow=1) + 
+                  theme_bw() +
                     opts(legend.position="none",
                          axis.text.x = theme_text(angle=330,hjust=0,colour="grey50"))
             }
