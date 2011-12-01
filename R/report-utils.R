@@ -1,7 +1,7 @@
 
 
 create.reports <- function(properties.file="properties.R",args,
-                           report.type="protein",compile=FALSE) {
+                           report.type="protein",compile=FALSE,zip=FALSE) {
   if (!exists("properties.env")) {
     properties.env <- load.properties(properties.file,
                                       system.file("report","properties.R",package="isobar"),
@@ -12,10 +12,13 @@ create.reports <- function(properties.file="properties.R",args,
     initialize.env(.GlobalEnv,report.type,properties.env)
   }
 
+  zip.files <- c(properties.file)
+
   ## generate XLS report
   if(properties.env$write.xls.report) {
     message("Writing isobar-analysis.xls")
     write.xls.report(properties.env,.GlobalEnv)
+    zip.files <- c(zip.files,"isobar-analysis.xls")
   }
   
   .compile.tex <- function(name) {
@@ -27,12 +30,14 @@ create.reports <- function(properties.file="properties.R",args,
     .call.cmd(sprintf("R CMD pdflatex -interaction=batchmode -output-directory=%s %s.tex",dir,name))
     cat(" done!\n\n")
     .call.cmd(sprintf("mv %s/%s.pdf .",dir,name))
+    zip.files <- c(zip.files,sprintf("%s.pdf",name))
   }
   
   ## generate Latex/Sweave report
   if(properties.env$write.qc.report) {
     message("Weaving isobar-qc report")
     Sweave(system.file("report","isobar-qc.Rnw",package="isobar"))
+    zip.files <- c(zip.files,"isobar-qc.tex")
     if (compile) 
       .compile.tex("isobar-qc")
   }
@@ -46,8 +51,15 @@ create.reports <- function(properties.file="properties.R",args,
                         " - choose protein or peptide"))
     
     Sweave(system.file("report",paste(name,".Rnw",sep=""),package="isobar"))
+    zip.files <- c(zip.files,sprintf("%s.tex",name))
     if (compile)
       .compile.tex(name)
+  }
+
+  if (zip) {
+    zip.f <- sprintf("%s.zip",properties.env$name)
+    zip(zip.f,zip.files)
+    message("Created zip archive ",zip.f)
   }
 
   message("\nSUCCESSFULLY CREATED REPORTS\n")

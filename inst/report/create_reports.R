@@ -40,6 +40,7 @@ if (length(args) > 0 && file.exists(args[length(args)])) {
   args[length(args)] <- NULL
 }
 do.compile <- get.arg("--compile")
+do.zip <- get.arg("--zip")
 protein.report <- get.arg("--protein")
 peptide.report <- get.arg("--peptide")
 
@@ -55,4 +56,4 @@ if (!exists("properties.env",inherits=FALSE)) {
 }
 
 
-create.reports(compile=do.compile)
+create.reports(compile=do.compile,zip=do.zip)
