@@ -4,6 +4,7 @@
  
 suppressPackageStartupMessages(library(distr))
 suppressPackageStartupMessages(library(isobar))
+pdf.options(pointsize=8)
 
 if (!exists("properties.env",inherits=FALSE)) {
   stop("No properties.env?")
@@ -56,7 +57,7 @@ cat("\\newcommand{\\analysisauthor}{",sanitize(get.property('author')),"}")
 
 \renewcommand*{\thesubfigure}{}
 
-\title{Isobaric Tag QC Report \analysisname}
+\title{Isobar QC Report \analysisname}
 \author{\analysisauthor}
 \date{\today}
 \raggedbottom
@@ -71,43 +72,49 @@ cat("\\newcommand{\\analysisauthor}{",sanitize(get.property('author')),"}")
 %ibspectra
 %@
 \section{Reporter Mass Precision}
-<<fig-reporterMassPrecision,fig = T, echo = F,width=5,height=5>>=
+<<fig-reporterMassPrecision,fig=T,echo=F,width=6,height=2.5,results=hide>>=
  print(reporterMassPrecision(ibspectra))
 @
 
-\section{Ratio Intensity Plot}
-
-<<fig-maplot,echo=FALSE>>=
-#TODO: setup maplot so that here no ylim is needed
-png("fig_maplot.png",width=6,height=6,units="in",res=600,pointsize=8)
-maplot(ibspectra,noise.model=noise.model,ylim=c(0.1,10),bty="l")
-dev.off()
-   
-@
-\includegraphics{fig_maplot}
-
 \section{Ratio distribution}
-<<show-ratiodistribution,echo=FALSE>>=
-ratiodistr
-@
-<<fig-ratiodistribution,fig=TRUE,echo=FALSE,width=4,height=3>>=
+\begin{minipage}{0.5\textwidth}
+<<fig-ratiodistribution,fig=TRUE,echo=FALSE,width=3,height=2>>=
 #quant.tbl$ratio <- 10^ quant.tbl$lratio
 limits <- seq(from=min(quant.tbl$lratio,na.rm=TRUE),to=max(quant.tbl$lratio,na.rm=TRUE),length.out=1000)
-breaks=c(0.1,0.25,0.5,1,2,3,4,5,10)
+breaks=c(0.1,0.2,1,5,10)
 
 curve.distr <- data.frame(x=limits,y=d(ratiodistr)(limits))
 g <- ggplot(quant.tbl,aes(x=lratio)) +
   geom_histogram(colour = "darkgreen", fill = "white",
-                 aes(y=..density..),alpha=0.8,binwidth=1/30*(max(limits)-min(limits))) +
+                 aes(y=..density..),alpha=0.8,binwidth=1/20*(max(limits)-min(limits))) +
   geom_rug(alpha=0.1) +
   geom_line(data=curve.distr,aes(x=x,y=y),colour="black") +
   scale_x_continuous("Ratio",breaks=log10(breaks),labels=breaks) +
-  theme_bw()
+  theme_bw() +
+  opts(legend.position="none",
+       axis.text.x = theme_text(colour="grey50"))
+
 print(g)
 @
+\end{minipage}
+\begin{minipage}{0.5\textwidth}
+\begin{verbatim}
+<<show-ratiodistribution,echo=FALSE,results=tex>>=
+ratiodistr
+@
+\end{verbatim}
+ \end{minipage}
 
-%\section{Ratio Variance Plot}
-<<fig-ratio-variance,fig=TRUE,echo=FALSE,width=5,height=4,eval=FALSE>>=
+\section{Ratio Intensity Plot}
+<<fig-maplot,echo=FALSE,results=hide>>=
+png("fig_maplot.png",width=6,height=6,units="in",res=600,pointsize=14)
+maplot(ibspectra,noise.model=noise.model,ylim=c(0.1,10),bty="l")
+dev.off()
+@
+\includegraphics{fig_maplot}
+
+<<fig-ratio-variance,fig=TRUE,echo=FALSE,width=6,height=4,eval=FALSE>>=
+#\section{Ratio Variance Plot}
 #if (ep("preselected.proteins"))
 
 quant.tbl <- merge(quant.tbl,ddply(quant.tbl,"sign.string",nrow),all.x=TRUE,by="sign.string")
