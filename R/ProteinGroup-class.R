@@ -540,6 +540,12 @@ setMethod("protein.ac",signature("ProteinGroup","character"),
    x@isoformToGeneProduct[indistinguishableProteins(x,protein.g=protein.g),"proteinac.wo.splicevariant"]
 }) 
 
+setMethod("protein.ac",signature("ProteinGroup","missing"),
+  function(x) {
+   unique(x@isoformToGeneProduct[,"proteinac.wo.splicevariant"])
+})
+
+
 
 ### - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 ### show method.
