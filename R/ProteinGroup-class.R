@@ -725,3 +725,70 @@ my.protein.info <- function(x,protein.g) {
          splicevariant=as.numeric(isoforms[protein.acs,"splicevariant"])), 
        stringsAsFactors=FALSE), protein.info, all.x=TRUE,all.y=FALSE))
 }
+
+
+### - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+### Quantification functions (dNSAF).
+###  based on peptide or spectral count
+
+calculate.dNSAF <- function(protein.group,seqlength=NULL,...) {
+  if (is.null(seqlength))
+    seqlength <- get.seqlength(unique(protein.ac(protein.group,reporterProteins(protein.group))),...)
+  
+  spectrum.counts <- table(spectrumToPeptide(protein.group))
+  ## Calculate unique spectrum counts for all proteins
+  uspc <- sapply(reporterProteins(protein.group), function(p) 
+                 sum(spectrum.counts[peptides(protein.group,protein=p,
+                                              specificity=c("reporter-specific","group-specific"))]))
+  names(uspc) <- reporterProteins(protein.group)
+  
+  ## Calculate distribution factors for each shared peptide
+  pnp <- peptideNProtein(protein.group)
+  pnp <- pnp[pnp[,"protein.g"] %in% reporterProteins(protein.group),]
+  t <- table(pnp[,"peptide"])
+  shared.peptides <- names(t)[t>1]
+  distr.factors <- lapply(shared.peptides,function(pep) {
+    proteins <- pnp[pnp[,"peptide"]==pep,"protein.g"]
+    uspc.p <- uspc[proteins]
+    uspc.p/sum(uspc.p)
+  })
+  names(distr.factors) <- shared.peptides
+
+  ## Calculate dSAF
+  dSAF <- sapply(reporterProteins(protein.group), function(p) {
+    shared.pep.p <- peptides(protein.group,protein=p,specificity="unspecific",do.warn=FALSE)
+    if (length(shared.pep.p) > 0)
+      d.sspc <- sum(sapply(shared.pep.p, function(pep) spectrum.counts[pep]*distr.factors[[pep]][p]))
+    else
+      d.sspc <- 0
+
+    ## for protein length, we take the sum of lengths of all acs
+    protein.length <- sum(seqlength[unique(protein.ac(protein.group,p))])
+    dSAF <- (uspc[p] + d.sspc) / protein.length
+    return(dSAF)
+  })
+
+  ## normalize to dNSAF
+  dNSAF <- dSAF/sum(dSAF,na.rm=TRUE)
+  return(dNSAF)
+}
+
+## get.seqlength returns amino acid sequence length of Uniprot ACs
+get.seqlength <- function(my.acs,uniprot=NULL,uniprot.acs=NULL) { 
+  if (is.null(uniprot)) {
+    ## Download Uniprot/Swissprot from:
+    ## ftp://ftp.uniprot.org/pub/databases/uniprot/current_release/knowledgebase/complete/uniprot_sprot.fasta.gz
+
+    ## Alternative: use ANUC
+    ## choosebank("swissprot")
+    ## cat(banknameSocket$details, sep = "\n")
+
+    library(seqinr)
+    uniprot <- read.fasta("uniprot_sprot.fasta",seqtype="AA",as.string=TRUE)
+  }
+  if (is.null(uniprot.acs))
+    uniprot.acs <- do.call(rbind,strsplit(names(uniprot),"|",fixed=TRUE))[,2]
+  seqlength <- sapply(uniprot[uniprot.acs %in% my.acs],nchar)
+  names(seqlength) <- uniprot.acs[uniprot.acs %in% my.acs]
+  return(seqlength)
+}
