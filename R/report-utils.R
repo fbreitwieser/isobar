@@ -1280,6 +1280,7 @@ initialize.env <- function(env,report.type="protein",properties.env) {
   readIBSpectra.args$id.file=get.property('ibspectra')
   readIBSpectra.args$fragment.precision=get.property('fragment.precision')
   readIBSpectra.args$fragment.outlier.prob=get.property('fragment.outlier.prob')
+  readIBSpectra.args$proteinGroupTemplate=.get.or.load('protein.group.template',properties.env,"ProteinGroup")
 
   if (file.exists(get.property('ibspectra'))) {
     if (grepl(".csv",get.property('ibspectra'))) {
