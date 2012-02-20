@@ -442,11 +442,22 @@ setMethod("peptides",signature(x="ProteinGroup",protein="missing"),
 setMethod("peptides",signature(x="ProteinGroup",protein="character"),
     function(x,protein,
              specificity=c(UNSPECIFIC,GROUPSPECIFIC,REPORTERSPECIFIC),
-             columns=c('peptide'),set=union,drop=TRUE,do.warn=TRUE) {
+             columns=c('peptide'),set=union,drop=TRUE,
+             groupspecific.if.same.ac=FALSE,do.warn=TRUE) {
 
       pnp <- peptideNProtein(x)
       ps <- peptideSpecificity(x)
 
+      if (groupspecific.if.same.ac) {
+        group.proteins <- subset(proteinGroupTable(x),reporter.protein==protein,"protein.g",drop=TRUE)
+        group.proteins.all <- names(indistinguishableProteins(x,protein=group.proteins))
+        protein.acs <- subset(x@isoformToGeneProduct,
+                              proteinac.w.splicevariant %in% group.proteins.all,
+                              "proteinac.wo.splicevariant",drop=TRUE)
+        if (length(unique(protein.acs)) == 1)
+          specificity <- c(specificity,GROUPSPECIFIC)
+      }
+      
       peptides <- lapply(protein, function(p) pnp[pnp[,"protein.g"] == p,"peptide"])
       peptides <- Reduce(set,peptides)
 
