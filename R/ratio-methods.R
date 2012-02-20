@@ -194,37 +194,47 @@ setMethod("estimateRatioNumeric",signature(channel1="numeric",channel2="numeric"
       i1 <- log10(channel1)
       i2 <- log10(channel2)
 
-# TODO: Add sampling possibility again
-#      if (!is.null(n.sample))
-#        if (n.sample <= length(i1)) {
-#          # We want to sample the data, useful for TP/FP tests only in principle
-#          indices <- sample(seq_along(i1),n.sample)
-#          i1 <- i1[indices]
-#          i2 <- i2[indices]
-#        }
-#        else
-#          return(NA)
-
-      ## Computes all the spectrum ratios and their individual
+      ## Compute all the spectrum ratios and their individual
       ## variance based on the noise model
       log.ratio = i2[sel.notna] - i1[sel.notna]
-      if (is.null(channel1.raw)) {
-        i1.raw <- NULL
-        i2.raw <- NULL
-      } else {
-        i1.raw <- log10(channel1.raw)
-        i2.raw <- log10(channel2.raw)
-      }
+      if (is.null(channel1.raw))
+        var.i <- variance(noise.model,i1,i2)
+      else 
+        var.i <- variance(noise.model,
+                          log10(channel1.raw),log10(channel2.raw))
+      
+      ## linear regression estimation
+      if (method=="lm" || method=="compare.all") {
+        fm <- lm(channel2~channel1+0,
+                 weights=1/var.i)
+        summary.fm <- summary.lm(fm)$coefficients
+        ci <- confint(fm,level=1-sign.level.rat)
+        res.lm <- c(lratio=log10(summary.fm[1]),
+                    ratio=summary.fm[1],
+                    stderr=summary.fm[2],
+                    ratio.ci.l=ci[1],
+                    ratio.ci.u=ci[2])
 
+        if (!is.null(ratiodistr)) {
+          rat.neg <- log10(res.lm['ratio']) < distr::q(ratiodistr)(0.5)
+          lrat.p <- log10(ifelse(rat.neg,ci[2],ci[1]))
+          res.lm['p.value'] <- distr::p(ratiodistr)(lrat.p,lower.tail=rat.neg)
+          res.lm['is.significant'] <- res.lm['p.value'] < sign.level.sample
+        }
+        
+        if (method == "lm") return (res.lm)
+      }      
+       
       # First, compute ratios on spectra with intensities for both reporter ions
-      lratio.n.var <- .calc.weighted.ratio(sel.notna,i1,i2,noise.model,i1.raw,i2.raw,
-                                           remove.outliers,outliers.coef,outliers.trim,
-                                           variance.function)
-
+      lratio.n.var <-
+        .calc.weighted.ratio(sel.notna,i1,i2,var.i,
+                             remove.outliers,outliers.coef,outliers.trim,
+                             variance.function)
+      
       if (method == "ttest" || method == "compare.all") {
         if (length(log.ratio) < 2) p.value <- 1  else p.value <- t.test(log.ratio)$p.value
         res.ttest <- c(
-            lratio=lratio.n.var['lratio'],variance=NA,n.spectra=length(log.ratio),
+                       lratio=lratio.n.var['lratio'],variance=NA,n.spectra=length(log.ratio),
             p.value=p.value,is.significant=p.value<sign.level)
         if (method != "compare.all") return(res.ttest)
       }
@@ -285,9 +295,10 @@ setMethod("estimateRatioNumeric",signature(channel1="numeric",channel2="numeric"
 #        message("ch1na: ",sum(sel.ch1na),"; ch2na: ",sum(sel.ch2na))
 
         # calculate final ratio
-        lratio.n.var <- .calc.weighted.ratio(sel,i1,i2,noise.model,i1.raw,i2.raw,
-                                             remove.outliers,outliers.coef,outliers.trim,
-                                             variance.function)
+        lratio.n.var <- 
+          calc.weighted.ratio(sel,i1,i2,var.i,
+                              remove.outliers,outliers.coef,outliers.trim,
+                              variance.function)
         }
         weighted.ratio <- as.numeric(lratio.n.var['lratio'])
         calc.variance <- as.numeric(lratio.n.var['calc.variance'])
@@ -303,17 +314,17 @@ setMethod("estimateRatioNumeric",signature(channel1="numeric",channel2="numeric"
                 c(lratio=weighted.ratio, variance=calc.variance,
                   n.spectra=length(log.ratio),
                   p.value.rat=pnorm(weighted.ratio,
-                   mean=distr::q(ratiodistr)(0.5),sd=sqrt(calc.variance),
+                    mean=distr::q(ratiodistr)(0.5),sd=sqrt(calc.variance),
                     lower.tail=weighted.ratio<distr::q(ratiodistr)(0.5)),
-                 p.value.sample=p(ratiodistr)(weighted.ratio,
+                  p.value.sample=p(ratiodistr)(weighted.ratio,
                     lower.tail=weighted.ratio<distr::q(ratiodistr)(0.5)))
              if (method=="compare.all") 
                res.isobar['is.significant.ev'] <- 
                  (res.isobar['p.value.sample'] <= sign.level.sample) &&
-                 pnorm(weighted.ratio,mean=distr::q(ratiodistr)(0.5),
-                       sd=as.numeric(sqrt(lratio.n.var['estimator.variance'])),
-                       lower.tail=weighted.ratio<distr::q(ratiodistr)(0.5))
-
+             pnorm(weighted.ratio,mean=distr::q(ratiodistr)(0.5),
+                   sd=as.numeric(sqrt(lratio.n.var['estimator.variance'])),
+                   lower.tail=weighted.ratio<distr::q(ratiodistr)(0.5))
+             
              res.isobar['is.significant'] <- 
                        (res.isobar['p.value.sample'] <= sign.level.sample) && 
                        (res.isobar['p.value.rat'] <= sign.level.rat)
@@ -321,19 +332,23 @@ setMethod("estimateRatioNumeric",signature(channel1="numeric",channel2="numeric"
         if (method != "compare.all") return(res.isobar)
       }
       if (method != "compare.all") stop(paste("method",method,"not available"))
-        return(c(lratio=weighted.ratio, variance=calc.variance,
+        return(c(lratio=weighted.ratio,
+                 ratio=10^weighted.ratio,
+                 ratio.lm=as.numeric(res.lm['ratio']),
+                 variance=calc.variance,
+                 var.lm=as.numeric(res.lm['stderr']**2),
                  n.spectra=length(log.ratio),
                  unweighted.ratio=mean(log.ratio,na.rm=TRUE),
                  is.sign.isobar    = as.numeric(res.isobar['is.significant']),
                  is.sign.isobar.ev = as.numeric(res.isobar['is.significant.ev']),
+                 is.sign.lm        = as.numeric(res.lm['is.significant']),
                  is.sign.rat       = as.numeric(res.isobar['p.value.rat']<sign.level),
                  is.sign.sample    = as.numeric(res.isobar['p.value.sample']<sign.level),
                  is.sign.ttest     = as.numeric(res.ttest['is.significant']),
-#         is.significant.wttest    = res.isobar$is.significant,
+                 ## is.significant.wttest    = res.isobar$is.significant,
                  is.sign.fc        = as.numeric(res.fc['is.significant']),
                  is.sign.fc.nw     = as.numeric(res.fc.nw['is.significant'])
                  ))
-
     }
 )
 .get.ri <- function(ri,ch) {
@@ -343,16 +358,13 @@ setMethod("estimateRatioNumeric",signature(channel1="numeric",channel2="numeric"
     ri[,ch]
 }
 
-.calc.weighted.ratio <- function(sel,i1,i2,noise.model,i1.raw=NULL,i2.raw=NULL,
+                           
+.calc.weighted.ratio <- function(sel,i1,i2,variance,
                                  remove.outliers,outliers.coef,outliers.trim,
                                  variance.function) {
-  log.ratio = i2[sel] - i1[sel]
-
-  if (!is.null(i1.raw) && !is.null(i2.raw) ) {
-    variance <- variance(noise.model,i1.raw[sel],i2.raw[sel])
-  } else {
-    variance <- variance(noise.model,i1[sel],i2[sel])
-  }
+  
+  log.ratio <- i2[sel] - i1[sel]
+  variance <- variance[sel]
   
   if (remove.outliers) {
     # TODO: Weighted outlier removal
