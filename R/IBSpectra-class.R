@@ -1229,8 +1229,8 @@ normalize <- function(x,f=median,target="intensity",exclude.protein=NULL,
   }
   
   ## save original reporter intensities for noise estimation
-  orig.ri <- reporterIntensities(x)
-  assayDataElement(x,"ions_not_normalized") <- orig.ri
+  if (is.null(assayDataElement(x,"ions_not_normalized")))
+    assayDataElement(x,"ions_not_normalized") <- reporterIntensities(x)
   
   reporterIntensities(x)[,colnames(ri)] <- 
     reporterIntensities(x)[,colnames(ri)]*
