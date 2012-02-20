@@ -822,9 +822,14 @@ spectra.count <- function(protein.group,protein.g=reporterProteins(protein.group
   return(spectra.count)
 }
 
-calculate.dNSAF <- function(protein.group,seqlength=NULL,...) {
-  if (is.null(seqlength))
-    seqlength <- get.seqlength(unique(protein.ac(protein.group,reporterProteins(protein.group))),...)
+calculate.dNSAF <- function(protein.group) {
+  if (is.null(proteinInfo(protein.group)) || length(proteinInfo(protein.group)) == 0)
+    stop("slot proteinInfo not set - it is needed for sequence length")
+  if (!"length" %in% colnames(proteinInfo(protein.group))) {
+    stop("no column 'length' in proteinInfo slot")
+  }
+  seqlength <- proteinInfo(protein.group)$length
+  names(seqlength) <- proteinInfo(protein.group)$accession
   
   spectrum.counts <- table(spectrumToPeptide(protein.group))
   ## Calculate unique spectrum counts for all proteins
@@ -867,7 +872,7 @@ calculate.dNSAF <- function(protein.group,seqlength=NULL,...) {
 }
 
 ## get.seqlength returns amino acid sequence length of Uniprot ACs
-get.seqlength <- function(my.acs,uniprot=NULL,uniprot.acs=NULL) { 
+.DEPR.get.seqlength <- function(my.acs,uniprot=NULL,uniprot.acs=NULL) { 
   if (is.null(uniprot)) {
     ## Download Uniprot/Swissprot from:
     ## ftp://ftp.uniprot.org/pub/databases/uniprot/current_release/knowledgebase/complete/uniprot_sprot.fasta.gz
@@ -887,7 +892,7 @@ get.seqlength <- function(my.acs,uniprot=NULL,uniprot.acs=NULL) {
 }
 
 
-n.obs.peptides.old <- function(seq,nmc=1,min.length=6) {
+.DEPR.n.obs.peptides <- function(seq,nmc=1,min.length=6) {
   seq.c <- strsplit(seq,"")[[1]]
   pos <- gregexpr("[KR]",seq,perl=TRUE)[[1]]
   pos <- pos[seq.c[pos+1] != "P"]
@@ -919,27 +924,9 @@ n.obs.peptides.old <- function(seq,nmc=1,min.length=6) {
   return(length(pep))
 }
 
-get.n.observable.pep <- function(my.acs,uniprot=NULL,uniprot.acs=NULL) {
-## Download Uniprot/Swissprot from:
-## ftp://ftp.uniprot.org/pub/databases/uniprot/current_release/knowledgebase/complete/uniprot_sprot.fasta.gz
-
-## Alternative: use ANUC
-## choosebank("swissprot")
-## cat(banknameSocket$details, sep = "\n")
-
-  if (is.null(uniprot))
-    uniprot <- read.fasta("uniprot_sprot.fasta",seqtype="AA",as.string=TRUE)
-
-  if (is.null(uniprot.acs))
-    uniprot.acs <- do.call(rbind,strsplit(names(uniprot),"|",fixed=TRUE))[,2]
-    
-  n.observable.pep <- sapply(uniprot[uniprot.acs %in% my.acs],n.obs.peptides)
-  names(n.observable.pep) <- uniprot.acs[uniprot.acs %in% my.acs]
-  return(n.observable.pep) 
-}
-
 n.observable.peptides <- function(seq,nmc=1,min.length=6,min.mass=800,max.mass=4000,...) {
-  require(OrgMassSpecR)
+  if (is.na(seq) || length(seq)==0 || nchar(seq) == 0)
+    return(0)
   pep <- Digest(seq,missed=nmc,...)
   min.length.ok <- nchar(pep[,"peptide"]) >= min.length
   mass.ok <- pep[,"mz2"] >= min.mass & pep[,"mz3"] <= max.mass
@@ -947,10 +934,24 @@ n.observable.peptides <- function(seq,nmc=1,min.length=6,min.mass=800,max.mass=4
   return(sum(min.length.ok & mass.ok))
 }
 
-calculate.emPAI <- function(protein.group,level="",...) {
+calculate.emPAI <- function(protein.group,...) {
+  require(OrgMassSpecR)
+  if (is.null(proteinInfo(protein.group)) || length(proteinInfo(protein.group)) == 0)
+    stop("slot proteinInfo not set - it is needed for sequence length")
+  if (!"sequence" %in% colnames(proteinInfo(protein.group))) {
+    stop("no column 'sequence' in proteinInfo slot")
+  }
   proteins <- reporterProteins(protein.group)
-  peptide.cnt <- table(peptideNProtein(protein.group)[,"protein.g"])[proteins]
-  
-  
-  n.observable.pep <- get.n.observable.pep(,uniprot,names(uniprot.acs))
+
+  sequences <- proteinInfo(protein.group)$sequence
+  names(sequences) <- proteinInfo(protein.group)$accession
+ 
+  n.observed.peptides <- table(peptideNProtein(protein.group)[,"protein.g"])[proteins]
+  n.observable.peptides <- sapply(proteins,
+       function(protein.g) 
+         do.call(sum,lapply(unique(protein.ac(protein.group,protein.g)),
+             function(protein.ac) n.observable.peptides(sequences[protein.ac])))
+  )
+  empai <- 10^(n.observed.peptides/n.observable.peptides) - 1
+  return(empai)
 }

@@ -11,7 +11,7 @@ Maintainer: Florian P Breitwieser <fbreitwieser@cemm.oeaw.ac.at>
 biocViews: Proteomics, MassSpectrometry, Bioinformatics, MultipleComparisons, QualityControl
 Depends: R (>= 2.9.0), Biobase, stats, methods, ggplot2
 Imports: distr, biomaRt
-Suggests: MSnbase, XML, seqinr
+Suggests: MSnbase, XML
 LazyLoad: yes
 License: LGPL-2
 URL: http://bioinformatics.cemm.oeaw.ac.at
