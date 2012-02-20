@@ -1,6 +1,6 @@
 #!/usr/bin/perl
 # Creation date : 2010-09-29
-# Last modified : Wed 21 Dec 2011 03:58:20 PM CET
+# Last modified : Fri 20 Jan 2012 10:26:15 AM CET
 
 # Module        : tab2xls.pl
 # Purpose       : converts csv files to XLS format
@@ -49,6 +49,7 @@ $fmt_centeracross->set_fg_color('green');
 
 my $fmt_red = $workbook->add_format(color=>'red');
 my $fmt_green= $workbook->add_format(color=>'blue');
+my $fmt_gray= $workbook->add_format(color=>'gray');
 
 my $wbcenter = $workbook->add_format();
 $wbcenter->set_align('center');
@@ -146,8 +147,8 @@ sub write_col {
         if ($is_header) {
     	    $worksheet->write($row,$col,getname($field),$wbheader);
         } else {
-    	    if ($field eq 'TRUE') {
-    	   	    $worksheet->write($row,$col,$field,$fmt_green);
+    	    if ($field eq 'TRUE') { $worksheet->write($row,$col,$field,$fmt_green);
+            } elsif ($field eq '0') { $worksheet->write($row,$col,$field,$fmt_gray);
         	} else {
 	       	    $worksheet->write($row,$col,$field);
     	    }
