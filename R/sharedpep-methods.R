@@ -32,7 +32,7 @@
   return(proteins.w.shared.pep.df)
 }
 
-shared.ratios <- function(ibspectra,noise.model,channel1,channel2,protein=reporterProteins(proteinGroup(ibspectra)),...) {
+shared.ratios <- function(ibspectra,noise.model,channel1=NULL,channel2=NULL,protein=reporterProteins(proteinGroup(ibspectra)),...) {
   protein.group <- proteinGroup(ibspectra)
   l <- lapply(protein, function(reporter.protein.g) {    
     gmp <- groupMemberPeptides(protein.group,reporter.protein.g,TRUE)           
