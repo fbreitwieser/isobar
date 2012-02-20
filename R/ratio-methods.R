@@ -285,7 +285,7 @@ setMethod("estimateRatioNumeric",signature(channel1="numeric",channel2="numeric"
 #        i2[sel.ch2na] <- max(val,i1[sel.ch2na]-10)
 #        i1.raw[sel.ch1na] <- max(val,i2[sel.ch1na]-10)
 #        i2.raw[sel.ch2na] <- max(val,i1[sel.ch2na]-10)
-       
+        
         i1[sel.ch1na] <- val
         i2[sel.ch2na] <- val
         i1.raw[sel.ch1na] <- i2.raw[sel.ch1na]
@@ -413,10 +413,11 @@ estimateRatioForProtein <- function(protein,ibspectra,noise.model,channel1,chann
       if (combine) {
         if (method == "multiq" || method == "libra" || method=="pep") {
           ## first compute peptide ratios, summarize then
-          peptide.ratios <- estimateRatioForPeptide(peptides(proteinGroup(ibspectra),protein=protein),
-                                                ibspectra,noise.model=noise.model,
-                                                channel1=channel1,channel2=channel2,
-                                                combine=FALSE,method=method)
+          peptide.ratios <-
+            estimateRatioForPeptide(peptides(proteinGroup(ibspectra),protein=protein),
+                                    ibspectra,noise.model=noise.model,
+                                    channel1=channel1,channel2=channel2,
+                                    combine=FALSE,method=method)
 
           if (method == "libra" | method=="pep") {
             # normalize to sum
