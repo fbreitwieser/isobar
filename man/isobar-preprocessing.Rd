@@ -33,7 +33,7 @@
 \section{Normalization}{
   \describe{
     \item{\code{normalize(x,f=median,target="intensity",exclude.protein=NULL,
-	use.protein=NULL,f.doapply=TRUE,log=TRUE)}:}{
+	use.protein=NULL,f.doapply=TRUE,log=TRUE,channels=NULL,na.rm=FALSE)}:}{
       Normalizes the intensities for multiplicative errors. Those changes
       are most likely produced by pipetting errors, and different
       hybridization efficencies, but can also be due to biological

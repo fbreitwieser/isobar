@@ -1153,83 +1153,102 @@ setMethod("correctIsotopeImpurities",signature(x="IBSpectra"),
       return(x)
     }
 )
+
 normalize <- function(x,f=median,target="intensity",exclude.protein=NULL,
-                      use.protein=NULL,f.doapply=TRUE,log=TRUE,...){
-
-      ## NOTE: median normalizes too much - mean or colSums better?
-      ##       reason: NAs which are not taken into account by median
-
-      if (!is.logged(x,"isotopeImpurities.corrected")) {
-        warning("Isotope impurity correction has not been logged",
-                " - data might be uncorrected. See ?correctIsotopeImpurities.");
-      }
-      if (is.logged(x,"is.normalized")) {
-        warning("Normalization is logged already.");
-      }
-
-       if (!is.null(exclude.protein) & !is.null(use.protein))
-         stop("Provide either exclude.protein or use.protein, not both.")
- 
-       # NA rows are removed as they are considered unreliable
-       ri <- reporterIntensities(x,na.rm=FALSE)
-       
-       if (!is.null(exclude.protein))
-         ri <- ri[!spectrumSel(x,protein=exclude.protein,
-                               specificity=c(REPORTERSPECIFIC,GROUPSPECIFIC,UNSPECIFIC)),]
-
-       if (!is.null(use.protein))
-         ri <- ri[spectrumSel(x,protein=use.protein,specificity=REPORTERSPECIFIC),]
+                      use.protein=NULL,f.doapply=TRUE,log=TRUE,
+                      channels=NULL,na.rm=FALSE,...){
   
-       ## TODO: warning when ri is empty
-       
-       if (target=="ratio") {
-         rs <- rowSums(ri,na.rm=T)
-         if (log)
-          ri <- apply(ri,2,function(x) x/rs)
-         else
-           ri <- apply(ri,2,function(x) x-rs)
-       } else if (target=="intensity") {
-         # take ri as specified
-       } else {
-         stop(paste("target",target,"not known"))
-       }
- 
-       if (!f.doapply)
-         res <- f(ri,na.rm=TRUE,...)
-       else
-         res <- apply(ri,2,f,na.rm=TRUE,...)
+  ## NOTE: median normalizes might normalize too much when a lot of NA
+  ##         values are present - mean or colSums better?
+  
+  if (!is.logged(x,"isotopeImpurities.corrected")) 
+    warning("Isotope impurity correction has not been logged",
+            " - data might be uncorrected. See ?correctIsotopeImpurities.")
 
-       factor <- max(res,na.rm=T)/res
+  ##if (is.logged(x,"is.normalized"))
+  ##  warning("Normalization is logged already.")
+  
+  if (!is.null(exclude.protein) & !is.null(use.protein))
+    stop("Provide either exclude.protein or use.protein, not both.")
 
-       x <- do.log(x,"is.normalized",TRUE)
-# FIXME: function for f does not work
-#       x <- do.log(x,"normalization.method",
-#              sprintf("%s of %s",as.character(substitute(f)),target))
-       for (i in seq_along(factor)) {
-         x <- do.log(x,paste("normalization.multiplicative.factor channel",
-                             colnames(ri)[i]),
-                       round(factor[i],4))
-       }
+  ri <- reporterIntensities(x,na.rm=na.rm)
 
-       # save original reporter intensities for noise estimation
-       orig.ri <- reporterIntensities(x)
-	   assayDataElement(x,"ions_not_normalized") <- orig.ri
+  if (!is.null(channels) ) {
+    if (is.list(channels)) {
+      for (channels.set in channels)
+        x <- normalize(x,f=f,target=target,exclude.protein=exclude.protein,
+                       use.protein=use.protein,f.doapply=f.doapply,
+                       log=log,channels=channels.set,na.rm=na.rm,...)
+      return(x)
+    } else {
+      if (!all(channels %in% colnames(ri)))
+        stop("channels must be reporterTagNames.")
+                                                         
+      ri <- ri[,channels,drop=FALSE]
+    }
+  } ## if !is.null(channels)
+  
+  if (!is.null(exclude.protein))
+    ri <- ri[!spectrumSel(x,protein=exclude.protein,
+                          specificity=c(REPORTERSPECIFIC,GROUPSPECIFIC,UNSPECIFIC)),]
+  
+  if (!is.null(use.protein))
+    ri <- ri[spectrumSel(x,protein=use.protein,specificity=REPORTERSPECIFIC),]
+  
+  ## TODO: warning when ri is empty
+  
+  if (target=="ratio") {
+    rs <- rowSums(ri,na.rm=T)
+    if (log)
+      ri <- apply(ri,2,function(x) x/rs)
+    else
+      ri <- apply(ri,2,function(x) x-rs)
+  } else if (target=="intensity") {
+    ## take ri as specified
+  } else {
+    stop(paste("target",target,"not known"))
+  }
+  
+  if (!f.doapply)
+    res <- f(ri,na.rm=TRUE,...)
+  else
+    res <- apply(ri,2,f,na.rm=TRUE,...)
+  
+  factor <- max(res,na.rm=T)/res
+  
+  x <- do.log(x,"is.normalized",TRUE)
+  ## FIXME: function for f does not work
+  ##       x <- do.log(x,"normalization.method",
+  ##              sprintf("%s of %s",as.character(substitute(f)),target))
+  for (i in seq_along(factor)) {
+    x <- do.log(x,paste("normalization.multiplicative.factor channel",
+                        colnames(ri)[i]),
+                round(factor[i],4))
+  }
+  
+  ## save original reporter intensities for noise estimation
+  orig.ri <- reporterIntensities(x)
+  assayDataElement(x,"ions_not_normalized") <- orig.ri
+  
+  reporterIntensities(x)[,colnames(ri)] <- 
+    reporterIntensities(x)[,colnames(ri)]*
+      rep(factor,each=nrow(reporterIntensities(x)))
+  
+  x
+}
 
-       reporterIntensities(x) <- 
-         reporterIntensities(x)*rep(factor,each=nrow(reporterIntensities(x)))
-
-       x
-     }
+setGeneric("normalize")
 
 
+## Estimates the noise level througth the 1st percentile of the >0
+## signals (in the linear space) Method quantile: It take's the prob
+## (0.01) quantile to estimate the noise level.  This value is
+## subtracted from all intensities, and all remaining intensities have
+## to be at least that value.
 
-# Estimates the noise level througth the 1st percentile of the >0 signals (in the linear space)
-# Method quantile: It take's the prob (0.01) quantile to estimate the noise level.
-#  This value is subtracted from all intensities, and all remaining intensities have to be at least that value.
-
-# If channels are assumed similar in intensity and hence a shared noise level is 
-# reasonable 
-# If not, then one level per channel is necessary
+## If channels are assumed similar in intensity and hence a shared
+## noise level is reasonable If not, then one level per channel is
+## necessary
 setMethod("subtractAdditiveNoise",signature(x="IBSpectra"),
     function(x,method="quantile",shared=TRUE,prob=0.01) {
       if (method=="quantile") {
