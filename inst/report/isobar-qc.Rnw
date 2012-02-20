@@ -120,7 +120,7 @@ if (!is.null(ratiodistr))
 \subsection*{Ratio Intensity Plot}
 <<fig-maplot,echo=FALSE,results=hide>>=
 png("fig_maplot.png",width=6,height=6,units="in",res=600,pointsize=14)
-maplot(ibspectra,noise.model=noise.model,ylim=c(0.1,10),bty="l")
+maplot(ibspectra,noise.model=noise.model,bty="l")
 dev.off()
 @
 \includegraphics{fig_maplot}
