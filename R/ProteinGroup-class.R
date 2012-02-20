@@ -805,6 +805,12 @@ summary.ProteinGroup <- function(object,only.reporters=TRUE,...) {
 ### Quantification functions (dNSAF).
 ###  based on peptide or spectral count
 
+peptide.count <- function(protein.group,protein.g=reporterProteins(protein.group),
+                          specificity=c("reporter-specific","group-specific","unspecific")) {
+  sapply(protein.g,
+         function(p) length(peptides(protein.group,p,specificity=specificity)))
+}
+
 spectra.count <- function(protein.group,protein.g=reporterProteins(protein.group),
                           specificity=c("reporter-specific","group-specific","unspecific")) {
   peptide.spectra.count <- table(spectrumToPeptide(protein.group))
