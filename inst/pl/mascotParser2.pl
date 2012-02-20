@@ -136,6 +136,9 @@ Jacques Colinge
 =cut
 
 use strict;
+use warnings;
+no warnings 'uninitialized';
+use Data::Dumper;
 use FindBin qw/$Bin/;
 use File::Basename;
 use Getopt::Long;
@@ -148,7 +151,7 @@ my ($help, $verbose);
 my $instrument = 'n/a';
 my $modifconv_file = $Bin."/modifconv.csv";
 my $configFile = $Bin."/mascotParser.ini";
-my ($notOnlyBestPept, $distinctProt, $noFileLevel, 
+my ($notOnlyBestPept, $distinctProt, $noFileLevel, $useDeltaScore,
     $parseAll, $newDefaults, $hcdDefaults, $lightXML, $proteinForce, $defaultSet);
 
 my $config = Config::IniFiles->new(-file=>$configFile,-default=>'DEFAULT') 
@@ -201,6 +204,7 @@ my $result =
 		'minlen=i' => \$minLen,
 		'instrument=s' => \$instrument,
 		'modifconv=s' => \$modifconv_file,
+                'deltascore' => \$useDeltaScore,
                 'verbose' => \$verbose);
 
 pod2usage(-verbose=>2, -exitval=>2) if (!$result);
@@ -279,15 +283,16 @@ foreach (@ARGV){
 
     unless (defined($notOnlyBestPept)){
       # Only keeps in %prot and %query the best score for each peptide
-      foreach my $query (keys(%query)){
-	my @scores = sort {$a <=> $b} values(%{$query{$query}{ac}});
-	my $bestScore = $scores[-1];
-	foreach my $ac (keys(%{$query{$query}{ac}})){
-	  if ($prot{$ac}{queries}{$query}{score} < $bestScore){
-	    undef($prot{$ac}{queries}{$query});
-	    undef($query{$query}{ac}{$ac});
-	  }
-	}
+       foreach my $query (keys(%query)){
+      	my $bestScore = $query{$query}{bestScore};
+        my $i = 0;
+      	foreach my $ac (@{$query{$query}{ac}}){
+      	  if ($prot{$ac}{queries}{$query}{score} < $bestScore){
+      	    undef($prot{$ac}{queries}{$query});
+      	    delete(${$query{$query}{ac}}[$i]);
+      	  }
+          ++$i;
+      	}
       }
     }
 
@@ -308,7 +313,7 @@ foreach (@ARGV){
       foreach my $ac (keys(%prot)){
 	my %pept;
 	foreach my $query (keys(%{$prot{$ac}{queries}})){
-	  my $score = $prot{$ac}{queries}{$query}{score};
+	  my $score = $useDeltaScore? $query{$query}{deltaScore} : $query{$query}{bestScore};
 	  my $peptide = $prot{$ac}{queries}{$query}{pept};
 	  if ($proteinForce{$ac} || (($score >= $minScore) && (length($peptide) >= $minLen) && ($peptide =~ $qrValidAASeq))){
 	    $pept{$peptide} = $score if (!defined($pept{$peptide}) || $score > $pept{$peptide});
@@ -332,7 +337,7 @@ foreach (@ARGV){
 	my $seqcov = 0;
 	if ($saveScore < $defaultSaveScore){
 	  # Single peptide hits are accepted, collect seq cov
-	  my ($seq) = undef; ### GETSEQ($ac);
+	  my ($seq) = undef; ##fix
 	  if ($seq){
 	    my @seq = split(//, $seq);
 	    foreach my $pept (keys(%{$distinct{$ac}})){
@@ -353,7 +358,7 @@ foreach (@ARGV){
 	if ($proteinForce{$ac} || (($protScore{$ac} >= $minProtScore) && (($numPept{$ac} >= $minNumPept) || (($sphScore{$ac} >= $saveScore) && ($seqcov >= $minSeqCovSPH))))){
 	  foreach my $query (keys(%{$prot{$ac}{queries}})){
 	    my $peptide = $prot{$ac}{queries}{$query}{pept};
-	    my $score = $prot{$ac}{queries}{$query}{score};
+	    my $score = $useDeltaScore? $query{$query}{deltaScore} : $query{$query}{bestScore};
 	    if ($proteinForce{$ac} || ((length($peptide) >= $minLen) && ($peptide =~ $qrValidAASeq) && ($score >= $outputScore))){
 	      $Gprot{$ac}{queries}{$query} = $prot{$ac}{queries}{$query};
 	      $Gcmpd{$query} = $cmpd{$query};
@@ -371,7 +376,10 @@ foreach (@ARGV){
 # Detects proteins identified by the same set of peptides exactly
 my (%pattern, %acToPattern);
 foreach my $ac (keys(%Gprot)){
-  my $pattern = join('|', sort({$a <=> $b} keys(%{$Gprot{$ac}{queries}})));
+  ## FB: Perl warns that sort is not numeric and does not sort, thus
+  ##     I removed sorting for now as it does not change output. Pattern: O-12345
+  ## my $pattern = join('|', sort({$a <=> $b} keys(%{$Gprot{$ac}{queries}})));
+  my $pattern = join('|', keys(%{$Gprot{$ac}{queries}}));
   $acToPattern{$ac} = $pattern;
   if ($pattern{$pattern}){
     # Another protein has the same set of queries
@@ -388,7 +396,7 @@ my (%numPept, %distinct, %seqcov, %sphScore, %protScore);
 foreach my $ac (keys(%Gprot)){
   my %pept;
   foreach my $query (keys(%{$Gprot{$ac}{queries}})){
-    my $score = $Gprot{$ac}{queries}{$query}{score};
+    my $score = $useDeltaScore? $query{$query}{deltaScore} : $query{$query}{bestScore};
     my $peptide = $Gprot{$ac}{queries}{$query}{pept};
     if ($proteinForce{$ac} || (($score > $minScore) && (length($peptide) >= $minLen) && ($peptide =~ $qrValidAASeq))){
       $pept{$peptide} = $score if (!defined($pept{$peptide}) || $score > $pept{$peptide});
@@ -457,7 +465,7 @@ if ($minBigRed > 0){
 }
 
 # Starts printing
-my $cmdLine = "mascotParser.pl".(defined($verbose)?' -verbose':'')." --basicscore=$basicScore --savescore=$saveScore --minseqcovsph=$minSeqCovSPH --outputscore=$outputScore --minscore=$minScore --minnumpept=$minNumPept --minprotscore=$minProtScore --instrument=$instrument --minlen=$minLen";
+my $cmdLine = "$0".(defined($verbose)?' -verbose':'')." --basicscore=$basicScore --savescore=$saveScore --minseqcovsph=$minSeqCovSPH --outputscore=$outputScore --minscore=$minScore --minnumpept=$minNumPept --minprotscore=$minProtScore --instrument=$instrument --minlen=$minLen";
 
 my @time = localtime();
 my $date = sprintf("%d-%02d-%02d", 1900+$time[5], 1+$time[4], $time[3]);
@@ -513,20 +521,25 @@ foreach my $ac (sort {-$protScore{$a} <=> -$protScore{$b}} keys(%Gprot)){
     #print STDERR "global SPH $ac $file\n" if ($numPept{$ac} == 1);
     print STDERR "$ac -------------------------------\n" if ($verbose);
     print "      <idi:OneProtein>\n      <idi:proteinId>$ac</idi:proteinId>\n      <idi:protSumScore>$protScore{$ac}</idi:protSumScore>\n";
-    foreach my $query (sort {$a <=> $b} keys(%{$Gprot{$ac}{queries}})){
+
+    ## FB: Perl warns that sort is not numeric and does not sort, thus
+    ##     I removed the sorting for now as it does not change output. Pattern: O-12345
+    ## foreach my $query (sort {$a <=> $b} keys(%{$Gprot{$ac}{queries}}))
+    foreach my $query (keys(%{$Gprot{$ac}{queries}})){
       my $peptide = $Gprot{$ac}{queries}{$query}{pept};
       my $peptide_length_ge_min = (length($peptide) >= $minLen);
       my $peptide_isvalid = ($peptide =~ $qrValidAASeq);
-      my $peptide_score_ge_outputScore =  ($Gprot{$ac}{queries}{$query}{score} >= $outputScore);
+      my $score = $useDeltaScore? $query{$query}{deltaScore} : $query{$query}{bestScore};
+      my $peptide_score_ge_outputScore =  ($score >= $outputScore);
       if ($proteinForce{$ac} || ($peptide_length_ge_min && $peptide_isvalid && $peptide_score_ge_outputScore)){
 	my ($modifStr, @modif);
 	convertMascotModif($peptide, $Gprot{$ac}{queries}{$query}{modif}, \$modifStr, \@modif);
 	if ($modifStr){
 	  my $theoMass = getPeptideMass(pept=>$peptide, modif=>\@modif);
 	  my ($charge, $moz2) = getCorrectCharge($theoMass, $Gcmpd{$query}{expMoz});
-	  my $pValue = sprintf "%.2e", exp(-log(10)*$Gprot{$ac}{queries}{$query}{score}/10);
+	  my $pValue = sprintf "%.2e", exp(-log(10)*$score/10);
 
-	  print STDERR "$peptide ($query)\n" if ($verbose);
+	  print STDERR "$peptide ($query): $query{$query}{deltaScore} : $query{$query}{bestScore}\n" if ($verbose);
 	  print <<end_of_xml;
       <idi:OneIdentification>
         <idi:answer>
@@ -539,26 +552,23 @@ foreach my $ac (sort {-$protScore{$a} <=> -$protScore{$b}} keys(%Gprot)){
         </idi:answer>
         <idi:source>
           <idi:file>$Gcmpd{$query}{file}</idi:file>
-          <idi:peptScore engine="Mascot" pValue="$pValue">$Gprot{$ac}{queries}{$query}{score}</idi:peptScore>
+          <idi:peptScore engine="Mascot" deltaScore="$query{$query}{deltaScore}" pValue="$pValue">$query{$query}{bestScore}</idi:peptScore>
         </idi:source>
         <ple:peptide spectrumKey="$Gcmpd{$query}{title}" xmlns:ple="namespace/PeakListExport.html">
         <ple:PeptideDescr><![CDATA[$Gcmpd{$query}{title}]]></ple:PeptideDescr>
         <ple:ParentMass><![CDATA[$Gcmpd{$query}{expMoz} $Gcmpd{$query}{intensity} $Gcmpd{$query}{charge}]]></ple:ParentMass>
         <ple:peaks><![CDATA[
 end_of_xml
-	  if (defined($lightXML)){
-	    print "]]></ple:peaks>
+	  if (!defined($lightXML)){
+            print "$Gcmpd{$query}{massList}";
+          }
+	  print "]]></ple:peaks>
         </ple:peptide>
       </idi:OneIdentification>\n";
-	  }
-	  else{
-	    print "$Gcmpd{$query}{massList}]]></ple:peaks>
-        </ple:peptide>
-      </idi:OneIdentification>\n";
-	  }
 	}
 	else{
-	  print STDERR "Cannot use peptide [$peptide] because one modification has no InSilicoSpectro equivalent [$Gprot{$ac}{queries}{$query}{modif}]\n" if ($verbose);
+	  #print STDERR "Cannot use peptide [$peptide] because one modification has no InSilicoSpectro equivalent [$Gprot{$ac}{queries}{$query}{modif}]\n" if ($verbose);
+	  die "Cannot use peptide [$peptide] because one modification has no InSilicoSpectro equivalent [$Gprot{$ac}{queries}{$query}{modif}]\n";
 	}
       }
     }
@@ -632,23 +642,47 @@ sub mascotParse
     }
     elsif (/^q(\d+)_p(\d+)=(.*)/){
       my $query = $1;
+      my $qKey = "$fileNum-$query";
       my ($nmc, $mass, $delta, $nIons, $pept, $nUsed1, $modif, $score, $ionSeries, $nUsed2, $nUsed3, @part) = split(/[,;:]/, $3);
 
+      # set score and delta score for spectrum
+      my $is_better_score;
+      if (defined($query{$qKey}{bestScore})) {
+        my $oldScore = $query{$qKey}{bestScore};
+        if ($oldScore >= $score) {
+	  if ($query{$qKey}{deltaScore} > $oldScore - $score) {
+	    $query{$qKey}{deltaScore} = $oldScore - $score;
+          }
+          $is_better_score=0;
+       	} else {
+          $query{$qKey}{bestScore} = $score;
+          $query{$qKey}{deltaScore} = $score - $oldScore;
+          $is_better_score=1;
+        }
+      } else {
+        $query{$qKey}{bestScore} = $score;
+        $query{$qKey}{deltaScore} = $score;
+        $is_better_score=1;
+      }
+
+      $score = $query{$qKey}{deltaScore} if ($useDeltaScore);
+ 
+      # set matches for ACs
       if ($score >= $basicScore){
 	for (my $i = 0; $i < @part; $i += 5){
 	  my $ac = $part[$i];
 	  $ac =~ s/"//go;
-	  my $qKey = "$fileNum-$query";
-	  if (!defined($prot{$ac}{queries}{$qKey}{score}) || ($prot{$ac}{queries}{$qKey}{score} < $score)){ # test in case the same spectrum matches several peptides in the same DB entry
-          ## TODO: here all matches should be saved
+	  if (!defined($prot{$ac}{queries}{$qKey}{score}) || $is_better_score){ 
+            # test in case the same spectrum matches several peptides in the same DB entry
 	    $prot{$ac}{queries}{$qKey}{score} = $score;
 	    $prot{$ac}{queries}{$qKey}{pept} = $pept;
 	    $prot{$ac}{queries}{$qKey}{modif} = $modif;
 	    $prot{$ac}{queries}{$qKey}{start} = $part[$i+2];
-	    $query{$qKey}{ac}{$ac} = $score;
+	    push(@{$query{$qKey}{ac}}, $ac);
 	  }
 	}
       }
+      
     }
     elsif (/^qmass(\d+)=(.+)/){
       $cmpd{"$fileNum-$1"}{expMass} = $2;
