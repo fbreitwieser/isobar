@@ -1438,9 +1438,9 @@ setMethod("plotRatio",
 )
 
 maplot.protein <- function(x,relative.to,protein,noise.model=NULL,
-        channels=NULL,ylim=c(0.01,100),identify=FALSE,add=FALSE,pchs=NULL,
+        channels=NULL,ylim=NULL,identify=FALSE,add=FALSE,pchs=NULL,log="xy",
         legend.pos="topright",names=NULL,legend.cex=0.8,cols=pchs,ltys=NULL,
-        main=protein,xlab="average intensity",ylab="ratio",...) {
+        main=protein,xlab="average intensity",ylab="ratio",type="ma",...) {
       
       i.df <- data.frame()
       legend <- list(text=c(),lty=c(),pch=c())
@@ -1452,17 +1452,13 @@ maplot.protein <- function(x,relative.to,protein,noise.model=NULL,
 
       for (ib in x) {
       
-      ions <- reporterIntensities(ib,na.rm=FALSE,protein=protein)
-      ions[which(is.na(ions))] <- 0
+        ions <- reporterIntensities(ib,na.rm=FALSE,protein=protein)
+        ions[which(is.na(ions))] <- 0
             
       for (channel_i in seq_along(channels)) {
         channel <- channels[channel_i]
         channel.rt <- ifelse(length(relative.to) == 1,relative.to,relative.to[channel_i])
-        
-        div <- ions[,channel]/ions[,channel.rt]
-        avg <- (ions[,channel]+ions[,channel.rt])/2
-        
-        if (length(div)>0) {
+         if (length(ions[,channel])>0) {
           if (is.null(names))
             legend$text <- c(legend$text,sprintf("%s/%s",channel,channel.rt))
           else
@@ -1471,22 +1467,29 @@ maplot.protein <- function(x,relative.to,protein,noise.model=NULL,
           legend$lty <- c(legend$pch,ltys[i])
         }
         
-        div[div == Inf] = 100
-        div[div == -Inf] = 0.01
-        
-        if (identify) {
-          i.df <- rbind(i.df,data.frame(x=avg,y=div,spectrum=rownames(ions),
-              peptide=peptides(x=ib,spectrum=rownames(ions)),stringsAsFactors=T))
+        if (type=="ma") {
+          div <- ions[,channel]/ions[,channel.rt]
+          avg <- (ions[,channel]+ions[,channel.rt])/2
+          div[div == Inf] = 100
+          div[div == -Inf] = 0.01
+          x <- avg
+          y <- div
+        } else {
+          x <- ions[,channel]
+          y <- ions[,channel.rt]
         }
-        
+       
         if (channel_i == 1 && add == FALSE) 
-          plot(avg,div,ylim=ylim,pch=pchs[i],log="xy",main=main,col=cols[i],
+          plot(x,y,ylim=ylim,pch=pchs[i],log=log,main=main,col=cols[i],
                xlab=xlab,ylab=ylab,...)
         else
-          points(avg,div,pch=pchs[i],col=cols[i],...)
+          points(x,y,pch=pchs[i],col=cols[i],...)
         
         add = TRUE
-        
+        if (identify)
+          i.df <- rbind(i.df,data.frame(x=x,y=y,spectrum=rownames(ions),
+                  peptide=peptides(x=ib,spectrum=rownames(ions)),stringsAsFactors=T))
+
         if (!is.null(noise.model)) {
           ratio <- estimateRatio(ib,noise.model,channel.rt,channel,protein=protein)
           abline(h=10^ratio[1],lty=ltys[i],col=cols[i],...)
