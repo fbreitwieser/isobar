@@ -1,46 +1,5 @@
 if(!isGeneric("as.data.frame")) setGeneric("as.data.frame", useAsDefault=as.data.frame)
 
-.escape.url <- function(s,escape=TRUE) {
-
-  char.to.html <- 
-    matrix(c(
-            "+","%2b",
-            "%","%25",
-            " ","%20",
-            ",","%2c",
-            "<","%3c",
-            ">","%3e",
-            "#","%23",
-            "{","%7b",
-            "}","%7d",
-            "|","%7c",
-            "\\","%5c",
-            "^","%5e",
-            "~","%7e",
-            "[","%5b",
-            "]","%5d",
-            "`","%60",
-            ";","%3b",
-            "/","%2f",
-            "?","%3f",
-            ":","%3a",
-            "@","%40",
-            "=","%3d",
-            "&","%26",
-            "$","%24"
-          ),ncol=2,byrow=TRUE,dimnames=list(NULL,c("char","html")))
-
-  # escapes strings like for urls - as Mascot does
-  for (i in seq_len(nrow(char.to.html))) {
-    if (escape)
-      s <- gsub(char.to.html[i,1],char.to.html[i,2],s,fixed=TRUE)
-    else
-      s <- gsub(char.to.html[i,2],char.to.html[i,1],s,fixed=TRUE)
-  }
-
-  return(s);
-}
-
 #TODO: unify factor.as.character and factor.to.chr
 .factor.as.character <- function(df) {
   for (col_i in seq_len(ncol(df))) {

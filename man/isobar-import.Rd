@@ -29,7 +29,7 @@
               id.file.domap = NULL,
               peaklist.format = NULL, id.format = NULL,
               fragment.precision = NULL,fragment.outlier.prob = NULL,
-              revert.titles = FALSE, scan.lines = 0)
+              decode.titles = TRUE, scan.lines = 0)
 }
 
 \arguments{
@@ -94,10 +94,10 @@
     have been extracted, those pairs with the fragment.outlier.prob/2
     most unprecise m/z values are filtered out.
   }
-  \item{revert.titles}{
-    Unescape spectrum titles in identification file. When extracting the
-    DAT file from Mascot web interface, it's spectrum titles are
-    escaped - \%20 instead of space, etc. Set revert.titles to TRUE to
+  \item{decode.titles}{
+    Boolean. Decode spectrum titles in identification file using \code{\link{URLdecode}}. 
+    When extracting the  DAT file from Mascot web interface, the spectrum titles are
+    encoded - \%20 instead of space, etc. Set decode.titles to TRUE to
     map these titles to the unescaped MGF titles.
   }
   \item{scan.lines}{

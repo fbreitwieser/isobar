@@ -365,7 +365,7 @@ setMethod("readIBSpectra",
 )
 
 ## TODO: log is not returned
-.read.idfile <- function(id.file,id.format=NULL,revert.titles=FALSE,log=NULL) {
+.read.idfile <- function(id.file,id.format=NULL,decode.titles=TRUE,log=NULL) {
   data <- unique(do.call("rbind",lapply(id.file,function(f) {
     
     if (is.null(id.format)) {
@@ -394,8 +394,8 @@ setMethod("readIBSpectra",
     return(data)
   })
   ))
-  if (revert.titles) {
-    data[,.SPECTRUM.COLS['SPECTRUM']] <- .escape.url(data[,.SPECTRUM.COLS['SPECTRUM']],FALSE)
+  if (decode.titles) {
+    data[,.SPECTRUM.COLS['SPECTRUM']] <- unlist(lapply(data[,.SPECTRUM.COLS['SPECTRUM']],URLdecode))
   }
   data[,.SPECTRUM.COLS['SPECTRUM']] <- .trim(data[,.SPECTRUM.COLS['SPECTRUM']])
   return(data)
@@ -435,12 +435,12 @@ setMethod("readIBSpectra",
              mapping.file.readopts=list(header=TRUE,stringsAsFactors=FALSE,sep=","),
              id.file.domap=NULL,
              peaklist.format=NULL,id.format=NULL,fragment.precision=NULL,fragment.outlier.prob=NULL,
-             revert.titles=FALSE,scan.lines=0) {
+             decode.titles=TRUE,scan.lines=0) {
       
       log <- data.frame(key=c(),message=c())
 
       ## get identified spectra
-      data <- .read.idfile(id.file,id.format,revert.titles=revert.titles,log)
+      data <- .read.idfile(id.file,id.format,decode.titles=decode.titles,log)
 
       ## mapping
       mapping.quant2id <- data.frame()
@@ -462,7 +462,7 @@ setMethod("readIBSpectra",
         colnames(mapping.quant2id)[cn == mapping['peaklist']] <- 'peaklist'
         log <- rbind(log,data.frame(rep("mapping file",length(mapping.file)),mapping.file,stringsAsFactors=FALSE))
         if (!is.null(id.file.domap)) {
-          data.m <- .read.idfile(id.file.domap,id.format,revert.titles=revert.titles,log)
+          data.m <- .read.idfile(id.file.domap,id.format,decode.titles=decode.titles,log)
           map.spectrum <- mapping.quant2id[,"id"]
           names(map.spectrum) <- mapping.quant2id[,"peaklist"]
           data.m[,"spectrum"] <- map.spectrum[data.m[,"spectrum"]]
