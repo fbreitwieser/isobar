@@ -934,23 +934,22 @@ n.observable.peptides <- function(seq,nmc=1,min.length=6,min.mass=800,max.mass=4
   return(sum(min.length.ok & mass.ok))
 }
 
-calculate.emPAI <- function(protein.group,...) {
+calculate.emPAI <- function(protein.group,protein.g=reporterProteins(protein.group), ...) {
   require(OrgMassSpecR)
   if (is.null(proteinInfo(protein.group)) || length(proteinInfo(protein.group)) == 0)
     stop("slot proteinInfo not set - it is needed for sequence length")
   if (!"sequence" %in% colnames(proteinInfo(protein.group))) {
     stop("no column 'sequence' in proteinInfo slot")
   }
-  proteins <- reporterProteins(protein.group)
 
   sequences <- proteinInfo(protein.group)$sequence
   names(sequences) <- proteinInfo(protein.group)$accession
  
-  n.observed.peptides <- table(peptideNProtein(protein.group)[,"protein.g"])[proteins]
-  n.observable.peptides <- sapply(proteins,
+  n.observed.peptides <- table(peptideNProtein(protein.group)[,"protein.g"])[protein.g]
+  n.observable.peptides <- sapply(protein.g,
        function(protein.g) 
          do.call(sum,lapply(unique(protein.ac(protein.group,protein.g)),
-             function(protein.ac) n.observable.peptides(sequences[protein.ac])))
+             function(protein.ac) n.observable.peptides(sequences[protein.ac])),...)
   )
   empai <- 10^(n.observed.peptides/n.observable.peptides) - 1
   return(empai)
