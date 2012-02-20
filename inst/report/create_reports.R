@@ -56,5 +56,10 @@ if (!exists("properties.env",inherits=FALSE)) {
 }
 
 
-create.reports(report.type=ifelse(peptide.report,"peptide","protein"),
-               compile=do.compile,zip=do.zip)
+tryCatch({create.reports(report.type=ifelse(peptide.report,"peptide","protein"),
+                         compile=do.compile,zip=do.zip)},
+         error=function(e) {
+           save.image(file="isobar.fail.rda")
+           stop(as.character(e))
+         }
+         )
