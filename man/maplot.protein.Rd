@@ -1,69 +1,77 @@
 \name{maplot.protein}
 \alias{maplot.protein}
-%- Also NEED an '\alias' for EACH other topic documented here.
 \title{
-    MAplot for individual proteins
+    Ratio intensity plot for individual proteins
 }
 \description{
     Plots ratio-versus-intensity for a selected protein against a reference channel.
 }
 \usage{
-maplot.protein(x, relative.to, protein, noise.model = NULL, channels = NULL, ylim = c(0.01, 100), identify = FALSE, add = FALSE, pchs = NULL, legend.pos = "topright", names = NULL, legend.cex = 0.8, cols = pchs, ltys = NULL, main = protein, xlab = "average intensity", ylab = "ratio", ...)
+maplot.protein(x, relative.to, protein, noise.model = NULL, channels = NULL, ylim = NULL, identify = FALSE, add = FALSE, pchs = NULL, log="xy", legend.pos = "topright", names = NULL, legend.cex = 0.8, cols = pchs, ltys = NULL, main = protein, xlab = "average intensity", ylab = "ratio", type="ma", ...)
 }
 %- maybe also 'usage' for other objects documented here.
 \arguments{
   \item{x}{IBSpectra object}
   \item{relative.to}{
-      A character factor specifying reporter tag names. Either of 
+      a character vector specifying reporter tag names. Either of 
       length 1 or same length as channels.
-}
+  }
   \item{protein}{
       Protein group identifier.
-}
+  }
   \item{noise.model}{
       NoiseModel object.
-}
+  }
   \item{channels}{
-       Reproter tag names.
-}
+       Reporter tag names.
+  }
   \item{ylim}{
       See par.
-}
+  }
   \item{identify}{
-      Allows identifiy to be called.
-}
+      boolean. If \code{true}, \code{\link{identify}} is called with peptide labels.
+  }
   \item{add}{
 %%     ~~Describe \code{add} here~~
-}
+  }
   \item{pchs}{
-%%     ~~Describe \code{pchs} here~~
-}
+    a vector of the same length as \code{channels}. See \code{pch} in
+    \code{\link{plot.default}}.
+  }
+  \item{log}{
+    a character string which contains \code{x} if the x axis is to
+    be logarithmic, \code{y} if the y axis is to be logarithmic and
+    \code{xy} or \code{yx} if both axes are to be logarithmic.
+  }
   \item{legend.pos}{
-%%     ~~Describe \code{legend.pos} here~~
-}
+    see \code{pos} in \code{\link{legend}}.
+  }
   \item{names}{
-%%     ~~Describe \code{names} here~~
-}
+    a character string of the same length as \code{channels}, legend text.
+  }
   \item{legend.cex}{
-%%     ~~Describe \code{legend.cex} here~~
-}
+    see \code{cex} in \code{\link{legend}}.
+  }
   \item{cols}{
-%%     ~~Describe \code{cols} here~~
-}
+    a vector of the same length as \code{channels}. See \code{col} in
+    \code{\link{plot.default}}.
+  }
   \item{ltys}{
-%%     ~~Describe \code{ltys} here~~
-}
+    a vector of the same length as \code{channels}. See \code{lty} in
+    \code{\link{plot.default}}.
+  }
   \item{main}{
-%%     ~~Describe \code{main} here~~
-}
+    a main title for the plot  
+  }
   \item{xlab}{
-%%     ~~Describe \code{xlab} here~~
-}
+    a label for the x axis, defaults to a description of \code{x}.
+  }
   \item{ylab}{
-%%     ~~Describe \code{ylab} here~~
-}
+    a label for the y axis, defaults to a description of \code{y}.
+  }
+  \item{type}{type of plot}
   \item{\dots}{
-%%     ~~Describe \code{\dots} here~~
-}
+    passed to \code{\link{plot}}.
+  }
 }
 \author{Florian P. Breitwieser}

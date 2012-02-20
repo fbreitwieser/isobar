@@ -29,7 +29,7 @@ merged.table <- subset(merged.table,r1==merged.table$r1[1])
 
 tbl.wide <- reshape(merged.table,idvar="ac",timevar=c("r2"),direction="wide",drop="r1")
 rownames(tbl.wide) <- tbl.wide$ac
-all.names <- do.call(rbind,lapply(tbl.wide[,"ac"],get.names))
+all.names <- do.call(rbind,lapply(tbl.wide[,"ac"],get.names,protein.group=protein.group))
 tbl.wide$dNSAF <- dnsaf[as.character(tbl.wide$ac)]
 
 summarized.table <- write.summarized.table(tbl.wide,all.names,cols=unique(merged.table$r2))

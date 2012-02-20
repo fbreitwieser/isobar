@@ -17,8 +17,10 @@ get.merged.table <- function(samples,cols=c("ac","r1","r2","lratio","variance"))
                           quant.tables[[idx]],by=c("ac","r1","r2"))
   return(merged.table)
 }
-get.names <- function(p) apply(my.protein.info(protein.group,p)[,c("name","gene_name","protein_name")],2,
-                               function(s) paste(unique(sort(gsub("'","",s))),collapse=", "))
+get.names <- function(p,protein.group) 
+  apply(my.protein.info(protein.group,p)[,c("name","gene_name","protein_name")],2,
+        function(s) paste(unique(sort(gsub("'","",s))),collapse=", "))
+
 calc.col <- function(tbl.wide,tag,add.name=TRUE) {
   idx.ratio <- grep("lratio",colnames(tbl.wide),fixed=TRUE)
   idx.var <- grep("var",colnames(tbl.wide),fixed=TRUE)

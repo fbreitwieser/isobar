@@ -429,9 +429,11 @@ setMethod("readIBSpectra",
 ##' @author Florian P Breitwieser
 setMethod("readIBSpectra",
           signature(type="character",id.file="character",peaklist.file="character"),
-    function(type,id.file,peaklist.file,proteinGroupTemplate=NULL,
-             mapping.file=NULL,mapping=c(peaklist="even",id="odd"),id.file.domap=NULL,
+    function(type,id.file,peaklist.file,
+             proteinGroupTemplate=NULL,
+             mapping.file=NULL,mapping=c(peaklist="even",id="odd"),
              mapping.file.readopts=list(header=TRUE,stringsAsFactors=FALSE,sep=","),
+             id.file.domap=NULL,
              peaklist.format=NULL,id.format=NULL,fragment.precision=NULL,fragment.outlier.prob=NULL,
              revert.titles=FALSE,scan.lines=0) {
       

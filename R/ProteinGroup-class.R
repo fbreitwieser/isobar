@@ -881,7 +881,7 @@ calculate.dNSAF <- function(protein.group) {
     ## choosebank("swissprot")
     ## cat(banknameSocket$details, sep = "\n")
 
-    library(seqinr)
+    #library(seqinr)
     uniprot <- read.fasta("uniprot_sprot.fasta",seqtype="AA",as.string=TRUE)
   }
   if (is.null(uniprot.acs))

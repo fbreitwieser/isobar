@@ -21,7 +21,7 @@
 proteinRatios(ibspectra, noise.model, reporterTagNames = NULL, proteins = reporterProteins(proteinGroup(ibspectra)), peptide = NULL, cl = classLabels(ibspectra), method = "global", symmetry = FALSE, summarize = FALSE, summarize.method = "mult.pval", min.detect = NULL, strict.sample.pval = TRUE, strict.ratio.pval = TRUE, orient.div = 0, sign.level = 0.05, sign.level.rat = sign.level, sign.level.sample = sign.level, ratiodistr = NULL, variance.function = "maxi", combine=FALSE,
 p.adjust = NULL, reverse=FALSE, combn=NULL, ...)
 
-combn.matrix(x, method = "global", cl = NULL)
+combn.matrix(x, method = "global", cl = NULL, vs = NULL)
 
 combn.protein.tbl(ibspectra, noise.model, ratiodistr, proteins = NULL, cmbn, peptide = NULL, modif = NULL, symmetry = FALSE, reverse = FALSE, variance.function = "maxi", ...)
 
@@ -42,6 +42,10 @@ summarize.ratios(ratios, summarize.method, min.detect, n.combination, strict.sam
   \item{peptide}{peptides for which ratios are calculated.}
   \item{modif}{Modification.}
   \item{cl}{Class labels. See also ?classLabels. }
+  \item{vs}{Class label or reporter tag name. When \code{method} is "versus.class", 
+            all combinations against class \code{vs} are computed, 
+            when \code{method} is "verus.channel", all combinations 
+            against channel \code{vs}.}
   \item{method}{"global", "interclass", or "intra-class". Defines which ratios
      are computed, based on class labels cl}
   \item{symmetry}{If true, reports also the inverse ratio}

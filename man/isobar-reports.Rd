@@ -43,7 +43,8 @@ initialize.env(env, report.type = "protein", properties.env)
     and defines peaklists, identification files, significance levels,
     etc. See the global properties file for the available options and
     values.}
-  \item{global.properties.file}{\code{system.file("report","properties.R",package="isobar")}}
+  \item{global.properties.file}{
+    \code{system.file("report","properties.R",package="isobar")}}
   \item{args}{Additional (command line) arguments which overrids those
     in \code{properties.file}. }
   \item{report.type}{Currently, only protein is implemented.}
@@ -54,6 +55,8 @@ initialize.env(env, report.type = "protein", properties.env)
     and the properties.file are archived in a file named
     \code{name.zip} (name as defined as property) using
     \code{\link{zip}.}}
+  \item{env}{Item to be initialized.}
+  \item{properties.env}{Environment into which properties are read.}
 }
 
 \details{
