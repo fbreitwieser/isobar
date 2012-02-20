@@ -1591,10 +1591,13 @@ setMethod("protGgdata",
 setMethod("maplot",
           signature(x="IBSpectra",channel1="character",channel2="character"),
           function(x,channel1,channel2,noise.model=NULL,colorize.protein=NULL,
-              h=NULL,v=NULL,col.h="green",col.v="green",ylab=paste("ratio channel",channel1,"vs",channel2),
+              h=NULL,v=NULL,col.h="green",col.v="green",
+              ylab=paste("ratio channel",channel1,"vs",channel2),
               pch=".",noise.model.col=c("#E41A1C","#377EB8","#4DAF4A","#984EA3","#FF7F00","#FFFF33","#A65628","#F781BF","#999999"),
-              pch.p=1,protein=NULL,peptide=NULL,smooth=FALSE,set.na.to=NULL,
+              pch.p=1,protein=NULL,peptide=NULL,smooth=FALSE,
+              set.na.to=NULL,set.na.to.lim=NULL,
               na.rm=is.null(set.na.to),identify=FALSE,identify.column="spectrum",
+              x.axis.labels=TRUE,y.axis.labels=TRUE,
               col="black",...) {
             if (is.null(protein)) 
               ions <- reporterIntensities(x,na.rm=FALSE)
@@ -1639,9 +1642,14 @@ setMethod("maplot",
             M <- R/G
             A <- log10(sqrt(R*G))
             
+
+            if (isTRUE(set.na.to)) {
+              set.na.to <- ceiling(10^(max(abs(log10(M)), na.rm = TRUE)+0.2))
+              set.na.to.lim <- ceiling(10^(max(abs(log10(M)), na.rm = TRUE)+0.1))
+            }
             if (!is.null(set.na.to)) {
               sel <- is.na(R);
-              M[sel] <- set.na.to;
+              M[sel] <- set.na.to + 1;
               A[sel] <- log10(G[sel])
               sel <- is.na(G); 
               M[sel] <- 1/set.na.to
@@ -1660,7 +1668,22 @@ setMethod("maplot",
             } else {
               plot(A,M,pch=pch,log="y",
                   xlab=expression(paste(log[10]," average intensity")),
-                  ylab=ylab,col=col,...)
+                  ylab=ylab,col=col,axes=FALSE,...)
+              axis(side=1,labels=x.axis.labels)
+
+              if (!is.null(set.na.to)) {
+                y.axis <- axTicks(2,log=TRUE)
+                y.axis <- y.axis[y.axis >= 1/set.na.to.lim & y.axis <= set.na.to.lim]
+                y.axis <- y.axis[seq(from=2,to=length(y.axis)-1)]
+                if (isTRUE(y.axis.labels))
+                  y.axis.labels <- c(-Inf,y.axis,Inf)
+                axis(side=2,at=c(1/set.na.to.lim,y.axis,set.na.to.lim),
+                     labels= y.axis.labels)
+                abline(h = c(1/set.na.to.lim,set.na.to.lim), col = "blue", lty = 3)
+              } else {
+                axis(side=2,labels=y.axis.labels)
+              }
+
             }
             if (!is.null(h)) {
               sel <- M > h | M < 1/h
@@ -1771,25 +1794,37 @@ setMethod("maplot",
               if (identical(ylim,"fixed")) {
                 y.max <- max(apply(ions,1,function(x) {
                                    y <- x[!is.na(x)]
-                                   if (length(y) < 2)
-                                     NA
-                                   else
-                                     max(y)/min(y)
+                                   if (length(y) < 2) NA
+                                   else max(y)/min(y)
                                    }),na.rm=T)
+                set.na.to <- ceiling(10^(log10(y.max)+0.2))
+                set.na.to.lim <- ceiling(10^(log10(y.max)+0.1))
+                y.max <- ceiling(10^(log10(y.max)+0.3))
                 ylim <- c(1/y.max,y.max)
+
               }
-              par(mfrow=c(ncol(ions),ncol(ions)),mar=c(2.5,2,0.75,1),
+              histlimits=log10(range(ions,na.rm=TRUE))
+              par(mfrow=c(ncol(ions),ncol(ions)),mar=c(2.5,2,0,1),
                   bty="n",fg="darkgray")
               for (i in colnames(ions)) {
                 for (j in colnames(ions)) {
-                  if (i == j) { plot(1,1,type="n",xaxt="n",yaxt="n",bty="n"); text(1,1,i,col="black",cex=1.2); }
-                  else if (i > j) {
+                  if (i == j) { 
+                    hist(log10(ions[,i]), col="#EEEEEE", freq=FALSE, 
+                         xlim=histlimits,cex=0.5,
+                         bty="n", xaxt="n", yaxt="n", main="",ylim=c(0,1))
+                    text(sum(histlimits)/2,0.5,i,col="black",cex=1.4,font=2); 
+
+                  } else if (i > j) {
+                    plot.labels = i == tail(colnames(ions),1) && j == head(colnames(ions),1)
                     maplot(x=x,channel1=as.character(i),channel2=as.character(j),
-                           noise.model=noise.model,xlim=xlim,ylim=ylim,...)
+                           noise.model=noise.model,xlim=xlim,ylim=ylim,
+                           set.na.to=set.na.to,set.na.to.lim=set.na.to.lim,
+                           x.axis.labels= plot.labels,
+                           y.axis.labels= plot.labels,
+                           ...)
                     
                   }
                   else if (i < j) {
-                    # TODO: add some info (correlation, ...)
                     plot(c(0,1),c(0,1),type="n",ylab="",xlab="",xaxt="n",yaxt="n",bty="n")
                   }
                         
