@@ -1595,8 +1595,8 @@ setMethod("maplot",
               ylab=paste("ratio channel",channel1,"vs",channel2),
               pch=".",noise.model.col=c("#E41A1C","#377EB8","#4DAF4A","#984EA3","#FF7F00","#FFFF33","#A65628","#F781BF","#999999"),
               pch.p=1,protein=NULL,peptide=NULL,smooth=FALSE,
-              set.na.to=NULL,set.na.to.lim=NULL,
-              na.rm=is.null(set.na.to),identify=FALSE,identify.column="spectrum",
+              set.na.to=NULL,set.na.to.lim=NULL,na.rm=is.null(set.na.to),
+              identify=FALSE,identify.column="spectrum",
               x.axis.labels=TRUE,y.axis.labels=TRUE,
               col="black",...) {
             if (is.null(protein)) 
@@ -1789,6 +1789,8 @@ setMethod("maplot",
           function(x,noise.model=NULL,pairs=TRUE,xlim="fixed",ylim="fixed",...){
             ions <- reporterIntensities(x)
             if (pairs) {
+              set.na.to <- NULL
+              set.na.to.lim <- NULL
               if (identical(xlim,"fixed")) 
                 xlim <- log10(range(ions,na.rm=T)) 
               if (identical(ylim,"fixed")) {
