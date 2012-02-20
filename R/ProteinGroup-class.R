@@ -820,3 +820,72 @@ get.seqlength <- function(my.acs,uniprot=NULL,uniprot.acs=NULL) {
   names(seqlength) <- uniprot.acs[uniprot.acs %in% my.acs]
   return(seqlength)
 }
+
+
+n.obs.peptides.old <- function(seq,nmc=1,min.length=6) {
+  seq.c <- strsplit(seq,"")[[1]]
+  pos <- gregexpr("[KR]",seq,perl=TRUE)[[1]]
+  pos <- pos[seq.c[pos+1] != "P"]
+  pos <- pos[!is.na(pos)]
+  
+  pep <- sapply(seq_along(c(pos,1)),function(i) {
+    idx.from <- ifelse(i == 1,1,pos[i-1] + 1)
+    idx.to <- ifelse(i > length(pos), length(seq.c), pos[i])
+    
+    if (idx.to-idx.from >= min.length)
+      substr(seq,idx.from,idx.to)[[1]]
+    else
+      NA
+  })
+  pep <- pep[!is.na(pep)]
+
+  for (i in seq(len=nmc)) {
+    nmcx <- sapply(seq_along(pos),function(i) {
+      idx.from <- ifelse(i == 1,1,pos[i-1] + 1)
+      idx.to <- ifelse(i == length(pos), length(seq.c), pos[i+1])
+      if (idx.to-idx.from >= min.length)
+        substr(seq,idx.from,idx.to)
+      else
+        NA
+    })
+    pep <- unique(c(pep,nmcx[!is.na(nmcx)]))
+  }
+
+  return(length(pep))
+}
+
+get.n.observable.pep <- function(my.acs,uniprot=NULL,uniprot.acs=NULL) {
+## Download Uniprot/Swissprot from:
+## ftp://ftp.uniprot.org/pub/databases/uniprot/current_release/knowledgebase/complete/uniprot_sprot.fasta.gz
+
+## Alternative: use ANUC
+## choosebank("swissprot")
+## cat(banknameSocket$details, sep = "\n")
+
+  if (is.null(uniprot))
+    uniprot <- read.fasta("uniprot_sprot.fasta",seqtype="AA",as.string=TRUE)
+
+  if (is.null(uniprot.acs))
+    uniprot.acs <- do.call(rbind,strsplit(names(uniprot),"|",fixed=TRUE))[,2]
+    
+  n.observable.pep <- sapply(uniprot[uniprot.acs %in% my.acs],n.obs.peptides)
+  names(n.observable.pep) <- uniprot.acs[uniprot.acs %in% my.acs]
+  return(n.observable.pep) 
+}
+
+n.observable.peptides <- function(seq,nmc=1,min.length=6,min.mass=800,max.mass=4000,...) {
+  require(OrgMassSpecR)
+  pep <- Digest(seq,missed=nmc,...)
+  min.length.ok <- nchar(pep[,"peptide"]) >= min.length
+  mass.ok <- pep[,"mz2"] >= min.mass & pep[,"mz3"] <= max.mass
+  #pep[min.length.ok & mass.ok,]
+  return(sum(min.length.ok & mass.ok))
+}
+
+calculate.emPAI <- function(protein.group,level="",...) {
+  proteins <- reporterProteins(protein.group)
+  peptide.cnt <- table(peptideNProtein(protein.group)[,"protein.g"])[proteins]
+  
+  
+  n.observable.pep <- get.n.observable.pep(,uniprot,names(uniprot.acs))
+}
