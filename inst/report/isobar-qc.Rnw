@@ -83,16 +83,20 @@ cat("\\newcommand{\\analysisauthor}{",sanitize(get.property('author')),"}")
 limits <- seq(from=min(quant.tbl$lratio,na.rm=TRUE),to=max(quant.tbl$lratio,na.rm=TRUE),length.out=1000)
 breaks=c(0.1,0.2,1,5,10)
 
-curve.distr <- data.frame(x=limits,y=d(ratiodistr)(limits))
+
 g <- ggplot(quant.tbl,aes(x=lratio)) +
   geom_histogram(colour = "darkgreen", fill = "white",
                  aes(y=..density..),alpha=0.8,binwidth=1/20*(max(limits)-min(limits))) +
   geom_rug(alpha=0.1) +
-  geom_line(data=curve.distr,aes(x=x,y=y),colour="black") +
   scale_x_continuous("Ratio",breaks=log10(breaks),labels=breaks) +
   theme_bw() +
   opts(legend.position="none",
        axis.text.x = theme_text(colour="grey50"))
+
+if (!is.null(ratiodistr)) {
+  curve.distr <- data.frame(x=limits,y=d(ratiodistr)(limits))
+  g <- g + geom_line(data=curve.distr,aes(x=x,y=y),colour="black")
+}
 
 print(g)
 @
@@ -100,7 +104,8 @@ print(g)
 \begin{minipage}{0.5\textwidth}
 \begin{verbatim}
 <<show-ratiodistribution,echo=FALSE,results=tex>>=
-ratiodistr
+if (!is.null(ratiodistr))
+  ratiodistr
 @
 \end{verbatim}
  \end{minipage}
