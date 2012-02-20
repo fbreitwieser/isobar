@@ -769,7 +769,8 @@ read.mzid <- function(f) {
   
   if (!is.null(spectra)) {
     ## filtering to take only spectra defined in spectra
-    all.titles <- .trim(sapply(strsplit(grep("TITLE",input,value=T),"="),function(x) x[2] ))
+    ## all.titles <- .trim(sapply(strsplit(grep("TITLE",input,value=T),"="),function(x) x[2] )) # not efficient
+    all.titles <- .trim(substring(grep("^TITLE=",x,value=TRUE),7))
     if (length(all.titles) != nrow(bnd)) {
       # sanity check that each spectrum has a title
       stop("title not specified for all spectra!");
@@ -800,11 +801,11 @@ read.mzid <- function(f) {
   
   ## extract information from each spectrum
   result <- do.call(rbind,lapply(all.spectra,function(x) {
-    header <- do.call(rbind,strsplit(x,"="))
+    header <- .strsplit_vector(x[grep("^[A-Z]",x)],"=")
     numbers <- do.call(rbind,strsplit(x[grep("^1..\\.",x)],"\\s"))
     mzi.mass <- as.numeric(numbers[,1])
     
-    rr <- c(title=header[header[,1]=="TITLE",2])
+    rr <- c(title=header["TITLE"])
     
     sel <- mzi.mass > min.mass & mzi.mass < max.mass
     if (any(sel)) {

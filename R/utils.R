@@ -174,3 +174,11 @@ setMethod("weightedMean",
     })
 
 
+# split string into named vector
+.strsplit_vector <- function(x,pattern) {
+  pos <- sapply(x,regexpr,pattern="=",fixed=TRUE)
+  res <- substring(x,pos+1)
+  names(res) <- substring(x,rep(1,length(x)),pos-1)
+  res
+}
+
