@@ -42,9 +42,10 @@ get.property <- function(name) { get(name,properties.env,inherits=FALSE) }
 <<echo=FALSE,results=tex>>=
 cat("\\newcommand{\\analysisname}{",sanitize(get.property('name')),"}")
 cat("\\newcommand{\\analysisauthor}{",sanitize(get.property('author')),"}")
+cat(sprintf("\\input{%s}\n",system.file("report","report-utils.tex",package="isobar")))
 @
 
-\rfoot{Isobar QC Report \analysisname}
+\rfoot{Isobar QC Report \analysisname\isobarthanks}
 
 \bibliography{isobar}
 \bibliographystyle{plain}

@@ -49,6 +49,7 @@ get.property <- function(name) { get(name,properties.env,inherits=FALSE) }
 <<echo=FALSE,results=tex>>=
 cat("\\newcommand{\\analysisname}{",sanitize(get.property('name')),"}")
 cat("\\newcommand{\\analysisauthor}{",sanitize(get.property('author')),"}")
+cat(sprintf("\\input{%s}\n",system.file("report","report-utils.tex",package="isobar")))
 @
 
 \newcommand{\rr}{\raggedright}
@@ -76,7 +77,7 @@ cat("\\newcommand{\\analysisauthor}{",sanitize(get.property('author')),"}")
 \bibliography{isobar}
 \bibliographystyle{plain}
 
-\title{Isobaric Tag Analysis Report\\ \analysisname}
+\title{Isobaric Tag Analysis Report\\ \analysisname\isobarthanks}
 \author{\analysisauthor}
 \date{\today}
 \raggedbottom
@@ -94,7 +95,6 @@ bndt <- 5
 bnd <- round(log10(bndt),1)
 cat(sprintf("\\newcommand{\\bnd}{%s}",bnd),"\n")
 cat(sprintf("\\newcommand{\\bndt}{%s}\n",bndt),"\n")
-cat(sprintf("\\input{%s}\n",system.file("report","report-utils.tex",package="isobar")))
 
 cmbn <- t(unique(quant.tbl[,c("r1","r2")]))
 is.single.comparision <- ncol(cmbn) ==1
