@@ -1117,9 +1117,12 @@ setReplaceMethod("classLabels","IBSpectra",
 ### substractAdditiveNoise and exclude methods.
 ###
 
-setGeneric("correctIsotopeImpurities", function(x) standardGeneric("correctIsotopeImpurities") )
-setGeneric("subtractAdditiveNoise", function(x,...) standardGeneric("subtractAdditiveNoise") )
-setGeneric("exclude",function(x,protein,peptide=NULL,...) standardGeneric("exclude"))
+setGeneric("correctIsotopeImpurities",
+           function(x) standardGeneric("correctIsotopeImpurities") )
+setGeneric("subtractAdditiveNoise",
+           function(x,...) standardGeneric("subtractAdditiveNoise") )
+setGeneric("exclude",
+           function(x,protein,peptide=NULL,...) standardGeneric("exclude"))
 
 setMethod("correctIsotopeImpurities",signature(x="IBSpectra"),
     function(x) {
