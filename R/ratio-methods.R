@@ -446,9 +446,10 @@ estimateRatioForProtein <- function(protein,ibspectra,noise.model,channel1,chann
               variance=var(peptide.ratios$lratio)))
           }
 
-        } else if (method %in% c("isobar","ttest","fc","compare.all")) {
+        } else if (method %in% c("isobar","lm","ttest","fc","compare.all")) {
           .call.estimateRatio(protein,"protein",ibspectra,
-                             noise.model,channel1,channel2,method=method,...)
+                             noise.model,channel1,channel2,method=method,
+                             specificity=specificity,...)
         } else {
           stop("method ",method," not known")
         }
