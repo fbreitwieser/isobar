@@ -1,7 +1,8 @@
-library(gplots)
-library(boot)
-library(RColorBrewer)
-library(isobar)
+suppressPackageStartupMessages(library(gplots))
+suppressPackageStartupMessages(library(boot))
+suppressPackageStartupMessages(library(RColorBrewer))
+suppressPackageStartupMessages(library(isobar))
+suppressPackageStartupMessages(library(seqinr))
 
 source("meta-properties.R")
 load("protein.group.rda")
@@ -9,12 +10,27 @@ proteinInfo(protein.group) <- getProteinInfoFromBiomart(protein.group)
 
 source("~/projects/quant/isobar/inst/report/meta-functions.R")
 
-merged.table <- get.merged.table(samples)
+if (!exists("cols"))
+  cols <- c()
+cols <- unique(c("ac","r1","r2","lratio","variance",cols))
+
+message("Calculating dNSAF ...")
+if (file.exists("dnsaf.rda")) {
+  load("dnsaf.rda")
+} else {
+  dnsaf <- calculate.dNSAF(protein.group)
+  save(dnsaf,file="dnsaf.rda")
+}
+names(dnsaf) <- reporterProteins(protein.group)
+
+message("Merging tables ...")
+merged.table <- get.merged.table(samples,cols=cols)
 merged.table <- subset(merged.table,r1==merged.table$r1[1])
 
 tbl.wide <- reshape(merged.table,idvar="ac",timevar=c("r2"),direction="wide",drop="r1")
 rownames(tbl.wide) <- tbl.wide$ac
 all.names <- do.call(rbind,lapply(tbl.wide[,"ac"],get.names))
+tbl.wide$dNSAF <- dnsaf[as.character(tbl.wide$ac)]
 
 summarized.table <- write.summarized.table(tbl.wide,all.names,cols=unique(merged.table$r2))
 

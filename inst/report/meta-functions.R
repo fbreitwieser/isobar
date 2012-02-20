@@ -1,11 +1,13 @@
-get.merged.table <- function(samples) {
-  cols <- c("ac","r1","r2","lratio","variance")
+get.merged.table <- function(samples,cols=c("ac","r1","r2","lratio","variance")) {
   quant.tables <- lapply(seq(along=samples),
                          function(idx) {
                            load(paste(samples[idx],"/cache/quant.tbl.rda",sep=""))
                            q <- quant.tbl[,cols]
-                           colnames(q) <- c("ac","r1","r2",
-                                            paste("lratio.",samples[idx],sep=""),paste("var.",samples[idx],sep=""))
+                           q[,"lratio"] <- round(q[,"lratio"],4)
+                           q[,"variance"] <- round(q[,"variance"],4)
+                           sel <- !colnames(q) %in% c('ac','r1','r2')
+                           colnames(q)[sel] <- paste(colnames(q)[sel],samples[idx],sep=".")
+                           message(paste(colnames(q),collapse=":"))
                            return(q)
                          })
   
@@ -16,8 +18,8 @@ get.merged.table <- function(samples) {
   return(merged.table)
 }
 get.names <- function(p) apply(my.protein.info(protein.group,p)[,c("name","gene_name","protein_name")],2,
-                               function(s) paste(unique(sort(s)),collapse=" ,"))
-calc.col <- function(tbl.wide,tag) {
+                               function(s) paste(unique(sort(gsub("'","",s))),collapse=", "))
+calc.col <- function(tbl.wide,tag,add.name=TRUE) {
   idx.ratio <- grep("lratio",colnames(tbl.wide),fixed=TRUE)
   idx.var <- grep("var",colnames(tbl.wide),fixed=TRUE)
   x <- t(apply(tbl.wide,1,function(r) {
@@ -31,7 +33,8 @@ calc.col <- function(tbl.wide,tag) {
       n.up=sum(r[idx.r]>0,na.rm=T),
       n.down=sum(r[idx.r]<0,na.rm=T))
   }))
-  colnames(x) <- paste(colnames(x),tag,sep=".")
+  if (add.name)
+    colnames(x) <- paste(colnames(x),tag,sep=".")
   return(x)
 }
 
@@ -41,7 +44,7 @@ write.t <- function(...,sep="\t",row.names=FALSE,quote=FALSE)
 write.summarized.table <- function(tbl.wide,all.names,cols) {
   summarized.table <- cbind(ac=rownames(tbl.wide),all.names)
   for (col in cols)
-    summarized.table <- cbind(summarized.table,calc.col(tbl.wide,col))
+    summarized.table <- cbind(summarized.table,calc.col(tbl.wide,col,add.name=length(cols)>1))
   summarized.table <- cbind(summarized.table,tbl.wide)
   write.t(summarized.table,file=paste(name,"_summarized_table.csv",sep=""))
   return(summarized.table)
