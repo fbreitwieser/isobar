@@ -1,4 +1,4 @@
-### =========================================================================
+###  =========================================================================
 ### Ratio estimation and ratio distribution functions.
 ### -------------------------------------------------------------------------
 ###
@@ -54,6 +54,18 @@ fitCauchy <- function(x) {
                 lower=c(-10,1e-20),upper=c(10,10)) 
   new("Cauchy",location=res$par[1],scale=res$par[2])
 }
+
+fitTd <- function(x) {
+  t.fit <- function(theta,x){
+    -sum(dt(x,df=theta[1],log=TRUE),na.rm=T)
+  }
+  good <- !is.na(x) & !is.nan(x)
+  theta.start <- c(1) # TODO: find good starting value
+  res <- nlminb(theta.start,t.fit,x=x[good])
+  new("Td",df=res$par[1])
+}
+
+
 
 fitNormalCauchyMixture <- function(x) {
   gc.fit <- function(theta,x){
