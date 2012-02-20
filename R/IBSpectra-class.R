@@ -365,7 +365,7 @@ setMethod("readIBSpectra",
 )
 
 ## TODO: log is not returned
-.read.idfile <- function(id.file,id.format,revert.titles=FALSE,log) {
+.read.idfile <- function(id.file,id.format=NULL,revert.titles=FALSE,log=NULL) {
   data <- unique(do.call("rbind",lapply(id.file,function(f) {
     
     if (is.null(id.format)) {
@@ -430,7 +430,7 @@ setMethod("readIBSpectra",
 setMethod("readIBSpectra",
           signature(type="character",id.file="character",peaklist.file="character"),
     function(type,id.file,peaklist.file,proteinGroupTemplate=NULL,
-             mapping.file=NULL,mapping=c(peaklist=1,id=2),id.file.domap=NULL,
+             mapping.file=NULL,mapping=c(peaklist="even",id="odd"),id.file.domap=NULL,
              mapping.file.readopts=list(header=TRUE,stringsAsFactors=FALSE,sep=","),
              peaklist.format=NULL,id.format=NULL,fragment.precision=NULL,fragment.outlier.prob=NULL,
              revert.titles=FALSE,scan.lines=0) {
