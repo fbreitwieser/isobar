@@ -357,18 +357,25 @@ getProteinInfoFromUniprot <- function(x,splice.by=200) {
   return(protein.info)
 }
 
-getProteinInfoFromBioDb <- function(x,host,user,password,dbname) {
-  require(RPostgreSQL)
-  con <- dbConnect(PostgreSQL(),user=user,password=password,dbname=dbname,host=host)
+getProteinInfoFromBioDb <- function(x,con=NULL,...) {
+  if (is.null(con)) {
+    con <- dbConnect(...)
+    do.disconnect <- TRUE
+  } else {
+    do.disconnect <- FALSE
+  }
 
   protein.acs <- x@isoformToGeneProduct[names(indistinguishableProteins(x)),"proteinac.wo.splicevariant"]
   query <- paste("SELECT primaryac AS accession,id AS name,",
                  "  description AS protein_name,",
                  "  (SELECT g.genename FROM genenames g WHERE g.entryid=d.entryid AND g.synonym=FALSE AND g.sourcedb=3 LIMIT 1) AS gene_name,",
-                 "  os AS organism",
+                 "  os AS organism, seqlength as length, sequence",
                  "FROM dbentries d ",
-                 "WHERE dbid=3 AND primaryac IN (",paste("'",protein.acs,"'",collapse=",",sep=""),")")
-  dbGetQuery(con,query)
+                 "WHERE dbid IN (2,3) AND primaryac IN (",paste("'",protein.acs,"'",collapse=",",sep=""),")")
+  res <- dbGetQuery(con,query)
+  if (do.disconnect)
+    dbDisconnect(con)
+  return(res)
 }
 
 
