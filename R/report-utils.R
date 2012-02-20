@@ -790,17 +790,18 @@ draw.boxplot <- function(lratio,sd,bnd) {
   ratio.bigger.bnd  <- lratio + sd > bnd
 
   return(sprintf("\\boxplot{%.2f}{%.2f}{%s!%s}{%s}{%s}{%.0f}{%s}\n",
-                  .bnds(lratio,bnd),
-                  .bnds(sd,bnd),
+                  lratio,
+                  sd,
                   ifelse(lratio > 0,"green","red"),
                   min(floor(abs(lratio)/bnd*100),100),
                   ifelse(ratio.smaller.bnd, "\\divcol", "black!1"),
                   ifelse(ratio.bigger.bnd,  "\\divcol", "black!1"),
-                  10^(sd),
+                  sd,
                   col))
 }
 
 transform_pepmodif <- function(pep.n.modif) {
+  message(paste(pep.n.modif,collapse=" - "))
   pep <- strsplit(pep.n.modif[1],"")[[1]]
   modif <- strsplit(pep.n.modif[2],":")[[1]]
   if (length(pep)+1 != length(modif))

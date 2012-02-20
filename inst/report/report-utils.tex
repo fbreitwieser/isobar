@@ -183,18 +183,24 @@
   \addtocounter{nplot}{1}
 }
 
+\newcommand{\pgfbndset}[2]
+{
+%  \pgfmathparse{min(\bnd,max(-\bnd,#1))}
+  \pgfmathparse{max(-\bnd,#2)}
+  \pgfmathparse{min(\bnd,\pgfmathresult)}
+  \pgfmathsetmacro{#1}{\pgfmathresult}
+}
+
 \newcommand{\tikzboxplot}[7]
 {
   \pgfmathsetmacro{\median}{#1}
   \pgfmathsetmacro{\sd}{#2}
-  \pgfmathparse{max(-\bnd,\median-\sd)}
-  \pgfmathsetmacro{\ql}{\pgfmathresult} % first quartile 
-  \pgfmathparse{max(-\bnd,\median-1.96*\sd)}
-  \pgfmathsetmacro{\cl}{\pgfmathresult} % lower border of CI
-  \pgfmathparse{min(\bnd,\median+\sd)}
-  \pgfmathsetmacro{\qh}{\pgfmathresult} % third quartile
-  \pgfmathparse{min(\bnd,\median+1.96*\sd)}
-  \pgfmathsetmacro{\ch}{\pgfmathresult} % upper border of CI
+  \pgfbndset{\ql}{\median-\sd}      % first quartile 
+  \pgfbndset{\cl}{\median-1.96*\sd} % lower border of CI
+  \pgfbndset{\qh}{\median+\sd}      % third quartile 
+  \pgfbndset{\ch}{\median+1.96*\sd} % upper border of CI
+  \pgfbndset{\median}{\median}
+
   \pgfmathsetmacro{\hh}{0+2*\ll}
   \def\divcol{#3}
   \draw[#7] [lightgray] (-\bnd,\hh+\ll/2) -- (\bnd,\hh+\ll/2); % Axis
@@ -209,7 +215,6 @@
   \node[#4] (bdr) at (-\bnd-0.1,\hh+\ll/2) {\tt{<}} ;
   \node[#5] at (\bnd+0.1,\hh+\ll/2) {\tt{>}};
 }
-
 
 
 \newcommand{\rsdboxplotold}[9]
