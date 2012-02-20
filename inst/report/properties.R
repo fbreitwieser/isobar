@@ -49,9 +49,11 @@ readIBSpectra.args = list(
 correct.isotope.impurities=TRUE
 
 normalize=TRUE
+normalize.channels=NULL
 normalize.use.protein=NULL
 normalize.exclude.protein=NULL
 normalize.function=median
+normalize.na.rm=FALSE
 normalize.exclude.set = list (seppro_igy14=c(
         "P02763",   #  Alpha1-Acid Glycoprotein
         "P01009-1", #  Alpha1-Antitrypsin
