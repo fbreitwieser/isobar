@@ -819,7 +819,7 @@ proteinRatios <-
       if (is.null(min.detect)) min.detect <- ncol(combn)
       n.combination <- ncol(combn)
       if (n.combination < 2) 
-        stop("Summarize=TRUE makes no sense with only one combination, please set to FALSE")
+        stop("Summarize=TRUE makes no sense with only one combination, set summarize to FALSE or class labels differently.")
 
       if (is.null(min.detect))
         min.detect <- n.combination
@@ -863,7 +863,7 @@ proteinRatios <-
 }
 
 summarize.ratios <-
-  function(ratios,summarize.method,min.detect,n.combination,strict.sample.pval=TRUE,
+  function(ratios,summarize.method="mult.pval",min.detect=NULL,n.combination=NULL,strict.sample.pval=TRUE,
            strict.ratio.pval=TRUE,orient.div=0,
            sign.level=0.05,sign.level.rat=sign.level,sign.level.sample=sign.level,
            variance.function="maxi",ratiodistr=NULL,p.adjust=NULL) {
@@ -876,6 +876,10 @@ summarize.ratios <-
       stop("ratios must specify classes w/ columns class1 and class2!")
 
     classes <- unique(ratios[,c("class1","class2")])
+    if (is.null(n.combination))
+      n.combination <- length(classes)
+    if (is.null(min.detect))
+      min.detect <- n.combination
 
     mean.r <- ifelse(is.null(ratiodistr),0,distr::q(ratiodistr)(0.5))
     if (summarize.method == "mult.pval") {
