@@ -376,10 +376,13 @@ initialize.env <- function(env,report.type="protein",properties.env) {
   if (properties.env$correct.isotope.impurities)
     ibspectra <- correctIsotopeImpurities(ibspectra)
   if (properties.env$normalize) {
-    ibspectra <- normalize(ibspectra,
-                           use.protein=properties.env$normalize.use.protein,
-                           exclude.protein=properties.env$normalize.exclude.protein,
-                           f=properties.env$normalize.function)
+    ibspectra <-
+      normalize(ibspectra,
+                use.protein=properties.env$normalize.use.protein,
+                exclude.protein=properties.env$normalize.exclude.protein,
+                f=properties.env$normalize.function,
+                channels=properties.env$normalize.channels,
+                na.rm=properties.env$normalize.na.rm)
   }
 
   class.labels <- as.character(c(1,rep(0,length(sampleNames(ibspectra))-1)))
@@ -443,6 +446,9 @@ initialize.env <- function(env,report.type="protein",properties.env) {
                                       proteins=reporterProteins(proteinGroup(env$ibspectra)),peptide=NULL,
                                       cl=classLabels(env$ibspectra),method=method,symmetry=TRUE)
 
+    if (all(is.nan(protein.ratios$lratio)))
+      stop("Cannot compute protein ratio distribution - no ratios available.\n",
+           "Probably due to missing reporter intensities.")
     fitCauchy(protein.ratios[,'lratio'])
   }))
 }
@@ -825,7 +831,8 @@ modifs <-
            "iTRAQ4plex_Nterm","i","black",
            "iTRAQ4plex_K","i","black",
            "Oxidation_M","o","black",
-           "Cys_CAM","c","purple"),
+           "Cys_CAM","c","black",
+           "PHOS","c","purple"),
          byrow=TRUE,ncol=3)
 
 .bnds <- function(x,bnd=NULL,min.x=-bnd,max.x=bnd) {
