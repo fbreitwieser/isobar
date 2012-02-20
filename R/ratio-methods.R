@@ -569,22 +569,31 @@ setMethod("estimateRatio",
 ### Helper function to estimateRatioNumeric
 .call.estimateRatio <- function(x,level,ibspectra,noise.model,
                                 channel1,channel2,
-                                specificity=REPORTERSPECIFIC,modif=NULL,...) {
+                                specificity=REPORTERSPECIFIC,modif=NULL,
+                                n.sample=NULL,
+                                groupspecific.if.same.ac=FALSE,...) {
   if (is.null(channel1) || is.null(channel2))
     stop("channel1 and channel2 must not be NULL, but one of [",paste(reporterTagNames(ibspectra),collapse=", "),"] !")
   if (length(channel1) == 0 || length(channel1) > 1 || length(channel2) == 0 || length(channel2) > 1)
     stop("channel1 and channel2 must be of length one! Lengths: [",length(channel1),",",length(channel2),"]")
-  if (!channel1 %in% reporterTagNames(ibspectra) || !channel2 %in% reporterTagNames(ibspectra))
+  if (!all(channel1 %in% reporterTagNames(ibspectra)) || !all(channel2 %in% reporterTagNames(ibspectra)))
     stop("channel1 and channel2 must be one of the reporter names: ",paste(reporterTagNames(ibspectra),collapse=", "),".")
   
+  if (length(channel1) > 1 || length(channel2) > 1) {
+    ##TTTT 
+    ## TODO
+  } 
   if (level=="protein") {
-    ri <- reporterIntensities(ibspectra,protein=x,specificity=specificity,modif=modif)
-    ri.raw <- reporterData(ibspectra,element="ions_not_normalized",protein=x,specificity=specificity,modif=modif)
+    ri <- reporterIntensities(ibspectra,protein=x,specificity=specificity,
+                              modif=modif,groupspecific.if.same.ac=groupspecific.if.same.ac)
+    ri.raw <- reporterData(ibspectra,element="ions_not_normalized",protein=x,specificity=specificity,modif=modif,
+                           groupspecific.if.same.ac=groupspecific.if.same.ac)
   }
   if (level=="peptide") {
     ri <- reporterIntensities(ibspectra,peptide=x,modif=modif)
     ri.raw <- reporterData(ibspectra,element="ions_not_normalized",peptide=x,modif=modif)
   }
+  ## TODO: implement n.sample
   i1 <- .get.ri(ri,channel1)
   i2 <- .get.ri(ri,channel2)
 
