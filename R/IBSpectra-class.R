@@ -363,6 +363,45 @@ setMethod("readIBSpectra",
       )
     }
 )
+
+## TODO: log is not returned
+.read.idfile <- function(id.file,id.format,revert.titles=FALSE,log) {
+  data <- unique(do.call("rbind",lapply(id.file,function(f) {
+    
+    if (is.null(id.format)) {
+      if (grepl(".mzid$",f,ignore.case=TRUE)) 
+        id.format.f <- "mzid"
+      else if (grepl(".ibspectra.csv$",f,ignore.case=TRUE) ||
+               grepl(".id.csv$",f,ignore.case=TRUE))
+        id.format.f <- "ibspectra.csv"
+      else
+        stop(paste("cannot parse file ",f," - cannot deduce format based on extenstion (it is not ibspectra.csv, id.csv or mzid). Please provide id.format to readIBSpectra",sep=""))          
+    } else {
+      id.format.f <- id.format
+    }
+    
+    if (id.format.f == "ibspectra.csv") {
+      data <- read.table(f,header=T,stringsAsFactors=F,sep="\t")
+      log <- rbind(log,c("identification file [id.csv]",f))
+    } else { 
+      if (id.format.f == "mzid") {
+        data <- read.mzid(f)
+        log <- rbind(log,c("identification file [mzid]",f))
+      } else {
+        stop(paste("cannot parse file ",f," - format [",id.format.f,"] not known.",sep=""))
+      }
+    }
+    return(data)
+  })
+  ))
+  if (revert.titles) {
+    data[,.SPECTRUM.COLS['SPECTRUM']] <- .escape.url(data[,.SPECTRUM.COLS['SPECTRUM']],FALSE)
+  }
+  data[,.SPECTRUM.COLS['SPECTRUM']] <- .trim(data[,.SPECTRUM.COLS['SPECTRUM']])
+  return(data)
+
+}
+
 ##' readIBSpectra - read IBSpectra object from files
 ##'
 ##' <details>
@@ -391,45 +430,15 @@ setMethod("readIBSpectra",
 setMethod("readIBSpectra",
           signature(type="character",id.file="character",peaklist.file="character"),
     function(type,id.file,peaklist.file,proteinGroupTemplate=NULL,
-             mapping.file=NULL,mapping=c(peaklist=1,id=2),
+             mapping.file=NULL,mapping=c(peaklist=1,id=2),id.file.domap=NULL,
              mapping.file.readopts=list(header=TRUE,stringsAsFactors=FALSE,sep=","),
              peaklist.format=NULL,id.format=NULL,fragment.precision=NULL,fragment.outlier.prob=NULL,
              revert.titles=FALSE,scan.lines=0) {
       
       log <- data.frame(key=c(),message=c())
 
-      # get identified spectra
-      data <- unique(do.call("rbind",lapply(id.file,function(f) {
-        id.format.f <- id.format
-        if (is.null(id.format.f)) {
-          if (grepl(".mzid$",f,ignore.case=TRUE)) 
-            id.format.f <- "mzid"
-          else if (grepl(".ibspectra.csv$",f,ignore.case=TRUE) ||
-                   grepl(".id.csv$",f,ignore.case=TRUE))
-            id.format.f <- "ibspectra.csv"
-          else
-            stop(paste("cannot parse file ",f," - cannot deduce format (no ibspectra.csv, id.csv or mzid extension). Please provide id.format to readIBSpectra",sep=""))          
-        }
-
-        if (id.format.f == "ibspectra.csv") {
-          data <- read.table(f,header=T,stringsAsFactors=F,sep="\t")
-          log <- rbind(log,c("identification file [id.csv]",f))
-        } else { 
-          if (id.format.f == "mzid") {
-            data <- read.mzid(f)
-            log <- rbind(log,c("identification file [mzid]",f))
-          } else {
-          stop(paste("cannot parse file ",f," - format [",id.format.f,"] not known.",sep=""))
-          }
-        }
-        return(data)
-        })
-      ))
-
-      if (revert.titles) {
-        data[,.SPECTRUM.COLS['SPECTRUM']] <- .escape.url(data[,.SPECTRUM.COLS['SPECTRUM']],FALSE)
-      }
-      data[,.SPECTRUM.COLS['SPECTRUM']] <- .trim(data[,.SPECTRUM.COLS['SPECTRUM']])
+      ## get identified spectra
+      data <- .read.idfile(id.file,id.format,revert.titles=revert.titles,log)
 
       ## mapping
       mapping.quant2id <- data.frame()
@@ -439,14 +448,24 @@ setMethod("readIBSpectra",
           stop("readIBSpectra/mapping must be a named vector with the",
                " names peaklist and id.")
         }
-        mapping.file.readopts$X <- mapping.file
-        mapping.file.readopts$FUN <- read.table
-        
-        mapping.quant2id <- do.call(rbind,do.call(lapply,mapping.file.readopts))
+
+        res <- lapply(mapping.file,function(f) {
+          mapping.file.readopts$file <- f
+          do.call(read.table,mapping.file.readopts)
+          })
+        mapping.quant2id <- do.call(rbind,res)
         cn <-  colnames(mapping.quant2id)
+        ## TODO: Add warning if mapping is not in colnames
         colnames(mapping.quant2id)[cn == mapping['id']] <- 'id'
         colnames(mapping.quant2id)[cn == mapping['peaklist']] <- 'peaklist'
         log <- rbind(log,data.frame(rep("mapping file",length(mapping.file)),mapping.file,stringsAsFactors=FALSE))
+        if (!is.null(id.file.domap)) {
+          data.m <- .read.idfile(id.file.domap,id.format,revert.titles=revert.titles,log)
+          map.spectrum <- mapping.quant2id[,"id"]
+          names(map.spectrum) <- mapping.quant2id[,"peaklist"]
+          data.m[,"spectrum"] <- map.spectrum[data.m[,"spectrum"]]
+          data <- rbind(data,data.m)
+        }
       }
       
       # all identified spectrum titles
