@@ -737,6 +737,22 @@ my.protein.info <- function(x,protein.g) {
        stringsAsFactors=FALSE), protein.info, all.x=TRUE,all.y=FALSE))
 }
 
+summary.ProteinGroup <- function(object,only.reporters=TRUE,...) {
+  peptide.cnt <- table(peptideNProtein(object)[,"protein.g"])
+  peptide.spectra.cnt <- table(spectrumToPeptide(object))
+  spectra.cnt <- tapply(peptideNProtein(object)[,"peptide"],peptideNProtein(object)[,"protein.g"],function(pep) sum(peptide.spectra.cnt[pep]))
+  
+  if (only.reporters) 
+    proteins <- reporterProteins(object)
+  else
+    proteins <- names(spectra.cnt)
+  
+  proteins <- proteins[order(spectra.cnt[proteins],decreasing=TRUE)]
+    
+  return(data.frame(peptide.cnt=peptide.cnt[proteins],
+                    spectra.cnt=spectra.cnt[proteins]))
+  
+}
 
 ### - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 ### Quantification functions (dNSAF).
