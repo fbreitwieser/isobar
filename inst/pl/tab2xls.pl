@@ -1,6 +1,6 @@
 #!/usr/bin/perl
 # Creation date : 2010-09-29
-# Last modified : Tue 20 Sep 2011 03:32:06 PM CEST
+# Last modified : Wed 21 Dec 2011 03:58:20 PM CET
 
 # Module        : tab2xls.pl
 # Purpose       : converts csv files to XLS format
@@ -12,19 +12,29 @@
 use strict;
 use warnings;
 use Spreadsheet::WriteExcel;
+use File::Basename;
 
 my $delim="\t";
 
 # Check for valid number of arguments
-if (($#ARGV < 1)) {
+if (($#ARGV < 0)) {
 	print("Usage: tab2xls.pl newfile.xls ':PROPERTIES:Sheet 1=file1.csv'\n\n",
           "  Valid properties:\n",
           "    freeze_col N       freeze pane to column N\n",
           "    autofilter         apply autofilter on all columns\n"),
 };
 
+my $xls_file = $ARGV[0];
+if (@ARGV == 1) {
+  $xls_file =~ s/.csv/.xls/;
+} else {
+  shift;
+}
+
+print STDERR "writing XLS file $xls_file\n";
+
 # Create a new Excel workbook
-my $workbook = Spreadsheet::WriteExcel->new("$ARGV[0]");
+my $workbook = Spreadsheet::WriteExcel->new($xls_file);
 
 my $wbheader = $workbook->add_format();
 $wbheader->set_color('white');
@@ -43,8 +53,8 @@ my $fmt_green= $workbook->add_format(color=>'blue');
 my $wbcenter = $workbook->add_format();
 $wbcenter->set_align('center');
 
-for (my $i=1; $i <= $#ARGV; ++$i) {
-    print STDERR "$ARGV[$i]\n";
+for (my $i=0; $i <= $#ARGV; ++$i) {
+    print STDERR " processing $ARGV[$i]\n";
     # Add a worksheet
     my ($name,$file) = split(/=/,$ARGV[$i]);
     
@@ -52,10 +62,9 @@ for (my $i=1; $i <= $#ARGV; ++$i) {
 	($name,$props) = get_props($name);
 
     if (!defined $file) {
-	$file = $name;
-	$name =~ s/.csv$//;
-
-	#$name = "Sheet $i";
+    	$file = $name;
+	    ($name) = getname(fileparse($name,".csv"));
+    	#$name = "Sheet $i";
     }
 
     open(F,"<",$file) or die "Could not open $file: $!";
@@ -135,7 +144,7 @@ sub write_col {
         }
     } else {
         if ($is_header) {
-    	    $worksheet->write($row,$col,ucfirst($field),$wbheader);
+    	    $worksheet->write($row,$col,getname($field),$wbheader);
         } else {
     	    if ($field eq 'TRUE') {
     	   	    $worksheet->write($row,$col,$field,$fmt_green);
@@ -144,6 +153,12 @@ sub write_col {
     	    }
         }
     }
+}
+
+sub getname {
+    my ($field) = @_;
+    my @parts = map(ucfirst,split(/[\._]/,$field));
+    return(join(" ",@parts));
 }
 
 sub trim {
