@@ -229,6 +229,9 @@ setMethod("estimateRatioNumeric",signature(channel1="numeric",channel2="numeric"
 
         if (!is.null(ratiodistr)) {
           rat.neg <- log10(res.lm['ratio']) < distr::q(ratiodistr)(0.5)
+          ci[ci < 0] <- 0
+          # TODO: fix confidence interval which goes to minus
+          #message(paste(ci,collapse=":"))
           lrat.p <- log10(ifelse(rat.neg,ci[2],ci[1]))
           res.lm['p.value'] <- distr::p(ratiodistr)(lrat.p,lower.tail=rat.neg)
           res.lm['is.significant'] <- res.lm['p.value'] < sign.level.sample
