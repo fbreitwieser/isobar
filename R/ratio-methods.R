@@ -148,43 +148,44 @@ setMethod("estimateRatioNumeric",signature(channel1="numeric",channel2="numeric"
              remove.outliers=TRUE,outliers.coef=1,outliers.trim=0,n.sample=NULL, 
              method="isobar",fc.threshold=1.3,channel1.raw=NULL,channel2.raw=NULL,
              use.na=FALSE) {
-
+      
       if (length(channel1) != length(channel2))
         stop("length of channel 1 does not equal length of channel 2")
       if (!is.null(channel1.raw) && length(channel1) != length(channel1.raw) ||
           !is.null(channel2.raw) && length(channel2) != length(channel2.raw)) 
         stop("length of orig channels [",length(channel1.raw),"] is not the same as channels [",length(channel1),"]")
-
+      
       if (length(channel1)==0) {
         if (method == "isobar")
-        return(c(lratio=NA,variance=NA,n.spectra=NA,
-                 p.value.rat=NA,p.value.sample=NA,is.significant=NA))
+          return(c(lratio=NA,variance=NA,n.spectra=NA,
+                   p.value.rat=NA,p.value.sample=NA,is.significant=NA))
         else if (method=="libra" | method == "pep")
-        return(c(ch1=NA,ch2=NA))
+          return(c(ch1=NA,ch2=NA))
         else if (method=="multiq")
-        return(c(lratio=NA,variance=NA,n.spectra=0,isum=NA))
+          return(c(lratio=NA,variance=NA,n.spectra=0,isum=NA))
         else if (method=="test"|method=="compare.all")
-        return(c(lratio=NA, variance=NA,
-                 n.spectra=NA,
-                 unweighted.ratio=NA,
-                 is.sign.isobar    = NA,
-                 is.sign.isobar.ev = NA,
-                 is.sign.rat       = NA,
-                 is.sign.sample    = NA,
-                 is.sign.ttest     = NA,
-#         is.significant.wttest    = res.isobar$is.significant,
-                 is.sign.fc        = NA,
-                 is.sign.fc.nw     = NA
-                 ))
+          return(c(lratio=NA, variance=NA,
+                   n.spectra=NA,
+                   unweighted.ratio=NA,
+                   is.sign.isobar    = NA,
+                   is.sign.isobar.ev = NA,
+                   is.sign.rat       = NA,
+                   is.sign.sample    = NA,
+                   is.sign.ttest     = NA,
+                   ## is.significant.wttest    = res.isobar$is.significant,
+                   is.sign.fc        = NA,
+                   is.sign.fc.nw     = NA
+                   ))
         else warning("no spectra, unknown method")
       }
+      
       sel <- !is.na(channel1) & !is.na(channel2) & channel1 > 0 & channel2 > 0
       sel.notna <- !is.na(channel1) & !is.na(channel2) & channel1 > 0 & channel2 > 0
       ## Implementation of multiq and libra methods
       if (method=="multiq") {
         lratio <- log10(sum(channel1[sel])/sum(channel2[sel]))
         return(c(lratio, variance=NA,n.spectra=length(lratio),
-              isum=sum(channel1[sel]+channel2[sel])))
+                 isum=sum(channel1[sel]+channel2[sel])))
       }
       if (method=="libra" | method=="pep") {
         return(c(ch1=sum(channel1[sel]),ch2=sum(channel2[sel])))
