@@ -1056,10 +1056,21 @@ setMethod("spectrumTitles","IBSpectra",function(x,...)
 setGeneric("classLabels", function(x) standardGeneric("classLabels"))
 setGeneric("classLabels<-", function(x,value) standardGeneric("classLabels<-"))
 
-setMethod("classLabels",signature(x="IBSpectra"), function(x) phenoData(x)[["class.labels"]])
+setMethod("classLabels",signature(x="IBSpectra"), 
+    function(x) {
+      class.labels <- phenoData(x)[["class.labels"]]
+      names(class.labels) <- phenoData(x)[["class.label.description"]]
+      return(class.labels)
+    }
+)
 setReplaceMethod("classLabels","IBSpectra",
     function(x,value) {
-      phenoData(x)[["class.labels",labelDescription="class labels"]] <- value
+      if (is.null(names(value))) {
+        phenoData(x)[["class.labels",labelDescription="class labels"]] <- value
+      } else {
+        phenoData(x)[["class.labels",labelDescription="class labels"]] <- as.character(value)
+        phenoData(x)[["class.label.description",labelDescription="class label descriptions"]] <- names(value)
+      }
       x
     }
 )

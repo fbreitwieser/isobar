@@ -8,7 +8,7 @@ Author: Florian P Breitwieser <fbreitwieser@cemm.oeaw.ac.at> and
    Jacques Colinge <jcolinge@cemm.oeaw.ac.at>, with contributions from 
    Xavier Robin <xavier.robin@unige.ch>
 Maintainer: Florian P Breitwieser <fbreitwieser@cemm.oeaw.ac.at>
-biocViews: Proteomics, MassSpectrometray, Bioinformatics, MultipleComparisons, QualityControl
+biocViews: Proteomics, MassSpectrometry, Bioinformatics, MultipleComparisons, QualityControl
 Depends: R (>= 2.9.0), Biobase, stats, methods, ggplot2
 Imports: distr, biomaRt
 Suggests: MSnbase, XML, seqinr

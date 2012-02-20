@@ -223,15 +223,16 @@ initialize.env <- function(env,report.type="protein",properties.env) {
 #- property loading helper functions
 .DOES.NOT.EXIST = "NOT AVAILABLE"
 
-.get.or.load <- function(name,envir,msg.f=name,class=NULL) {
-  if (.exists.property(name,envir)) {
+.get.or.load <- function(name,envir,msg.f=name,class=NULL,null.ok=FALSE) {
+  if (.exists.property(name,envir,null.ok=null.ok)) {
     o <- .get.property(name,envir)
+    if (is.null(o) && null.ok) return(NULL)
     if (!is.null(class) && is(o,class)) {
       return(o)
     } else if (is(o,"character")) {
       file.name <- o
     } else {
-      stop("property ",name," is neither character nor of a specified class")
+      stop("property ",name," is neither 'character' nor of a specified class")
     }
   } else {
     file.name <- sprintf("%s/%s.rda",.get.property('cachedir',envir),name)
@@ -254,7 +255,7 @@ initialize.env <- function(env,report.type="protein",properties.env) {
     file.name <- sprintf("%s/%s.rda",.get.property('cachedir',envir),name)
     save(list=c(name),file=file.name)
   }
-  if (!is.null(class) && !is(x,class)) 
+  if (!is.null(class) && !is(x,class))
     stop("property [",name,"] should be of class [",class,"] but is of class [",class(x),"]")
 
   return(x)
@@ -328,7 +329,7 @@ initialize.env <- function(env,report.type="protein",properties.env) {
   readIBSpectra.args$id.file=get.property('ibspectra')
   readIBSpectra.args$fragment.precision=get.property('fragment.precision')
   readIBSpectra.args$fragment.outlier.prob=get.property('fragment.outlier.prob')
-  readIBSpectra.args$proteinGroupTemplate=.get.or.load('protein.group.template',properties.env,"ProteinGroup")
+  readIBSpectra.args$proteinGroupTemplate=.get.or.load('protein.group.template',properties.env,"ProteinGroup",null.ok=TRUE)
 
   if (file.exists(get.property('ibspectra'))) {
     if (grepl(".csv",get.property('ibspectra'))) {
@@ -426,21 +427,24 @@ initialize.env <- function(env,report.type="protein",properties.env) {
   
   return(.create.or.load("ratiodistr",envir=properties.env,class="Distribution",
                          msg.f="protein ratio distribution",f=function(){
-    if (!properties.env$summarize)
-      stop("ratiodistr must be set to a file containg a distr object - \n",
-           "  it can only generated when intra-class ratios can be computed")
+    if (properties.env$summarize) {
+      method <- "intraclass"
+   } else {
+      message(" WARNING: ratiodistr will be computed based on global ratios!")
+      method <- "global"
+    }
 
     if (identical(level,"peptide"))
       protein.ratios <- proteinRatios(env$ibspectra,noise.model=env$noise.model,
                                       proteins=NULL,peptide=peptides(proteinGroup(env$ibspectra)),
-                                      cl=classLabels(env$ibspectra),method="intraclass",symmetry=TRUE)
+                                      cl=classLabels(env$ibspectra),method=method,symmetry=TRUE)
     else
       protein.ratios <- proteinRatios(env$ibspectra,noise.model=env$noise.model,
                                       proteins=reporterProteins(proteinGroup(env$ibspectra)),peptide=NULL,
-                                      cl=classLabels(env$ibspectra),method="intraclass",symmetry=TRUE)
+                                      cl=classLabels(env$ibspectra),method=method,symmetry=TRUE)
 
     fitCauchy(protein.ratios[,'lratio'])
-  })) 
+  }))
 }
 
 .set <- function(x,name,list) {
