@@ -790,13 +790,14 @@ calculate.dNSAF <- function(protein.group,seqlength=NULL,...) {
       d.sspc <- 0
 
     ## for protein length, we take the sum of lengths of all acs
-    protein.length <- sum(seqlength[unique(protein.ac(protein.group,p))])
+    protein.length <- sum(seqlength[unique(protein.ac(protein.group,p))],na.rm=TRUE)
     dSAF <- (uspc[p] + d.sspc) / protein.length
     return(dSAF)
   })
 
   ## normalize to dNSAF
   dNSAF <- dSAF/sum(dSAF,na.rm=TRUE)
+  names(dNSAF) <- reporterProteins(protein.group)
   return(dNSAF)
 }
 
