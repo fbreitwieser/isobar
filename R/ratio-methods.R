@@ -788,6 +788,11 @@ combn.protein.tbl <- function(ibspectra,noise.model,ratiodistr,
   return(ratios)  
 }
 
+
+peptideRatios <- function(ibspectra,...,protein=NULL,peptide=peptides(proteinGroup(ibspectra))) {
+  proteinRatios(ibspectra,...,proteins=protein,peptide=peptide)
+}
+
 proteinRatios <-
   function(ibspectra,noise.model,
            reporterTagNames=NULL,
