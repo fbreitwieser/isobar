@@ -1355,6 +1355,9 @@ setMethod("reporterMassPrecision",
           signature=c(x="IBSpectra",plot="missing"),
           function(x) reporterMassPrecision(x,TRUE))
 
+
+setGeneric("reporterIntensityPlot",function(x) standardGeneric("reporterIntensityPlot"))
+
 # Calculates and displays the deviation from the 'true' tag mass 
 # - as specified in the IBSpectra object - of each channel.
 setMethod("reporterMassPrecision",
@@ -1383,11 +1386,41 @@ setMethod("reporterMassPrecision",
                   facet_wrap(~reporter,scales="fixed",nrow=1) + 
                   theme_bw() +
                     opts(legend.position="none",
-                         axis.text.x = theme_text(angle=330,hjust=0,colour="grey50"))
+                         axis.text.x = theme_text(angle=330,hjust=0,vjust=1,colour="grey50",size=6.5))
             }
 
             #return(summary(masses-matrix(reporterTagMasses(x),byrow=T,
             #       nrow=nrow(masses),ncol=ncol(masses))))
+          }
+)
+
+setMethod("reporterIntensityPlot",
+          signature=c(x="IBSpectra"),function(x) {
+            intensities <- reporterIntensities(x)
+            intensities.nn <- reporterData(x,element="ions_not_normalized") # null if not normalized
+            
+            melt.intensities <- data.frame(tag=rep(colnames(intensities),each=nrow(intensities)),
+                       normalized=ifelse(is.null(intensities.nn),"no","2. after normalization"),
+                       intensity=as.numeric(intensities),
+                       stringsAsFactors=FALSE)
+
+            if (!is.null(intensities.nn)) {
+            	melt.intensities <- rbind(melt.intensities,
+              	  data.frame(tag=rep(colnames(intensities.nn),each=nrow(intensities.nn)),
+                             normalized="1. before normalization",
+                             intensity=as.numeric(intensities.nn),
+                             stringsAsFactors=FALSE))
+            }
+            
+       #     ggplot(melt.intensities,aes(x=intensity)) + 
+       #       geom_density(aes(fill=factor(normalized)),alph=0.5) + 
+       #       scale_x_log10() + facet_wrap(~tag,scales="fixed",nrow=1) + 
+       #           theme_bw() + opts(axis.text.x = theme_text(angle=330,hjust=0,colour="grey50"))
+                            
+            ggplot(melt.intensities,aes(x=tag,y=intensity)) +
+              geom_boxplot(aes(color=factor(normalized)),size=0.5,alpha=0.6,
+                           outlier.size=0.5,position=position_dodge(width=0.25)) + 
+              scale_y_log10() + theme_bw() + scale_color_hue("") 
           }
 )
 

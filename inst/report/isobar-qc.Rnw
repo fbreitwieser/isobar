@@ -45,7 +45,7 @@ cat("\\newcommand{\\analysisauthor}{",sanitize(get.property('author')),"}")
 cat(sprintf("\\input{%s}\n",system.file("report","report-utils.tex",package="isobar")))
 @
 
-\rfoot{Isobar QC Report \analysisname\isobarthanks}
+\rfoot{Isobar QC Report \analysisname}
 
 \bibliography{isobar}
 \bibliographystyle{plain}
@@ -58,7 +58,7 @@ cat(sprintf("\\input{%s}\n",system.file("report","report-utils.tex",package="iso
 
 \renewcommand*{\thesubfigure}{}
 
-\title{Isobar QC Report \analysisname}
+\title{Isobar QC Report \analysisname\isobarthanks}
 \author{\analysisauthor}
 \date{\today}
 \raggedbottom
@@ -72,12 +72,18 @@ cat(sprintf("\\input{%s}\n",system.file("report","report-utils.tex",package="iso
 %<<ibspectra,echo=FALSE>>=
 %ibspectra
 %@
-\section{Reporter Mass Precision}
+\subsection*{Reporter Mass Precision}
 <<fig-reporterMassPrecision,fig=T,echo=F,width=6,height=2.5,results=hide>>=
  print(reporterMassPrecision(ibspectra))
 @
 
-\section{Ratio distribution}
+\subsection*{Reporter Intensities}
+<<fig-reporterIntensityPlot,fig=T,echo=F,width=6,height=2.5,results=hide>>=
+ print(reporterIntensityPlot(ibspectra))
+@
+
+
+\subsection*{Ratio distribution}
 \begin{minipage}{0.5\textwidth}
 <<fig-ratiodistribution,fig=TRUE,echo=FALSE,width=3,height=2>>=
 #quant.tbl$ratio <- 10^ quant.tbl$lratio
@@ -111,7 +117,7 @@ if (!is.null(ratiodistr))
 \end{verbatim}
  \end{minipage}
 
-\section{Ratio Intensity Plot}
+\subsection*{Ratio Intensity Plot}
 <<fig-maplot,echo=FALSE,results=hide>>=
 png("fig_maplot.png",width=6,height=6,units="in",res=600,pointsize=14)
 maplot(ibspectra,noise.model=noise.model,ylim=c(0.1,10),bty="l")
