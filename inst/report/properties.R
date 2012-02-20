@@ -23,6 +23,11 @@ ibspectra=paste(name,"ibspectra.csv",sep=".")
 ## beforehand. This then acts as a template and a subset is used.
 protein.group.template=NULL
 
+## Via database or internet connection informations on proteins 
+## (such as gene names and length) can be gathered. protein.info.f
+## defines the function which takes a ProteinGroup object as argument
+protein.info.f=getProteinInfoFromUniprot
+
 ## Where should cached files be saved?
 # cachedir="cache"
 cachedir="."
@@ -100,6 +105,9 @@ combn.method="interclass"
 ## Example for iTRAQ 4plex:
 # class.labels=as.character(c(1,0,0,0))
 # class.labels=c("Treatment","Treatment","Control","Control")
+## Also names are possible - these serves as description in the report
+##  and less space is used in the rows
+# class.labels=c("Treatment"="T","Treatment"="T","Control"="C","Control"="C")
 class.labels=NULL
 combn=NULL
 

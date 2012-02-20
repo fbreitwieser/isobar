@@ -396,12 +396,12 @@ initialize.env <- function(env,report.type="protein",properties.env) {
   }
   classLabels(ibspectra) <- class.labels
 
-  protein.info <- .create.or.load("protein.info",envir=properties.env,
-                                  f=getProteinInfoFromBiomart,
-                                  x=proteinGroup(ibspectra),
-                                  do.load=TRUE, msg.f="protein.info from Biomart")
-  protein.info$gene_name[!is.na(protein.info$gene_name) & protein.info$gene_name == ""] <- NA
-  proteinInfo(proteinGroup(ibspectra)) <- protein.info
+  if (!is.null(properties.env$protein.info.f))
+    proteinInfo(proteinGroup(ibspectra)) <- 
+      .create.or.load("protein.info",envir=properties.env,
+                      f=properties.env$protein.info.f,
+                      x=proteinGroup(ibspectra),
+                      do.load=TRUE, msg.f="protein.info")
  
   return(ibspectra)
 }
@@ -787,7 +787,7 @@ print_longtablehdr_peptide <- function(coldef,draw.channels,ncol.p,draw.signcol)
 
 
 draw.boxplot <- function(lratio,sd,bnd) { 
-  if (is.na(lratio) || is.na(sd)) {
+  if (is.na(lratio) || is.na(sd) || !is.finite(lratio) || !is.finite(sd)) {
     return("")
   }
   col <- "black!60"
