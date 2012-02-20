@@ -93,10 +93,12 @@ setClass("TMT6plexSpectra",
 .valid.IBSpectra.slots <- function(object) {
     n <- length(object@reporterTagNames)
     if (length(object@reporterTagMasses) != n) 
-        stop("[IBSpectra: validation] Slot reportMasses [",length(object@reporterTagMasses),"] has different length then reporterTagNames [",n,"]!")
+        stop("[IBSpectra: validation] Slot reportMasses [",length(object@reporterTagMasses),"]",
+             " has different length then reporterTagNames [",n,"]!")
     if (!all(dim(object@isotopeImpurities) == n))
-        stop("[IBSpectra: validation] isotopeImpurities has dimensions ",paste(dim(object@isotopeImpurities),collapse="x"),
-             "! Expected is ",n,"x",n,".")
+        stop("[IBSpectra: validation] isotopeImpurities has dimensions ",
+             paste(dim(object@isotopeImpurities),collapse="x"),"!",
+             " Expected is ",n,"x",n,".")
     
     return(TRUE)
 }
@@ -206,8 +208,23 @@ setMethod("initialize","IBSpectra",
 
           ##data <- data[data[,SC['SPECTRUM']] %in% data.sc[,SC['SPECTRUM']],]
         }
-        data.sc <- unique(data[,SC])
         
+        ## Merge identifications (of same search engine)
+        ## TODO: PSMs for proteins which have been seen in onyl one samples are discarded!
+        if ('SCORE' %in% names(SC)) {
+        data$spm <-
+          as.numeric(as.factor(apply(data[,c(.PROTEIN.COLS['PROTEINAC'],
+                                             SC[c('SPECTRUM','PEPTIDE','MODIFSTRING')])],
+                                     1,paste,collapse="-")))
+        data  <- ddply(data,"spm",function(d) {
+          if (nrow(d)==1) return(d)
+          res <- d[which.max(d$score),,drop=FALSE]
+          res$score <- paste(d[,SC['SCORE']],collapse="|")
+          return(res)
+        })
+        }
+        
+        data.sc <- unique(data[,SC])
         # Check for divergent identifications of spectra
         if (any(duplicated(data.sc[,SC['SPECTRUM']]))) {
           dupl.spectra <- .get.dupl.n.warn(data.sc,SC['SPECTRUM'])
