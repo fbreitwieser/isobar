@@ -32,7 +32,7 @@ get.property <- function(name) { get(name,properties.env,inherits=FALSE) }
 \usepackage{subfigure}
 \usepackage{float}
 \usepackage{verbatim}
-\usepackage{fancyheadings}
+\usepackage{fancyhdr}
 \usepackage{tikz}
 \setlength{\headheight}{13.6pt}
 \pagestyle{fancy}
