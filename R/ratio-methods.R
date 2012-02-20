@@ -491,6 +491,26 @@ estimateRatioForPeptide <- function(peptide,ibspectra,noise.model,channel1,chann
 
 
 ### Handling NULL protein or peptide argument
+
+setMethod("estimateRatio",
+          signature(ibspectra="IBSpectra",noise.model="ANY",
+                    channel1="missing",channel2="missing",
+                    protein="character",peptide="missing"),
+          function(ibspectra,noise.model=NULL,protein,val="lratio",summarize=FALSE,...) {
+            channels <- reporterTagNames(ibspectra)
+            res <- matrix(NA,nrow=length(channels),ncol=length(channels),dimnames=list(channels,channels))
+            for(channel1 in channels)
+              for (channel2 in channels) {
+                rat <- estimateRatio(ibspectra,noise.model=noise.model,
+                                     channel1=channel1,channel2=channel2,
+                                     protein=protein,...)
+                res[channel1,channel2] <- rat[val]
+              }
+            return(res)
+          }
+)
+
+
 setMethod("estimateRatio",
     signature(ibspectra="IBSpectra",noise.model="ANY",
         channel1="character",channel2="character",
