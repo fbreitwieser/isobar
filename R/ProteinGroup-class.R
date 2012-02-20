@@ -230,14 +230,14 @@ setMethod("ProteinGroup",signature(from="data.frame",template="missing",proteinI
                    pep.n.prots,by.x="protein.g",by.y="protein.g")
       
       peptideSpecificity <- .factor.as.character(ddply(tmp,"peptide",function(d) {
-            data.frame(specificity=
-                    ifelse(length(unique(d[,"protein.g"]))==1,REPORTERSPECIFIC,
-                    ifelse(length(unique(d[,"reporter.protein"]))==1,GROUPSPECIFIC,
-                    UNSPECIFIC)),
-                       n.shared.proteins=length(unique(d[,"protein.g"])),
-                       n.shared.groups=length(unique(d[,"reporter.protein"])),
-              stringsAsFactors=FALSE)
-          }
+        data.frame(specificity=
+                   ifelse(length(unique(d[,"protein.g"]))==1,REPORTERSPECIFIC,
+                          ifelse(length(unique(d[,"reporter.protein"]))==1,GROUPSPECIFIC,
+                                 UNSPECIFIC)),
+                   n.shared.proteins=length(unique(d[,"protein.g"])),
+                   n.shared.groups=length(unique(d[,"reporter.protein"])),
+                   stringsAsFactors=FALSE)
+      }
       ))
 
       # isoforms (handled for Uniprot only, ATM)
