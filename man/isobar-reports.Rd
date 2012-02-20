@@ -11,6 +11,8 @@
 \alias{print_longtablehdr}
 \alias{tikz.proteingroup}
 \alias{write.xls.report}
+\alias{print_longtablehdr_peptide}
+\alias{transform_pepmodif}
 
 \title{Isobar reports}
 

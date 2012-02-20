@@ -1,5 +1,6 @@
 \name{ratiosummarization}
 \alias{proteinRatios}
+\alias{peptideRatios}
 \alias{combn.matrix}
 \alias{combn.protein.tbl}
 \alias{summarize.ratios}

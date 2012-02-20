@@ -1,5 +1,7 @@
 \name{proteinInfo-methods}
 \alias{getProteinInfoFromBiomart}
+\alias{getProteinInfoFromUniprot}
+\alias{getProteinInfoFromBioDb}
 \alias{proteinInfo}
 \alias{proteinInfo-methods}
 \alias{proteinInfo,ProteinGroup-method}
@@ -11,9 +13,10 @@
 \title{Methods for Function proteinInfo}
 \description{
   proteinInfo slot in Proteingroup objects contains information about proteins. 
-  \code{proteinInfo} method allows to get and set it, 
-  \code{getProteinInfoFromBiomart} downloads information of contained proteins
-  from Biomart.
+  \code{proteinInfo} method allows to get and set it.
+
+  \code{getProteinInfoFromUniprot} downloads information of contained proteins
+  from Uniprot, \code{getProteinInfoFromBiomart} from Biomart.
 }
 \usage{
 
@@ -21,7 +24,11 @@
 
   \S4method{proteinInfo}{ProteinGroup,character}(x, protein.g, select="name", collapse=", ")
 
+  getProteinInfoFromUniprot(x, splice.by = 200)
+
   getProteinInfoFromBiomart(x, database = "Uniprot")
+
+  getProteinInfoFromBioDb(x, con = NULL, ...)
 }
 \arguments{
   \item{x}{ProteinGroup object}
@@ -29,13 +36,20 @@
     these proteins is returned.}
   \item{select}{indicating columns to select. See Details.}
   \item{collapse}{passed to \code{\link{paste}} to concatenate information of
-    multiple protein in one protein group}
-  \item{database}{database from which the ACs stem from.}
+    multiple protein in one protein group.}
+  \item{splice.by}{Chunk size for query of Uniprot database.}
+  \item{database}{database from which the ACs stem from. Only Uniprot is supported for now.}
+  \item{con}{database connection}
+  \item{...}{arguments to build database connection.}
 }
 
 \details{proteinInfo contains columns \code{accession}, \code{name}, 
-  \code{gene_name}, and \code{protein_name}. \code{accession} is mapped with
+  \code{gene_name}, \code{protein_name}, and possibly \code{length}
+  and \code{sequence}. \code{accession} is mapped with
   the entry AC is mapped to the entry AC in the database.
+  \code{getProteinInfoFromUniprot} is the preferred methods to get the information.
+  \code{getProteinInfoFromBioDb} is an example how to implement the query on a
+  local database.
 }
 \seealso{
   \link{protein.g}
@@ -45,6 +59,7 @@ data(ibspiked_set1)
 pg <- proteinGroup(ibspiked_set1)
 
 \dontrun{
+  proteinInfo(pg) <- getProteinInfoFromUniprot(pg)
   proteinInfo(pg) <- getProteinInfoFromBiomart(pg)
 }
 

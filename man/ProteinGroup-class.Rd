@@ -43,11 +43,13 @@
 \alias{protein.ac}
 \alias{protein.g}
 \alias{protein.ac,ProteinGroup,character-method}
+\alias{protein.ac,ProteinGroup,missing-method}
 \alias{protein.g,ProteinGroup,character-method}
 \alias{protein.g,ProteinGroup,character,character-method}
 
-% show method:
+% show and method:
 \alias{show,ProteinGroup-method}
+\alias{summary.ProteinGroup}
 
 
 \title{ProteinGroup objects}

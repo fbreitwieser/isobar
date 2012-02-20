@@ -6,8 +6,9 @@ NEW FEATURES:
  - normalization can now be performed on individual channels (and channel pairs)
  - added semi-quantitative Quantitation with emPAI, dNSAF and spectral count
  - proteinInfo can now be gathered from Uniprot directly
- - added reporter intensity plot
+ - added reporter intensity plot shpwing effect of normalization
  - added linear regression as ratio estimator
+ - improved MA plot 
 
 CHANGES IN VERSION 1.0.0
 ------------------------

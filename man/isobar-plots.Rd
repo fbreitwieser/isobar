@@ -4,6 +4,9 @@
 \alias{reporterMassPrecision}
 \alias{reporterMassPrecision,IBSpectra,missing-method}
 \alias{reporterMassPrecision,IBSpectra,logical-method}
+\alias{reporterIntensityPlot}
+\alias{reporterIntensityPlot-methods}
+\alias{reporterIntensityPlot,IBSpectra-method}
 \alias{raplot}
 \alias{raplot,IBSpectra-method}
 \alias{plotRatio}
@@ -32,6 +35,15 @@
       as specified in the IBSpectra object - of each channel.
   }}
 }
+
+\section{reporterIntensityPlot}{
+  \describe{
+    \item{\code{reporterIntensityPlot(x)}:}{
+      Displays boxplots of intensity of channels before and after
+      normalization - useful to check the result of normalization.
+  }}
+}
+
 
 \section{raplot}{
   \describe{
