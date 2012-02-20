@@ -314,21 +314,61 @@ setMethod("ProteinGroup",signature(from="data.frame",template="missing",proteinI
 getProteinInfoFromBiomart <- function(x,database="Uniprot") {
   protein.acs <- x@isoformToGeneProduct[names(indistinguishableProteins(x)),"proteinac.wo.splicevariant"]
 
-  proteinInfo <- data.frame(accession=c(),name=c(),protein_name=c(),
+  protein.info <- data.frame(accession=c(),name=c(),protein_name=c(),
                             gene_name=c(),organism=c())
   if (database == "Uniprot") {
     #require(biomaRt)
     tryCatch({
-      mart <- biomaRt::useMart("unimart",dataset="uniprot",
+      mart <- biomaRt::useMart("uniprot_mart",dataset="UNIPROT",
                       host="www.ebi.ac.uk",path="/uniprot/biomart/martservice")
-    proteinInfo <- biomaRt::getBM(attributes=c("accession","name","protein_name","gene_name","organism"),
+    protein.info <- biomaRt::getBM(attributes=c("accession","name","protein_name","gene_name","organism"),
           filter='accession',values=protein.acs,mart=mart)
     },error=function(e) warning("could not set Biomart"))
 
   } else {
     stop(sprintf("getProteinInfo for database %s not defined.",database))
   }
-  return(proteinInfo)
+  protein.info$gene_name[!is.na(protein.info$gene_name) & protein.info$gene_name == ""] <- NA
+
+  return(protein.info)
+}
+
+
+getProteinInfoFromUniprot <- function(x,splice.by=200) {
+  fields <- c(accession="id",name="entry%20name",protein_name="protein%20names",
+              gene_name="genes",organism="organism",
+              length="length",sequence="sequence")
+   
+  protein.acs <- x@isoformToGeneProduct[names(indistinguishableProteins(x)),"proteinac.wo.splicevariant"]
+  protein.info <- c()
+  i <- 1
+  while (i < length(protein.acs)) {
+    url <- paste("http://www.uniprot.org/uniprot/?query=",
+                 paste("accession:",protein.acs[seq(from=i,to=min(length(protein.acs),i+splice.by-1))],collapse="+OR+",sep=""),
+                 "&format=tab&compress=no&columns=",
+                 paste(fields,collapse=","),sep="")
+    protein.info <- rbind(protein.info,read.delim(url,stringsAsFactors=FALSE))
+    i <- i + splice.by
+  }
+  colnames(protein.info) <- names(fields)
+  protein.info$protein_name <- sapply(strsplit(protein.info$protein_name," (",fixed=TRUE),function(x) x[1])
+  protein.info$gene_name <- sapply(strsplit(protein.info$gene_name," "),function(x) x[1])
+  protein.info$sequence <- gsub(" ","",protein.info$sequence)
+  return(protein.info)
+}
+
+getProteinInfoFromBioDb <- function(x,host,user,password,dbname) {
+  require(RPostgreSQL)
+  con <- dbConnect(PostgreSQL(),user=user,password=password,dbname=dbname,host=host)
+
+  protein.acs <- x@isoformToGeneProduct[names(indistinguishableProteins(x)),"proteinac.wo.splicevariant"]
+  query <- paste("SELECT primaryac AS accession,id AS name,",
+                 "  description AS protein_name,",
+                 "  (SELECT g.genename FROM genenames g WHERE g.entryid=d.entryid AND g.synonym=FALSE AND g.sourcedb=3 LIMIT 1) AS gene_name,",
+                 "  os AS organism",
+                 "FROM dbentries d ",
+                 "WHERE dbid=3 AND primaryac IN (",paste("'",protein.acs,"'",collapse=",",sep=""),")")
+  dbGetQuery(con,query)
 }
 
 
@@ -758,6 +798,17 @@ summary.ProteinGroup <- function(object,only.reporters=TRUE,...) {
 ### Quantification functions (dNSAF).
 ###  based on peptide or spectral count
 
+spectra.count <- function(protein.group,protein.g=reporterProteins(protein.group),
+                          specificity=c("reporter-specific","group-specific","unspecific")) {
+  peptide.spectra.count <- table(spectrumToPeptide(protein.group))
+  ## Calculate unique spectrum counts for all proteins
+  spectra.count <- sapply(protein.g, function(p)
+                 sum(peptide.spectra.count[peptides(protein.group,protein=p,
+                                              specificity=specificity)]))
+  names(spectra.count) <- protein.g
+  return(spectra.count)
+}
+
 calculate.dNSAF <- function(protein.group,seqlength=NULL,...) {
   if (is.null(seqlength))
     seqlength <- get.seqlength(unique(protein.ac(protein.group,reporterProteins(protein.group))),...)
@@ -792,6 +843,7 @@ calculate.dNSAF <- function(protein.group,seqlength=NULL,...) {
     ## for protein length, we take the sum of lengths of all acs
     protein.length <- sum(seqlength[unique(protein.ac(protein.group,p))],na.rm=TRUE)
     dSAF <- (uspc[p] + d.sspc) / protein.length
+    if (is.nan(dSAF) | !is.finite(dSAF)) dSAF <- NA
     return(dSAF)
   })
 
