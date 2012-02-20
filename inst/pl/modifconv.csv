@@ -30,6 +30,7 @@ O18 (C-term)				O18
 Oxidation (M)				Oxidation_M 
 Oxidation (HW)				Oxidation_HW
 Phospho (STY)				PHOS
+Phospho (ST)				PHOS
 Phospho (Y)					PHOS
 Propionamide (C)			Cys_PAM
 Pyro-glu (N-term Q)		 PYRR  
