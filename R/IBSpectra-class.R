@@ -770,7 +770,7 @@ read.mzid <- function(f) {
   if (!is.null(spectra)) {
     ## filtering to take only spectra defined in spectra
     ## all.titles <- .trim(sapply(strsplit(grep("TITLE",input,value=T),"="),function(x) x[2] )) # not efficient
-    all.titles <- .trim(substring(grep("^TITLE=",x,value=TRUE),7))
+    all.titles <- .trim(substring(grep("^TITLE=",input,value=TRUE),7))
     if (length(all.titles) != nrow(bnd)) {
       # sanity check that each spectrum has a title
       stop("title not specified for all spectra!");
