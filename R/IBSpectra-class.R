@@ -141,8 +141,8 @@ setValidity("IBSpectra",.valid.IBSpectra)
 setMethod("initialize","IBSpectra",
     function(.Object,data=NULL,data.ions=NULL,data.mass=NULL,
              proteinGroupTemplate=NULL,fragment.precision=NULL,
-             assayDataElements=list(),
-             allow.missing.columns=FALSE,...) { 
+             assayDataElements=list(),allow.missing.columns=FALSE,
+             write.excluded.to=NULL,...) { 
       if (is.null(data)){
         callNextMethod(.Object,...)
       } else {
@@ -189,7 +189,7 @@ setMethod("initialize","IBSpectra",
         
         # Merge identifications (of different search engines)
         if (SC['SEARCHENGINE'] %in% colnames(data) &&
-	    length(unique(data[,SC['SEARCHENGINE']])) > 1 &&
+            length(unique(data[,SC['SEARCHENGINE']])) > 1 &&
             any(colnames(data)==.ID.COLS['SCORE'])) {
           # put all coherent spectrum-peptide matches together
           data[,SC['SEARCHENGINE']] <-
@@ -197,11 +197,9 @@ setMethod("initialize","IBSpectra",
           data[,SC['SCORE']] <- NULL
           SC <- SC[-which(SC==SC['SCORE'])]
           
-          data$spm <- as.numeric(as.factor(apply(
-                        data[,c(.PROTEIN.COLS['PROTEINAC'],
-                                SC[c('SPECTRUM','PEPTIDE','MODIFSTRING')])],
-                                                 1,paste,collapse="-")))
-          data  <- ddply(data,"spm",function(d) 
+          columns <- c(.PROTEIN.COLS['PROTEINAC'],.PEPTIDE.COLS['STARTPOS'],
+                       SC[c('SPECTRUM','PEPTIDE','MODIFSTRING')])
+          data  <- ddply(data,as.character(columns),function(d) 
               data.frame(d[1,setdiff(colnames(d),SC['SEARCHENGINE'])],
                          search.engine=paste(d[,SC['SEARCHENGINE']],collapse="|"),
                          stringsAsFactors=FALSE))
@@ -210,24 +208,30 @@ setMethod("initialize","IBSpectra",
         }
         
         ## Merge identifications (of same search engine)
-        ## TODO: PSMs for proteins which have been seen in onyl one samples are discarded!
         if ('SCORE' %in% names(SC)) {
-        data$spm <-
-          as.numeric(as.factor(apply(data[,c(.PROTEIN.COLS['PROTEINAC'],
-                                             SC[c('SPECTRUM','PEPTIDE','MODIFSTRING')])],
-                                     1,paste,collapse="-")))
-        data  <- ddply(data,"spm",function(d) {
-          if (nrow(d)==1) return(d)
-          res <- d[which.max(d$score),,drop=FALSE]
-          res$score <- paste(d[,SC['SCORE']],collapse="|")
-          return(res)
-        })
+
+          columns <- as.character(SC[c('SPECTRUM','PEPTIDE','MODIFSTRING')])
+          ## spectrum peptide hits are the same, but they might have different scores:
+          ##  could be due to non-deterministic scores
+          data  <- ddply(data,columns,function(d) {
+                         if (nrow(d)==1) return(d)
+                         res <- unique(d[,SC[-which(names(SC)=='SCORE')]])
+                         if (nrow(res)==1) {
+                           score <- max(d[,SC['SCORE']],na.rm=TRUE)
+                           d[,SC['SCORE']] <- max(d[,SC['SCORE']],na.rm=TRUE)
+                         } else {
+                           ## divergent identifications, handled at a later point
+                         }
+                         return(unique(d))
+                       })
         }
         
         data.sc <- unique(data[,SC])
         # Check for divergent identifications of spectra
         if (any(duplicated(data.sc[,SC['SPECTRUM']]))) {
-          dupl.spectra <- .get.dupl.n.warn(data.sc,SC['SPECTRUM'])
+          dupl.spectra <- .get.dupl.n.warn(data.sc,SC['SPECTRUM'],write.to=write.excluded.to)
+          #dupl.spectra <- .get.dupl.n.warn(data.sc[,SC[c("SPECTRUM","PEPTIDE","MODIFSTRING")]],SC['SPECTRUM'])
+          # problem: different values in any column - what info should you choose??
           data <- data[!data[,SC['SPECTRUM']] %in% dupl.spectra,]
         }
         
@@ -553,8 +557,10 @@ setMethod("readIBSpectra",
   return(intensities.f)
 }
 
-.get.dupl.n.warn <- function(df,col,msg="ibspectra") {
+.get.dupl.n.warn <- function(df,col,msg="ibspectra",write.to=NULL) {
   dupl <- .all.duplicate.rows(df,col)
+  if (!is.null(write.to))
+    write.table(dupl,file=write.to,row.names=FALSE,sep="\t")
   dupl.msg <- paste(apply(dupl,1,paste,collapse="; "),collapse="\n\t")
   warning(sprintf("%s> divergent identifications in %s spectra [%s ids]:\n\t%s",
 			  msg,length(unique(dupl[,col])),nrow(dupl),dupl.msg))
@@ -789,6 +795,7 @@ read.mzid <- function(f) {
   }
   bnd$recordNo = seq_len(nrow(bnd))
   nSpectra <- nrow(bnd)
+  message(nSpectra," spectra")
 
   ## create list with all spectra (header+mass list) as entries
   all.spectra <- apply(bnd,1,function(x) input[x[1]:x[2]])
@@ -836,7 +843,7 @@ read.mzid <- function(f) {
   ions <- apply(result[,seq(from=3,to=ncol(result),by=2)],2,as.numeric)
      
   ## only select spectra with itraq masses detected
-  sel = apply(mass,1,function(x){any(!is.na(x))})
+  sel = apply(mass,1,function(x) any(!is.na(x)))
       
   if (!any(sel)) {
     stop("No values could be extracted from MGF ",filename,"\n",
@@ -855,8 +862,9 @@ read.mzid <- function(f) {
     message("mass boundaries:\n\t",
             paste(colnames(mass),sprintf("%.5f : %.5f",bnd[1,],bnd[2,]),sep="\t",collapse="\n\t"))
   }
+
   ions <- ions[sel,,drop=FALSE]
-  mass <- mass[sel,,drop=FALSE]    
+  mass <- mass[sel,,drop=FALSE]
  
   spectrumtitles <- .trim(result[sel,1])
   dimnames(ions) <- list(spectrumtitles,reporterTagNames)
