@@ -135,7 +135,7 @@ setMethod("ProteinGroup",signature(from="data.frame",template="missing",proteinI
           colnames(from) <- c("spectrum","peptide","start.pos","protein")
       }
 
-      spectrumToPeptide <- .as.vect(from[,c("spectrum","peptide")])
+      spectrumToPeptide <- .as.vect(unique(from[,c("spectrum","peptide")]))
       peptideInfo <- unique(from[,c("protein","peptide","start.pos")])
       peptideInfo <- peptideInfo[order(peptideInfo[,"protein"],
                                        peptideInfo[,"start.pos"],
