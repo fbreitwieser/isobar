@@ -120,7 +120,7 @@ cl <- attr(quant.tbl,"classLabels")
 cl[is.na(cl)] <- ""
 if (!is.null(cl)) {
   if (is.null(names(cl))) {
-    cat("\\begin{tabular}{rp{5cm}}\n")
+    cat("\\begin{tabular}{rp{3cm}}\n")
     cat("\\multicolumn{2}{c}{Class Labels} \\bigstrut \\\\ \n")
     cat("channel & class \\\\ \\hline \\bigstrut[t]\n")
     cl <- paste("\\emph{",cl,"}",sep="")

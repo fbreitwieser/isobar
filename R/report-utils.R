@@ -65,18 +65,39 @@ write.xls.report <- function(report.type,properties.env,report.env,file="isobar-
     
     if (identical(report.type,"protein")) {
       ## add 'group' to protein identification table:
-      ibs <- as(get('ibspectra',report.env),"data.frame")
-      protein.group.df <- unique(data.frame(group=get.val('quant.tbl')[,'group'],
-                                            protein.g=get.val('quant.tbl')[,'ac'],
-                                            stringsAsFactors=FALSE))
-      indist.proteins.df <- data.frame(accession=names(indist.proteins),
-                                       protein.g=indist.proteins,stringsAsFactors=FALSE)
+      #ibs <- as(get('ibspectra',report.env),"data.frame")
+      #protein.group.df <- unique(data.frame(group=get.val('quant.tbl')[,'group'],
+      #                                      protein.g=get.val('quant.tbl')[,'ac'],
+      #                                      stringsAsFactors=FALSE))
+      #indist.proteins.df <- data.frame(accession=names(indist.proteins),
+      #                                 protein.g=indist.proteins,stringsAsFactors=FALSE)
       
-      protein.id.df <- merge(protein.group.df,indist.proteins.df,
-                             by="protein.g",all.x=TRUE,all.y=FALSE,sort=FALSE)
-      protein.id.df <- merge(protein.id.df,ibs,
-                             all.x=TRUE,all.y=FALSE,by="accession",sort=FALSE)
-      protein.id.df <- protein.id.df[,c("group",colnames(ibs))]
+      #protein.id.df <- merge(protein.group.df,indist.proteins.df,
+      #                       by="protein.g",all.x=TRUE,all.y=FALSE,sort=FALSE)
+      #protein.id.df <- merge(protein.id.df,ibs,
+      #                       all.x=TRUE,all.y=FALSE,by="accession",sort=FALSE)
+      #protein.id.df <- protein.id.df[,c("group",colnames(ibs))]
+
+      ## TODO: add groups column to provide a link to the groups in report and quant table
+      protein.id.df <- as(get('ibspectra',report.env),"data.frame.concise")
+
+      ## get the group number and order by it
+      group.df <- unique(quant.tbl[,c("group","ac")])
+      group.prots <- lapply(group.df$ac,function(g) protein.ac(proteinGroup(ibspectra),g))
+      prot.acs <- unique(protein.id.df$accessions)
+
+      res <- sapply(strsplit(prot.acs,"[;,]"),function(acs) paste(group.df$group[sapply(group.prots,function(g) any(g %in% acs))],collapse=";"))
+      names(res) <- prot.acs
+      protein.id.df <- cbind(groups=res[protein.id.df$accessions],protein.id.df,stringsAsFactors=FALSE)
+      protein.id.df <- protein.id.df[order(sapply(strsplit(protein.id.df$groups,";"),function(g) min(as.numeric(g) ))),]
+
+      ## make columns w/ multiple groups gray
+      sel.1group  <- protein.id.df$n.groups == 1
+      #sel.1ac  <- protein.id.df$n.acs == 1
+      #sel.1variant  <- protein.id.df$n.variants == 1
+      #protein.id.df[!sel.1ac & sel.1group,1] <- paste("#color silver#",protein.id.df[!sel.1ac & sel.1group,1],sep="")
+      protein.id.df[!sel.1group,1] <- paste("#color gray#",protein.id.df[!sel.1group,1],sep="")
+
     } else {
       protein.id.df <- as(get('ibspectra',report.env),"data.frame.concise")
     }
