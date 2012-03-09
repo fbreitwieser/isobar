@@ -11,6 +11,7 @@
 # type='TMT6plexSpectra'
 type=NULL
 isotope.impurities=NULL
+correct.isotope.impurities=TRUE
 
 ## Name of project, by default the name of working directory
 ## Will be title and author of the analysis reports.
@@ -50,8 +51,6 @@ fragment.outlier.prob=0.001
 readIBSpectra.args = list(
     mapping.file=NULL
 )
-
-correct.isotope.impurities=TRUE
 
 normalize=TRUE
 normalize.channels=NULL
@@ -115,9 +114,11 @@ combn=NULL
 show.significant.proteins=FALSE
 show.protein.details=TRUE
 
+## Arguments given to 'proteinRatios' function. See ?proteinRatios
 ratios.opts = list(
     sign.level.sample=0.01,
-    sign.level.rat=0.01)
+    sign.level.rat=0.01,
+    groupspecific.if.same.ac=TRUE)
 
 quant.w.grouppeptides=c("bcrabl","bcrabl,bcrabl_p185,bcrabl_t315i","mgtagzhCorr")
 
