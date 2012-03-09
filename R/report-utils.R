@@ -660,35 +660,36 @@ initialize.env <- function(env,report.type="protein",properties.env) {
   }
 
   sapply(proteins,function(prots) {
-  pos <- grepl("-[0-9]*$",prots)
-  if (sum(pos) == 0) {
-    protl <- data.frame(protein=prots,accession=prots,splice=0)
-  } else {
-    if (sum(!pos) == 0) {
-      protl <- data.frame(protein=prots[pos],
-                      do.call(rbind,strsplit(prots[pos],"-")),
-                      stringsAsFactors=FALSE,row.names=NULL)
-    } else {
-      protl <- data.frame(protein=c(prots[!pos],prots[pos]),
-                      do.call(rbind,strsplit(c(paste(prots[!pos],"0",sep="-"),
-                                               prots[pos]),"-")),
-                      stringsAsFactors=FALSE,row.names=NULL)
-    }
-    colnames(protl) <- c("protein","accession","splice")
-  }
-  df <- protl
-  df$splice <- as.numeric(df$splice)
+         ## consider ACs with -[0-9]*$ as splice variants (ACs w/ more than one dash are not considered)
+         pos <- grepl("^[^-]*-[0-9]*$",prots)
+         if (sum(pos) == 0) {
+           protl <- data.frame(protein=prots,accession=prots,splice=0)
+         } else {
+           if (sum(!pos) == 0) {
+             protl <- data.frame(protein=prots[pos],
+                                 do.call(rbind,strsplit(prots[pos],"-")),
+                                 stringsAsFactors=FALSE,row.names=NULL)
+           } else {
+             protl <- data.frame(protein=c(prots[!pos],prots[pos]),
+                                 do.call(rbind,strsplit(c(paste(prots[!pos],"0",sep="-"),
+                                                          prots[pos]),"-")),
+                                 stringsAsFactors=FALSE,row.names=NULL)
+           }
+           colnames(protl) <- c("protein","accession","splice")
+         }
+         df <- protl
+         df$splice <- as.numeric(df$splice)
 
-  res <- ddply(df,"accession",function(y) {
-      if(sum(y$splice>0) <= 1)
-        return(data.frame(protein=unique(y$protein)))
-      else 
-        return(data.frame(protein=sprintf("%s-[%s]",
-                            unique(y$accession),
-                            paste(sort(y[y$splice>0,'splice']),collapse=","))))
-    })
-  return(paste(res$protein,collapse=", "))
-})
+         res <- 
+           ddply(df,"accession",function(y) {
+                 if(sum(y$splice>0) <= 1)
+                   return(data.frame(protein=unique(y$protein)))
+                 else 
+                   return(data.frame(protein=sprintf("%s-[%s]",unique(y$accession),
+                                                     paste(sort(y[y$splice>0,'splice']),collapse=","))))
+                                 })
+         return(paste(res$protein,collapse=", "))
+  })
 }
 
 
@@ -897,7 +898,7 @@ draw.protein.group <- function(protein.group,reporter.protein.g) {
       sel <- my.protein.info$accession == ac
       var.string <- number.ranges(my.protein.info$splicevariant[sel])
       if (show.pos) cat(protein.i,"&")
-      cat(paste(sprintf("\\uniprotlink{%s}",sanitize(ac)),
+      cat(paste(sprintf("\\uniprotlink{%s}",sanitize(ac,dash=FALSE)),
           ifelse(is.na(var.string),"",var.string),
           sanitize(unique(my.protein.info$gene_name[sel])),
           sanitize(unique(my.protein.info$protein_name[sel])),"",

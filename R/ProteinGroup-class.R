@@ -245,7 +245,7 @@ setMethod("ProteinGroup",signature(from="data.frame",template="missing",proteinI
       isoforms <- data.frame(proteinac.w.splicevariant = proteins,
                              proteinac.wo.splicevariant = proteins,
                              splicevariant = NA,stringsAsFactors=FALSE)
-      pos.isoforms <- grep("-",proteins)
+      pos.isoforms <- grep("^[^-]*-[0-9]*$",proteins)
       isoforms$proteinac.wo.splicevariant[pos.isoforms] <- 
          sub("-[^-]*$","",proteins[pos.isoforms])
       isoforms$splicevariant[pos.isoforms] <- sub(".*-","",proteins[pos.isoforms])
@@ -752,10 +752,10 @@ human.protein.names <- function(my.protein.info) {
         x <- unique(x)
         if (nrow(x) > 1) stop("something went wrong: ",x)
         if (is.na(x$splicevariant)) {
-          x$ac_link <- sprintf("\\uniprotlink{%s}",sanitize(x$accession))
+          x$ac_link <- sprintf("\\uniprotlink{%s}",sanitize(x$accession,dash=FALSE))
           x$ac_nolink <-  x$accession
         } else {
-          x$ac_link <- sprintf("\\uniprotlink{%s}$_{%s}$",sanitize(x$accession),x$splicevariant);
+          x$ac_link <- sprintf("\\uniprotlink{%s}$_{%s}$",sanitize(x$accession,dash=FALSE),x$splicevariant);
           if (only_one) {
             x$ac_nolink <- sprintf("%s-%s",x$accession,x$splicevariant)
           } else {
