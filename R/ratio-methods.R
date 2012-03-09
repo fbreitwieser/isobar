@@ -798,6 +798,7 @@ ratiosReshapeWide <- function(quant.tbl,grouped.cols=TRUE) {
   quant.tbl$comp <- paste(quant.tbl$r2,quant.tbl$r1,sep="/")
   quant.tbl  <- quant.tbl[,-(c(which(colnames(quant.tbl) %in% c("r1","r2","class1","class2"))))]
   v.names <- c("lratio","variance","n.spectra","p.value.rat","p.value.sample","is.significant","sd")
+  v.names <- v.names[v.names %in% colnames(quant.tbl)]
   if ("n.pos" %in% colnames(quant.tbl)) v.names <- c(v.names,"n.pos")
   if ("n.neg" %in% colnames(quant.tbl)) v.names <- c(v.names,"n.neg")
   timevar <- "comp"
