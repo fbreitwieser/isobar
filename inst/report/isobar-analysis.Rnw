@@ -260,8 +260,8 @@ for (protein in proteins) {
   for (prot.gene.name in prot.info$collapsed.gene_name$protein_name) {
     if (is.na(prot.gene.name)) next;
     prot.gene.name <- ifelse(nchar(prot.gene.name)>80,
-                             paste(substr(prot.gene.name,0,76),"..."),
-                             prot.gene.name)
+                             paste(sanitize(substr(prot.gene.name,0,76)),"\\dots"),
+                             sanitize(prot.gene.name))
     gene.names <- c(gene.names,prot.gene.name)
     
   }
@@ -334,8 +334,8 @@ for (protein in proteins.notquantified) {
   for (prot.gene.name in prot.info$collapsed.gene_name$protein_name) {
     if (is.na(prot.gene.name)) next;
     prot.gene.name <- ifelse(nchar(prot.gene.name)>80,
-                             paste(substr(prot.gene.name,0,76),"..."),
-                             prot.gene.name)
+                             paste(sanitize(substr(prot.gene.name,0,76)),"\\dots"),
+                             sanitize(prot.gene.name))
     gene.names <- c(gene.names,prot.gene.name)
     
   }

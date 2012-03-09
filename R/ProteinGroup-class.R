@@ -735,9 +735,9 @@ groupMemberPeptides <- function(x,reporter.protein.g,
 
 
 human.protein.names <- function(my.protein.info) {
-    collapsed.splicevariant <- 
-      ddply(my.protein.info[,c("accession","splicevariant","gene_name","protein_name")],
-            "accession",function(x) {
+  df <- my.protein.info[,c("accession","splicevariant","gene_name","protein_name")]
+  df$gene_name <- sanitize(df$gene_name)
+  collapsed.splicevariant <- ddply(df,"accession",function(x) {
         only_one <- nrow(x) == 1
         x$splicevariant <- number.ranges(x$splicevariant)
         x <- unique(x)
