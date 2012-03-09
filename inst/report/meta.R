@@ -8,7 +8,7 @@ source("meta-properties.R")
 load("protein.group.rda")
 proteinInfo(protein.group) <- getProteinInfoFromBiomart(protein.group)
 
-source("~/projects/quant/isobar/inst/report/meta-functions.R")
+source(system.file("report","meta-functions.R",package="isobar"))
 
 if (!exists("cols"))
   cols <- c()
