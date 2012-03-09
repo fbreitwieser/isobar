@@ -793,6 +793,27 @@ peptideRatios <- function(ibspectra,...,protein=NULL,peptide=peptides(proteinGro
   proteinRatios(ibspectra,...,proteins=protein,peptide=peptide)
 }
 
+ratiosReshapeWide <- function(quant.tbl,grouped.cols=TRUE) {
+  attrs <- attributes(quant.tbl)
+  quant.tbl$comp <- paste(quant.tbl$r2,quant.tbl$r1,sep="/")
+  quant.tbl  <- quant.tbl[,-(c(which(colnames(quant.tbl) %in% c("r1","r2","class1","class2"))))]
+  v.names <- c("lratio","variance","n.spectra","p.value.rat","p.value.sample","is.significant","sd")
+  if ("n.pos" %in% colnames(quant.tbl)) v.names <- c(v.names,"n.pos")
+  if ("n.neg" %in% colnames(quant.tbl)) v.names <- c(v.names,"n.neg")
+  timevar <- "comp"
+  idvar <- colnames(quant.tbl)[!colnames(quant.tbl) %in% c(timevar,v.names)]
+
+  res <- reshape(quant.tbl,v.names=v.names,idvar=idvar,timevar=timevar,direction="wide")
+  if (grouped.cols) {
+    col.order <- c(idvar,
+                   unlist(lapply(v.names,function(n) grep(n,colnames(res),fixed=TRUE,value=TRUE))))
+    res <- res[,col.order]
+  }
+  for (a in names(attrs)) 
+    if (!a %in% c("row.names","names","class")) attr(res,a) <- attrs[[a]]
+  res
+}
+
 proteinRatios <-
   function(ibspectra,noise.model,
            reporterTagNames=NULL,

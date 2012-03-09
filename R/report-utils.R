@@ -56,7 +56,7 @@ create.reports <- function(properties.file="properties.R",args=NULL,
 
 write.xls.report <- function(report.type,properties.env,report.env,file="isobar-analysis.xls") {
     write.t <- function(...,sep="\t",row.names=FALSE,quote=FALSE)
-      write.table(...,sep=sep,row.names=row.names,quote=quote)
+      write.table(...,sep=sep,row.names=row.names,quote=quote,na="")
 
     get.val <- function(name) { get(name,report.env,inherits=FALSE) }
     get.property <- function(name) { get(name,properties.env,inherits=FALSE) }
@@ -107,12 +107,10 @@ write.xls.report <- function(report.type,properties.env,report.env,file="isobar-
     log.f <- paste(get.property('cachedir'),"logged_operations.csv",sep="/")
     if (report.type == "protein") {
       xls.protein.tbl <- get.val('xls.protein.tbl')
-      write.t(xls.protein.tbl[order(xls.protein.tbl[,"group"],
-                                     xls.protein.tbl[,"Channels"]),],file=protein.quant.f)
+      write.t(xls.protein.tbl[order(xls.protein.tbl[,"group"]),],file=protein.quant.f)
     } else {
       xls.peptide.tbl <- get.val('xls.peptide.tbl')
       write.t(xls.peptide.tbl,file=protein.quant.f)
-
     }
     write.t(protein.id.df,file=protein.id.f)  
     write.t(ii,file=analysis.properties.f,col.names=FALSE)
@@ -542,23 +540,24 @@ initialize.env <- function(env,report.type="protein",properties.env) {
 .create.or.load.xls.protein.tbl <- function(env,properties.env) {
   .create.or.load("xls.protein.tbl",envir=properties.env,
                   msg.f="protein table for Excel export",f=function() {
+    message("XLS report format: ",properties.env$xls.report.format)
                     
     protein.group <- proteinGroup(env$ibspectra)
     indist.proteins <- indistinguishableProteins(protein.group)
+    if (isTRUE(properties.env$xls.report.format=="wide")) {
+      env$quant.tbl  <- ratiosReshapeWide(env$quant.tbl)
+    }
 
+    round.digits <- 4;
     xls.protein.tbl <-
-      data.frame(
-                 group=env$quant.tbl[,"group"],
+      data.frame(group=env$quant.tbl[,"group"],
                  AC=.protein.acc(env$quant.tbl[,"ac"],ip=indist.proteins),
                  ID=proteinInfo(protein.group,env$quant.tbl[,"ac"]),
                  n=sapply(env$quant.tbl[,"ac"],function(p) {length(names(indist.proteins)[indist.proteins == p])}),
                  Description=proteinInfo(protein.group,env$quant.tbl[,"ac"],"protein_name"),
                  Gene=proteinInfo(protein.group,env$quant.tbl[,"ac"],"gene_name"),
-                 "Unique peptides"=sapply(env$quant.tbl[,"ac"],function(p)
-                   length(peptides(protein.group,protein=as.character(p),specificity=REPORTERSPECIFIC,do.warn=FALSE))),
-                 "Unique.peptide.matches"=env$quant.tbl$n.spectra,stringsAsFactors=FALSE)
-    ##xls.env$quant.tbl <- xls.env$quant.tbl[order(xls.env$quant.tbl$n,-xls.env$quant.tbl$Unique.peptide.matches),]
-    ##xls.protein.tbl <- xls.protein.tbl[order(-xls.protein.tbl$Unique.peptide.matches, xls.protein.tbl$ID),]
+                 "Unique peptides"= peptide.count(protein.group,env$quant.tbl$ac,specificity=REPORTERSPECIFIC),
+                 "Unique spectra"= spectra.count(protein.group,env$quant.tbl$ac,specificity=REPORTERSPECIFIC))
     if (properties.env$sum.intensities) {
       protein.intensities <- function(ib,proteins) {
         ri <- reporterIntensities(ib)
@@ -576,19 +575,28 @@ initialize.env <- function(env,report.type="protein",properties.env) {
       xls.protein.tbl <- cbind(xls.protein.tbl,protein.intensities(ibspectra,protein.tbl$protein))
     } else {
       ## TODO: check that protein table has required columns
+      if (isTRUE(properties.env$xls.report.format=="wide")) {
+        xls.protein.tbl <-
+          cbind(xls.protein.tbl,
+                round(env$quant.tbl[,grep("lratio",colnames(env$quant.tbl))],round.digits),
+                round(env$quant.tbl[,grep("variance",colnames(env$quant.tbl))],round.digits),
+                env$quant.tbl[,grep("is.significant",colnames(env$quant.tbl))]==1)
+
+      } else {
       xls.protein.tbl <-
         cbind(xls.protein.tbl,data.frame(
               "Channels"=paste(env$quant.tbl$r2,"/",env$quant.tbl$r1),
               "is significant"=env$quant.tbl$is.significant == 1,
-              "ratio"=10^env$quant.tbl$lratio,
-              "CI95.lower"=10^qnorm(0.025,env$quant.tbl$lratio,sqrt(env$quant.tbl$variance)),
-              "CI95.upper"=10^qnorm(0.975,env$quant.tbl$lratio,sqrt(env$quant.tbl$variance)),
-              "ratio.minus.sd"=10^(env$quant.tbl$lratio-sqrt(env$quant.tbl$variance)),
-              "ratio.plus.sd"=10^(env$quant.tbl$lratio+sqrt(env$quant.tbl$variance)),
-              "p-value ratio"=env$quant.tbl$p.value.rat,
-              "p-value sample"=env$quant.tbl$p.value.sample,
-              "ratio.log10"=env$quant.tbl$lratio,
-              "var.log10"=env$quant.tbl$variance,stringsAsFactors=FALSE))
+              "ratio"=round(10^env$quant.tbl$lratio,round.digits),
+              "CI95.lower"=round(10^qnorm(0.025,env$quant.tbl$lratio,sqrt(env$quant.tbl$variance)),round.digits),
+              "CI95.upper"=round(10^qnorm(0.975,env$quant.tbl$lratio,sqrt(env$quant.tbl$variance)),round.digits),
+              "ratio.minus.sd"=round(10^(env$quant.tbl$lratio-sqrt(env$quant.tbl$variance)),round.digits),
+              "ratio.plus.sd"=round(10^(env$quant.tbl$lratio+sqrt(env$quant.tbl$variance)),round.digits),
+              "p-value ratio"=round(env$quant.tbl$p.value.rat,round.digits),
+              "p-value sample"=round(env$quant.tbl$p.value.sample,round.digits),
+              "ratio.log10"=round(env$quant.tbl$lratio,round.digits),
+              "var.log10"=round(env$quant.tbl$variance,round.digits),stringsAsFactors=FALSE))
+      }
       if (properties.env$summarize) {
         xls.protein.tbl <- cbind(xls.protein.tbl,
                                  "n.pos"=env$quant.tbl$n.pos,
@@ -600,7 +608,7 @@ initialize.env <- function(env,report.type="protein",properties.env) {
 ##      xls.protein.tbl <- cbind(xls.protein.tbl,"is.preselected"=env$quant.tbl$is.preselected)
     }
     
-    return(xls.protein.tbl[order(xls.protein.tbl[,"group"],xls.protein.tbl[,"Channels"]),])
+    return(xls.protein.tbl[order(xls.protein.tbl[,"group"]),])
   })
 }
 
