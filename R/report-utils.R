@@ -64,32 +64,11 @@ write.xls.report <- function(report.type,properties.env,report.env,file="isobar-
     indist.proteins <- indistinguishableProteins(protein.group)
     
     if (identical(report.type,"protein")) {
-      ## add 'group' to protein identification table:
-      #ibs <- as(get('ibspectra',report.env),"data.frame")
-      #protein.group.df <- unique(data.frame(group=get.val('quant.tbl')[,'group'],
-      #                                      protein.g=get.val('quant.tbl')[,'ac'],
-      #                                      stringsAsFactors=FALSE))
-      #indist.proteins.df <- data.frame(accession=names(indist.proteins),
-      #                                 protein.g=indist.proteins,stringsAsFactors=FALSE)
-      
-      #protein.id.df <- merge(protein.group.df,indist.proteins.df,
-      #                       by="protein.g",all.x=TRUE,all.y=FALSE,sort=FALSE)
-      #protein.id.df <- merge(protein.id.df,ibs,
-      #                       all.x=TRUE,all.y=FALSE,by="accession",sort=FALSE)
-      #protein.id.df <- protein.id.df[,c("group",colnames(ibs))]
-
       ## TODO: add groups column to provide a link to the groups in report and quant table
+      ## in principle, it works by defining the protein.group.ids attr, but does not here - 
+      ## probably due to the environment it does not
+      attr(proteinGroup(report.env$ibspectra),"protein.group.ids") <- .as.vect(unique(get.val('quant.tbl')[,c("ac","group")]))
       protein.id.df <- as(get('ibspectra',report.env),"data.frame.concise")
-
-      ## get the group number and order by it
-      group.df <- unique(quant.tbl[,c("group","ac")])
-      group.prots <- lapply(group.df$ac,function(g) protein.ac(proteinGroup(ibspectra),g))
-      prot.acs <- unique(protein.id.df$accessions)
-
-      res <- sapply(strsplit(prot.acs,"[;,]"),function(acs) paste(group.df$group[sapply(group.prots,function(g) any(g %in% acs))],collapse=";"))
-      names(res) <- prot.acs
-      protein.id.df <- cbind(groups=res[protein.id.df$accessions],protein.id.df,stringsAsFactors=FALSE)
-      protein.id.df <- protein.id.df[order(sapply(strsplit(protein.id.df$groups,";"),function(g) min(as.numeric(g) ))),]
 
       ## make columns w/ multiple groups gray
       sel.1group  <- protein.id.df$n.groups == 1
@@ -566,19 +545,21 @@ initialize.env <- function(env,report.type="protein",properties.env) {
     protein.group <- proteinGroup(env$ibspectra)
     indist.proteins <- indistinguishableProteins(protein.group)
     if (isTRUE(properties.env$xls.report.format=="wide")) {
-      env$quant.tbl  <- ratiosReshapeWide(env$quant.tbl)
+      xls.quant.tbl  <- ratiosReshapeWide(env$quant.tbl)
+    } else {
+      xls.quant.tbl <- env$quant.tbl
     }
 
     round.digits <- 4;
     xls.protein.tbl <-
-      data.frame(group=env$quant.tbl[,"group"],
-                 AC=.protein.acc(env$quant.tbl[,"ac"],ip=indist.proteins),
-                 ID=proteinInfo(protein.group,env$quant.tbl[,"ac"]),
-                 n=sapply(env$quant.tbl[,"ac"],function(p) {length(names(indist.proteins)[indist.proteins == p])}),
-                 Description=proteinInfo(protein.group,env$quant.tbl[,"ac"],"protein_name"),
-                 Gene=proteinInfo(protein.group,env$quant.tbl[,"ac"],"gene_name"),
-                 "Unique peptides"= peptide.count(protein.group,env$quant.tbl$ac,specificity=REPORTERSPECIFIC),
-                 "Unique spectra"= spectra.count(protein.group,env$quant.tbl$ac,specificity=REPORTERSPECIFIC))
+      data.frame(group=xls.quant.tbl[,"group"],
+                 AC=.protein.acc(xls.quant.tbl[,"ac"],ip=indist.proteins),
+                 ID=proteinInfo(protein.group,xls.quant.tbl[,"ac"]),
+                 n=sapply(xls.quant.tbl[,"ac"],function(p) {length(names(indist.proteins)[indist.proteins == p])}),
+                 Description=proteinInfo(protein.group,xls.quant.tbl[,"ac"],"protein_name"),
+                 Gene=proteinInfo(protein.group,xls.quant.tbl[,"ac"],"gene_name"),
+                 "Unique peptides"= peptide.count(protein.group,xls.quant.tbl$ac,specificity=REPORTERSPECIFIC),
+                 "Unique spectra"= spectra.count(protein.group,xls.quant.tbl$ac,specificity=REPORTERSPECIFIC))
     if (properties.env$sum.intensities) {
       protein.intensities <- function(ib,proteins) {
         ri <- reporterIntensities(ib)
@@ -599,34 +580,34 @@ initialize.env <- function(env,report.type="protein",properties.env) {
       if (isTRUE(properties.env$xls.report.format=="wide")) {
         xls.protein.tbl <-
           cbind(xls.protein.tbl,
-                round(env$quant.tbl[,grep("lratio",colnames(env$quant.tbl))],round.digits),
-                round(env$quant.tbl[,grep("variance",colnames(env$quant.tbl))],round.digits),
-                env$quant.tbl[,grep("is.significant",colnames(env$quant.tbl))]==1)
+                round(xls.quant.tbl[,grep("lratio",colnames(xls.quant.tbl))],round.digits),
+                round(xls.quant.tbl[,grep("variance",colnames(xls.quant.tbl))],round.digits),
+                xls.quant.tbl[,grep("is.significant",colnames(xls.quant.tbl))]==1)
 
       } else {
       xls.protein.tbl <-
         cbind(xls.protein.tbl,data.frame(
-              "Channels"=paste(env$quant.tbl$r2,"/",env$quant.tbl$r1),
-              "is significant"=env$quant.tbl$is.significant == 1,
-              "ratio"=round(10^env$quant.tbl$lratio,round.digits),
-              "CI95.lower"=round(10^qnorm(0.025,env$quant.tbl$lratio,sqrt(env$quant.tbl$variance)),round.digits),
-              "CI95.upper"=round(10^qnorm(0.975,env$quant.tbl$lratio,sqrt(env$quant.tbl$variance)),round.digits),
-              "ratio.minus.sd"=round(10^(env$quant.tbl$lratio-sqrt(env$quant.tbl$variance)),round.digits),
-              "ratio.plus.sd"=round(10^(env$quant.tbl$lratio+sqrt(env$quant.tbl$variance)),round.digits),
-              "p-value ratio"=round(env$quant.tbl$p.value.rat,round.digits),
-              "p-value sample"=round(env$quant.tbl$p.value.sample,round.digits),
-              "ratio.log10"=round(env$quant.tbl$lratio,round.digits),
-              "var.log10"=round(env$quant.tbl$variance,round.digits),stringsAsFactors=FALSE))
+              "Channels"=paste(xls.quant.tbl$r2,"/",xls.quant.tbl$r1),
+              "is significant"=xls.quant.tbl$is.significant == 1,
+              "ratio"=round(10^xls.quant.tbl$lratio,round.digits),
+              "CI95.lower"=round(10^qnorm(0.025,xls.quant.tbl$lratio,sqrt(xls.quant.tbl$variance)),round.digits),
+              "CI95.upper"=round(10^qnorm(0.975,xls.quant.tbl$lratio,sqrt(xls.quant.tbl$variance)),round.digits),
+              "ratio.minus.sd"=round(10^(xls.quant.tbl$lratio-sqrt(xls.quant.tbl$variance)),round.digits),
+              "ratio.plus.sd"=round(10^(xls.quant.tbl$lratio+sqrt(xls.quant.tbl$variance)),round.digits),
+              "p-value ratio"=round(xls.quant.tbl$p.value.rat,round.digits),
+              "p-value sample"=round(xls.quant.tbl$p.value.sample,round.digits),
+              "ratio.log10"=round(xls.quant.tbl$lratio,round.digits),
+              "var.log10"=round(xls.quant.tbl$variance,round.digits),stringsAsFactors=FALSE))
       }
       if (properties.env$summarize) {
         xls.protein.tbl <- cbind(xls.protein.tbl,
-                                 "n.pos"=env$quant.tbl$n.pos,
-                                 "n.neg"=env$quant.tbl$n.neg
+                                 "n.pos"=xls.quant.tbl$n.pos,
+                                 "n.neg"=xls.quant.tbl$n.neg
                                  )}
     }
 
     if (length(properties.env$preselected) > 0) {
-##      xls.protein.tbl <- cbind(xls.protein.tbl,"is.preselected"=env$quant.tbl$is.preselected)
+##      xls.protein.tbl <- cbind(xls.protein.tbl,"is.preselected"=xls.quant.tbl$is.preselected)
     }
     
     return(xls.protein.tbl[order(xls.protein.tbl[,"group"]),])
