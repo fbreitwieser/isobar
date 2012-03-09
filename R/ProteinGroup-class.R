@@ -416,21 +416,30 @@ setAs("ProteinGroup","data.frame.concise",
       function(from) {
         ip.df <- .vector.as.data.frame(indistinguishableProteins(from),
                                        colnames=c("protein","protein.g"))
-        
-        ip.df <-merge(ip.df,from@isoformToGeneProduct,
-                      by.x="protein",by.y="proteinac.w.splicevariant")
+        ip.df <- merge(ip.df,from@isoformToGeneProduct,
+                       by.x="protein",by.y="proteinac.w.splicevariant")
         pep.n.prot <- as.data.frame(peptideNProtein(from),stringsAsFactors=FALSE)
         in.df <- unique(ddply(ip.df, "protein.g",
                         function(x) 
                           c(n.acs=length(unique(x[,"proteinac.wo.splicevariant"])),
                             n.variants=length(unique(x[,"protein"])))))
-        pep.n.prot <- merge(pep.n.prot,in.df)
+        pep.n.prot <- merge(pep.n.prot,ip.df)
+        pep.n.prot <- merge(pep.n.prot,proteinGroupTable(from)[,c("protein.g","reporter.protein")])
         res <- ddply(pep.n.prot,"peptide",
-                     function(x)  {
-                       data.frame(proteins=paste(x[,"protein.g"],collapse=";"),
-                         n.groups=nrow(x), 
-                         n.acs=sum(x[,"n.acs"]),
-                         n.variants=sum(x[,"n.variants"]),stringsAsFactors=FALSE)
+                     function(x) {
+                       res <- data.frame(n.acs=length(unique(x[,"proteinac.wo.splicevariant"])),
+                                         n.variants=length(unique(x[,"protein"])))
+                       x <- unique(x[,c("reporter.protein","protein.g")])
+                       protein.gs <- unique(x[,'reporter.protein'])
+                       res <- cbind(proteins=paste(tapply(x$protein.g,factor(x$reporter.protein),
+                                                          paste,collapse=","),collapse=";"),
+                                    n.groups=length(protein.gs),
+                                    res,stringsAsFactors=FALSE)
+                       if (!is.null(attr(from,"protein.group.ids"))) 
+                         res  <- cbind(groups=paste(attr(from,"protein.group.ids")[protein.gs],collapse=","),
+                                       res,stringsAsFactors=FALSE)
+                       res
+
                      })
         return(unique(res))
       })
