@@ -1,6 +1,6 @@
 #!/usr/bin/perl
 # Creation date : 2010-09-29
-# Last modified : Fri 20 Jan 2012 10:26:15 AM CET
+# Last modified : Sat 03 Mar 2012 08:47:32 PM CET
 
 # Module        : tab2xls.pl
 # Purpose       : converts csv files to XLS format
@@ -11,6 +11,7 @@
 
 use strict;
 use warnings;
+no warnings 'uninitialized';
 use Spreadsheet::WriteExcel;
 use File::Basename;
 
@@ -47,69 +48,71 @@ $fmt_centeracross->set_color('white');
 $fmt_centeracross->set_pattern();
 $fmt_centeracross->set_fg_color('green');
 
-my $fmt_red = $workbook->add_format(color=>'red');
-my $fmt_green= $workbook->add_format(color=>'blue');
-my $fmt_gray= $workbook->add_format(color=>'gray');
+my %color_formats;
 
 my $wbcenter = $workbook->add_format();
 $wbcenter->set_align('center');
 
 for (my $i=0; $i <= $#ARGV; ++$i) {
-    print STDERR " processing $ARGV[$i]\n";
-    # Add a worksheet
-    my ($name,$file) = split(/=/,$ARGV[$i]);
+  print STDERR " processing $ARGV[$i]\n";
+  # Add a worksheet
+  my ($name,$file) = split(/=/,$ARGV[$i]);
+
+  my $props; 
+	($name,$props) = get_props($name,":");
+
+  if (!defined $file) {
+    $file = $name;
+    ($name) = getname(fileparse($name,".csv"));
+    #$name = "Sheet $i";
+  }
+
+  open(F,"<",$file) or die "Could not open $file: $!";
     
-	my $props; 
-	($name,$props) = get_props($name);
+  my $header = <F>;
+  my @header = split("\t",$header);
+  chomp(@header);
+  my %header = map { $_ => 1 } @header;
 
-    if (!defined $file) {
-    	$file = $name;
-	    ($name) = getname(fileparse($name,".csv"));
-    	#$name = "Sheet $i";
-    }
+  my $worksheet = $workbook->add_worksheet($name);
+  $worksheet->add_write_handler(qr[\w], \&store_string_widths);
+  my $freeze_col = (defined($props->{'freeze_col'})? $props->{'freeze_col'}:0);
+  $worksheet->freeze_panes(1, $freeze_col); # 1 row
+  my $col = 0;
+  my $row = 0;
 
-    open(F,"<",$file) or die "Could not open $file: $!";
+  for my $i (0..$#header) {
+    $header[$i] = trim($header[$i]);
+    write_col($worksheet,$row,$col,getname($header[$i]),$wbheader);
+    ++$col;
+  }
+  $row = 1;
     
-    my $header = <F>;
-    my @header = split("\t",$header);
-	 chomp(@header);
-    my %header = map { $_ => 1 } @header;
-
-    my $worksheet = $workbook->add_worksheet($name);
-    $worksheet->add_write_handler(qr[\w], \&store_string_widths);
-
-    my $freeze_col = (defined($props->{'freeze_col'})? $props->{'freeze_col'}:0);
-    $worksheet->freeze_panes(1, $freeze_col); # 1 row
+  while(my $line=<F>)    {
+    chomp($line);
+    my @data = split("\t",$line);
     my $col = 0;
-    my $row = 0;
-
-    for my $i (0..$#header) {
-	    $header[$i] = trim($header[$i]);
-        write_col($worksheet,$row,$col,$header[$i],1);
-        ++$col;
+    my ($data0,$rowprops) = get_props($data[0],"#");
+    $data[0] = $data0;
+    if (defined $rowprops->{'color'}||defined $rowprops->{'bottomborder'}) {
+      $worksheet->set_row($row,undef,colorfmt($rowprops->{'color'},$rowprops->{'bottomborder'}));
     }
-    $row = 1;
-    
-    while(my $line=<F>)    {
-    	chomp($line);
-	    my @data = split("\t",$line);
-    	my $col = 0;
-	    for (my $i=0; $i<scalar(@data); ++$i) {
-    	    my $field = $data[$i];
-            write_col($worksheet,$row,$col,trim($field),0);
-	  	    ++$col;
-    	}
-    	++$row;
+    for (my $i=0; $i<scalar(@data); ++$i) {
+      my $field = $data[$i];
+      write_col($worksheet,$row,$col,trim($field));
+      ++$col;
     }
+    ++$row;
+  }
 
-	if (defined $props->{'autofilter'}) {
+  if (defined $props->{'autofilter'}) {
 		$worksheet->autofilter(0,0,$row-1,$col-1);
 	}
 
-    close(F);
+  close(F);
     
-    # Run the autofit after you have finished writing strings to the workbook.
-    autofit_columns($worksheet);
+  # Run the autofit after you have finished writing strings to the workbook.
+  autofit_columns($worksheet);
     
 }
 
@@ -117,14 +120,14 @@ $workbook->close;
 
 
 sub get_props {
-	my ($string) = @_;
+	my ($string,$sep) = @_;
+  if (!defined $sep) { $sep = ":"; }
 	my %def;
-	if (my ($def,$f) = ($string =~ /^:(.*):(.*)$/)) {
+	if (my ($def,$f) = ($string =~ /^${sep}(.*)${sep}(.*)$/)) {
     
     for my $s (split /,/,$def) {
       my ($key,$val) = split / /, $s;
       $val = 1 if !defined $val;
-      print STDERR "key $key = $val\n";
       $def{$key} = $val;
     }
 		$string = $f;
@@ -134,7 +137,7 @@ sub get_props {
 
 
 sub write_col {
-    my ($worksheet,$row,$col,$field,$is_header) = @_;
+    my ($worksheet,$row,$col,$field,$format) = @_;
     if (my ($def,$f) = ($field =~ /^:(.*):(.*)$/)) {
 #		my %def = map {$_ => 1} split /,/,$def;
 #		if (defined $def{'centeracross'}) {
@@ -144,16 +147,21 @@ sub write_col {
             die "no known col property";
         }
     } else {
-        if ($is_header) {
-    	    $worksheet->write($row,$col,getname($field),$wbheader);
-        } else {
-    	    if ($field eq 'TRUE') { $worksheet->write($row,$col,$field,$fmt_green);
-            } elsif ($field eq '0') { $worksheet->write($row,$col,$field,$fmt_gray);
-        	} else {
-	       	    $worksheet->write($row,$col,$field);
-    	    }
-        }
+       if ($field eq 'TRUE') { $format=colorfmt('green'); }
+       elsif ($field eq '0') { $format=colorfmt('gray'); }
+       $worksheet->write($row,$col,$field,$format);
+
     }
+}
+
+sub colorfmt {
+  my($color,$bottom) = @_;
+  $bottom=0 unless defined $bottom;
+  $color=0 unless defined $color;
+  if (!defined $color_formats{$color}) {
+    $color_formats{$color}{$bottom} = $workbook->add_format(color=>$color,bottom=>$bottom);
+  }
+  return($color_formats{$color}{$bottom});
 }
 
 sub getname {
@@ -164,6 +172,7 @@ sub getname {
 
 sub trim {
 	my ($string) = @_;
+  return($string) unless defined $string;
 	$string =~ s/^"//;
 	$string =~ s/"$//;
 	return $string;
