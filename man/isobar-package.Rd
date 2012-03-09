@@ -13,7 +13,7 @@ proteomics data labeled withOA isobaric tags, such as iTRAQ and TMT.
 \details{
 \tabular{ll}{
 Package: \tab isobar\cr
-Version: \tab 0.2.5\cr
+Version: \tab 1.1.2\cr
 biocViews: \tab Proteomics, MassSpectrometray, Bioinformatics, MultipleComparisons, QualityControl\cr
 Depends: \tab R (>= 2.9.0), Biobase, stats, methods, ggplot2\cr
 Imports: \tab distr, biomaRt\cr
