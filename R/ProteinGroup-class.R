@@ -427,10 +427,10 @@ setAs("ProteinGroup","data.frame.concise",
         pep.n.prot <- merge(pep.n.prot,in.df)
         res <- ddply(pep.n.prot,"peptide",
                      function(x)  {
-                       c(proteins=paste(x[,"protein.g"],collapse=";"),
+                       data.frame(proteins=paste(x[,"protein.g"],collapse=";"),
                          n.groups=nrow(x), 
                          n.acs=sum(x[,"n.acs"]),
-                         n.variants=sum(x[,"n.variants"]))
+                         n.variants=sum(x[,"n.variants"]),stringsAsFactors=FALSE)
                      })
         return(unique(res))
       })
