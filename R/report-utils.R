@@ -129,12 +129,21 @@ write.xls.report <- function(report.type,properties.env,report.env,file="isobar-
 }
 
   .compile.tex <- function(name,zip.files) {
-    .call.cmd <- function(cmd) if (system(cmd,ignore.stdout=TRUE) != 0) stop("\nError executing [",cmd,"]")
+    .call.cmd <- function(cmd,stdout.to=NULL) 
+      if (is.null(stdout.to)) {
+        if (system(cmd) != 0) stop("\nError executing [",cmd,"]")
+      } else {
+        if (system(paste(cmd,">",stdout.to)) != 0) 
+          stop("\nError executing [",cmd,"]: \n\n ...\n",
+               paste(tail(readLines(stdout.to),n=10),collapse="\n"))
+      }
     dir <- tempdir()
     cat("compiling ",name,".tex ...  1",sep="")
-    .call.cmd(sprintf("R CMD pdflatex -interaction=batchmode -output-directory=%s %s.tex",dir,name))
+    .call.cmd(sprintf("R CMD pdflatex -halt-on-error -output-directory=%s %s.tex",dir,name),
+              paste(dir,"/",basename(name),".stdout",sep=""))
     cat(" 2")
-    .call.cmd(sprintf("R CMD pdflatex -interaction=batchmode -output-directory=%s %s.tex",dir,name))
+    .call.cmd(sprintf("R CMD pdflatex -halt-on-error -output-directory=%s %s.tex",dir,name),
+              paste(dir,"/",basename(name),".stdout",sep=""))
     cat(" done!\n\n")
     .call.cmd(sprintf("mv %s/%s.pdf .",dir,name))
     c(zip.files,sprintf("%s.pdf",name))
