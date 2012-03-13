@@ -1,9 +1,15 @@
+CHANGES IN VERSION 1.1.3
+------------------------
+
 CHANGES IN VERSION 1.1.2
 ------------------------
 
-- fixed handling of divergent identifications in one search engine
-- fixed number of spectra in isobar-analysis report
-- fixed recently introduced error when reading mgf file
+ - fixed handling of divergent identifications in one search engine
+ - fixed number of spectra in isobar-analysis report
+ - fixed recently introduced error when reading mgf file
+ - identifications tab in XLS report is now in concise format
+   - shared peptides are colored in gray
+ - added xls report format = wide
 
 CHANGES IN VERSION 1.1.1
 ------------------------
