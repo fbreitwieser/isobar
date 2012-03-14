@@ -1,6 +1,6 @@
 #!/usr/bin/perl
 # Creation date : 2010-09-29
-# Last modified : Sat 03 Mar 2012 08:47:32 PM CET
+# Last modified : Wed 14 Mar 2012 07:07:07 PM CET
 
 # Module        : tab2xls.pl
 # Purpose       : converts csv files to XLS format
@@ -144,7 +144,7 @@ sub write_col {
 		if ($def eq 'centeracross') {
 		    $worksheet->write($row,$col,$f,$fmt_centeracross);
 	    } else {
-            die "no known col property";
+            die "Unknown column property [$def] defined in [$field]. row $row, column $col.";
         }
     } else {
        if ($field eq 'TRUE') { $format=colorfmt('green'); }
