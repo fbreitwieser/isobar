@@ -17,10 +17,7 @@
 
 <<initialization,echo=FALSE,results=hide>>=
 suppressPackageStartupMessages(library(isobar))
-source("~/projects/quant/isobar_bioc/isobar/R/report-utils.R")
-source("~/projects/quant/isobar_bioc/isobar/R/utils.R")
 suppressPackageStartupMessages(library(distr))
-source("~/projects/quant/isobar_bioc/isobar/R/ratio-methods.R")
 
 if (!exists("properties.env")) {
 #  stop("no properties.env?")
@@ -68,7 +65,7 @@ if (is.single.comparision) {
 
 @
 
-\title{Isobaric Tag Peptide Analysis Report\\ \analysisname}
+\title{Isobaric Tag Peptide Analysis Report\\ \analysisname\isobarthanks}
 \author{\analysisauthor}
 \date{\today}
 
@@ -83,9 +80,22 @@ report.env$quant.tbl$ratio <- 10^report.env$quant.tbl$lratio
 report.env$quant.tbl$sd <- sqrt(report.env$quant.tbl$variance)
 #report.env$quant.tbl$ac <- report.env$quant.tbl$protein # TEMPORARY
 print_longtablehdr_peptide(coldef,!is.single.comparision,ncol.p,TRUE)
-all.peps <- as.matrix(unique(report.env$quant.tbl[,c("peptide","modif")]))
 
-for (ac_i in seq_len(nrow(all.peps))[1:10]) {
+message("nrow q: ",nrow(report.env$quant.tbl))
+protein.group <- proteinGroup(report.env$ibspectra)
+df.pg <- unique(as(protein.group,"data.frame.concise")[,c("peptide","proteins")])
+report.env$quant.tbl <- merge(df.pg,report.env$quant.tbl,by="peptide",all.y=TRUE)
+message("nrow q: ",nrow(report.env$quant.tbl))
+#all.peps <- unique(report.env$quant.tbl[,c("peptide","modif","proteins")])
+all.peps <- ddply(report.env$quant.tbl,c("peptide","modif","proteins"),
+                  function(d) data.frame(n.spectra=max(d[,"n.spectra"],na.rm=T)))
+all.peps <- all.peps[,order(as.numeric(all.peps["n.spectra",]),decreasing=TRUE)]
+all.peps$n.spectra <- NULL
+all.peps <- as.matrix(all.peps)
+message("nrow all.pep: ",nrow(all.peps))
+
+for (ac_i in seq_len(nrow(all.peps))) {
+
   my.pep <- all.peps[ac_i,]
   ac.rows <- report.env$quant.tbl[which(report.env$quant.tbl[,"peptide"] == my.pep[1] &
                                         report.env$quant.tbl[,"modif"] == my.pep[2]),,drop=FALSE]
@@ -93,6 +103,7 @@ for (ac_i in seq_len(nrow(all.peps))[1:10]) {
   
   if (all(is.na(ac.rows[,'lratio']))) {
     acs.notquantified <- c(acs.notquantified,ac_i)
+    message("SCHEISSA: ",paste(my.pep,collapse=" - "))
     next
   }
   groupnumber <- 1
@@ -117,10 +128,10 @@ for (ac_i in seq_len(nrow(all.peps))[1:10]) {
   ##    gene.names[length(gene.names)] <- paste(gene.names[length(gene.names)],", \\dots",sep="")
   ##  }
   ##}
-  cat(mr(sprintf(" \\hyperref[ac.%s]{\\textbf{%s}}",groupnumber,groupnumber)),
+  cat(#mr(sprintf(" \\hyperref[ac.%s]{\\textbf{%s}}",groupnumber,groupnumber)),
       " & ",mr(paste("{\\small \\tt ",
                      transform_pepmodif(my.pep),
-                     "}"),name.w))
+                     "} Proteins: ",sanitize(my.pep[3])),name.w))
 #      " & ",mr(1),
 #      " & ",mr(1),
 #      " & ",mr(1))

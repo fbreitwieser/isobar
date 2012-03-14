@@ -108,10 +108,13 @@ setValidity("IBSpectra",.valid.IBSpectra)
 
 .ID.COLS <- c(SEARCHENGINE="search.engine",SCORE="score")
 
+.PTM.COLS <- c(PEPSCORE='pepscore',PEPPROB='pepprob',SEQPOS='seqpos',SITEPROBS='site.probs')
+
 .SPECTRUM.COLS <- c(PEPTIDE="peptide",MODIFSTRING="modif",CHARGE="charge",
                    THEOMASS="theo.mass",EXPMASS="exp.mass",
                    PARENTINTENS="parent.intens",RT="retention.time",
-                   SPECTRUM="spectrum",.ID.COLS)
+                   SPECTRUM="spectrum",.ID.COLS,USEFORQUANT="use.for.quant",
+                   .PTM.COLS)
 
 .PEPTIDE.COLS <- c(PROTEINAC="accession",STARTPOS="start.pos",
                   REALPEPTIDE="real.peptide")
@@ -119,6 +122,7 @@ setValidity("IBSpectra",.valid.IBSpectra)
 .PROTEIN.COLS <- c(PROTEINAC="accession",PROTEINAC_CONCISE="accessions",
                    NAME="name",PROTEIN_NAME="protein_name",
                    GENE_NAME="gene_name",ORGANISM="organism")
+
 
 
 ### - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -313,9 +317,15 @@ setMethod("initialize","IBSpectra",
         if (all(apply(is.na(assayDataElements$mass),2,all))) stop("all masses are NA")
         if (all(apply(is.na(assayDataElements$ions),2,all))) stop("all intensities are NA")
 
-        nn <- .SPECTRUM.COLS %in% SC
-        fdata <- data[,SC]
-        colnames(fdata) <- .SPECTRUM.COLS[nn]
+        if (!.SPECTRUM.COLS['USEFORQUANT'] %in% colnames(data)) {
+          # not perfect yet - better: set spectra of peptides shared between groups to FALSE
+          #                            and spectra with no values
+          data[,.SPECTRUM.COLS['USEFORQUANT']] <- TRUE
+          #data[,.SPECTRUM.COLS['USEFORQUANT']] <- !apply(is.na(assayDataElements$ions),1,all)
+        }
+
+        nn <- .SPECTRUM.COLS %in% colnames(data)
+        fdata <- data[,colnames(data) %in% .SPECTRUM.COLS]
 
         VARMETADATA=data.frame(
           labelDescription = 
@@ -327,7 +337,10 @@ setMethod("initialize","IBSpectra",
             PARENTINTENS='parent ion intensity',
             RT='retention time',SPECTRUM='spectrum title',
             SEARCHENGINE='protein search engine',
-            SCORE='protein search engine score'
+            SCORE='protein search engine score',
+            USEFORQUANT='use spectrum for quantification',
+            PEPSCORE='PhosphoRS pepscore',PEPPROB='PhosphoRS pepprob',
+            SEQPOS='PTM seqpos',SITEPROBS='PhosphoRS site.probs'
             ),row.names=.SPECTRUM.COLS)
 	    
         featureData <- new("AnnotatedDataFrame",data=fdata,
@@ -424,7 +437,7 @@ setMethod("readIBSpectra",
              proteinGroupTemplate=NULL,
              mapping.file=NULL,mapping=c(peaklist="even",id="odd"),
              mapping.file.readopts=list(header=TRUE,stringsAsFactors=FALSE,sep=","),
-             id.file.domap=NULL,
+             id.file.domap=NULL,annotate.spectra.f=NULL,
              peaklist.format=NULL,id.format=NULL,fragment.precision=NULL,fragment.outlier.prob=NULL,
              decode.titles=TRUE,scan.lines=0) {
       
@@ -513,6 +526,9 @@ setMethod("readIBSpectra",
         }
       }
       ## TODO: check that all identified spectra are present in intensities
+      if (is.function(annotate.spectra.f)) {
+        data <- annotate.spectra.f(data,id.file,peaklist.file)
+      }
       
       new(type,data=data,data.mass=intensities$mass,data.ions=intensities$ions)
     }
@@ -1030,7 +1046,7 @@ setMethod("spectrumSel",signature(x="IBSpectra",peptide="missing",protein="missi
     function(x) rep(TRUE,nrow(fData(x))))
 
 setMethod("spectrumSel",signature(x="IBSpectra",peptide="matrix",protein="missing"),
-    function(x,peptide,modif=NULL,spectrum.titles=FALSE) {
+    function(x,peptide,modif=NULL,spectrum.titles=FALSE,use.for.quant.only=TRUE) {
         if (length(peptide) == 0) {
           warning("0L peptide provided")
           return(FALSE)
@@ -1038,8 +1054,11 @@ setMethod("spectrumSel",signature(x="IBSpectra",peptide="matrix",protein="missin
         if (ncol(peptide) != 2)
           stop("don't know how to handle matrix with ",ncol(peptide)," columns!")
         
-        sel <- fData(x)[,.SPECTRUM.COLS['PEPTIDE']]  %in% peptide[,1]
-        sel <- sel & fData(x)[,.SPECTRUM.COLS['MODIFSTRING']]  %in% peptide[,2]
+        sel <- fData(x)[,.SPECTRUM.COLS['PEPTIDE']]  %in% peptide[,1] & 
+               fData(x)[,.SPECTRUM.COLS['MODIFSTRING']]  %in% peptide[,2]
+
+        if (use.for.quant.only && .SPECTRUM.COLS['USEFORQUANT'] %in% colnames(fData(x)))
+          sel <- sel & fData(x)[,.SPECTRUM.COLS['USEFORQUANT']] 
         
         for (m in modif)
           sel <- sel & grepl(m,fData(x)[,.SPECTRUM.COLS['MODIFSTRING']])
@@ -1052,7 +1071,7 @@ setMethod("spectrumSel",signature(x="IBSpectra",peptide="matrix",protein="missin
 )
 
 setMethod("spectrumSel",signature(x="IBSpectra",peptide="character",protein="missing"),
-    function(x,peptide,modif=NULL,spectrum.titles=FALSE) {
+    function(x,peptide,modif=NULL,spectrum.titles=FALSE,use.for.quant.only=TRUE) {
         if (length(peptide) == 0) {
           warning("0L peptide provided")
           return(FALSE)
@@ -1060,6 +1079,9 @@ setMethod("spectrumSel",signature(x="IBSpectra",peptide="character",protein="mis
         sel <- fData(x)[,.SPECTRUM.COLS['PEPTIDE']]  %in% peptide
         for (m in modif)
           sel <- sel & grepl(m,fData(x)[,.SPECTRUM.COLS['MODIFSTRING']])
+
+        if (use.for.quant.only && .SPECTRUM.COLS['USEFORQUANT'] %in% colnames(fData(x)))
+          sel <- sel & fData(x)[,.SPECTRUM.COLS['USEFORQUANT']] 
         if (!any(sel)) warning("No spectra for peptide ",peptide)
         if (spectrum.titles)
           return(rownames(fData(x))[sel])
@@ -1069,12 +1091,13 @@ setMethod("spectrumSel",signature(x="IBSpectra",peptide="character",protein="mis
 )
 
 setMethod("spectrumSel",signature(x="IBSpectra",peptide="missing",protein="character"),
-    function(x,protein,specificity=REPORTERSPECIFIC,modif=NULL,spectrum.titles=FALSE,...) {
+    function(x,protein,specificity=REPORTERSPECIFIC,modif=NULL,spectrum.titles=FALSE,use.for.quant.only=TRUE,...) {
       
       peptides <- peptides(x=proteinGroup(x),protein=protein,specificity=specificity,do.warn=FALSE,...)
       if (length(peptides) == 0)
         return(FALSE)
-      sel <- spectrumSel(x,peptide=peptides,spectrum.titles=spectrum.titles,modif=modif)
+      sel <- spectrumSel(x,peptide=peptides,spectrum.titles=spectrum.titles,
+                         modif=modif,use.for.quant.only=use.for.quant.only)
       if ((spectrum.titles & any(sel)) || (!spectrum.titles & !any(sel)))
         warning("No spectra for protein ",protein,
                 " with specificity ",paste(specificity,collapse=","))
