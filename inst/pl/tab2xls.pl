@@ -1,6 +1,6 @@
 #!/usr/bin/perl
 # Creation date : 2010-09-29
-# Last modified : Wed 14 Mar 2012 07:07:07 PM CET
+# Last modified : Thu 15 Mar 2012 09:32:44 AM CET
 
 # Module        : tab2xls.pl
 # Purpose       : converts csv files to XLS format
@@ -137,21 +137,19 @@ sub get_props {
 
 
 sub write_col {
-    my ($worksheet,$row,$col,$field,$format) = @_;
-    if (my ($def,$f) = ($field =~ /^:(.*):(.*)$/)) {
-#		my %def = map {$_ => 1} split /,/,$def;
-#		if (defined $def{'centeracross'}) {
-		if ($def eq 'centeracross') {
-		    $worksheet->write($row,$col,$f,$fmt_centeracross);
-	    } else {
-            die "Unknown column property [$def] defined in [$field]. row $row, column $col.";
-        }
+  my ($worksheet,$row,$col,$field,$format) = @_;
+  if (my ($def,$f) = ($field =~ /^:(centeracross):(.*)$/)) { ## only check for centeracross column property
+#  if (my ($def,$f) = ($field =~ /^:([^:]+):(.*)$/)) {       ## this creates problem w/ modification column  (format: :::etc::)
+    if ($def eq 'centeracross') {
+      $worksheet->write($row,$col,$f,$fmt_centeracross);
     } else {
-       if ($field eq 'TRUE') { $format=colorfmt('green'); }
-       elsif ($field eq '0') { $format=colorfmt('gray'); }
-       $worksheet->write($row,$col,$field,$format);
-
+      die "Unknown column property [$def] defined in [$field]. row $row, column $col.";
     }
+  } else {
+    if ($field eq 'TRUE') { $format=colorfmt('green'); }
+    elsif ($field eq '0') { $format=colorfmt('gray'); }
+    $worksheet->write($row,$col,$field,$format);
+  }
 }
 
 sub colorfmt {
