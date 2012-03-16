@@ -114,6 +114,7 @@ shared.ratios.sign <- function(ress,z.shared,min.spectra=1,plot=TRUE) {
       xx$n.spectra <- factor(as.character(xx$n.spectra),levels=c("1","2 - 5","6 - 10","> 10"))
 
   if (plot) {
+    require(ggplot2)
     breaks=c(0.1,0.25,0.5,1,2,3,4,5,10,20,30,40,50)
 
     print(ggplot(xx,aes(x=ratio,y=proteins)) +

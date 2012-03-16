@@ -3,6 +3,7 @@
 <<initialization,echo=FALSE,results=hide>>=
  
 suppressPackageStartupMessages(library(distr))
+suppressPackageStartupMessages(require(ggplot2))
 suppressPackageStartupMessages(library(isobar))
 pdf.options(pointsize=8)
 
