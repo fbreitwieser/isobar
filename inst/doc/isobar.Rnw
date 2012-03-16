@@ -6,6 +6,7 @@
 
 <<init,echo=FALSE>>=
   library(distr)
+  require(ggplot2)
 @ 
 
 \usepackage{times}

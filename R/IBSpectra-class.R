@@ -1363,6 +1363,7 @@ setMethod("reporterMassPrecision",
           function(x,plot=TRUE) {
             masses <- reporterMasses(x)
             if (plot) {
+              require(ggplot2)
               melt.masses <-
                 data.frame(
                            reporter=rep(colnames(masses),each=nrow(masses)),
@@ -1394,6 +1395,7 @@ setMethod("reporterMassPrecision",
 
 setMethod("reporterIntensityPlot",
           signature=c(x="IBSpectra"),function(x) {
+            require(ggplot2)
             intensities <- reporterIntensities(x)
             intensities.nn <- reporterData(x,element="ions_not_normalized") # null if not normalized
             

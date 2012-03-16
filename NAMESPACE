@@ -4,7 +4,6 @@ importClassesFrom(Biobase, AnnotatedDataFrame, AssayData, eSet,
                   Versioned, VersionedBiobase, Versions)
 
 import("distr")
-import("biomaRt")
 
 
 # EXPORT
