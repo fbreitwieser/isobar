@@ -18,19 +18,6 @@ spectra.count(protein.group, protein.g = reporterProteins(protein.group),
   \item{protein.g}{Protein group identifier.}
   \item{specificity}{Specificity of peptides.}
 }
-\details{
-%%  ~~ If necessary, more details than the description above ~~
-}
-\value{
-%%  ~Describe the value returned
-%%  If it is a LIST, use
-%%  \item{comp1 }{Description of 'comp1'}
-%%  \item{comp2 }{Description of 'comp2'}
-%% ...
-}
-\references{
-%% ~put references to the literature/web site here ~
-}
 \author{
   Florian P Breitwieser
 }
@@ -46,4 +33,3 @@ spectra.count(protein.group, protein.g = reporterProteins(protein.group),
   pc <- peptide.count(proteinGroup(ibspiked_set1)) 
   plot(jitter(sc),jitter(pc),log="xy")
 }
-\keyword{ ~kwd1 }

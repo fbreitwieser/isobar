@@ -1,14 +1,15 @@
 \name{isobar.data}
 \alias{ibspiked_set1}
+\alias{ibspiked_set2}
 \alias{noise.model.hcd}
 \docType{data}
 \title{
   Isobar Data packages
 }
 \description{
-  ibspiked_set1 is a object of class iTRAQ4plexSpectra.
-  It contains 161 protein groups, 1653 peptides from nearly 15,000 spectra,
-  mainly from background proteins and also three spiked-in Ceruplasmins 
+  ibspiked_set1 and ibspiked_set2 are objects of class iTRAQ4plexSpectra.
+  It contains over 160 protein groups, over 1600 peptides from about 15,000 spectra each,
+  mainly from background proteins and three spiked-in Ceruplasmins 
   (CERU_HUMAN, CERU_MOUSE, CERU_RAT).
 }
 \usage{

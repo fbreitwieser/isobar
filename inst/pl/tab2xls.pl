@@ -1,6 +1,6 @@
 #!/usr/bin/perl
 # Creation date : 2010-09-29
-# Last modified : Thu 15 Mar 2012 09:32:44 AM CET
+# Last modified : Fri 16 Mar 2012 11:35:23 AM CET
 
 # Module        : tab2xls.pl
 # Purpose       : converts csv files to XLS format
@@ -49,6 +49,7 @@ $fmt_centeracross->set_pattern();
 $fmt_centeracross->set_fg_color('green');
 
 my %color_formats;
+my $row_limit = 65536;
 
 my $wbcenter = $workbook->add_format();
 $wbcenter->set_align('center');
@@ -73,22 +74,21 @@ for (my $i=0; $i <= $#ARGV; ++$i) {
   my @header = split("\t",$header);
   chomp(@header);
   my %header = map { $_ => 1 } @header;
-
-  my $worksheet = $workbook->add_worksheet($name);
-  $worksheet->add_write_handler(qr[\w], \&store_string_widths);
-  my $freeze_col = (defined($props->{'freeze_col'})? $props->{'freeze_col'}:0);
-  $worksheet->freeze_panes(1, $freeze_col); # 1 row
-  my $col = 0;
-  my $row = 0;
-
-  for my $i (0..$#header) {
-    $header[$i] = trim($header[$i]);
-    write_col($worksheet,$row,$col,getname($header[$i]),$wbheader);
-    ++$col;
-  }
-  $row = 1;
-    
+  my ($worksheet,$row);
+  my $n_worksheets = 0;
+   
   while(my $line=<F>)    {
+    if (!defined $row || $row == $row_limit) {
+      $n_worksheets += 1;
+      $worksheet = $workbook->add_worksheet($name.($n_worksheets > 1? " $n_worksheets" : ""));
+      $worksheet->add_write_handler(qr[\w], \&store_string_widths);
+      $worksheet->freeze_panes(1,(defined($props->{'freeze_col'})? $props->{'freeze_col'}:0)); # 1 row
+      for my $i (0..$#header) {
+        $header[$i] = trim($header[$i]);
+        write_col($worksheet,0,$i,getname($header[$i]),$wbheader);
+      }
+      $row = 1;
+    }
     chomp($line);
     my @data = split("\t",$line);
     my $col = 0;
@@ -103,12 +103,11 @@ for (my $i=0; $i <= $#ARGV; ++$i) {
       ++$col;
     }
     ++$row;
+    if (defined $props->{'autofilter'} && $row == $row_limit) { $worksheet->autofilter(0,0,$row-1,$col-1); }
   }
 
-  if (defined $props->{'autofilter'}) {
-		$worksheet->autofilter(0,0,$row-1,$col-1);
-	}
 
+  if (defined $props->{'autofilter'}) { $worksheet->autofilter(0,0,$row-1,$#header); }
   close(F);
     
   # Run the autofit after you have finished writing strings to the workbook.
