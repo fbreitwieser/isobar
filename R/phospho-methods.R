@@ -19,7 +19,10 @@ getPhosphoRSProbabilities <- function(
 writePhosphoRSInput <- function(phosphoRS.infile,id.file,mgf.file,massTolerance,activationType,
                                 mapping.file=NULL,mapping=c(peaklist="even",id="odd"),pepmodif.sep="##.##") {
 
-  ids <- isobar:::.read.idfile(id.file,id.format="ibspectra.csv",log=NULL)
+  if (is.data.frame(id.file)) 
+    ids <- id.file
+  else
+    ids <- isobar:::.read.idfile(id.file,id.format="ibspectra.csv",log=NULL)
   ids <- unique(ids[,c("peptide","modif","spectrum")])
   
   if (!is.null(mapping.file)) {
@@ -57,6 +60,9 @@ writePhosphoRSInput <- function(phosphoRS.infile,id.file,mgf.file,massTolerance,
   begin_ions <- which(input=="BEGIN IONS")+1
   end_ions <- which(input=="END IONS")-1
   titles <- gsub("TITLE=","",grep("TITLE",input,value=TRUE),fixed=TRUE)
+  if (!all(ids$spectrum %in% titles))
+    stop("Not all id spectrum titles are in MGF titles!\n",
+         sum.bool.c(ids$spectrum %in% titles))
   
   if (length(begin_ions) != length(end_ions))
     stop("mgf file is errorneous, non-matching number",
@@ -125,6 +131,7 @@ readPhosphoRSOutput <- function(phosphoRS.outfile,simplify=FALSE,pepmodif.sep="#
 
         # get right modif string
         modifstring <- strsplit(paste(pep.id[2]," ",sep=""),":")[[1]]
+        modifstring <- gsub(" $","",modifstring)
         modifstring[modifstring=='PHOS'] <- ''
         modifstring[as.numeric(seqpos)+1] <- 'PHOS'
         modifstring <- paste(modifstring,collapse=":")
@@ -167,12 +174,15 @@ readPhosphoRSOutput <- function(phosphoRS.outfile,simplify=FALSE,pepmodif.sep="#
   res
 }
 
-annotateSpectraPhosphoRS <- function(data,id.file,peaklist.file,min.prob=NULL,...) {
-  probs <- getPhosphoRSProbabilities(id.file,peaklist.file,...,simplify=TRUE)
-  data$peptide <- probs[data$spectrum,"peptide"]
-  data$modif <- probs[data$spectrum,"modif"]
-  if (!is.null(min.prob))
-    data$use.for.quant <- probs[data$spectrum,"pepprob"] >= min.prob
+annotateSpectraPhosphoRS <- function(data,peaklist.file,min.prob=NULL,...) {
+  probs <- getPhosphoRSProbabilities(data,peaklist.file,...,simplify=TRUE)
+  data[rownames(probs),"peptide"] <- probs[,"peptide"]
+  data[rownames(probs),"modif"] <- probs[,"modif"]
+  if (!is.null(min.prob)) {
+    if (!'use.for.quant' %in% colnames(data)) data$use.for.quant <- 1
+    data[rownames(probs),"use.for.quant"] <-
+      data[rownames(probs),"use.for.quant"] & probs[,"pepprob"] >= min.prob
+  }
   data <- cbind(data,probs[data$spectrum,c("pepscore","pepprob","seqpos")])
   return(data)
 }
