@@ -1809,9 +1809,12 @@ setMethod("maplot",
               for (i in colnames(ions)) {
                 for (j in colnames(ions)) {
                   if (i == j) { 
-                    hist(log10(ions[,i]), col="#EEEEEE", freq=FALSE, 
-                         xlim=histlimits,cex=0.5,
-                         bty="n", xaxt="n", yaxt="n", main="",ylim=c(0,1))
+                    if (all(is.na(ions[,i])))
+                      plot(histlimits,c(1,1),type="n",bty="n", xaxt="n", yaxt="n", main="",ylim=c(0,1))
+                    else
+                      hist(log10(ions[,i]), col="#EEEEEE", freq=FALSE, 
+                           xlim=histlimits,cex=0.5,
+                           bty="n", xaxt="n", yaxt="n", main="",ylim=c(0,1))
                     text(sum(histlimits)/2,0.5,i,col="black",cex=1.4,font=2); 
 
                   } else if (i > j) {
