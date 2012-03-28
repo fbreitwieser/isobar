@@ -543,6 +543,7 @@ initialize.env <- function(env,report.type="protein",properties.env) {
 
     if (identical(level,"protein")) {
       quant.tbl[,"gene_names"] <- sapply(quant.tbl[,"ac"], function(x) {
+        if (length(protein.info) == 0) return("")
         allreporter <- indistinguishableProteins(protein.group,protein.g=x)
         acs <- unique(isoforms[allreporter,"proteinac.wo.splicevariant"])
         paste(sort(unique(protein.info[protein.info$accession %in% acs,"gene_name"])),
