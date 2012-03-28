@@ -256,14 +256,21 @@ initialize.env <- function(env,report.type="protein",properties.env) {
   }
 }
 
-.create.or.load <- function(name,envir,f,msg.f=name,do.load=FALSE,class=NULL,...) {
+.create.or.load <- function(name,envir,f,msg.f=name,do.load=FALSE,class=NULL,error=stop,default.value=NULL,...) {
   x <- tryCatch(.get.or.load(name,envir,msg.f,class),error=function(e) .DOES.NOT.EXIST)
   if (identical(x,.DOES.NOT.EXIST)) {
     message(paste("creating",msg.f,"..."))
-    x <- f(...)
-    assign(name,x)
-    file.name <- sprintf("%s/%s.rda",.get.property('cachedir',envir),name)
-    save(list=c(name),file=file.name)
+    tryCatch({
+      x <- f(...)
+      assign(name,x)
+      file.name <- sprintf("%s/%s.rda",.get.property('cachedir',envir),name)
+      save(list=c(name),file=file.name)
+    },error=error)
+
+    if (!exists(name,inherits=FALSE)) {
+      x <- default.value
+      assign(name,x)
+    }
   }
   if (!is.null(class) && !is(x,class))
     stop("property [",name,"] should be of class [",class,"] but is of class [",class(x),"]")
@@ -411,7 +418,8 @@ initialize.env <- function(env,report.type="protein",properties.env) {
       .create.or.load("protein.info",envir=properties.env,
                       f=properties.env$protein.info.f,
                       x=proteinGroup(ibspectra),
-                      do.load=TRUE, msg.f="protein.info")
+                      do.load=TRUE, msg.f="protein.info",
+                      error=warning,default.value=proteinInfo(proteinGroup(ibspectra)))
  
   return(ibspectra)
 }
