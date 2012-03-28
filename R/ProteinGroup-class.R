@@ -784,13 +784,19 @@ human.protein.names <- function(my.protein.info) {
 
 my.protein.info <- function(x,protein.g) {
     protein.acs <- indistinguishableProteins(x,protein.g=protein.g)
-    protein.info <- proteinInfo(x)
     isoforms <- x@isoformToGeneProduct
+    res <- data.frame(protein.ac=protein.acs,
+                      accession=isoforms[protein.acs,"proteinac.wo.splicevariant"],
+                      splicevariant=as.numeric(isoforms[protein.acs,"splicevariant"]), 
+                      stringsAsFactors=FALSE)
 
-    return(merge(data.frame(cbind(protein.ac=protein.acs,
-         accession=isoforms[protein.acs,"proteinac.wo.splicevariant"],
-         splicevariant=as.numeric(isoforms[protein.acs,"splicevariant"])), 
-       stringsAsFactors=FALSE), protein.info, all.x=TRUE,all.y=FALSE))
+    if (length(proteinInfo(x)) > 0) 
+      res <- merge(res,proteinInfo(x),all.x=TRUE,all.y=FALSE)
+    else 
+      res <- cbind(res,gene_name=NA,protein_name=NA)
+
+
+    return(res)
 }
 
 summary.ProteinGroup <- function(object,only.reporters=TRUE,...) {
