@@ -46,7 +46,7 @@ peptide.report <- get.arg("--peptide")
 
 ## TODO: parse further arguments
 
-message("Loading package isobar ...")
+message("Loading package isobar v",packageDescription("isobar")$Version," ...")
 suppressPackageStartupMessages(library(isobar))
 
 if (!exists("properties.env",inherits=FALSE)) {
