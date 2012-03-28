@@ -2,6 +2,8 @@
 
 create.reports <- function(properties.file="properties.R",args=NULL,
                            report.type="protein",compile=FALSE,zip=FALSE) {
+  ow <- options("warn")
+  options(warn=1)
   if (!exists("properties.env")) {
     properties.env <- load.properties(properties.file,
                                       system.file("report","properties.R",package="isobar"),
@@ -51,6 +53,7 @@ create.reports <- function(properties.file="properties.R",args=NULL,
     message("Created zip archive ",zip.f)
   }
 
+  options(ow) 
   message("\nSUCCESSFULLY CREATED REPORTS\n")
 }
 
