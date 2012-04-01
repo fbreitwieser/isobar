@@ -1475,25 +1475,38 @@ setMethod("plotRatio",
 maplot.protein <- function(x,relative.to,protein,noise.model=NULL,
         channels=NULL,ylim=NULL,identify=FALSE,add=FALSE,pchs=NULL,log="xy",
         legend.pos="topright",names=NULL,legend.cex=0.8,cols=pchs,ltys=NULL,
-        main=protein,xlab="average intensity",ylab="ratio",type="ma",...) {
+        main=protein,xlab=NULL,ylab=NULL,type="ma",...) {
       
-      i.df <- data.frame()
-      legend <- list(text=c(),lty=c(),pch=c())
-      i <- 1
+    i.df <- data.frame()
+    legend <- list(text=c(),lty=c(),pch=c())
+    i <- 1
 	  if (is(x,"IBSpectra"))
-        x <- c(x)
-      if (is.null(channels)) channels <- setdiff(reporterTagNames(x[[1]]),relative.to)
-      if (is.null(pchs)) pchs <- seq_along(channels)
+      x <- c(x)
+    if (is.null(channels)) channels <- setdiff(reporterTagNames(x[[1]]),relative.to)
+    if (is.null(pchs)) pchs <- seq_along(channels)
 
-      for (ib in x) {
-      
-        ions <- reporterIntensities(ib,na.rm=FALSE,protein=protein)
+    if (is.null(xlab) && type=="ma") xlab <- "average intensity"
+    if (is.null(ylab) && type=="ma") ylab <- "ratio"
+
+    if (is.null(xlab) && type!="ma") xlab <- paste("intensity",relative.to)
+    if (is.null(ylab) && type!="ma") ylab <- paste("intensity",paste(channels,collapse=", "))
+    
+
+    for (ib in x) {
+      ions <- reporterIntensities(ib,na.rm=FALSE,protein=protein)
+      if (length(ions) == 0 || all(is.na(ions)))
+        next;
+
+      xlim <- range(ions,na.rm=TRUE)
+      if (is.null(ylim) && type!="ma") ylim <- xlim
+      if (any(!is.finite(xlim))) xlim  <- NULL
+      if (type == "ma")
         ions[which(is.na(ions))] <- 0
-            
+
       for (channel_i in seq_along(channels)) {
         channel <- channels[channel_i]
         channel.rt <- ifelse(length(relative.to) == 1,relative.to,relative.to[channel_i])
-         if (length(ions[,channel])>0) {
+        if (length(ions[,channel])>0) {
           if (is.null(names))
             legend$text <- c(legend$text,sprintf("%s/%s",channel,channel.rt))
           else
@@ -1501,47 +1514,59 @@ maplot.protein <- function(x,relative.to,protein,noise.model=NULL,
           legend$pch <- c(legend$pch,pchs[i])
           legend$lty <- c(legend$pch,ltys[i])
         }
-        
+
         if (type=="ma") {
           div <- ions[,channel]/ions[,channel.rt]
           avg <- (ions[,channel]+ions[,channel.rt])/2
           div[div == Inf] = 100
           div[div == -Inf] = 0.01
+          div[div > 100] = 90
+          div[div < 0.01] = 1/90
           x <- avg
           y <- div
         } else {
-          x <- ions[,channel]
-          y <- ions[,channel.rt]
+          x <- ions[,channel.rt]
+          y <- ions[,channel]
         }
-       
+
         if (channel_i == 1 && add == FALSE) 
-          plot(x,y,ylim=ylim,pch=pchs[i],log=log,main=main,col=cols[i],
+          plot(x,y,xlim=xlim,ylim=ylim,pch=pchs[i],log=log,main=main,col=cols[i],
                xlab=xlab,ylab=ylab,...)
         else
           points(x,y,pch=pchs[i],col=cols[i],...)
-        
+
         add = TRUE
-        if (identify)
-          i.df <- rbind(i.df,data.frame(x=x,y=y,spectrum=rownames(ions),
-                  peptide=peptides(x=ib,spectrum=rownames(ions)),stringsAsFactors=T))
+          if (identify)
+            i.df <- rbind(i.df,data.frame(x=x,y=y,spectrum=rownames(ions),
+                                          peptide=peptides(x=ib,spectrum=rownames(ions)),stringsAsFactors=T))
 
         if (!is.null(noise.model)) {
           ratio <- estimateRatio(ib,noise.model,channel.rt,channel,protein=protein)
-          abline(h=10^ratio[1],lty=ltys[i],col=cols[i],...)
-          
+          ratio.lm <- estimateRatio(ib,noise.model,channel.rt,channel,protein=protein,method="lm")
+          #abline(h=10^ratio[1],lty=ltys[i],col=cols[i],...)
+
+          if (type=="ma") {
+            abline(h=10^ratio[1],lty=1,col=cols[i],...)
+            abline(h=ratio.lm['ratio'],lty=2,col=cols[i],...)
+          } else {
+            abline(0,10^ratio[1],lty=1,col=cols[i],...)
+            abline(0,ratio.lm['ratio'],lty=2,col=cols[i],...)
+          }
+
           if (!is.na(ratio[1]))
-          legend$text[length(legend$text)] <- 
+            legend$text[length(legend$text)] <- 
               sprintf("%s = %.2f +/- %.2f",legend$text[length(legend$text)],10^ratio[1],10^sqrt(ratio[2]))
           #abline(h=10^(ratio[1]+1.96*sqrt(ratio[2])),lty=channel_i,lwd=0.5)
           #abline(h=10^(ratio[1]-1.96*sqrt(ratio[2])),lty=channel_i,lwd=0.5)
         }
         i <- i + 1
       }
-      }
-      legend(legend.pos,legend=legend$text,pch=legend$pch,lty=legend$lty,cex=legend.cex,col=cols)
-      if (identify) {
-        identify(x=i.df$x,y=i.df$y,labels=i.df$peptide)
-      }
+    }
+    if (length(legend$text) > 0 ) {
+    legend(legend.pos,legend=legend$text,pch=legend$pch,lty=legend$lty,cex=legend.cex,col=cols)
+    if (identify) {
+      identify(x=i.df$x,y=i.df$y,labels=i.df$peptide)
+    }}
 }
 
 
