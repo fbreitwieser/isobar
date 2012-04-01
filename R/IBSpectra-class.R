@@ -111,7 +111,9 @@ setValidity("IBSpectra",.valid.IBSpectra)
 .SPECTRUM.COLS <- c(PEPTIDE="peptide",MODIFSTRING="modif",CHARGE="charge",
                    THEOMASS="theo.mass",EXPMASS="exp.mass",
                    PARENTINTENS="parent.intens",RT="retention.time",
-                   SPECTRUM="spectrum",.ID.COLS)
+                   SPECTRUM="spectrum",PRECURSORPURITY="precursor.purity",
+                   SCANS.FROM="scans.from",SCANS.TO="scans.to",
+                   .ID.COLS)
 
 .PEPTIDE.COLS <- c(PROTEINAC="accession",STARTPOS="start.pos",
                   REALPEPTIDE="real.peptide")
