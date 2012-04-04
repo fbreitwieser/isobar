@@ -339,7 +339,7 @@ setMethod("initialize","IBSpectra",
             PRECURSOR.PURITY="precursor purity",
             SCANS.FROM="scans from",SCANS.TO="scans to",
             RAWFILE="raw file",NMC="nmc",DELTASCORE="deltascore",
-            SCANS="scans",MASSDELTA.ABS="massdelta abs",MASSDELTA.PPM="massdelta ppm",
+            SCANS="scans",MASSDELTA.ABS="massdelta (abs)",MASSDELTA.PPM="massdelta (ppm)",
             SEARCHENGINE='protein search engine',
             SCORE='protein search engine score'
             ),row.names=.SPECTRUM.COLS)
