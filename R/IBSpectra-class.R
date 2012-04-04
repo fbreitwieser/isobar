@@ -111,7 +111,7 @@ setValidity("IBSpectra",.valid.IBSpectra)
 .SPECTRUM.COLS <- c(PEPTIDE="peptide",MODIFSTRING="modif",CHARGE="charge",
                    THEOMASS="theo.mass",EXPMASS="exp.mass",
                    PARENTINTENS="parent.intens",RT="retention.time",
-                   SPECTRUM="spectrum",PRECURSORPURITY="precursor.purity",
+                   SPECTRUM="spectrum",PRECURSOR.PURITY="precursor.purity",
                    SCANS.FROM="scans.from",SCANS.TO="scans.to",
                    .ID.COLS)
 
@@ -328,6 +328,8 @@ setMethod("initialize","IBSpectra",
             EXPMASS='experimental peptide mass',
             PARENTINTENS='parent ion intensity',
             RT='retention time',SPECTRUM='spectrum title',
+            PRECURSOR.PURITY="precursor purity",
+            SCANS.FROM="scans from",SCANS.TO="scans to",
             SEARCHENGINE='protein search engine',
             SCORE='protein search engine score'
             ),row.names=.SPECTRUM.COLS)
