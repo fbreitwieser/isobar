@@ -169,7 +169,7 @@ setMethod("estimateRatioNumeric",signature(channel1="numeric",channel2="numeric"
       
       if (length(channel1)==0) {
         if (method == "isobar")
-          return(c(lratio=NA,variance=NA,n.spectra=NA,
+          return(c(lratio=NA,variance=NA,n.spectra=NA,n.na1=NA,n.na2=NA,
                    p.value.rat=NA,p.value.sample=NA,is.significant=NA))
         else if (method=="libra" | method == "pep")
           return(c(ch1=NA,ch2=NA))
@@ -271,11 +271,11 @@ setMethod("estimateRatioNumeric",signature(channel1="numeric",channel2="numeric"
       }
  
       if (method == "isobar" || method == "compare.all") {
-        if (use.na) {
-        # Then, check for channels where one is NA
+        # Check for channels where one is NA
         sel.ch1na <- is.na(channel1) & !is.na(channel2)
         sel.ch2na <- is.na(channel2) & !is.na(channel1)
 
+        if (use.na) {
         # Require channel intensity to be outside of the 'NA region'
         sel.ch1na <- sel.ch1na & i2 > quantile(naRegion(noise.model),prob=0.99)
         sel.ch2na <- sel.ch2na & i1 > quantile(naRegion(noise.model),prob=0.99)
@@ -328,6 +328,7 @@ setMethod("estimateRatioNumeric",signature(channel1="numeric",channel2="numeric"
              res.isobar <-
                 c(lratio=weighted.ratio, variance=calc.variance,
                   n.spectra=length(log.ratio),
+                  n.na1=sum(sel.ch1na),n.na2=sum(sel.ch2na),
                   p.value.rat=pnorm(weighted.ratio,
                     mean=distr::q(ratiodistr)(0.5),sd=sqrt(calc.variance),
                     lower.tail=weighted.ratio<distr::q(ratiodistr)(0.5)),
@@ -804,7 +805,7 @@ ratiosReshapeWide <- function(quant.tbl,grouped.cols=TRUE) {
   attrs <- attributes(quant.tbl)
   quant.tbl$comp <- paste(quant.tbl$r2,quant.tbl$r1,sep="/")
   quant.tbl  <- quant.tbl[,-(c(which(colnames(quant.tbl) %in% c("r1","r2","class1","class2"))))]
-  v.names <- c("lratio","variance","n.spectra","p.value.rat","p.value.sample","is.significant","sd")
+  v.names <- c("lratio","variance","n.spectra","p.value.rat","p.value.sample","is.significant","sd","n.na1","n.na2")
   v.names <- v.names[v.names %in% colnames(quant.tbl)]
   if ("n.pos" %in% colnames(quant.tbl)) v.names <- c(v.names,"n.pos")
   if ("n.neg" %in% colnames(quant.tbl)) v.names <- c(v.names,"n.neg")
@@ -847,6 +848,7 @@ proteinRatios <-
     #       " class labels: ",paste(cl,collapse=", "))
 
     if (is.null(reporterTagNames)) reporterTagNames <- reporterTagNames(ibspectra)
+    if (is.null(cl)) stop("please supply class labels as argument cl")
 
     if (is.null(combn))
       combn <- combn.matrix(reporterTagNames,method,cl)
