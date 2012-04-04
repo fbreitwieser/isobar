@@ -357,7 +357,7 @@ getProteinInfoFromUniprot <- function(x,splice.by=200) {
   return(protein.info)
 }
 
-getProteinInfoFromBioDb <- function(x,con=NULL,...) {
+getProteinInfoFromBioDb <- function(x,...,con=NULL) {
   if (is.null(con)) {
     con <- dbConnect(...)
     do.disconnect <- TRUE

@@ -598,13 +598,16 @@ initialize.env <- function(env,report.type="protein",properties.env) {
       xls.protein.tbl <- cbind(xls.protein.tbl,protein.intensities(ibspectra,protein.tbl$protein))
     } else {
       ## TODO: check that protein table has required columns
+      xls.report.cols <- c("log10.ratio","log.variance","is.significant","ratio",
+                           "CI95.lower","CI95.upper","ratio.minus.sd","ratio.plus.sd",
+                           "p-value.ratio","p-value.sample","n.na1","n.na2")
+      show.col <- function(cc) cc %in% xls.report.cols
       if (isTRUE(properties.env$xls.report.format=="wide")) {
-        xls.protein.tbl <-
-          cbind(xls.protein.tbl,
-                round(xls.quant.tbl[,grep("lratio",colnames(xls.quant.tbl))],round.digits),
-                round(xls.quant.tbl[,grep("variance",colnames(xls.quant.tbl))],round.digits),
-                xls.quant.tbl[,grep("is.significant",colnames(xls.quant.tbl))]==1)
-
+        if (show.col("log10.ratio")) xls.protein.tbl <- cbind(xls.protein.tbl,round(xls.quant.tbl[,grep("lratio",colnames(xls.quant.tbl))],round.digits))
+        if (show.col("log.variance")) xls.protein.tbl <- cbind(xls.protein.tbl,round(xls.quant.tbl[,grep("variance",colnames(xls.quant.tbl))],round.digits))
+        if (show.col("is.significant")) xls.protein.tbl <- cbind(xls.protein.tbl,round(xls.quant.tbl[,grep("is.significant",colnames(xls.quant.tbl))],round.digits))
+        if (show.col("n.na1")) xls.protein.tbl <- cbind(xls.protein.tbl,round(xls.quant.tbl[,grep("n.na1",colnames(xls.quant.tbl))],round.digits))
+        if (show.col("n.na2")) xls.protein.tbl <- cbind(xls.protein.tbl,round(xls.quant.tbl[,grep("n.na2",colnames(xls.quant.tbl))],round.digits))
       } else {
       xls.protein.tbl <-
         cbind(xls.protein.tbl,data.frame(
