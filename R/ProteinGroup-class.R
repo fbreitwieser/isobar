@@ -347,13 +347,16 @@ getProteinInfoFromUniprot <- function(x,splice.by=200) {
                  paste("accession:",protein.acs[seq(from=i,to=min(length(protein.acs),i+splice.by-1))],collapse="+OR+",sep=""),
                  "&format=tab&compress=no&columns=",
                  paste(fields,collapse=","),sep="")
-    protein.info <- rbind(protein.info,read.delim(url,stringsAsFactors=FALSE))
+    protein.info <- rbind(protein.info,read.delim(url,stringsAsFactors=FALSE,col.names=names(fields)))
     i <- i + splice.by
   }
-  colnames(protein.info) <- names(fields)
-  protein.info$protein_name <- sapply(strsplit(protein.info$protein_name," (",fixed=TRUE),function(x) x[1])
-  protein.info$gene_name <- sapply(strsplit(protein.info$gene_name," "),function(x) x[1])
-  protein.info$sequence <- gsub(" ","",protein.info$sequence)
+  if (nrow(protein.info) > 0) {
+    protein.info$protein_name <- sapply(strsplit(protein.info$protein_name," (",fixed=TRUE),function(x) x[1])
+    protein.info$gene_name <- sapply(strsplit(protein.info$gene_name," "),function(x) x[1])
+    protein.info$sequence <- gsub(" ","",protein.info$sequence)
+  } else {
+    warning("getProteinInfoFromUniprot returned no results for ",protein.acs," accessions")
+  }
   return(protein.info)
 }
 
@@ -539,27 +542,28 @@ setMethod("reporterProteins","ProteinGroup",
 
 setMethod("proteinInfo",signature(x="ProteinGroup",protein.g="missing"),function(x) x@proteinInfo)
 setMethod("proteinInfo",signature(x="ProteinGroup",protein.g="character"),
-    function(x,protein.g,select="name",collapse=", ") {
+    function(x,protein.g,select="name",collapse=", ",do.warn=TRUE) {
       sapply(protein.g,function(p) {
-        if (is.null(proteinInfo(x))) {
-          warning("protein info is NULL! Set for ProteinGroup.")
+        if (is.null(proteinInfo(x)) || nrow(proteinInfo(x)) == 0) {
+          if (do.warn)
+            warning("protein info is NULL! Set for ProteinGroup.")
           return(NA)
         }
         if (!select %in% colnames(proteinInfo(x))) {
-          warning("column ",select," not available.\n",
-                  "Available columns:\n",
-                  "\t",paste(colnames(proteinInfo(x)),collapse="\n\t"))
+          if (do.warn)
+            warning("column ",select," not available.\n",
+                    "Available columns:\n","\t",paste(colnames(proteinInfo(x)),collapse="\n\t"))
           return(NA)
         }
         protein.acs <- x@isoformToGeneProduct[indistinguishableProteins(x,protein.g=p),"proteinac.wo.splicevariant"]
         sel <- proteinInfo(x)$accession %in% protein.acs
         if (!any(sel)) {
-          warning("No protein info for ",p)
+          if (do.warn) warning("No protein info for ",p)
           return(NA)
         }
         protein.infos <- proteinInfo(x)[sel,select]  
         paste(sort(unique(protein.infos)),collapse=", ")
-      })   
+      })
     }
 )
 setReplaceMethod("proteinInfo","ProteinGroup",
@@ -821,18 +825,18 @@ summary.ProteinGroup <- function(object,only.reporters=TRUE,...) {
 ###  based on peptide or spectral count
 
 peptide.count <- function(protein.group,protein.g=reporterProteins(protein.group),
-                          specificity=c("reporter-specific","group-specific","unspecific")) {
+                          specificity=c("reporter-specific","group-specific","unspecific"),...) {
   sapply(protein.g,
-         function(p) length(peptides(protein.group,p,specificity=specificity)))
+         function(p) length(peptides(protein.group,p,specificity=specificity,...)))
 }
 
 spectra.count <- function(protein.group,protein.g=reporterProteins(protein.group),
-                          specificity=c("reporter-specific","group-specific","unspecific")) {
+                          specificity=c("reporter-specific","group-specific","unspecific"),...) {
   peptide.spectra.count <- table(spectrumToPeptide(protein.group))
   ## Calculate unique spectrum counts for all proteins
   spectra.count <- sapply(protein.g, function(p)
                  sum(peptide.spectra.count[peptides(protein.group,protein=p,
-                                              specificity=specificity)]))
+                                              specificity=specificity,...)]))
   names(spectra.count) <- protein.g
   return(spectra.count)
 }
