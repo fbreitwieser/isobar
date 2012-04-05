@@ -141,6 +141,15 @@ write.xls.report=TRUE
 # xls.report.format="wide"
 xls.report.format="long"
 
+## XLS report columns in quantification tab
+##  possible values: ratio, is.significant, CI95.lower, CI95.upper, ratio.minus.sd, ratio.plus.sd,
+##                   p.value.ratio, p.value.sample, n.na1, n.na2, 
+##                   log10.ratio,l og10.variance, log2.ratio, log2.variance
+##  only for summarize=TRUE: n.pos, n.neg
+xls.report.columns <- c("ratio","is.significant","ratio.minus.sd","ratio.plus.sd",
+                        "p.value.ratio","p.value.sample","log10.ratio","log10.variance")
+
+
 sum.intensities=FALSE
 regen=FALSE
 
