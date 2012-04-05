@@ -347,13 +347,16 @@ getProteinInfoFromUniprot <- function(x,splice.by=200) {
                  paste("accession:",protein.acs[seq(from=i,to=min(length(protein.acs),i+splice.by-1))],collapse="+OR+",sep=""),
                  "&format=tab&compress=no&columns=",
                  paste(fields,collapse=","),sep="")
-    protein.info <- rbind(protein.info,read.delim(url,stringsAsFactors=FALSE))
+    protein.info <- rbind(protein.info,read.delim(url,stringsAsFactors=FALSE,col.names=names(fields)))
     i <- i + splice.by
   }
-  colnames(protein.info) <- names(fields)
-  protein.info$protein_name <- sapply(strsplit(protein.info$protein_name," (",fixed=TRUE),function(x) x[1])
-  protein.info$gene_name <- sapply(strsplit(protein.info$gene_name," "),function(x) x[1])
-  protein.info$sequence <- gsub(" ","",protein.info$sequence)
+  if (nrow(protein.info) > 0) {
+    protein.info$protein_name <- sapply(strsplit(protein.info$protein_name," (",fixed=TRUE),function(x) x[1])
+    protein.info$gene_name <- sapply(strsplit(protein.info$gene_name," "),function(x) x[1])
+    protein.info$sequence <- gsub(" ","",protein.info$sequence)
+  } else {
+    warning("getProteinInfoFromUniprot returned no results for ",protein.acs," accessions")
+  }
   return(protein.info)
 }
 
