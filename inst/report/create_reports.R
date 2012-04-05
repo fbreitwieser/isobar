@@ -60,6 +60,7 @@ tryCatch({create.reports(report.type=ifelse(peptide.report,"peptide","protein"),
                          compile=do.compile,zip=do.zip)},
          error=function(e) {
            save.image(file="isobar.fail.rda")
-           stop(as.character(e))
+           stop("create.reports exited with an error - saving session to isobar.fail.rda.\n\n  Message: ",
+                 as.character(e))
          }
          )
