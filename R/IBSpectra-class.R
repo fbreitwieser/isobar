@@ -108,13 +108,13 @@ setValidity("IBSpectra",.valid.IBSpectra)
 
 .ID.COLS <- c(SEARCHENGINE="search.engine",SCORE="score")
 
-.PTM.COLS <- c(PEPSCORE='pepscore',PEPPROB='pepprob',SEQPOS='seqpos',SITEPROBS='site.probs')
+.PTM.COLS <- c(PEPSCORE='pepscore',PEPPROB='pepprob',SEQPOS='seqpos',SITEPROBS='site.probs',PHOSPHO.SITES='phospho.sites')
 
 .SPECTRUM.COLS <- c(PEPTIDE="peptide",MODIFSTRING="modif",CHARGE="charge",
                    THEOMASS="theo.mass",EXPMASS="exp.mass",
                    PARENTINTENS="parent.intens",RT="retention.time",
                    SPECTRUM="spectrum",.ID.COLS,USEFORQUANT="use.for.quant",
-                   .PTM.COLS),PRECURSOR.PURITY="precursor.purity",
+                   .PTM.COLS,PRECURSOR.PURITY="precursor.purity",
                    SCANS.FROM="scans.from",SCANS.TO="scans.to",
                    RAWFILE="raw.file",NMC="nmc",DELTASCORE="deltascore",
                    SCANS="scans",MASSDELTA.ABS="massdelta.abs",MASSDELTA.PPM="massdelta.ppm")
