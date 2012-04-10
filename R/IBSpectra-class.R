@@ -117,8 +117,7 @@ setValidity("IBSpectra",.valid.IBSpectra)
                    .PTM.COLS,PRECURSOR.PURITY="precursor.purity",
                    SCANS.FROM="scans.from",SCANS.TO="scans.to",
                    RAWFILE="raw.file",NMC="nmc",DELTASCORE="deltascore",
-                   SCANS="scans",MASSDELTA.ABS="massdelta.abs",MASSDELTA.PPM="massdelta.ppm")
-
+                   NOTES="notes")
 
 .PEPTIDE.COLS <- c(PROTEINAC="accession",STARTPOS="start.pos",
                   REALPEPTIDE="real.peptide")

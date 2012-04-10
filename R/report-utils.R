@@ -620,30 +620,11 @@ initialize.env <- function(env,report.type="protein",properties.env) {
       xls.protein.tbl <- cbind(xls.protein.tbl,protein.intensities(ibspectra,protein.tbl$protein))
     } else {
       ## TODO: check that protein table has required columns
-      xls.report.cols <- c("log10.ratio","log.variance","is.significant","ratio",
-                           "CI95.lower","CI95.upper","ratio.minus.sd","ratio.plus.sd",
-                           "p-value.ratio","p-value.sample","n.na1","n.na2")
-      show.col <- function(cc) cc %in% xls.report.cols
-      if (isTRUE(properties.env$xls.report.format=="wide")) {
-        if (show.col("log10.ratio")) xls.protein.tbl <- cbind(xls.protein.tbl,round(xls.quant.tbl[,grep("lratio",colnames(xls.quant.tbl))],round.digits))
-        if (show.col("log.variance")) xls.protein.tbl <- cbind(xls.protein.tbl,round(xls.quant.tbl[,grep("variance",colnames(xls.quant.tbl))],round.digits))
-        if (show.col("is.significant")) xls.protein.tbl <- cbind(xls.protein.tbl,round(xls.quant.tbl[,grep("is.significant",colnames(xls.quant.tbl))],round.digits))
-        if (show.col("n.na1")) xls.protein.tbl <- cbind(xls.protein.tbl,round(xls.quant.tbl[,grep("n.na1",colnames(xls.quant.tbl))],round.digits))
-        if (show.col("n.na2")) xls.protein.tbl <- cbind(xls.protein.tbl,round(xls.quant.tbl[,grep("n.na2",colnames(xls.quant.tbl))],round.digits))
-      } else {
-      xls.protein.tbl <-
-        cbind(xls.protein.tbl,data.frame(
-              "Channels"=paste(xls.quant.tbl$r2,"/",xls.quant.tbl$r1),
-              "is significant"=xls.quant.tbl$is.significant == 1,
-              "ratio"=round(10^xls.quant.tbl$lratio,round.digits),
-              "CI95.lower"=round(10^qnorm(0.025,xls.quant.tbl$lratio,sqrt(xls.quant.tbl$variance)),round.digits),
-              "CI95.upper"=round(10^qnorm(0.975,xls.quant.tbl$lratio,sqrt(xls.quant.tbl$variance)),round.digits),
-              "ratio.minus.sd"=round(10^(xls.quant.tbl$lratio-sqrt(xls.quant.tbl$variance)),round.digits),
-              "ratio.plus.sd"=round(10^(xls.quant.tbl$lratio+sqrt(xls.quant.tbl$variance)),round.digits),
-              "p-value ratio"=round(xls.quant.tbl$p.value.rat,round.digits),
-              "p-value sample"=round(xls.quant.tbl$p.value.sample,round.digits),
-              "ratio.log10"=round(xls.quant.tbl$lratio,round.digits),
-              "var.log10"=round(xls.quant.tbl$variance,round.digits),stringsAsFactors=FALSE))
+
+      if (isTRUE(properties.env$xls.report.format=="long")) {
+       xls.protein.tbl <-cbind(xls.protein.tbl,
+                               "Channels"=paste(xls.quant.tbl$r2,"/",xls.quant.tbl$r1))
+
       }
  
       for (cc in properties.env$xls.report.columns) {
@@ -663,7 +644,7 @@ initialize.env <- function(env,report.type="protein",properties.env) {
               ratio.minus.sd = combine.n.append.xls.tbl("lratio","variance","ratio.minus.sd",f=function(x,y) 10^(x -sqrt(y))),
               ratio.plus.sd = combine.n.append.xls.tbl("lratio","variance","ratio.plus.sd",f=function(x,y) 10^(x+sqrt(y))),
               warning("ignoring unknown column ",cc," in Excel report"))
->>>>>>> devel
+
       }
     }
     if (properties.env$summarize) {
