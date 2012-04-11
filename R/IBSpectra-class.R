@@ -327,9 +327,7 @@ setMethod("initialize","IBSpectra",
         fdata <- data[,SC]
         colnames(fdata) <- .SPECTRUM.COLS[nn]
 
-        VARMETADATA=data.frame(
-          labelDescription = 
-          c(PEPTIDE='peptide sequence',
+        label.desc <- c(PEPTIDE='peptide sequence',
             MODIFSTRING='modifications of peptide',
             CHARGE='peptide charge state',
             THEOMASS='theoretical peptide mass',
@@ -342,7 +340,10 @@ setMethod("initialize","IBSpectra",
             SCANS="scans",MASSDELTA.ABS="massdelta (abs)",MASSDELTA.PPM="massdelta (ppm)",
             SEARCHENGINE='protein search engine',
             SCORE='protein search engine score'
-            ),row.names=.SPECTRUM.COLS)
+            )
+
+        VARMETADATA=data.frame(labelDescription=label.desc[names(.SPECTRUM.COLS)],
+                               row.names=.SPECTRUM.COLS)
 	    
         featureData <- new("AnnotatedDataFrame",data=fdata,
             varMetadata=VARMETADATA[nn,,drop=FALSE])
