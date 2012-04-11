@@ -336,9 +336,7 @@ setMethod("initialize","IBSpectra",
         nn <- .SPECTRUM.COLS %in% colnames(data)
         fdata <- data[,colnames(data) %in% .SPECTRUM.COLS]
 
-        VARMETADATA=data.frame(
-          labelDescription = 
-          c(PEPTIDE='peptide sequence',
+        label.desc <- c(PEPTIDE='peptide sequence',
             MODIFSTRING='modifications of peptide',
             CHARGE='peptide charge state',
             THEOMASS='theoretical peptide mass',
@@ -354,7 +352,10 @@ setMethod("initialize","IBSpectra",
             USEFORQUANT='use spectrum for quantification',
             PEPSCORE='PhosphoRS pepscore',PEPPROB='PhosphoRS pepprob',
             SEQPOS='PTM seqpos',SITEPROBS='PhosphoRS site.probs'
-            ),row.names=.SPECTRUM.COLS)
+            )
+
+        VARMETADATA=data.frame(labelDescription=label.desc[names(.SPECTRUM.COLS)],
+                               row.names=.SPECTRUM.COLS)
 	    
         featureData <- new("AnnotatedDataFrame",data=fdata,
             varMetadata=VARMETADATA[nn,,drop=FALSE])
