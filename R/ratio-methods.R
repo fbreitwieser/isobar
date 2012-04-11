@@ -594,12 +594,13 @@ setMethod("estimateRatio",
                                 specificity=REPORTERSPECIFIC,modif=NULL,
                                 n.sample=NULL,groupspecific.if.same.ac=FALSE,
                                 use.precursor.purity=FALSE,...) {
+  allowed.channels <- c(reporterTagNames(ibspectra),'AVG','ALL')
   if (is.null(channel1) || is.null(channel2))
-    stop("channel1 and channel2 must not be NULL, but one of [",paste(reporterTagNames(ibspectra),collapse=", "),"] !")
+    stop("channel1 and channel2 must not be NULL, but one of [",paste(allowed.channels,collapse=", "),"] !")
   if (length(channel1) == 0 || length(channel1) > 1 || length(channel2) == 0 || length(channel2) > 1)
     stop("channel1 and channel2 must be of length one! Lengths: [",length(channel1),",",length(channel2),"]")
-  if (!all(channel1 %in% reporterTagNames(ibspectra)) || !all(channel2 %in% reporterTagNames(ibspectra)))
-    stop("channel1 and channel2 must be one of the reporter names: ",paste(reporterTagNames(ibspectra),collapse=", "),".")
+  if (!all(channel1 %in% allowed.channels) || !all(channel2 %in% allowed.channels))
+    stop("channel1 and channel2 must be one of the reporter names: \n\t",paste(allowed.channels,collapse=", "),".")
   
   if (length(channel1) > 1 || length(channel2) > 1) {
     ##TTTT 
