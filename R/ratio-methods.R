@@ -337,9 +337,9 @@ setMethod("estimateRatioNumeric",signature(channel1="numeric",channel2="numeric"
              if (method=="compare.all") 
                res.isobar['is.significant.ev'] <- 
                  (res.isobar['p.value.sample'] <= sign.level.sample) &&
-             pnorm(weighted.ratio,mean=distr::q(ratiodistr)(0.5),
-                   sd=as.numeric(sqrt(lratio.n.var['estimator.variance'])),
-                   lower.tail=weighted.ratio<distr::q(ratiodistr)(0.5))
+                 pnorm(weighted.ratio,mean=distr::q(ratiodistr)(0.5),
+                       sd=as.numeric(sqrt(lratio.n.var['estimator.variance'])),
+                       lower.tail=weighted.ratio<distr::q(ratiodistr)(0.5)) <= sign.level.rat
              
              res.isobar['is.significant'] <- 
                        (res.isobar['p.value.sample'] <= sign.level.sample) && 
