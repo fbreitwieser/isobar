@@ -370,6 +370,8 @@ setMethod("estimateRatioNumeric",signature(channel1="numeric",channel2="numeric"
 .get.ri <- function(ri,ch) {
   if (ch == "ALL")
     rowSums(ri,na.rm=TRUE)
+  else if (ch == "AVG")
+    apply(ri,1,mean,na.rm=TRUE)
   else
     ri[,ch]
 }
