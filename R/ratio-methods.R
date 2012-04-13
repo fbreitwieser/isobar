@@ -597,15 +597,25 @@ setMethod("estimateRatio",
   allowed.channels <- c(reporterTagNames(ibspectra),'AVG','ALL')
   if (is.null(channel1) || is.null(channel2))
     stop("channel1 and channel2 must not be NULL, but one of [",paste(allowed.channels,collapse=", "),"] !")
-  if (length(channel1) == 0 || length(channel1) > 1 || length(channel2) == 0 || length(channel2) > 1)
-    stop("channel1 and channel2 must be of length one! Lengths: [",length(channel1),",",length(channel2),"]")
+  #if (length(channel1) == 0 || length(channel1) > 1 || length(channel2) == 0 || length(channel2) > 1)
+  #  stop("channel1 and channel2 must be of length one! Lengths: [",length(channel1),",",length(channel2),"]")
   if (!all(channel1 %in% allowed.channels) || !all(channel2 %in% allowed.channels))
     stop("channel1 and channel2 must be one of the reporter names: \n\t",paste(allowed.channels,collapse=", "),".")
   
   if (length(channel1) > 1 || length(channel2) > 1) {
-    ##TTTT 
-    ## TODO
-  } 
+    res  <- c()
+    for (c1 in channel1) {
+      for (c2 in channel2) {
+        res <- rbind(res,data.frame(channel1=c1,channel2=c2,
+                                    t(as.data.frame(.call.estimateRatio(x,level,ibspectra,noise.model,channel1=c1,channel2=c2,
+                                                                        specificity,modif,n.sample,groupspecific.if.same.ac,
+                                                                        use.precursor.purity,...))),
+                                    stringsAsFactors=FALSE))
+      }
+    }
+    rownames(res) <- NULL
+    return(res)
+  }
   if (level=="protein")
     sel <- spectrumSel(ibspectra,protein=x,specificity=specificity,
                        modif=modif,groupspecific.if.same.ac=groupspecific.if.same.ac)
