@@ -1887,12 +1887,13 @@ setMethod("maplot",
                     text(sum(histlimits)/2,0.5,i,col="black",cex=1.4,font=2); 
 
                   } else if (i > j) {
-                    plot.labels = i == tail(colnames(ions),1) && j == head(colnames(ions),1)
+                    plot.labels.x = is.null(xlim) || (i == tail(colnames(ions),1) && j == head(colnames(ions),1))
+                    plot.labels.y = is.null(ylim) || (i == tail(colnames(ions),1) && j == head(colnames(ions),1))
                     maplot(x=x,channel1=as.character(i),channel2=as.character(j),
                            noise.model=noise.model,xlim=xlim,ylim=ylim,
                            set.na.to=set.na.to,set.na.to.lim=set.na.to.lim,
-                           x.axis.labels= plot.labels,
-                           y.axis.labels= plot.labels,
+                           x.axis.labels = plot.labels.x,
+                           y.axis.labels = plot.labels.y,
                            ...)
                     
                   }
