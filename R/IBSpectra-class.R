@@ -1112,7 +1112,7 @@ setMethod("spectrumSel",signature(x="IBSpectra",peptide="matrix",protein="missin
 )
 
 setMethod("spectrumSel",signature(x="IBSpectra",peptide="character",protein="missing"),
-    function(x,peptide,modif=NULL,spectrum.titles=FALSE,use.for.quant.only=TRUE) {
+    function(x,peptide,modif=NULL,spectrum.titles=FALSE,use.for.quant.only=TRUE,do.warn=TRUE) {
         if (length(peptide) == 0) {
           warning("0L peptide provided")
           return(FALSE)
@@ -1123,8 +1123,8 @@ setMethod("spectrumSel",signature(x="IBSpectra",peptide="character",protein="mis
 
         if (use.for.quant.only && .SPECTRUM.COLS['USEFORQUANT'] %in% colnames(fData(x)))
           sel <- sel & fData(x)[,.SPECTRUM.COLS['USEFORQUANT']] 
-        if (!any(sel)) warning("No spectra for peptide ",peptide)
-        if (spectrum.titles)
+        if (!any(sel) && do.warn) warning("No spectra for peptide ",peptide)
+         if (spectrum.titles)
           return(rownames(fData(x))[sel])
         else
   	      return(sel)
@@ -1138,7 +1138,7 @@ setMethod("spectrumSel",signature(x="IBSpectra",peptide="missing",protein="chara
       if (length(peptides) == 0)
         return(FALSE)
       sel <- spectrumSel(x,peptide=peptides,spectrum.titles=spectrum.titles,
-                         modif=modif,use.for.quant.only=use.for.quant.only)
+                         modif=modif,use.for.quant.only=use.for.quant.only,do.warn=FALSE)
       if ((spectrum.titles & any(sel)) || (!spectrum.titles & !any(sel)))
         warning("No spectra for protein ",protein,
                 " with specificity ",paste(specificity,collapse=","))
