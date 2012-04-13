@@ -1094,7 +1094,7 @@ setMethod("spectrumSel",signature(x="IBSpectra",peptide="matrix",protein="missin
 )
 
 setMethod("spectrumSel",signature(x="IBSpectra",peptide="character",protein="missing"),
-    function(x,peptide,modif=NULL,spectrum.titles=FALSE) {
+    function(x,peptide,modif=NULL,spectrum.titles=FALSE,do.warn=TRUE) {
         if (length(peptide) == 0) {
           warning("0L peptide provided")
           return(FALSE)
@@ -1102,7 +1102,7 @@ setMethod("spectrumSel",signature(x="IBSpectra",peptide="character",protein="mis
         sel <- fData(x)[,.SPECTRUM.COLS['PEPTIDE']]  %in% peptide
         for (m in modif)
           sel <- sel & grepl(m,fData(x)[,.SPECTRUM.COLS['MODIFSTRING']])
-        if (!any(sel)) warning("No spectra for peptide ",peptide)
+        if (!any(sel) && do.warn) warning("No spectra for peptide ",peptide)
         if (spectrum.titles)
           return(rownames(fData(x))[sel])
         else
@@ -1116,7 +1116,9 @@ setMethod("spectrumSel",signature(x="IBSpectra",peptide="missing",protein="chara
       peptides <- peptides(x=proteinGroup(x),protein=protein,specificity=specificity,do.warn=FALSE,...)
       if (length(peptides) == 0)
         return(FALSE)
-      sel <- spectrumSel(x,peptide=peptides,spectrum.titles=spectrum.titles,modif=modif)
+
+      sel <- spectrumSel(x,peptide=peptides,spectrum.titles=spectrum.titles,
+                         modif=modif,do.warn=FALSE)
       if ((spectrum.titles & any(sel)) || (!spectrum.titles & !any(sel)))
         warning("No spectra for protein ",protein,
                 " with specificity ",paste(specificity,collapse=","))
