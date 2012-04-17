@@ -314,37 +314,34 @@ setMethod("estimateRatioNumeric",signature(channel1="numeric",channel2="numeric"
           .calc.weighted.ratio(sel,i1,i2,var.i,
                                remove.outliers,outliers.coef,outliers.trim,
                                variance.function,preweights)
-        }
+        } # use.na
+
         weighted.ratio <- as.numeric(lratio.n.var['lratio'])
         calc.variance <- as.numeric(lratio.n.var['calc.variance'])
 
-        if (is.null(ratiodistr))
-          res.isobar <- c(lratio=weighted.ratio, variance=calc.variance,
-              n.spectra=length(log.ratio),
-              p.value.rat=pnorm(weighted.ratio,mean=0,sd=sqrt(calc.variance),
-                                lower.tail=weighted.ratio<0),
-              p.value.sample=NA,is.significant=NA)
-        else {
-             res.isobar <-
-                c(lratio=weighted.ratio, variance=calc.variance,
-                  n.spectra=length(log.ratio),
-                  n.na1=sum(sel.ch1na),n.na2=sum(sel.ch2na),
-                  p.value.rat=pnorm(weighted.ratio,
-                    mean=distr::q(ratiodistr)(0.5),sd=sqrt(calc.variance),
-                    lower.tail=weighted.ratio<distr::q(ratiodistr)(0.5)),
-                  p.value.sample=p(ratiodistr)(weighted.ratio,
-                    lower.tail=weighted.ratio<distr::q(ratiodistr)(0.5)))
-             if (method=="compare.all") 
-               res.isobar['is.significant.ev'] <- 
-                 (res.isobar['p.value.sample'] <= sign.level.sample) &&
-                 pnorm(weighted.ratio,mean=distr::q(ratiodistr)(0.5),
-                       sd=as.numeric(sqrt(lratio.n.var['estimator.variance'])),
-                       lower.tail=weighted.ratio<distr::q(ratiodistr)(0.5)) <= sign.level.rat
-             
-             res.isobar['is.significant'] <- 
-                       (res.isobar['p.value.sample'] <= sign.level.sample) && 
-                       (res.isobar['p.value.rat'] <= sign.level.rat)
-        }
+        res.isobar <- 
+          c(lratio=weighted.ratio, variance=calc.variance,
+            n.spectra=length(log.ratio),
+            n.na1=sum(sel.ch1na),n.na2=sum(sel.ch2na),
+            p.value.rat=pnorm(weighted.ratio,mean=0,sd=sqrt(calc.variance),
+                              lower.tail=weighted.ratio<0),
+            p.value.sample=NA,is.significant=NA)
+        
+        if (!is.null(ratiodistr)) 
+          res.isobar['p.value.sample'] <- 
+            p(ratiodistr)(weighted.ratio,lower.tail=weighted.ratio<distr::q(ratiodistr)(0.5))
+
+        if (method=="compare.all") 
+          res.isobar['is.significant.ev'] <- 
+            (res.isobar['p.value.sample'] <= sign.level.sample) &&
+            pnorm(weighted.ratio,mean=distr::q(ratiodistr)(0.5),
+                  sd=as.numeric(sqrt(lratio.n.var['estimator.variance'])),
+                  lower.tail=weighted.ratio<distr::q(ratiodistr)(0.5)) <= sign.level.rat
+
+        res.isobar['is.significant'] <- 
+          (res.isobar['p.value.sample'] <= sign.level.sample) && 
+          (res.isobar['p.value.rat'] <= sign.level.rat)
+
         if (method != "compare.all") return(res.isobar)
       }
       if (method != "compare.all") stop(paste("method",method,"not available"))
@@ -861,7 +858,7 @@ proteinRatios <-
     #       " class labels: ",paste(cl,collapse=", "))
 
     if (is.null(reporterTagNames)) reporterTagNames <- reporterTagNames(ibspectra)
-    if (is.null(cl)) stop("please supply class labels as argument cl")
+    if (is.null(cl) && is.null(combn)) stop("please supply class labels as argument cl or a combn matrix")
 
     if (is.null(combn))
       combn <- combn.matrix(reporterTagNames,method,cl)
