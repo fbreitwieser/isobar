@@ -509,7 +509,7 @@ setMethod("peptides",signature(x="ProteinGroup",protein="character"),
 
       if (groupspecific.if.same.ac) {
         group.proteins <- subset(proteinGroupTable(x),reporter.protein==protein,"protein.g",drop=TRUE)
-        group.proteins.all <- names(indistinguishableProteins(x,protein=group.proteins))
+        group.proteins.all <- indistinguishableProteins(x,protein.g=group.proteins)
         protein.acs <- subset(x@isoformToGeneProduct,
                               proteinac.w.splicevariant %in% group.proteins.all,
                               "proteinac.wo.splicevariant",drop=TRUE)
