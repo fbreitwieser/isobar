@@ -700,6 +700,9 @@ combn.matrix <- function(x,method="global",cl=NULL,vs=NULL) {
     stop(sprintf("cl argument does not have the same length as x (cl: %s, x: %s).",
                  length(cl),length(x)))
 
+  if (!is.null(vs) && !is.character(vs))
+    vs <- as.character(vs)
+
   # create a combn matrix with all combinations of channels to consider 
   if (method == "versus.class" || method == "versus.channel") {
     if (is.null(vs)) stop("vs argument may not be null when method is versus")
@@ -713,7 +716,12 @@ combn.matrix <- function(x,method="global",cl=NULL,vs=NULL) {
       }
     }
     if (method == "versus.class") {
-      # TODO
+      if (!vs %in% cl) stop("vs argument must be one of [",paste(cl,collapse=", "),"]")
+      if (is.null(cl)) stop("class labels must be given with method versus.class")
+      pos <- which(cl==vs)
+      combn <- rbind(x[pos],rep(x[-pos],each=length(pos)))
+      combn <- rbind(combn,vs,rep(cl[-pos],each=length(pos)))
+
     }
   } else if (method == "global") {
     combn <- combn(x,2) # take all combinations
