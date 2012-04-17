@@ -182,6 +182,9 @@ setMethod("weightedMean",
   res
 }
 
+.sum.bool.na  <- function(x) 
+  c('TRUE'=sum(x,na.rm=TRUE),'FALSE'=sum(!x,na.rm=TRUE),'TRUE %'=round(sum(x,na.rm=TRUE)/length(x)*100,1),length=length(x),n.na=sum(is.na(x)))
+
 # provide summary of boolean vector values
 .sum.bool  <- function(x) 
   c('TRUE'=sum(x),'FALSE'=sum(!x),'TRUE %'=round(sum(x)/length(x)*100,1),length=length(x))

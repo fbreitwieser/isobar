@@ -688,24 +688,12 @@ initialize.env <- function(env,report.type="protein",properties.env) {
 
   sapply(proteins,function(prots) {
          ## consider ACs with -[0-9]*$ as splice variants (ACs w/ more than one dash are not considered)
-         pos <- grepl("^[^-]*-[0-9]*$",prots)
-         if (sum(pos) == 0) {
-           protl <- data.frame(protein=prots,accession=prots,splice=0)
-         } else {
-           if (sum(!pos) == 0) {
-             protl <- data.frame(protein=prots[pos],
-                                 do.call(rbind,strsplit(prots[pos],"-")),
-                                 stringsAsFactors=FALSE,row.names=NULL)
-           } else {
-             protl <- data.frame(protein=c(prots[!pos],prots[pos]),
-                                 do.call(rbind,strsplit(c(paste(prots[!pos],"0",sep="-"),
-                                                          prots[pos]),"-")),
-                                 stringsAsFactors=FALSE,row.names=NULL)
-           }
-           colnames(protl) <- c("protein","accession","splice")
-         }
-         df <- protl
-         df$splice <- as.numeric(df$splice)
+         pos.splice <- grepl("^[^-]*-[0-9]*$",prots)
+         df <- data.frame(protein=prots,accession=prots,splice=0,stringsAsFactors=FALSE)
+
+         if (any(pos.splice))
+           df[pos.splice,c("accession","splice")] <- 
+             do.call(rbind,strsplit(prots[pos.splice],"-"))
 
          res <- 
            ddply(df,"accession",function(y) {

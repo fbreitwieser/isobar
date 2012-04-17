@@ -120,7 +120,7 @@ ratios.opts = list(
     sign.level.rat=0.01,
     groupspecific.if.same.ac=TRUE)
 
-quant.w.grouppeptides=c("bcrabl","bcrabl,bcrabl_p185,bcrabl_t315i","mgtagzhCorr")
+quant.w.grouppeptides=c("bcrabl","bcrabl,bcrabl_t315i","bcrabl,bcrabl_p185,bcrabl_t315i","mgtagzhCorr")
 
 min.detect=NULL
 
