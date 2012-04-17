@@ -314,37 +314,34 @@ setMethod("estimateRatioNumeric",signature(channel1="numeric",channel2="numeric"
           .calc.weighted.ratio(sel,i1,i2,var.i,
                                remove.outliers,outliers.coef,outliers.trim,
                                variance.function,preweights)
-        }
+        } # use.na
+
         weighted.ratio <- as.numeric(lratio.n.var['lratio'])
         calc.variance <- as.numeric(lratio.n.var['calc.variance'])
 
-        if (is.null(ratiodistr))
-          res.isobar <- c(lratio=weighted.ratio, variance=calc.variance,
-              n.spectra=length(log.ratio),
-              p.value.rat=pnorm(weighted.ratio,mean=0,sd=sqrt(calc.variance),
-                                lower.tail=weighted.ratio<0),
-              p.value.sample=NA,is.significant=NA)
-        else {
-             res.isobar <-
-                c(lratio=weighted.ratio, variance=calc.variance,
-                  n.spectra=length(log.ratio),
-                  n.na1=sum(sel.ch1na),n.na2=sum(sel.ch2na),
-                  p.value.rat=pnorm(weighted.ratio,
-                    mean=distr::q(ratiodistr)(0.5),sd=sqrt(calc.variance),
-                    lower.tail=weighted.ratio<distr::q(ratiodistr)(0.5)),
-                  p.value.sample=p(ratiodistr)(weighted.ratio,
-                    lower.tail=weighted.ratio<distr::q(ratiodistr)(0.5)))
-             if (method=="compare.all") 
-               res.isobar['is.significant.ev'] <- 
-                 (res.isobar['p.value.sample'] <= sign.level.sample) &&
-             pnorm(weighted.ratio,mean=distr::q(ratiodistr)(0.5),
-                   sd=as.numeric(sqrt(lratio.n.var['estimator.variance'])),
-                   lower.tail=weighted.ratio<distr::q(ratiodistr)(0.5))
-             
-             res.isobar['is.significant'] <- 
-                       (res.isobar['p.value.sample'] <= sign.level.sample) && 
-                       (res.isobar['p.value.rat'] <= sign.level.rat)
-        }
+        res.isobar <- 
+          c(lratio=weighted.ratio, variance=calc.variance,
+            n.spectra=length(log.ratio),
+            n.na1=sum(sel.ch1na),n.na2=sum(sel.ch2na),
+            p.value.rat=pnorm(weighted.ratio,mean=0,sd=sqrt(calc.variance),
+                              lower.tail=weighted.ratio<0),
+            p.value.sample=NA,is.significant=NA)
+        
+        if (!is.null(ratiodistr)) 
+          res.isobar['p.value.sample'] <- 
+            p(ratiodistr)(weighted.ratio,lower.tail=weighted.ratio<distr::q(ratiodistr)(0.5))
+
+        if (method=="compare.all") 
+          res.isobar['is.significant.ev'] <- 
+            (res.isobar['p.value.sample'] <= sign.level.sample) &&
+            pnorm(weighted.ratio,mean=distr::q(ratiodistr)(0.5),
+                  sd=as.numeric(sqrt(lratio.n.var['estimator.variance'])),
+                  lower.tail=weighted.ratio<distr::q(ratiodistr)(0.5)) <= sign.level.rat
+
+        res.isobar['is.significant'] <- 
+          (res.isobar['p.value.sample'] <= sign.level.sample) && 
+          (res.isobar['p.value.rat'] <= sign.level.rat)
+
         if (method != "compare.all") return(res.isobar)
       }
       if (method != "compare.all") stop(paste("method",method,"not available"))
@@ -370,6 +367,8 @@ setMethod("estimateRatioNumeric",signature(channel1="numeric",channel2="numeric"
 .get.ri <- function(ri,ch) {
   if (ch == "ALL")
     rowSums(ri,na.rm=TRUE)
+  else if (ch == "AVG")
+    apply(ri,1,mean,na.rm=TRUE)
   else
     ri[,ch]
 }
@@ -592,17 +591,28 @@ setMethod("estimateRatio",
                                 specificity=REPORTERSPECIFIC,modif=NULL,
                                 n.sample=NULL,groupspecific.if.same.ac=FALSE,
                                 use.precursor.purity=FALSE,...) {
+  allowed.channels <- c(reporterTagNames(ibspectra),'AVG','ALL')
   if (is.null(channel1) || is.null(channel2))
-    stop("channel1 and channel2 must not be NULL, but one of [",paste(reporterTagNames(ibspectra),collapse=", "),"] !")
-  if (length(channel1) == 0 || length(channel1) > 1 || length(channel2) == 0 || length(channel2) > 1)
-    stop("channel1 and channel2 must be of length one! Lengths: [",length(channel1),",",length(channel2),"]")
-  if (!all(channel1 %in% reporterTagNames(ibspectra)) || !all(channel2 %in% reporterTagNames(ibspectra)))
-    stop("channel1 and channel2 must be one of the reporter names: ",paste(reporterTagNames(ibspectra),collapse=", "),".")
+    stop("channel1 and channel2 must not be NULL, but one of [",paste(allowed.channels,collapse=", "),"] !")
+  #if (length(channel1) == 0 || length(channel1) > 1 || length(channel2) == 0 || length(channel2) > 1)
+  #  stop("channel1 and channel2 must be of length one! Lengths: [",length(channel1),",",length(channel2),"]")
+  if (!all(channel1 %in% allowed.channels) || !all(channel2 %in% allowed.channels))
+    stop("channel1 and channel2 must be one of the reporter names: \n\t",paste(allowed.channels,collapse=", "),".")
   
   if (length(channel1) > 1 || length(channel2) > 1) {
-    ##TTTT 
-    ## TODO
-  } 
+    res  <- c()
+    for (c1 in channel1) {
+      for (c2 in channel2) {
+        res <- rbind(res,data.frame(channel1=c1,channel2=c2,
+                                    t(as.data.frame(.call.estimateRatio(x,level,ibspectra,noise.model,channel1=c1,channel2=c2,
+                                                                        specificity,modif,n.sample,groupspecific.if.same.ac,
+                                                                        use.precursor.purity,...))),
+                                    stringsAsFactors=FALSE))
+      }
+    }
+    rownames(res) <- NULL
+    return(res)
+  }
   if (level=="protein")
     sel <- spectrumSel(ibspectra,protein=x,specificity=specificity,
                        modif=modif,groupspecific.if.same.ac=groupspecific.if.same.ac)
@@ -848,7 +858,7 @@ proteinRatios <-
     #       " class labels: ",paste(cl,collapse=", "))
 
     if (is.null(reporterTagNames)) reporterTagNames <- reporterTagNames(ibspectra)
-    if (is.null(cl)) stop("please supply class labels as argument cl")
+    if (is.null(cl) && is.null(combn)) stop("please supply class labels as argument cl or a combn matrix")
 
     if (is.null(combn))
       combn <- combn.matrix(reporterTagNames,method,cl)

@@ -115,7 +115,7 @@ setValidity("IBSpectra",.valid.IBSpectra)
                    SCANS.FROM="scans.from",SCANS.TO="scans.to",
                    RAWFILE="raw.file",NMC="nmc",DELTASCORE="deltascore",
                    SCANS="scans",MASSDELTA.ABS="massdelta.abs",MASSDELTA.PPM="massdelta.ppm",
-                   .ID.COLS)
+                   .ID.COLS,NOTES="notes")
 
 .PEPTIDE.COLS <- c(PROTEINAC="accession",STARTPOS="start.pos",
                   REALPEPTIDE="real.peptide")
@@ -327,9 +327,7 @@ setMethod("initialize","IBSpectra",
         fdata <- data[,SC]
         colnames(fdata) <- .SPECTRUM.COLS[nn]
 
-        VARMETADATA=data.frame(
-          labelDescription = 
-          c(PEPTIDE='peptide sequence',
+        label.desc <- c(PEPTIDE='peptide sequence',
             MODIFSTRING='modifications of peptide',
             CHARGE='peptide charge state',
             THEOMASS='theoretical peptide mass',
@@ -342,7 +340,10 @@ setMethod("initialize","IBSpectra",
             SCANS="scans",MASSDELTA.ABS="massdelta (abs)",MASSDELTA.PPM="massdelta (ppm)",
             SEARCHENGINE='protein search engine',
             SCORE='protein search engine score'
-            ),row.names=.SPECTRUM.COLS)
+            )
+
+        VARMETADATA=data.frame(labelDescription=label.desc[names(.SPECTRUM.COLS)],
+                               row.names=.SPECTRUM.COLS)
 	    
         featureData <- new("AnnotatedDataFrame",data=fdata,
             varMetadata=VARMETADATA[nn,,drop=FALSE])
@@ -1093,7 +1094,7 @@ setMethod("spectrumSel",signature(x="IBSpectra",peptide="matrix",protein="missin
 )
 
 setMethod("spectrumSel",signature(x="IBSpectra",peptide="character",protein="missing"),
-    function(x,peptide,modif=NULL,spectrum.titles=FALSE) {
+    function(x,peptide,modif=NULL,spectrum.titles=FALSE,do.warn=TRUE) {
         if (length(peptide) == 0) {
           warning("0L peptide provided")
           return(FALSE)
@@ -1101,7 +1102,7 @@ setMethod("spectrumSel",signature(x="IBSpectra",peptide="character",protein="mis
         sel <- fData(x)[,.SPECTRUM.COLS['PEPTIDE']]  %in% peptide
         for (m in modif)
           sel <- sel & grepl(m,fData(x)[,.SPECTRUM.COLS['MODIFSTRING']])
-        if (!any(sel)) warning("No spectra for peptide ",peptide)
+        if (!any(sel) && do.warn) warning("No spectra for peptide ",peptide)
         if (spectrum.titles)
           return(rownames(fData(x))[sel])
         else
@@ -1115,7 +1116,9 @@ setMethod("spectrumSel",signature(x="IBSpectra",peptide="missing",protein="chara
       peptides <- peptides(x=proteinGroup(x),protein=protein,specificity=specificity,do.warn=FALSE,...)
       if (length(peptides) == 0)
         return(FALSE)
-      sel <- spectrumSel(x,peptide=peptides,spectrum.titles=spectrum.titles,modif=modif)
+
+      sel <- spectrumSel(x,peptide=peptides,spectrum.titles=spectrum.titles,
+                         modif=modif,do.warn=FALSE)
       if ((spectrum.titles & any(sel)) || (!spectrum.titles & !any(sel)))
         warning("No spectra for protein ",protein,
                 " with specificity ",paste(specificity,collapse=","))
@@ -1884,12 +1887,13 @@ setMethod("maplot",
                     text(sum(histlimits)/2,0.5,i,col="black",cex=1.4,font=2); 
 
                   } else if (i > j) {
-                    plot.labels = i == tail(colnames(ions),1) && j == head(colnames(ions),1)
+                    plot.labels.x = is.null(xlim) || (i == tail(colnames(ions),1) && j == head(colnames(ions),1))
+                    plot.labels.y = is.null(ylim) || (i == tail(colnames(ions),1) && j == head(colnames(ions),1))
                     maplot(x=x,channel1=as.character(i),channel2=as.character(j),
                            noise.model=noise.model,xlim=xlim,ylim=ylim,
                            set.na.to=set.na.to,set.na.to.lim=set.na.to.lim,
-                           x.axis.labels= plot.labels,
-                           y.axis.labels= plot.labels,
+                           x.axis.labels = plot.labels.x,
+                           y.axis.labels = plot.labels.y,
                            ...)
                     
                   }

@@ -93,7 +93,7 @@ setMethod("initialize","NoiseModel",
              nm.col=c("#E41A1C","#377EB8","#4DAF4A","#984EA3","#FF7F00","#FFFF33","#A65628","#F781BF","#999999"),nm.cmp=NULL,...) {
       if (!is.null(ibspectra))
       {
-        if (is.null(reporterTagNames)) reporterTagNames <- sampleNames(ibspectra)
+        if (is.null(reporterTagNames)) reporterTagNames <- reporterTagNames(ibspectra)
         
         ri <- reporterIntensities(ibspectra,na.rm=FALSE)  
         reporterTagNames.combn <- combn(reporterTagNames,2)
