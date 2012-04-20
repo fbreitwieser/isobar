@@ -1515,7 +1515,7 @@ setMethod("plotRatio",
 )
 
 maplot.protein <- function(x,relative.to,protein,noise.model=NULL,
-        channels=NULL,ylim=NULL,identify=FALSE,add=FALSE,pchs=NULL,log="xy",
+        channels=NULL,xlim=NULL,ylim=NULL,identify=FALSE,add=FALSE,pchs=NULL,log="xy",
         legend.pos="topright",names=NULL,legend.cex=0.8,cols=pchs,ltys=NULL,
         main=protein,xlab=NULL,ylab=NULL,type="ma",...) {
       
@@ -1539,7 +1539,8 @@ maplot.protein <- function(x,relative.to,protein,noise.model=NULL,
       if (length(ions) == 0 || all(is.na(ions)))
         next;
 
-      xlim <- range(ions,na.rm=TRUE)
+      if (is.null(xlim))
+        xlim <- range(ions,na.rm=TRUE)
       if (is.null(ylim) && type!="ma") ylim <- xlim
       if (any(!is.finite(xlim))) xlim  <- NULL
       if (type == "ma")
@@ -1591,8 +1592,9 @@ maplot.protein <- function(x,relative.to,protein,noise.model=NULL,
             abline(h=10^ratio[1],lty=1,col=cols[i],...)
             abline(h=ratio.lm['ratio'],lty=2,col=cols[i],...)
           } else {
-            abline(0,10^ratio[1],lty=1,col=cols[i],...)
-            abline(0,ratio.lm['ratio'],lty=2,col=cols[i],...)
+            #abline(0,10^ratio[1],lty=1,col=cols[i],...)
+            abline(0,10^ratio[1],lty=1,col=cols[i],untf=TRUE,...)
+            abline(0,ratio.lm['ratio'],lty=2,col=cols[i],untf=TRUE,...)
           }
 
           if (!is.na(ratio[1]))
@@ -1610,6 +1612,7 @@ maplot.protein <- function(x,relative.to,protein,noise.model=NULL,
       identify(x=i.df$x,y=i.df$y,labels=i.df$peptide)
     }}
 }
+
 
 
 setMethod("protGgdata",
