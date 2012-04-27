@@ -175,6 +175,8 @@ readPhosphoRSOutput <- function(phosphoRS.outfile,simplify=FALSE,pepmodif.sep="#
 }
 
 annotateSpectraPhosphoRS <- function(data,peaklist.file,min.prob=NULL,...) {
+  if (is(data,"character"))
+    data <- read.idfile(data)
   probs <- getPhosphoRSProbabilities(data,peaklist.file,...,simplify=TRUE)
   data[rownames(probs),"peptide"] <- probs[,"peptide"]
   data[rownames(probs),"modif"] <- probs[,"modif"]
