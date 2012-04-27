@@ -636,7 +636,7 @@ initialize.env <- function(env,report.type="protein",properties.env) {
               is.significant = append.xls.tbl("is.significant"),
               n.na1 =          append.xls.tbl("n.na1"),
               n.na2 =          append.xls.tbl("n.na2"),
-              p.value.ratio =  round.n.append.xls.tbl("p.value.ratio"),
+              p.value.ratio =  round.n.append.xls.tbl("p.value.rat"),
               p.value.sample = round.n.append.xls.tbl("p.value.sample"),
               ratio =          round.n.append.xls.tbl("lratio","ratio",f=function(x) 10^x),
               CI95.lower =     combine.n.append.xls.tbl("lratio","variance","CI95.lower",f=function(x,y) 10^qnorm(0.025,x,sqrt(y))),

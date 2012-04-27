@@ -981,15 +981,25 @@ sub trim($)
 }
 
 sub get_params {
-  return("PARAMETER SET $defaultSet:\n".
-  sprintf("        basicScore = %10s\n",$basicScore).
-  sprintf("          minScore = %10s\n",$minScore).
-  sprintf("       outputScore = %10s\n",$outputScore).
-  sprintf("  defaultSaveScore = %10s\n",$defaultSaveScore).
-  sprintf("         saveScore = %10s\n",$saveScore).
-  sprintf("      minSeqCovSPH = %10s\n",$minSeqCovSPH).
-  sprintf("      minProtScore = %10s\n",$minProtScore).
-  sprintf("        minNumPept = %10s\n",$minNumPept).
-  sprintf("            minLen = %10s\n",$minLen).
-  sprintf("         minBigRed = %10s\n",$minBigRed));
+  return(
+"Validation Principle: \n".
+"            1.) Proteins must be validated \n".
+"                 - with [->minNumPept,normally 2] peptide hits [-> minScore] or \n".
+"                 - a high scoring single peptide hit [-> saveScore]\n".
+"            2.) Peptides of validated proteins may be accepted with lower scores
+                 [-> outputScore]".
+"    
+    PARAMETER SET $defaultSet:\n".
+  sprintf("          minScore = %10s\tminimum score for validation (requires [minNumPept] hits with score >= minScore)\n",$minScore).
+  sprintf("         saveScore = %10s\tminimum score for single peptide hits of proteins\n",$saveScore).
+  sprintf("       outputScore = %10s\tminimum score for peptides of validated proteins\n\n",$outputScore).
+
+  sprintf("        basicScore = %10s\tpre-filtering score -has no influence results, must be lower than the others\n",$basicScore).
+  sprintf("  defaultSaveScore = %10s\tignore\n",$defaultSaveScore).
+  sprintf("      minSeqCovSPH = %10s\tminimum sequence coverage for single peptide hits [not working]\n",$minSeqCovSPH).
+  sprintf("      minProtScore = %10s\tminimum protein score\n",$minProtScore).
+  sprintf("        minNumPept = %10s\tminimum number of peptides\n",$minNumPept).
+  sprintf("            minLen = %10s\tminimum length of pepties\n",$minLen).
+  sprintf("         minBigRed = %10s\tminimum number of 'big reds' per protein\n",$minBigRed));
 }
+

@@ -885,8 +885,7 @@ proteinRatios <-
         stop("summarization not meaningful with method='global'. ",
              "Use method='intraclass' or method='interclass' to use ratios in or between classes.")
 
-      if (is.null(min.detect)) min.detect <- ncol(combn)
-      n.combination <- ncol(combn)
+      n.combination <- length(unique(combn[1,]))
       if (n.combination < 2) 
         stop("Summarize=TRUE makes no sense with only one combination, set summarize to FALSE or class labels differently.")
 
@@ -946,7 +945,7 @@ summarize.ratios <-
 
     classes <- unique(ratios[,c("class1","class2")])
     if (is.null(n.combination))
-      n.combination <- length(classes)
+      n.combination <- length(unique(classes[1]))
     if (is.null(min.detect))
       min.detect <- n.combination
 
