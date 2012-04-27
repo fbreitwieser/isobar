@@ -1020,20 +1020,20 @@ setGeneric("reporterMasses<-", function(x,...,value)
 setMethod("reporterData","IBSpectra",
     function(x,element="ions",na.rm=FALSE,...) {
       sel <- spectrumSel(x,...)
-		data <- assayDataElement(x,element)[sel,,drop=FALSE]
-      
+      data <- assayDataElement(x,element)[sel,,drop=FALSE]
+
       if (na.rm & length(data) > 0) 
         return(data[apply(!is.na(data),1,all),,drop=FALSE])
       else       
         return(data)
     }
-)
+    )
 
 setReplaceMethod("reporterData","IBSpectra",
     function(x,element="ions",...,value) {
       sel <- spectrumSel(x,...)
-		assayDataElement(x,element)[sel,] <- value
-		x
+      assayDataElement(x,element)[sel,] <- value
+      x
     }
 )
 
