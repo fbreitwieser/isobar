@@ -367,7 +367,7 @@ define class labels. If \Robject{method='interclass'} or
 within classes, resp..
 
 <<protein-ratios>>=
-protein.ratios <- proteinRatios(ibspiked_set1,noise.model)
+protein.ratios <- proteinRatios(ibspiked_set1,noise.model,cl=c("1","0","0","0"))
 str(protein.ratios)
 
 ## defined class 114 and 115 as class 'T', 116 and 117 as class 'C'
