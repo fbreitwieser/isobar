@@ -23,7 +23,10 @@ writePhosphoRSInput <- function(phosphoRS.infile,id.file,mgf.file,massTolerance,
     ids <- id.file
   else
     ids <- isobar:::.read.idfile(id.file,id.format="ibspectra.csv",log=NULL)
+
   ids <- unique(ids[,c("peptide","modif","spectrum")])
+  # data[,SC['PEPTIDE']] <- gsub("I","L",data[,SC['PEPTIDE']])
+
   
   if (!is.null(mapping.file)) {
     mapping.quant2id <- do.call(rbind,lapply(mapping.file,function(f) {
@@ -146,7 +149,7 @@ readPhosphoRSOutput <- function(phosphoRS.outfile,simplify=FALSE,pepmodif.sep="#
       #rownames(isoforms) <- NULL
       if (isTRUE(simplify))
         data.frame(peptide=pep.id[1],isoforms,
-                   site.probs=paste(apply(site.probs,1,paste,collapse=":"),collapse=";"),
+                   site.probs=paste(apply(round(site.probs,4),1,paste,collapse=":"),collapse=";"),
                    stringsAsFactors=FALSE,row.names=NULL)
       else
         list(peptide=pep.id,
@@ -176,15 +179,16 @@ readPhosphoRSOutput <- function(phosphoRS.outfile,simplify=FALSE,pepmodif.sep="#
 
 annotateSpectraPhosphoRS <- function(data,peaklist.file,min.prob=NULL,...) {
   if (is(data,"character"))
-    data <- read.idfile(data)
+    data <- .read.idfile(data)
   probs <- getPhosphoRSProbabilities(data,peaklist.file,...,simplify=TRUE)
-  data[rownames(probs),"peptide"] <- probs[,"peptide"]
-  data[rownames(probs),"modif"] <- probs[,"modif"]
+  ## probs excludes non-PHOS peptides - we do filter them for now? (about 8-10%)
+  data$peptide <- NULL
+  data$modif <- NULL
+  data <- merge(data,probs,by="spectrum")
   if (!is.null(min.prob)) {
     if (!'use.for.quant' %in% colnames(data)) data$use.for.quant <- 1
-    data[rownames(probs),"use.for.quant"] <-
-      data[rownames(probs),"use.for.quant"] & probs[,"pepprob"] >= min.prob
+    data[,"use.for.quant"] <-
+      data[,"use.for.quant"] & data[,"pepprob"] >= min.prob
   }
-  data <- cbind(data,probs[data$spectrum,c("pepscore","pepprob","seqpos")])
   return(data)
 }
