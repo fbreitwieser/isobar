@@ -21,9 +21,10 @@ my $ID;
 open $ID, "<", $idfile or die $!;
  
 my $header = <$ID>; chomp $header;
+$header =~ s/"//g;
 my $i=0;
 my %header = map { $_ => $i++ } (split(/\t/,$header));
-print STDERR Dumper \%header;
+#print STDERR Dumper \%header;
 #die;
 
 my $date = `date +%Y-%m-%d`; chomp $date;
@@ -54,7 +55,9 @@ eoi
 my $oldprotein;
 while (<$ID>) {
   chomp;
+  s/"//g;
   my @data = split(/\t/);
+  next if (defined $header{'pepprob'} && $data[$header{'pepprob'}] < 0.9);
   my $protein = $data[$header{'accession'}];
   if (!defined $oldprotein || $protein ne $oldprotein) {
     if (defined $oldprotein) {
@@ -69,8 +72,21 @@ while (<$ID>) {
 "      <idi:OneIdentification>
         <idi:answer>
           <idi:sequence>",$data[$header{'peptide'}],"</idi:sequence>
-          <idi:modif>",$data[$header{'modif'}],"</idi:modif>
-          <idi:theoMass>",$data[$header{'theo.mass'}],"</idi:theoMass>
+          <idi:modif>",$data[$header{'modif'}],"</idi:modif>\n";
+  if (defined $header{'pepprob'}) {
+    print
+"          <idi:phosphoRS pepprob=",$data[$header{'pepprob'}]," pepscore=",$data[$header{'pepscore'}],">\n";
+    foreach my $site (split(/;/,$data[$header{'site.probs'}])) {
+      my ($pos,$prob) = split(/:/,$site);
+      print
+"            <SiteProb pos=$pos prob=$prob />\n";
+    }
+   
+    print
+"          </idi:phosphoRS>\n";
+  }
+  print
+"          <idi:theoMass>",$data[$header{'theo.mass'}],"</idi:theoMass>
           <idi:charge>",$data[$header{'charge'}],"</idi:charge>
           <idi:startPos>",$data[$header{'start.pos'}],"</idi:startPos>
           <idi:retentionTime>",$data[$header{'retention.time'}],"</idi:retentionTime>
@@ -90,8 +106,7 @@ while (<$ID>) {
         <ple:PeptideDescr><![CDATA[",$data[$header{'spectrum'}],"]]></ple:PeptideDescr>
         <ple:ParentMass><![CDATA[",$data[$header{'exp.mass'}]," ",$data[$header{'parent.intens'}]," ",$data[$header{'charge'}],"]]></ple:ParentMass>\n";
   print       
-"        <ple:peaks><![CDATA[
-]]></ple:peaks>
+"        <ple:peaks><![CDATA[]]></ple:peaks>
         </ple:peptide>
       </idi:OneIdentification>\n";
 }
