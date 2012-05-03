@@ -559,6 +559,10 @@ setMethod("readIBSpectra",
         }
       }
       ## TODO: check that all identified spectra are present in intensities
+
+      if (is.function(annotate.spectra.f)) {
+        data <- annotate.spectra.f(data,peaklist.file)
+      }
       
       new(type,data=data,data.mass=intensities$mass,data.ions=intensities$ions)
     }
