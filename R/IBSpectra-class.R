@@ -113,8 +113,11 @@ setValidity("IBSpectra",.valid.IBSpectra)
 .SPECTRUM.COLS <- c(PEPTIDE="peptide",MODIFSTRING="modif",CHARGE="charge",
                    THEOMASS="theo.mass",EXPMASS="exp.mass",
                    PARENTINTENS="parent.intens",RT="retention.time",
-                   SPECTRUM="spectrum",.ID.COLS,USEFORQUANT="use.for.quant",
+                   SPECTRUM="spectrum",
+                   SPECTRUM.QUANT="spectrum.quant",
+                   .ID.COLS,USEFORQUANT="use.for.quant",
                    .PTM.COLS,PRECURSOR.PURITY="precursor.purity",
+                   DISSOCMETHOD="dissoc.method",
                    SCANS.FROM="scans.from",SCANS.TO="scans.to",
                    RAWFILE="raw.file",NMC="nmc",DELTASCORE="deltascore",
                    NOTES="notes")
@@ -142,6 +145,7 @@ setMethod("initialize","IBSpectra",
     function(.Object,data=NULL,data.ions=NULL,data.mass=NULL,
              proteinGroupTemplate=NULL,fragment.precision=NULL,
              assayDataElements=list(),allow.missing.columns=FALSE,
+             annotate.spectra.f=NULL,
              write.excluded.to=NULL,...) { 
       if (is.null(data)){
         callNextMethod(.Object,...)
@@ -150,6 +154,13 @@ setMethod("initialize","IBSpectra",
         reporterTagNames <- reporterTagNames(.Object)
 
         data <- .factor.to.chr(data)
+        if (is.function(annotate.spectra.f)) {
+          data <- annotate.spectra.f(data)
+        } else {
+          if (!is.null (annotate.spectra.f))
+            stop("annotate.spectra.f should be a function!")
+        }
+ 
 
         SC <- .SPECTRUM.COLS[.SPECTRUM.COLS %in% colnames(data)]
         PC <- .PROTEIN.COLS[.PROTEIN.COLS %in% colnames(data)]
@@ -571,9 +582,13 @@ setMethod("readIBSpectra",
         }
       }
       ## TODO: check that all identified spectra are present in intensities
-      if (is.function(annotate.spectra.f)) {
-        data <- annotate.spectra.f(data,id.file,peaklist.file)
-      }
+
+      #if (is.function(annotate.spectra.f)) {
+      #  data <- annotate.spectra.f(data,peaklist.file)
+      #} else {
+      #  if (!is.null (annotate.spectra.f))
+      #    stop("annotate.spectra.f should be a function!")
+      #}
       
       new(type,data=data,data.mass=intensities$mass,data.ions=intensities$ions)
     }

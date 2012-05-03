@@ -150,6 +150,9 @@ xls.report.columns <- c("ratio","is.significant","ratio.minus.sd","ratio.plus.sd
                         "p.value.ratio","p.value.sample","log10.ratio","log10.variance")
 
 
+## quantification table whose columns are attached to the XLS quantification table
+compare.to.quant <- NULL
+
 sum.intensities=FALSE
 regen=FALSE
 
