@@ -72,14 +72,7 @@ writePhosphoRSInput <- function(phosphoRS.infile,id.file,mgf.file,massTolerance,
          " of BEGIN IONS and END IONS tags");
 
   modif <- "PHOS"
-  ids$modifrs <- sapply(strsplit(paste(ids$modif," ",sep=""),":"),function(x) {
-    x[length(x)] <- sub(" $","",x[length(x)])
-    x[x==""] <- 0
-    for (i in seq_len(nrow(modifs))) 
-      x[grep(modifs[i,1],x,fixed=TRUE)] <- modifs[i,2]
-
-    y <- c(x[1],".",x[2:(length(x)-1)],".",x[length(x)]);
-    paste(y,collapse="") })
+  ids$modifrs <- .convertModifToPhosphoRS(ids$modif,modifs)
 
   pepid <- 0
   for (title in unique(ids[grep(modif,ids$modif),"spectrum"])) {
@@ -115,6 +108,37 @@ writePhosphoRSInput <- function(phosphoRS.infile,id.file,mgf.file,massTolerance,
   cat.f("  </ModificationInfos>")
   cat.f("</phosphoRSInput>")
   close(con.out)
+}
+
+.convertModifToPhosphoRS <- function(modifstring,modifs) {
+  sapply(strsplit(paste(modifstring," ",sep=""),":"),function(x) {
+    x[length(x)] <- sub(" $","",x[length(x)])
+    x[x==""] <- 0
+    for (i in seq_len(nrow(modifs))) 
+      x[grep(modifs[i,1],x,fixed=TRUE)] <- modifs[i,2]
+
+    y <- c(x[1],".",x[2:(length(x)-1)],".",x[length(x)]);
+    paste(y,collapse="") })
+}
+
+.convertModifToPos <- function(modifstring,modif="PHOS") {
+  sapply(strsplit(paste(modifstring," ",sep=""),":"),function(x) {
+    x[length(x)] <- sub(" $","",x[length(x)])
+    paste(which(x==modif)-1,collapse="&")
+  })
+}
+
+.convertPeptideModif <- function(peptide,modifstring,modifs=c("PHOS","Oxidation_M","Cys_CAM")) {
+  names(letters) <- LETTERS
+  mapply(function(pep,m) {
+           m <- m[-c(1,length(m))]
+           for (mm in modifs)
+             pep[m==mm] <- letters[pep[m==mm]]
+           paste(pep,collapse="")
+         },
+         strsplit(peptide,""),
+         strsplit(paste(modifstring," ",sep=""),":")
+)
 }
 
 readPhosphoRSOutput <- function(phosphoRS.outfile,simplify=FALSE,pepmodif.sep="##.##",
@@ -188,7 +212,7 @@ annotateSpectraPhosphoRS <- function(data,peaklist.file,min.prob=NULL,...) {
   data$modif <- NULL
   data <- merge(data,probs,by="spectrum")
   if (!is.null(min.prob)) {
-    if (!'use.for.quant' %in% colnames(data)) data$use.for.quant <- 1
+    if (!'use.for.quant' %in% colnames(data)) data$use.for.quant <- TRUE
     data[,"use.for.quant"] <-
       data[,"use.for.quant"] & data[,"pepprob"] >= min.prob
   }
