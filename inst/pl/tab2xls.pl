@@ -1,6 +1,6 @@
 #!/usr/bin/perl
 # Creation date : 2010-09-29
-# Last modified : Fri 16 Mar 2012 11:35:23 AM CET
+# Last modified : Wed 09 May 2012 05:59:39 PM CEST
 
 # Module        : tab2xls.pl
 # Purpose       : converts csv files to XLS format
@@ -14,6 +14,7 @@ use warnings;
 no warnings 'uninitialized';
 use Spreadsheet::WriteExcel;
 use File::Basename;
+use Data::Dumper;
 
 my $delim="\t";
 
@@ -36,37 +37,49 @@ print STDERR "writing XLS file $xls_file\n";
 
 # Create a new Excel workbook
 my $workbook = Spreadsheet::WriteExcel->new($xls_file);
+$workbook->set_properties(
+  comments=>'Created with isobar R package and Spreadsheet::WriteExcel');
+#my $green = $workbook->set_custom_color(20, 44, 122, 45);
+my $maroon = $workbook->set_custom_color(41, 158, 30, 30);
+#my @colors = (
+#  $workbook->set_custom_color(41, 158, 30, 30),
+#  $workbook->set_custom_color(42, 60, 189, 60),
+#  $workbook->set_custom_color(43, 60, 60, 189)
+#);
+my @colors = (
+  $workbook->set_custom_color(42, 55, 126, 184),
+  $workbook->set_custom_color(43, 77, 175, 74),
+  $workbook->set_custom_color(41, 228, 26, 28),
+  $workbook->set_custom_color(44, 152, 78, 163),
+  $workbook->set_custom_color(45, 255, 127, 0),
+  $workbook->set_custom_color(46, 255, 255, 51)
+);
 
-my $wbheader = $workbook->add_format();
-$wbheader->set_color('white');
-$wbheader->set_align('center');
-#$wbheader->set_align('vcenter');
-$wbheader->set_fg_color('green');
 
-my $fmt_centeracross = $workbook->add_format(center_across=>1);
-$fmt_centeracross->set_color('white');
-$fmt_centeracross->set_pattern();
-$fmt_centeracross->set_fg_color('green');
+my %header_prop = (
+  color => 'white',
+  text_wrap => 1,
+  align => 'center');
+
+my $fmt_centeracross = $workbook->add_format(%header_prop,(center_across=>1,fg_color=>$colors[2]));
 
 my %color_formats;
 my $row_limit = 65536;
+my @header_formats;
 
 my $wbcenter = $workbook->add_format();
 $wbcenter->set_align('center');
 
-for (my $i=0; $i <= $#ARGV; ++$i) {
-  print STDERR " processing $ARGV[$i]\n";
+for (my $file_i=0; $file_i <= $#ARGV; ++$file_i) {
+  print STDERR " processing $ARGV[$file_i]\n";
   # Add a worksheet
-  my ($name,$file) = split(/=/,$ARGV[$i]);
 
-  my $props; 
-	($name,$props) = get_props($name,":");
+	my ($file,$props) = get_props($ARGV[$file_i],":");
 
-  if (!defined $file) {
-    $file = $name;
-    ($name) = getname(fileparse($name,".csv"));
-    #$name = "Sheet $i";
-  }
+  print STDERR "$file\n";
+
+  my $name = $props->{'name'};
+  if (!defined $name) { ($name) = getname(fileparse($file,".csv")); }
 
   open(F,"<",$file) or die "Could not open $file: $!";
     
@@ -85,7 +98,8 @@ for (my $i=0; $i <= $#ARGV; ++$i) {
       $worksheet->freeze_panes(1,(defined($props->{'freeze_col'})? $props->{'freeze_col'}:0)); # 1 row
       for my $i (0..$#header) {
         $header[$i] = trim($header[$i]);
-        write_col($worksheet,0,$i,getname($header[$i]),$wbheader);
+        $header_formats[$i] = $workbook->add_format(%header_prop,fg_color=>$colors[$file_i]);
+        write_col($worksheet,0,$i,getname($header[$i]),$header_formats[$i]);
       }
       $row = 1;
     }
@@ -125,7 +139,7 @@ sub get_props {
 	if (my ($def,$f) = ($string =~ /^${sep}(.*)${sep}(.*)$/)) {
     
     for my $s (split /,/,$def) {
-      my ($key,$val) = split / /, $s;
+      my ($key,$val) = split /=/, $s;
       $val = 1 if !defined $val;
       $def{$key} = $val;
     }
@@ -137,17 +151,20 @@ sub get_props {
 
 sub write_col {
   my ($worksheet,$row,$col,$field,$format) = @_;
-  if (my ($def,$f) = ($field =~ /^:(centeracross):(.*)$/)) { ## only check for centeracross column property
+
+	my ($f,$props) = get_props($field,"@");
+  #if (my ($def,$f) = ($field =~ /^|(^|*)|(.*)$/)) { ## only check for centeracross column property
 #  if (my ($def,$f) = ($field =~ /^:([^:]+):(.*)$/)) {       ## this creates problem w/ modification column  (format: :::etc::)
-    if ($def eq 'centeracross') {
+  if ($props->{'centeracross'} eq 'centeracross') {
       $worksheet->write($row,$col,$f,$fmt_centeracross);
-    } else {
-      die "Unknown column property [$def] defined in [$field]. row $row, column $col.";
-    }
   } else {
     if ($field eq 'TRUE') { $format=colorfmt('green'); }
     elsif ($field eq '0') { $format=colorfmt('gray'); }
-    $worksheet->write($row,$col,$field,$format);
+    $worksheet->write($row,$col,$f,$format);
+  }
+
+  if (defined $props->{'comment'}) {
+    $worksheet->write_comment($row,$col,$props->{'comment'});
   }
 }
 
@@ -163,6 +180,7 @@ sub colorfmt {
 
 sub getname {
     my ($field) = @_;
+    $field =~ s/###/\n/;
     my @parts = map(ucfirst,split(/[\._]/,$field));
     return(join(" ",@parts));
 }
@@ -179,17 +197,26 @@ sub autofit_columns {
 
     my $worksheet = shift;
     my $col       = 0;
+    my $max_header = 4;
 
-    for my $width (@{$worksheet->{__col_widths}}) {
-
-        $worksheet->set_column($col, $col, $width) if $width;
-        $col++;
+    for (my $i=0;$i < @{$worksheet->{__col_widths}}; ++$i) {
+      my $width = ${$worksheet->{__col_widths}}[$i];
+      my $header_width = ${$worksheet->{__header_widths}}[$i];
+      if ($width && $header_width > $width) {
+        $header_formats[$i]->set_rotation(90);
+#        print STDERR "$i: $header_width\t$width\n";
+        $max_header = $header_width if ($header_width > $max_header);
+      }
+      $worksheet->set_column($col, $col, $width) if $width;
+      $col++;
     }
+    $worksheet->set_row(0,$max_header*5);
 }
 
 sub store_string_widths {
 
     my $worksheet = shift;
+    my $row       = $_[0];
     my $col       = $_[1];
     my $token     = $_[2];
 
@@ -201,9 +228,11 @@ sub store_string_widths {
     return if $token =~ /^Isotope Im/;  # Ignore Isotope Imp
     return if $token =~ /^Analysis Properties/;  
     return if $token =~ /^Class Labels/;
+#    return if $ro
 
     # Ignore numbers
-    return if $token =~ /^([+-]?)(?=\d|\.\d)\d*(\.\d*)?([Ee]([+-]?\d+))?$/;
+    #return if $token =~ /^([+-]?)(?=\d|\.\d)\d*(\.\d*)?([Ee]([+-]?\d+))?$/;
+    my $is_number = $token =~ /^([+-]?)(?=\d|\.\d)\d*(\.\d*)?([Ee]([+-]?\d+))?$/;
 
     # Ignore various internal and external hyperlinks. In a real scenario
     # you may wish to track the length of the optional strings used with
@@ -216,14 +245,20 @@ sub store_string_widths {
     # We store the string width as data in the Worksheet object. We use
     # a double underscore key name to avoid conflicts with future names.
     #
-    my $old_width    = $worksheet->{__col_widths}->[$col];
     my $string_width = string_width($token);
+    if ($is_number && $string_width > 8) { $string_width = 8; }
+    if ($row > 0) {
+      my $old_width    = $worksheet->{__col_widths}->[$col];
 
-    if (not defined $old_width or $string_width > $old_width) {
+      if (not defined $old_width or $string_width > $old_width) {
         # You may wish to set a minimum column width as follows.
         #return undef if $string_width < 10;
 
         $worksheet->{__col_widths}->[$col] = $string_width;
+      }
+    } else {
+      # define the header width
+      $worksheet->{__header_widths}->[$col] = $string_width;
     }
 
 
@@ -232,7 +267,11 @@ sub store_string_widths {
 }
 
 sub string_width {
-    my $width = (0.9 * length $_[0]) + 2;
-    if ($width>25) {$width=25;}
-    return $width;
+    my $max_width = 0;
+    foreach (split(/\n/,$_[0])) {
+      my $width = (0.9 * length $_) + 2;
+      $max_width = $width if ($width>$max_width);
+    }
+    if ($max_width>25) {$max_width=25;}
+    return $max_width;
 }

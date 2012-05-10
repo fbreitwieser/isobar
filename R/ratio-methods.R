@@ -819,9 +819,23 @@ peptideRatios <- function(ibspectra,...,protein=NULL,peptide=peptides(proteinGro
   proteinRatios(ibspectra,...,proteins=protein,peptide=peptide)
 }
 
-ratiosReshapeWide <- function(quant.tbl,grouped.cols=TRUE) {
+ratiosReshapeWide <- function(quant.tbl,grouped.cols=TRUE,vs.class=NULL,sep=".") {
   attrs <- attributes(quant.tbl)
-  quant.tbl$comp <- paste(quant.tbl$r2,quant.tbl$r1,sep="/")
+
+  classes.unique <- "class1" %in% colnames(quant.tbl) &&
+                    !any(is.na(quant.tbl$class1)) && !any(is.null(quant.tbl$class1)) && 
+                    all(table(unique(quant.tbl[,c("r1","class1")])$class1)==1) &&
+                    all(table(unique(quant.tbl[,c("r2","class2")])$class2)==1)
+  if (!is.null(vs.class)) {
+    quant.tbl$comp <- paste(quant.tbl$class2)
+    quant.tbl <- subset(quant.tbl,class1==vs.class)
+  } else {
+    if (classes.unique) {
+      quant.tbl$comp <- paste(quant.tbl$class2,quant.tbl$class1,sep="/")
+    } else {
+      quant.tbl$comp <- paste(quant.tbl$r2,quant.tbl$r1,sep="/")
+    }
+  }
   quant.tbl  <- quant.tbl[,-(c(which(colnames(quant.tbl) %in% c("r1","r2","class1","class2"))))]
   v.names <- c("lratio","variance","n.spectra","p.value.rat","p.value.sample","is.significant","sd","n.na1","n.na2")
   v.names <- v.names[v.names %in% colnames(quant.tbl)]
@@ -830,7 +844,7 @@ ratiosReshapeWide <- function(quant.tbl,grouped.cols=TRUE) {
   timevar <- "comp"
   idvar <- colnames(quant.tbl)[!colnames(quant.tbl) %in% c(timevar,v.names)]
 
-  res <- reshape(quant.tbl,v.names=v.names,idvar=idvar,timevar=timevar,direction="wide")
+  res <- reshape(quant.tbl,v.names=v.names,idvar=idvar,timevar=timevar,direction="wide",sep=sep)
   if (grouped.cols) {
     col.order <- c(idvar,
                    unlist(lapply(v.names,function(n) grep(n,colnames(res),fixed=TRUE,value=TRUE))))
