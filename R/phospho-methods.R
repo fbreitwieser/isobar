@@ -147,9 +147,11 @@ readPhosphoRSOutput <- function(phosphoRS.outfile,simplify=FALSE,pepmodif.sep="#
       }))   
 
       #rownames(isoforms) <- NULL
+      storage.mode(site.probs) <- "numeric"
+      site.probs[,2] <- round(site.probs[,2],2)
       if (isTRUE(simplify))
         data.frame(peptide=pep.id[1],isoforms,
-                   site.probs=paste(apply(round(site.probs,4),1,paste,collapse=":"),collapse=";"),
+                   site.probs=paste(apply(site.probs,1,paste,collapse=":"),collapse=";"),
                    stringsAsFactors=FALSE,row.names=NULL)
       else
         list(peptide=pep.id,
