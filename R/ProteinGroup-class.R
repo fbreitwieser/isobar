@@ -446,6 +446,12 @@ setAs("ProteinGroup","data.frame.concise",
         return(unique(res))
       })
 
+.paste_unique <- function(x,...,na.rm=TRUE) {
+  x <- unique(x)
+  x <- x[!is.na(x)]
+  paste(x,...)
+}
+
 .proteinGroupAsConciseDataFrame <- function(from,only.reporters=TRUE,show.proteinInfo=TRUE,human.protein.acs=TRUE) {
         rp <- reporterProteins(from)
         p.ac <- .protein.acc(rp,proteinInfo(from),indistinguishableProteins(from))
@@ -456,30 +462,34 @@ setAs("ProteinGroup","data.frame.concise",
           ip.df <- ip.df[ip.df$protein.g %in% reporterProteins(from),]
         ip.df <- merge(ip.df,from@isoformToGeneProduct,
                        by.x="protein",by.y="proteinac.w.splicevariant")
-        pep.n.prot <- as.data.frame(peptideNProtein(from),stringsAsFactors=FALSE)
-        in.df <- ddply(ip.df, "protein.g",
-                        function(x) {
-                          data.frame(protein=paste(ddply(x,"proteinac.wo.splicevariant",
-                                                    function(x) ifelse(any(!is.na(x$splicevariant)),sprintf("%s-[%s]",unique(x$proteinac.wo.splicevariant),paste(x$splicevariant,collapse=",")),x$proteinac.wo.splicevariant))$V1,collapse=";"),
+        ip.df <- merge(ip.df,proteinGroupTable(from)[,c("protein.g","reporter.protein")])
+        in.df <- ddply(ip.df, "reporter.protein",
+                        function(x) 
+                          data.frame(proteinn=paste(ddply(x,"proteinac.wo.splicevariant",
+                            function(x) ifelse(any(!is.na(x$splicevariant)),sprintf("%s-[%s]",unique(x$proteinac.wo.splicevariant),
+                                                                                    paste(sort(as.numeric(unique(x$splicevariant))),collapse=",")),
+                                               x$proteinac.wo.splicevariant))$V1,collapse=",")
+                        ))
 
-                                     n.acs=length(unique(x[,"proteinac.wo.splicevariant"])),
-                            n.variants=length(unique(x[,"protein"])))
-                        })
-        #ip.df <- merge(ip.df,in.df)
+        ip.df <- merge(ip.df,in.df)
+        pep.n.prot <- as.data.frame(peptideNProtein(from),stringsAsFactors=FALSE)
         pep.n.prot <- merge(pep.n.prot,ip.df)
-        pep.n.prot <- merge(pep.n.prot,proteinGroupTable(from)[,c("protein.g","reporter.protein")])
+
         res <- ddply(pep.n.prot,"peptide",
                      function(x) {
                        res <- data.frame(n.acs=length(unique(x[,"proteinac.wo.splicevariant"])),
                                          n.variants=length(unique(x[,"protein"])))
-                       x <- unique(x[,c("reporter.protein","protein.g")])
+                       x <- unique(x[,c("reporter.protein","protein.g","proteinn")])
                        protein.gs <- unique(x[,'reporter.protein'])
-                       res <- cbind(proteins=paste(tapply(x$protein.g,factor(x$reporter.protein),
-                                                          paste,collapse=","),collapse=";"),
-                                    n.groups=length(protein.gs),
-                                    res,stringsAsFactors=FALSE)
-                       if (!is.null(attr(from,"protein.group.ids"))) 
-                         res  <- cbind(groups=paste(attr(from,"protein.group.ids")[protein.gs],collapse=","),
+                       res <- data.frame(proteins=paste(unique(x$proteinn),collapse=";"))
+                       if (show.proteinInfo) 
+                         res <- cbind(res,
+                                      ID=.paste_unique(proteinInfo(from,protein.gs,do.warn=FALSE,collapse=","),collapse=","),
+                                      Description=.paste_unique(proteinInfo(from,protein.gs,"protein_name",do.warn=FALSE,collapse=","),collapse=";"),
+                                      Gene=.paste_unique(proteinInfo(from,protein.gs,"gene_name",do.warn=FALSE,collapse=","),collapse=","),stringsAsFactors=FALSE)
+                       res <- cbind(res,n.groups=length(protein.gs),stringsAsFactors=FALSE)
+                       if (!is.null(attr(from,"from.ids"))) 
+                         res  <- cbind(groups=paste(attr(from,"from.ids")[protein.gs],collapse=","),
                                        res,stringsAsFactors=FALSE)
                        res
 
@@ -583,7 +593,8 @@ setMethod("reporterProteins","ProteinGroup",
 
 setMethod("proteinInfo",signature(x="ProteinGroup",protein.g="missing"),function(x) x@proteinInfo)
 setMethod("proteinInfo",signature(x="ProteinGroup",protein.g="character"),
-    function(x,protein.g,select="name",collapse=", ",do.warn=TRUE) {
+    function(x,protein.g,select="name",collapse=", ",simplify=TRUE,do.warn=TRUE) {
+      protein.info <- proteinInfo(x)
       sapply(protein.g,function(p) {
         if (is.null(proteinInfo(x)) || nrow(proteinInfo(x)) == 0) {
           if (do.warn)
@@ -597,13 +608,18 @@ setMethod("proteinInfo",signature(x="ProteinGroup",protein.g="character"),
           return(NA)
         }
         protein.acs <- x@isoformToGeneProduct[indistinguishableProteins(x,protein.g=p),"proteinac.wo.splicevariant"]
-        sel <- proteinInfo(x)$accession %in% protein.acs
+        sel <- protein.info$accession %in% protein.acs
         if (!any(sel)) {
           if (do.warn) warning("No protein info for ",p)
           return(NA)
         }
-        protein.infos <- proteinInfo(x)[sel,select]  
-        paste(sort(unique(protein.infos)),collapse=", ")
+        protein.infos <- protein.info[sel,select]
+        if (simplify) {
+          paste(sort(unique(protein.infos)),collapse=", ")
+        } else {
+          names(protein.infos) <- protein.info$accession[sel]
+          protein.infos
+        }
       })
     }
 )
@@ -881,6 +897,38 @@ spectra.count <- function(protein.group,protein.g=reporterProteins(protein.group
   names(spectra.count) <- protein.g
   return(spectra.count)
 }
+
+sequence.coverage <- function(protein.group,protein.g=reporterProteins(protein.group),
+                              specificity=c("reporter-specific","group-specific","unspecific"),
+                              simplify=TRUE,...) {
+  if ("length" %in% colnames(proteinInfo(protein.group)) && 
+      "start.pos" %in% colnames(protein.group@peptideInfo)) {
+    lengths <- proteinInfo(protein.group,protein.g=protein.g,"length",simplify=FALSE)
+    peptides <- peptides(protein.group,protein=protein.g,specificity=specificity,...)
+
+    sapply(protein.g, function(p) {
+                     protein.acs <- protein.ac(protein.group,p)
+                     seqcov <- sapply(protein.acs,function(pp) {
+                            if (is.na(lengths[[p]][pp]))
+                              return(NA)
+                            seqq <- rep(FALSE,lengths[[p]][pp])
+                            pi <- subset(protein.group@peptideInfo,protein==pp&peptide%in%peptides)
+                            pi$peplength <- nchar(pi$peptide)
+                            pi$end.pos <- pi$start.pos+pi$peplength-1
+                            for (i_r in seq_len(nrow(pi)))
+                              seqq[seq(from=pi[i_r,"start.pos"],to=pi[i_r,"end.pos"])]  <- TRUE
+                            return(sum(seqq)/length(seqq))
+                    })
+                    if (simplify && length(seqcov) > 1)
+                      mean(seqcov,na.rm=TRUE)
+                    else
+                      seqcov
+      })    
+  } else {
+    stop("Necessary information for sequence coverage not available")
+  }
+}
+
 
 calculate.dNSAF <- function(protein.group) {
   if (is.null(proteinInfo(protein.group)) || length(proteinInfo(protein.group)) == 0)
