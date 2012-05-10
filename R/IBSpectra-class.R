@@ -449,6 +449,7 @@ setMethod("readIBSpectra",
 
 writeIBSpectra <- function(ibspectra,file,sep="\t",row.names=FALSE,...) {
   write.table(as.data.frame(ibspectra),file=file,sep=sep,row.names=row.names,...)
+  message("finished writing ibspectra to ",file)
 }
 
 ##' readIBSpectra - read IBSpectra object from files
