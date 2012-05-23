@@ -103,13 +103,17 @@ write.xls.report <- function(report.type,properties.env,report.env,file="isobar-
                 cbind(c("",nn),rbind(nn,isotopeImpurities(get.val('ibspectra')))))
 
     cl <- classLabels(get.val('ibspectra'))
+    fill.up <- function(x,w="",n=length(nn)+1)
+      if (length(x) < n) c(x,rep(w,n-length(x)))
+      else stop("fill up")
+      
     if (!is.null(cl)) {
       ii <- rbind(ii,
                   "",
-                  c("@centeracross@Class Labels","@centeracross@",rep("",length(nn)-1)))
+                  fill.up(c("@centeracross@Class Labels","@centeracross@","")))
       
       for (i in seq_along(nn)) {
-        ii <- rbind(ii,c(nn[i],cl[i],rep("",length(nn)-1)))
+        ii <- rbind(ii,fill.up(c(nn[i],cl[i],names(cl)[i])))
       }
     }
     
@@ -484,18 +488,18 @@ initialize.env <- function(env,report.type="protein",properties.env) {
     }
 
     if (identical(level,"peptide"))
-      protein.ratios <- proteinRatios(env$ibspectra,noise.model=env$noise.model,
-                                      proteins=NULL,peptide=peptides(proteinGroup(env$ibspectra)),
-                                      cl=classLabels(env$ibspectra),method=method,symmetry=TRUE)
+      all.ratios <- peptideRatios(env$ibspectra,noise.model=env$noise.model,do.warn=FALSE,
+                                  peptide=peptides(proteinGroup(env$ibspectra)),
+                                  cl=classLabels(env$ibspectra),method=method,symmetry=TRUE)
     else
-      protein.ratios <- proteinRatios(env$ibspectra,noise.model=env$noise.model,
+      all.ratios <- proteinRatios(env$ibspectra,noise.model=env$noise.model,do.warn=FALSE,
                                       proteins=reporterProteins(proteinGroup(env$ibspectra)),peptide=NULL,
                                       cl=classLabels(env$ibspectra),method=method,symmetry=TRUE)
 
-    if (all(is.nan(protein.ratios$lratio)))
+    if (all(is.nan(all.ratios$lratio)))
       stop("Cannot compute protein ratio distribution - no ratios available.\n",
            "Probably due to missing reporter intensities.")
-    fitCauchy(protein.ratios[,'lratio'])
+    fitCauchy(all.ratios[,'lratio'])
   }))
 }
 
@@ -551,7 +555,8 @@ initialize.env <- function(env,report.type="protein",properties.env) {
                        cl=classLabels(env$ibspectra),
                        summarize=properties.env$summarize,
                        combn=properties.env$combn,
-                       use.na=properties.env$use.na))
+                       use.na=properties.env$use.na,
+                       do.warn=FALSE))
 
     quant.tbl <- do.call("proteinRatios",ratios.opts)
     quant.tbl[,"sd"] <- sqrt(quant.tbl[,"variance"])
@@ -600,11 +605,9 @@ initialize.env <- function(env,report.type="protein",properties.env) {
       compare.to.quant <- NULL
 
     if (isTRUE(properties.env$xls.report.format=="wide")) {
-      #xls.quant.tbl.tmp  <- ratiosReshapeWide(env$quant.tbl,vs.class="CTRL",sep="###")
-      xls.quant.tbl.tmp  <- ratiosReshapeWide(env$quant.tbl,sep="###")
+      xls.quant.tbl.tmp  <- ratiosReshapeWide(env$quant.tbl,vs.class=properties.env$vs.class,sep="###")
       if (!is.null(compare.to.quant))
-        #compare.to.quant <- lapply(compare.to.quant,ratiosReshapeWide,vs.class="CTRL",sep="###")
-        compare.to.quant <- lapply(compare.to.quant,ratiosReshapeWide,sep="###")
+        compare.to.quant <- lapply(compare.to.quant,ratiosReshapeWide,vs.class=properties.env$vs.class,sep="###")
     } else {
       xls.quant.tbl.tmp <- env$quant.tbl
     }

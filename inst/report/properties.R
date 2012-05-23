@@ -109,6 +109,7 @@ combn.method="interclass"
 # class.labels=c("Treatment"="T","Treatment"="T","Control"="C","Control"="C")
 class.labels=NULL
 combn=NULL
+vs.class=NULL
 
 ## Analysis report sections: Significant proteins and protein details
 show.significant.proteins=FALSE

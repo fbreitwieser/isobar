@@ -590,7 +590,7 @@ setMethod("estimateRatio",
                                 channel1,channel2,
                                 specificity=REPORTERSPECIFIC,modif=NULL,
                                 n.sample=NULL,groupspecific.if.same.ac=FALSE,
-                                use.precursor.purity=FALSE,...) {
+                                use.precursor.purity=FALSE,do.warn=TRUE,...) {
   allowed.channels <- c(reporterTagNames(ibspectra),'AVG','ALL')
   if (is.null(channel1) || is.null(channel2))
     stop("channel1 and channel2 must not be NULL, but one of [",paste(allowed.channels,collapse=", "),"] !")
@@ -614,10 +614,10 @@ setMethod("estimateRatio",
     return(res)
   }
   if (level=="protein")
-    sel <- spectrumSel(ibspectra,protein=x,specificity=specificity,
+    sel <- spectrumSel(ibspectra,protein=x,specificity=specificity,do.warn=do.warn,
                        modif=modif,groupspecific.if.same.ac=groupspecific.if.same.ac)
   if (level=="peptide") 
-    sel <- spectrumSel(ibspectra,peptide=x,modif=modif)
+    sel <- spectrumSel(ibspectra,peptide=x,modif=modif,do.warn=do.warn)
   
   ri <- reporterIntensities(ibspectra)[sel,,drop=FALSE]
   ri.raw <- reporterData(ibspectra,element="ions_not_normalized")[sel,,drop=FALSE]
@@ -827,8 +827,12 @@ ratiosReshapeWide <- function(quant.tbl,grouped.cols=TRUE,vs.class=NULL,sep=".")
                     all(table(unique(quant.tbl[,c("r1","class1")])$class1)==1) &&
                     all(table(unique(quant.tbl[,c("r2","class2")])$class2)==1)
   if (!is.null(vs.class)) {
-    quant.tbl$comp <- paste(quant.tbl$class2)
-    quant.tbl <- subset(quant.tbl,class1==vs.class)
+    if (length(vs.class)==1)
+      quant.tbl$comp <- paste(quant.tbl$class2)
+    else 
+      quant.tbl$comp <- paste(quant.tbl$class2,quant.tbl$class1,sep="/")
+
+    quant.tbl <- subset(quant.tbl,class1 %in% vs.class)
   } else {
     if (classes.unique) {
       quant.tbl$comp <- paste(quant.tbl$class2,quant.tbl$class1,sep="/")

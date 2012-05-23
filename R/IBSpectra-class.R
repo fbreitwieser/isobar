@@ -106,7 +106,7 @@ setValidity("IBSpectra",.valid.IBSpectra)
 
 .PEAKS.COLS <- c(MASSFIELD="X%s_mass",IONSFIELD="X%s_ions")
 
-.ID.COLS <- c(SEARCHENGINE="search.engine",SCORE="score")
+.ID.COLS <- c(SEARCHENGINE="search.engine",SCORE="score",SCORE.MASCOT="score.mascot",SCORE.PHENYX="score.phenyx")
 
 .PTM.COLS <- c(SCORE.PHOSPHORS='pepscore',PROB.PHOSPHORS='pepprob',SEQPOS='seqpos',SITEPROBS='site.probs',PHOSPHO.SITES='phospho.sites')
 
@@ -200,6 +200,7 @@ setMethod("initialize","IBSpectra",
         
         if ('SEARCHENGINE' %in% names(SC)) {
         n.searchengines <- length(unique(data[,SC['SEARCHENGINE']])) 
+        merge.ids=FALSE
         if (merge.ids) {
         # Merge identifications (of different search engines)
         if (SC['SEARCHENGINE'] %in% colnames(data) &&
@@ -225,7 +226,8 @@ setMethod("initialize","IBSpectra",
         }
         
         ## Merge identifications (of same search engine)
-        if (n.searchengines==1) {
+        #if (anyDuplicated(unique(data[,SC[c('SPECTRUM','PEPTIDE','MODIFSTRING')]])[,SC['SPECTRUM']])) {
+        if (FALSE) {
           columns <- as.character(SC[c('SPECTRUM','PEPTIDE','MODIFSTRING')])
           ## spectrum peptide hits are the same, but they might have different scores:
           ##  could be due to non-deterministic scores
@@ -256,7 +258,7 @@ setMethod("initialize","IBSpectra",
         
         data.sc <- unique(data[,SC])
         # Check for divergent identifications of spectra
-        if (any(duplicated(data.sc[,SC['SPECTRUM']]))) {
+        if (anyDuplicated(data.sc[,SC['SPECTRUM']])) {
           dupl.spectra <- .get.dupl.n.warn(data.sc,SC['SPECTRUM'],write.to=write.excluded.to)
           #dupl.spectra <- .get.dupl.n.warn(data.sc[,SC[c("SPECTRUM","PEPTIDE","MODIFSTRING")]],SC['SPECTRUM'])
           # problem: different values in any column - what info should you choose??
@@ -552,7 +554,9 @@ setMethod("readIBSpectra",
       # all identified spectrum titles
       id.spectra <- unique(data[,.SPECTRUM.COLS['SPECTRUM']])
 
-      intensities <- list(ions=NULL,mass=NULL,spectrumtitles=NULL)
+      data.ions=c()
+      data.mass=c()
+      data.titles=c()
       for (peaklist.f in peaklist.file) {
         peaklist.format.f <- peaklist.format
         if (is.null(peaklist.format.f)) {
@@ -567,25 +571,13 @@ setMethod("readIBSpectra",
 
         if (tolower(peaklist.format.f) == "mgf") {
 
-          if (nrow(mapping.quant2id) > 0) {
-            ## for HCD/CID method, a mapping from identification
-            ## to quantitation spectra is neccessary
-            intensities.f <- 
-              .read.mgf.quant2id(peaklist.f,mapping.quant2id,id.spectra,
-                                 type=type,
-                                 fragment.precision=fragment.precision,
-                                 prob=fragment.outlier.prob)
-            
-          } else {
-            intensities.f <- .read.mgf(peaklist.f,type,spectra=id.spectra,
-                                       fragment.precision=fragment.precision,
-                                       prob=fragment.outlier.prob,scan.lines=scan.lines)
-          }
+          intensities.f <- .read.mgf(peaklist.f,type,
+                                     fragment.precision=fragment.precision,
+                                     prob=fragment.outlier.prob,scan.lines=scan.lines)
           if (nrow(intensities.f$ions) == 0) { stop("only NA data in ions/mass") }
-          intensities$spectrumtitles <- 
-            c(intensities$spectrumtitles,intensities.f$spectrumtitles)
-          intensities$ions <- rbind(intensities$ions,intensities.f$ions)
-          intensities$mass <- rbind(intensities$mass,intensities.f$mass)
+          data.titles <- c(data.titles,intensities.f$spectrumtitles)
+          data.ions <- rbind(data.ions,intensities.f$ions)
+          data.mass <- rbind(data.mass,intensities.f$mass)
         } else if (tolower(peaklist.format.f) == "mcn") {
             if (type != "iTRAQ4plexSpectra")
               stop("mcn format (iTracker) only supports iTRAQ 4plex spectra!")
@@ -594,32 +586,37 @@ setMethod("readIBSpectra",
                   "numeric","numeric","numeric","numeric",rep("NULL",36)),
                 col.names=c("spectrum","spectrum.t","114","115","116","117",rep("",36)),
                 check.names=FALSE)
-            intensities$spectrum.titles <- c(intensities$spectrumtitles,mcn.i$spectrum)
-            intensities$ions <- c(intensities$ions,as.matrix(mcn.i[,3:6]))
-            intensities$mass <- c(intensities$mass,
+            data.titles <- c(data.titles,mcn.i$spectrum)
+            data.ions <- c(data.ions,as.matrix(mcn.i[,3:6]))
+            data.mass <- c(data.mass,
                 matrix(rep(114:117,nrow(mcn.i)),nrow=nrow(mcn.i),byrow=TRUE))
         } else if (tolower(peaklist.format.f) == "csv") {
           message("reading ",peaklist.f)
           res <- read.delim(peaklist.f,stringsAsFactors=FALSE)
           message("done reading ",peaklist.f)
-          res <- res[res$spectrum %in% id.spectra,]
-          #data <- merge(data,res,all.x=TRUE)
-          intensities$spectrumtitles <- c(intensities$spectrumtitles,res$spectrum)
-          intensities$ions <- rbind(intensities$ions,as.matrix(res[,.grep_columns(res,"ions$")]))
-          intensities$mass <- rbind(intensities$mass,as.matrix(res[,.grep_columns(res,"mass$")]))
+          
+          ## FIX::
+          #if (!is.null(id.spectra) && length(id.spectra) != 0) 
+          #  res <- res[res[,"spectrum"] %in% id.spectra,]
+
+          data.titles <- c(data.titles,res[,"spectrum"])
+          data.ions <- rbind(data.ions,as.matrix(res[,.grep_columns(res,"ions$")]))
+          data.mass <- rbind(data.mass,as.matrix(res[,.grep_columns(res,"mass$")]))
 
         }
       }
-      rownames(intensities$ions)  <- intensities$spectrumtitles
-      rownames(intensities$mass)  <- intensities$spectrumtitles
+      if (nrow(mapping.quant2id) > 0)
+        data.titles <- .do.map(data.titles,mapping.quant2id,id.spectra)
+      rownames(data.ions)  <- data.titles
+      rownames(data.mass)  <- data.titles
       ## TODO: check that all identified spectra are present in intensities
 
       
-      new(type,data=data,data.mass=intensities$mass,data.ions=intensities$ions,...)
+      new(type,data=data,data.mass=data.mass,data.ions=data.ions,...)
     }
 )
 
-.read.mgf.quant2id <- function(peaklist.f,mapping.quant2id,id.spectra,...) {
+.do.map <- function(spectrumtitles,mapping.quant2id,id.spectra) {
   mapped.spectra.pl <-
     mapping.quant2id$peaklist[ mapping.quant2id$id %in%
                                   id.spectra]
@@ -629,20 +626,14 @@ setMethod("readIBSpectra",
                         "not all identified spectra could be matched!\n",
                         "\tx ... identified spectra\n",
                         "\ty ... mapped spectra\n")
-  
-  intensities.f <- .read.mgf(peaklist.f,...)
-  spectra.map <- .as.vect(mapping.quant2id,"id","peaklist")
+   spectra.map <- .as.vect(mapping.quant2id,"id","peaklist")
 
-  .stopiflengthnotequal(intensities.f$spectrumtitles,
-                        spectra.map[intensities.f$spectrumtitles],
+  .stopiflengthnotequal(spectrumtitles,
+                        spectra.map[spectrumtitles],
                         "not all spectra could be matched!\n",
                         "\tx ... spectra with quant info\n",
                         "\ty ... identified spectra\n")
-  
-  intensities.f$spectrumtitles <- spectra.map[intensities.f$spectrumtitles]
-  rownames(intensities.f$ions) <- intensities.f$spectrumtitles
-  rownames(intensities.f$mass) <- intensities.f$spectrumtitles
-  return(intensities.f)
+  spectra.map[spectrumtitles]
 }
 
 .get.dupl.n.warn <- function(df,col,msg="ibspectra",write.to=NULL) {
@@ -1167,7 +1158,7 @@ setMethod("spectrumSel",signature(x="IBSpectra",peptide="missing",protein="missi
     function(x) rep(TRUE,nrow(fData(x))))
 
 setMethod("spectrumSel",signature(x="IBSpectra",peptide="matrix",protein="missing"),
-    function(x,peptide,modif=NULL,spectrum.titles=FALSE,use.for.quant.only=TRUE) {
+    function(x,peptide,modif=NULL,spectrum.titles=FALSE,use.for.quant.only=TRUE,do.warn=TRUE) {
         if (length(peptide) == 0) {
           warning("0L peptide provided")
           return(FALSE)
@@ -1183,7 +1174,7 @@ setMethod("spectrumSel",signature(x="IBSpectra",peptide="matrix",protein="missin
         
         for (m in modif)
           sel <- sel & grepl(m,fData(x)[,.SPECTRUM.COLS['MODIFSTRING']])
-        if (!any(sel)) warning("No spectra for peptide ",peptide)
+        if (!any(sel) && do.warn) warning("No spectra for peptide ",peptide)
         if (spectrum.titles)
           return(rownames(fData(x))[sel])
         else
