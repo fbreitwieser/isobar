@@ -141,7 +141,8 @@ write.xls.report <- function(report.type,properties.env,report.env,file="isobar-
     }
 
     ## generate perl command line:
-    perl.cl <- paste(system.file("pl","tab2xls.pl",package="isobar")," isobar-analysis.xls",
+    perl.cl <- paste(system.file("pl","tab2xlsx.pl",package="isobar")," ",
+                     ifelse(properties.env$use.name.for.report,sprintf("%s.quant.xlsx"),"isobar-analysis.xlsx"),
                      " ':autofilter,freeze_col=3,name=Quantifications:",protein.quant.f,"'",
                      ifelse(identical(report.type,"peptide") && !is.null(modificationSites),
                             paste(" ':autofilter,freeze_col=3,name=Modification Sites:",modifsites.f,"'",sep=""),""),
