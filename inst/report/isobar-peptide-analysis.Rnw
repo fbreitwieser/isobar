@@ -103,7 +103,7 @@ for (ac_i in seq_len(nrow(all.peps))) {
   
   if (all(is.na(ac.rows[,'lratio']))) {
     acs.notquantified <- c(acs.notquantified,ac_i)
-    message("SCHEISSA: ",paste(my.pep,collapse=" - "))
+    #message("SCHEISSA: ",paste(my.pep,collapse=" - "))
     next
   }
   groupnumber <- 1

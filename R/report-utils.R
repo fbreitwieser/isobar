@@ -65,6 +65,7 @@ write.xls.report <- function(report.type,properties.env,report.env,file="isobar-
     get.property <- function(name) { get(name,properties.env,inherits=FALSE) }
     protein.group <- proteinGroup(get.val('ibspectra'))
     indist.proteins <- indistinguishableProteins(protein.group)
+    modificationSites <- NULL
     
     if (identical(report.type,"protein")) {
       ## TODO: add groups column to provide a link to the groups in report and quant table
@@ -78,10 +79,19 @@ write.xls.report <- function(report.type,properties.env,report.env,file="isobar-
       #sel.1ac  <- protein.id.df$n.acs == 1
       #sel.1variant  <- protein.id.df$n.variants == 1
       #protein.id.df[!sel.1ac & sel.1group,1] <- paste("#color silver#",protein.id.df[!sel.1ac & sel.1group,1],sep="")
-      protein.id.df[!sel.1group | !protein.id.df$use.for.quant,1] <- paste("#color=gray#",protein.id.df[!sel.1group,1],sep="")
+      #protein.id.df[!sel.1group | !protein.id.df$use.for.quant,1] <- paste("#color=gray#",protein.id.df[!sel.1group,1],sep="")
 
     } else {
       protein.id.df <- as(get('ibspectra',report.env),"data.frame.concise")
+      protein.group <- proteinGroup(get('ibspectra',report.env))
+      if (!is.null(properties.env$phosphosite.dataset)) {
+        sites <- do.call(rbind,lapply(properties.env$phosphosite.dataset,
+                                      read.delim,sep="\t",header=TRUE,skip=3,stringsAsFactors=FALSE))
+        colnames(sites)[colnames(sites)=="ACC."]  <- "accession"
+        colnames(sites) <- tolower(colnames(sites))
+      }
+      proteins <- c(names(indistinguishableProteins(protein.group)),protein.ac(protein.group))
+      modificationSites <- subset(sites,accession %in% proteins)
     }
 
     ## Analysis Properties:
@@ -93,13 +103,17 @@ write.xls.report <- function(report.type,properties.env,report.env,file="isobar-
                 cbind(c("",nn),rbind(nn,isotopeImpurities(get.val('ibspectra')))))
 
     cl <- classLabels(get.val('ibspectra'))
+    fill.up <- function(x,w="",n=length(nn)+1)
+      if (length(x) < n) c(x,rep(w,n-length(x)))
+      else stop("fill up")
+      
     if (!is.null(cl)) {
       ii <- rbind(ii,
                   "",
-                  c("@centeracross@Class Labels","@centeracross@",rep("",length(nn)-1)))
+                  fill.up(c("@centeracross@Class Labels","@centeracross@","")))
       
       for (i in seq_along(nn)) {
-        ii <- rbind(ii,c(nn[i],cl[i],rep("",length(nn)-1)))
+        ii <- rbind(ii,fill.up(c(nn[i],cl[i],names(cl)[i])))
       }
     }
     
@@ -121,9 +135,17 @@ write.xls.report <- function(report.type,properties.env,report.env,file="isobar-
     write.t(ii,file=analysis.properties.f,col.names=FALSE)
     write.t(get.val('ibspectra')@log,file=log.f,col.names=NA,row.names=TRUE)
 
+    if (identical(report.type,"peptide") && !is.null(modificationSites)) {
+      modifsites.f <- paste(get.property('cachedir'),"modification_sites.csv",sep="/")
+      write.t(modificationSites,file=modifsites.f)
+    }
+
     ## generate perl command line:
-    perl.cl <- paste(system.file("pl","tab2xls.pl",package="isobar")," isobar-analysis.xls",
+    perl.cl <- paste(system.file("pl","tab2xlsx.pl",package="isobar")," ",
+                     ifelse(properties.env$use.name.for.report,sprintf("%s.quant.xlsx"),"isobar-analysis.xlsx"),
                      " ':autofilter,freeze_col=3,name=Quantifications:",protein.quant.f,"'",
+                     ifelse(identical(report.type,"peptide") && !is.null(modificationSites),
+                            paste(" ':autofilter,freeze_col=3,name=Modification Sites:",modifsites.f,"'",sep=""),""),
                      " ':autofilter,freeze_col=3,name=Identifications:",protein.id.f,"'",
                      " ':name=Analysis Properties:",analysis.properties.f,"'",
                      " ':name=Log:",log.f,"'",sep="")
@@ -467,18 +489,18 @@ initialize.env <- function(env,report.type="protein",properties.env) {
     }
 
     if (identical(level,"peptide"))
-      protein.ratios <- proteinRatios(env$ibspectra,noise.model=env$noise.model,
-                                      proteins=NULL,peptide=peptides(proteinGroup(env$ibspectra)),
-                                      cl=classLabels(env$ibspectra),method=method,symmetry=TRUE)
+      all.ratios <- peptideRatios(env$ibspectra,noise.model=env$noise.model,do.warn=FALSE,
+                                  peptide=peptides(proteinGroup(env$ibspectra)),
+                                  cl=classLabels(env$ibspectra),method=method,symmetry=TRUE)
     else
-      protein.ratios <- proteinRatios(env$ibspectra,noise.model=env$noise.model,
+      all.ratios <- proteinRatios(env$ibspectra,noise.model=env$noise.model,do.warn=FALSE,
                                       proteins=reporterProteins(proteinGroup(env$ibspectra)),peptide=NULL,
                                       cl=classLabels(env$ibspectra),method=method,symmetry=TRUE)
 
-    if (all(is.nan(protein.ratios$lratio)))
+    if (all(is.nan(all.ratios$lratio)))
       stop("Cannot compute protein ratio distribution - no ratios available.\n",
            "Probably due to missing reporter intensities.")
-    fitCauchy(protein.ratios[,'lratio'])
+    fitCauchy(all.ratios[,'lratio'])
   }))
 }
 
@@ -534,7 +556,8 @@ initialize.env <- function(env,report.type="protein",properties.env) {
                        cl=classLabels(env$ibspectra),
                        summarize=properties.env$summarize,
                        combn=properties.env$combn,
-                       use.na=properties.env$use.na))
+                       use.na=properties.env$use.na,
+                       do.warn=FALSE))
 
     quant.tbl <- do.call("proteinRatios",ratios.opts)
     quant.tbl[,"sd"] <- sqrt(quant.tbl[,"variance"])
@@ -583,11 +606,9 @@ initialize.env <- function(env,report.type="protein",properties.env) {
       compare.to.quant <- NULL
 
     if (isTRUE(properties.env$xls.report.format=="wide")) {
-      #xls.quant.tbl.tmp  <- ratiosReshapeWide(env$quant.tbl,vs.class="CTRL",sep="###")
-      xls.quant.tbl.tmp  <- ratiosReshapeWide(env$quant.tbl,sep="###")
+      xls.quant.tbl.tmp  <- ratiosReshapeWide(env$quant.tbl,vs.class=properties.env$vs.class,sep="###")
       if (!is.null(compare.to.quant))
-        #compare.to.quant <- lapply(compare.to.quant,ratiosReshapeWide,vs.class="CTRL",sep="###")
-        compare.to.quant <- lapply(compare.to.quant,ratiosReshapeWide,sep="###")
+        compare.to.quant <- lapply(compare.to.quant,ratiosReshapeWide,vs.class=properties.env$vs.class,sep="###")
     } else {
       xls.quant.tbl.tmp <- env$quant.tbl
     }

@@ -109,6 +109,7 @@ combn.method="interclass"
 # class.labels=c("Treatment"="T","Treatment"="T","Control"="C","Control"="C")
 class.labels=NULL
 combn=NULL
+vs.class=NULL
 
 ## Analysis report sections: Significant proteins and protein details
 show.significant.proteins=FALSE
@@ -149,11 +150,15 @@ xls.report.format="long"
 xls.report.columns <- c("ratio","is.significant","ratio.minus.sd","ratio.plus.sd",
                         "p.value.ratio","p.value.sample","log10.ratio","log10.variance")
 
+## PhosphoSitePlus dataset which can be used to annotate known modification sites
+## Download site: http://www.phosphosite.org/staticDownloads.do
+phosphosite.dataset <- NULL
 
 ## quantification table whose columns are attached to the XLS quantification table
 compare.to.quant <- NULL
 
 sum.intensities=FALSE
 regen=FALSE
+use.name.for.report=TRUE
 
 scratch=list()
