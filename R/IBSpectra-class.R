@@ -108,7 +108,7 @@ setValidity("IBSpectra",.valid.IBSpectra)
 
 .ID.COLS <- c(SEARCHENGINE="search.engine",SCORE="score")
 
-.PTM.COLS <- c(PEPSCORE='pepscore',PEPPROB='pepprob',SEQPOS='seqpos',SITEPROBS='site.probs',PHOSPHO.SITES='phospho.sites')
+.PTM.COLS <- c(SCORE.PHOSPHORS='pepscore',PROB.PHOSPHORS='pepprob',SEQPOS='seqpos',SITEPROBS='site.probs',PHOSPHO.SITES='phospho.sites')
 
 .SPECTRUM.COLS <- c(PEPTIDE="peptide",MODIFSTRING="modif",CHARGE="charge",
                    THEOMASS="theo.mass",EXPMASS="exp.mass",
@@ -242,6 +242,17 @@ setMethod("initialize","IBSpectra",
                        })
         }
         }
+
+        ## filter those duplicated PhosphoRS identifications with a lower score
+        if ('PROB.PHOSPHORS' %in% names(SC) & anyDuplicated(unique(data[,SC[c('SPECTRUM','PEPTIDE','MODIFSTRING')]])[,SC['SPECTRUM']])) {
+          ## use the modification with the best score
+          columns <- as.character(SC[c('SPECTRUM','PEPTIDE')])
+          data  <- ddply(data,columns,function(d) {
+                         if (nrow(d)==1) return(d)
+                         which.d <- which.max(as.numeric(d[,SC['PROB.PHOSPHORS']]))
+                         return(d[which.d,,drop=FALSE])
+                       })
+        }
         
         data.sc <- unique(data[,SC])
         # Check for divergent identifications of spectra
@@ -369,7 +380,7 @@ setMethod("initialize","IBSpectra",
             SEARCHENGINE='protein search engine',
             SCORE='protein search engine score',
             USEFORQUANT='use spectrum for quantification',
-            PEPSCORE='PhosphoRS pepscore',PEPPROB='PhosphoRS pepprob',
+            SCORE.PHOSPHORS='PhosphoRS pepscore',PEPPROB='PhosphoRS pepprob',
             SEQPOS='PTM seqpos',SITEPROBS='PhosphoRS site.probs'
             )
 
