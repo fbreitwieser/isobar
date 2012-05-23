@@ -65,6 +65,7 @@ write.xls.report <- function(report.type,properties.env,report.env,file="isobar-
     get.property <- function(name) { get(name,properties.env,inherits=FALSE) }
     protein.group <- proteinGroup(get.val('ibspectra'))
     indist.proteins <- indistinguishableProteins(protein.group)
+    modificationSites <- NULL
     
     if (identical(report.type,"protein")) {
       ## TODO: add groups column to provide a link to the groups in report and quant table
@@ -78,10 +79,19 @@ write.xls.report <- function(report.type,properties.env,report.env,file="isobar-
       #sel.1ac  <- protein.id.df$n.acs == 1
       #sel.1variant  <- protein.id.df$n.variants == 1
       #protein.id.df[!sel.1ac & sel.1group,1] <- paste("#color silver#",protein.id.df[!sel.1ac & sel.1group,1],sep="")
-      protein.id.df[!sel.1group | !protein.id.df$use.for.quant,1] <- paste("#color=gray#",protein.id.df[!sel.1group,1],sep="")
+      #protein.id.df[!sel.1group | !protein.id.df$use.for.quant,1] <- paste("#color=gray#",protein.id.df[!sel.1group,1],sep="")
 
     } else {
       protein.id.df <- as(get('ibspectra',report.env),"data.frame.concise")
+      protein.group <- proteinGroup(get('ibspectra',report.env))
+      if (!is.null(properties.env$phosphosite.dataset)) {
+        sites <- do.call(rbind,lapply(properties.env$phosphosite.dataset,
+                                      read.delim,sep="\t",header=TRUE,skip=3,stringsAsFactors=FALSE))
+        colnames(sites)[colnames(sites)=="ACC."]  <- "accession"
+        colnames(sites) <- tolower(colnames(sites))
+      }
+      proteins <- c(names(indistinguishableProteins(protein.group)),protein.ac(protein.group))
+      modificationSites <- subset(sites,accession %in% proteins)
     }
 
     ## Analysis Properties:
@@ -121,9 +131,16 @@ write.xls.report <- function(report.type,properties.env,report.env,file="isobar-
     write.t(ii,file=analysis.properties.f,col.names=FALSE)
     write.t(get.val('ibspectra')@log,file=log.f,col.names=NA,row.names=TRUE)
 
+    if (identical(report.type,"peptide") && !is.null(modificationSites)) {
+      modifsites.f <- paste(get.property('cachedir'),"modification_sites.csv",sep="/")
+      write.t(modificationSites,file=modifsites.f)
+    }
+
     ## generate perl command line:
     perl.cl <- paste(system.file("pl","tab2xls.pl",package="isobar")," isobar-analysis.xls",
                      " ':autofilter,freeze_col=3,name=Quantifications:",protein.quant.f,"'",
+                     ifelse(identical(report.type,"peptide") && !is.null(modificationSites),
+                            paste(" ':autofilter,freeze_col=3,name=Modification Sites:",modifsites.f,"'",sep=""),""),
                      " ':autofilter,freeze_col=3,name=Identifications:",protein.id.f,"'",
                      " ':name=Analysis Properties:",analysis.properties.f,"'",
                      " ':name=Log:",log.f,"'",sep="")

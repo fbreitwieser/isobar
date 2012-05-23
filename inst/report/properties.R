@@ -149,6 +149,9 @@ xls.report.format="long"
 xls.report.columns <- c("ratio","is.significant","ratio.minus.sd","ratio.plus.sd",
                         "p.value.ratio","p.value.sample","log10.ratio","log10.variance")
 
+## PhosphoSitePlus dataset which can be used to annotate known modification sites
+## Download site: http://www.phosphosite.org/staticDownloads.do
+phosphosite.dataset <- NULL
 
 ## quantification table whose columns are attached to the XLS quantification table
 compare.to.quant <- NULL
