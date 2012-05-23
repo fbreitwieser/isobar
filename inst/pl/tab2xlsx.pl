@@ -1,6 +1,6 @@
 #!/usr/bin/perl
 # Creation date : 2010-09-29
-# Last modified : Fri 18 May 2012 01:10:08 PM CEST
+# Last modified : Fri 18 May 2012 05:07:39 PM CEST
 
 # Module        : tab2xls.pl
 # Purpose       : converts csv files to XLS format
@@ -12,9 +12,8 @@
 use strict;
 use warnings;
 no warnings 'uninitialized';
-use Spreadsheet::WriteExcel;
+use Excel::Writer::XLSX;
 use File::Basename;
-use Data::Dumper;
 
 my $delim="\t";
 
@@ -26,9 +25,9 @@ if (($#ARGV < 0)) {
           "    autofilter         apply autofilter on all columns\n"),
 };
 
-my $xls_file = $ARGV[0];
+my ($xls_file,$props) = get_props($ARGV[0],":");
 if (@ARGV == 1) {
-  $xls_file =~ s/.csv/.xls/;
+  $xls_file =~ s/.csv/.xlsx/;
 } else {
   shift;
 }
@@ -36,8 +35,11 @@ if (@ARGV == 1) {
 print STDERR "writing XLS file $xls_file\n";
 
 # Create a new Excel workbook
-my $workbook = Spreadsheet::WriteExcel->new($xls_file);
+my $workbook = Excel::Writer::XLSX->new($xls_file);
 $workbook->set_properties(
+  title => $props->{'title'},
+  author => $props->{'author'},
+  subject => $props->{'subject'},
   comments=>'Created with isobar R package and Spreadsheet::WriteExcel');
 #my $green = $workbook->set_custom_color(20, 44, 122, 45);
 my $maroon = $workbook->set_custom_color(41, 158, 30, 30);
@@ -61,7 +63,7 @@ my %header_prop = (
   text_wrap => 1,
   align => 'center');
 
-my $fmt_centeracross = $workbook->add_format(%header_prop,(center_across=>1,fg_color=>$colors[2]));
+my $fmt_centeracross = $workbook->add_format(align=>'center',valign=>'vcenter',center_across=>1,underline=>1);
 
 my %color_formats;
 my $row_limit = 65536;
@@ -95,13 +97,23 @@ for (my $file_i=0; $file_i <= $#ARGV; ++$file_i) {
       $n_worksheets += 1;
       $worksheet = $workbook->add_worksheet($name.($n_worksheets > 1? " $n_worksheets" : ""));
       $worksheet->add_write_handler(qr[\w], \&store_string_widths);
-      if (defined $props{'header'}) { $worksheet->set_header($props{'header'}); }
-      if (defined $props{'footer'}) { $worksheet->set_footer($props{'footer'}); }
+      $worksheet->set_tab_color($colors[$file_i]);
+      if (defined $props->{'header'}) { $worksheet->set_header($props->{'header'}); }
+      if (defined $props->{'footer'}) { $worksheet->set_footer($props->{'footer'}); }
       $worksheet->freeze_panes(1,(defined($props->{'freeze_col'})? $props->{'freeze_col'}:0)); # 1 row
+      my ($merge_from,$do_merge,$merge_val);
       for my $i (0..$#header) {
         $header[$i] = trim($header[$i]);
         $header_formats[$i] = $workbook->add_format(%header_prop,fg_color=>$colors[$file_i]);
-        write_col($worksheet,0,$i,getname($header[$i]),$header_formats[$i]);
+        ($do_merge,$merge_val) = write_col($worksheet,0,$i,getname($header[$i]),$header_formats[$i]);
+        if ($do_merge && $i < $#header) {
+          $merge_from = $i unless (defined($merge_from));
+        } elsif (defined($merge_from)) {
+          $worksheet->merge_range(0,$merge_from,0,
+                                  $do_merge? $i : $i-1,
+                                  $merge_val,$header_formats[$i]);
+          $merge_from = undef;
+        }
       }
       $row = 1;
     }
@@ -113,10 +125,22 @@ for (my $file_i=0; $file_i <= $#ARGV; ++$file_i) {
     if (defined $rowprops->{'color'}||defined $rowprops->{'bottomborder'}) {
       $worksheet->set_row($row,undef,colorfmt($rowprops->{'color'},$rowprops->{'bottomborder'}));
     }
+    if (defined $rowprops->{'level'}) {
+      $worksheet->set_row($row,undef,undef,
+    }
+    my ($merge_from,$do_merge,$merge_val);
     for (my $i=0; $i<scalar(@data); ++$i) {
-      my $field = $data[$i];
-      write_col($worksheet,$row,$col,trim($field));
+      ($do_merge,$merge_val) = write_col($worksheet,$row,$col,trim($data[$i]));
+      if ($do_merge && $i < $#data) {
+        $merge_from = $i unless (defined($merge_from));
+      } elsif (defined($merge_from)) {
+          $worksheet->merge_range($row,$merge_from,$row,
+                                  $do_merge? $i : $i-1,
+                                  $merge_val,$fmt_centeracross);
+          $merge_from = undef;
+        }
       ++$col;
+
     }
     ++$row;
     if (defined $props->{'autofilter'} && $row == $row_limit) { $worksheet->autofilter(0,0,$row-1,$col-1); }
@@ -154,16 +178,14 @@ sub get_props {
 sub write_col {
   my ($worksheet,$row,$col,$field,$format) = @_;
 
-	my ($f,$props) = get_props($field,"@");
-  #if (my ($def,$f) = ($field =~ /^|(^|*)|(.*)$/)) { ## only check for centeracross column property
-#  if (my ($def,$f) = ($field =~ /^:([^:]+):(.*)$/)) {       ## this creates problem w/ modification column  (format: :::etc::)
-  if ($props->{'centeracross'} eq 'centeracross') {
-      $worksheet->write($row,$col,$f,$fmt_centeracross);
-  } else {
-    if ($field eq 'TRUE') { $format=colorfmt('green'); }
-    elsif ($field eq '0') { $format=colorfmt('gray'); }
-    $worksheet->write($row,$col,$f,$format);
-  }
+  my $props;
+	($field,$props) = get_props($field,"@");
+  if (defined $props->{'centeracross'}) {
+    return (1,$field);
+  } 
+  if ($field eq 'TRUE') { $format=colorfmt('green'); }
+  elsif ($field eq '0') { $format=colorfmt('gray'); }
+  $worksheet->write($row,$col,$field,$format);
 
   if (defined $props->{'comment'}) {
     $worksheet->write_comment($row,$col,$props->{'comment'});
