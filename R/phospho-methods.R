@@ -5,8 +5,8 @@ getPhosphoRSProbabilities <- function(
   phosphors.jar=system.file("phosphors","phosphoRS.jar",package="isobar",mustWork=TRUE)) {
   
   tmpfile <- tempfile("phosphors.")
-  infile <- paste(tmpfile,".in.xml",sep="")
-  outfile <- paste(tmpfile,".out.xml",sep="")
+  infile <- paste0(tmpfile,".in.xml")
+  outfile <- paste0(tmpfile,".out.xml")
 
   writePhosphoRSInput(infile,
                       id.file,mgf.file,massTolerance,activationType,
@@ -111,7 +111,7 @@ writePhosphoRSInput <- function(phosphoRS.infile,id.file,mgf.file,massTolerance,
 }
 
 .convertModifToPhosphoRS <- function(modifstring,modifs) {
-  sapply(strsplit(paste(modifstring," ",sep=""),":"),function(x) {
+  sapply(strsplit(paste0(modifstring," "),":"),function(x) {
     x[length(x)] <- sub(" $","",x[length(x)])
     x[x==""] <- 0
     for (i in seq_len(nrow(modifs))) 
@@ -137,8 +137,8 @@ writePhosphoRSInput <- function(phosphoRS.infile,id.file,mgf.file,massTolerance,
            paste(pep,collapse="")
          },
          strsplit(peptide,""),
-         strsplit(paste(modifstring," ",sep=""),":")
-)
+         strsplit(paste0(modifstring," "),":")
+  )
 }
 
 readPhosphoRSOutput <- function(phosphoRS.outfile,simplify=FALSE,pepmodif.sep="##.##",
@@ -157,7 +157,7 @@ readPhosphoRSOutput <- function(phosphoRS.outfile,simplify=FALSE,pepmodif.sep="#
         seqpos <- xmlSApply(isoform[["PhosphoSites"]],xmlGetAttr,"SeqPos")
 
         # get right modif string
-        modifstring <- strsplit(paste(pep.id[2]," ",sep=""),":")[[1]]
+        modifstring <- strsplit(paste0(pep.id[2]," "),":")[[1]]
         modifstring <- gsub(" $","",modifstring)
         modifstring[modifstring=='PHOS'] <- ''
         modifstring[as.numeric(seqpos)+1] <- 'PHOS'

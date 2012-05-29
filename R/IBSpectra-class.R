@@ -194,7 +194,7 @@ setMethod("initialize","IBSpectra",
             }
         }
         
-        # Substitute I with L (indistinguishable by Masspec)
+        # Substitute Isoleucins with Leucins (indistinguishable by Masspec)
         data[,.PEPTIDE.COLS['REALPEPTIDE']] <- data[,SC['PEPTIDE']]
         data[,SC['PEPTIDE']] <- gsub("I","L",data[,SC['PEPTIDE']])
         
@@ -565,7 +565,7 @@ setMethod("readIBSpectra",
           else if (grepl(".mcn$",peaklist.f,ignore.case=TRUE))peaklist.format.f <- "mcn"
           else if (grepl(".intensities.csv$",peaklist.f,ignore.case=TRUE))peaklist.format.f <- "csv"
           else
-            stop(paste("cannot parse file ",peaklist.f," - cannot deduce format (mgf or mcn)",sep=""))          
+            stop(paste0("cannot parse file ",peaklist.f," - cannot deduce format (mgf or mcn)"))          
 
         }
 
@@ -971,9 +971,9 @@ setAs("IBSpectra","data.frame",
 
       # prepare fData data.frame
       ri <-reporterIntensities(from)
-      colnames(ri) <- paste("X",reporterTagNames(from),"_ions",sep="")
+      colnames(ri) <- paste0("X",reporterTagNames(from),"_ions")
       rm <- reporterMasses(from)
-      colnames(rm) <- paste("X",reporterTagNames(from),"_mass",sep="")
+      colnames(rm) <- paste0("X",reporterTagNames(from),"_mass")
 
       fdata.df <- cbind(fData(from),rm,ri)
       fdata.df[,.SPECTRUM.COLS['PEPTIDE']] <- NULL
