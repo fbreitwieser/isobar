@@ -1009,6 +1009,7 @@ setAs("IBSpectra","data.frame",
 
       # prepare ProteinGroup data.frame
       pg.df <- as(proteinGroup(from),"data.frame")
+      pg.df <- pg.df[,c("protein","peptide","spectrum","start.pos")]
       colnames(pg.df)[colnames(pg.df) == "protein"] <- .PROTEIN.COLS['PROTEINAC']
       colnames(pg.df)[colnames(pg.df) == "peptide"] <- .SPECTRUM.COLS['PEPTIDE']
       colnames(pg.df)[colnames(pg.df) == "spectrum"] <- .SPECTRUM.COLS['SPECTRUM']
@@ -1031,8 +1032,8 @@ setAs("IBSpectra","data.frame",
             colnames(rm),colnames(ri))]
     }
 )
-setAs("IBSpectra","data.frame.concise",
-    function(from) {
+
+.IBSpectraAsConciseDataFrame  <- function(from) {
 
       # prepare ProteinGroup data.frame
       pg.df <- as(proteinGroup(from),"data.frame.concise")
@@ -1041,9 +1042,9 @@ setAs("IBSpectra","data.frame.concise",
 
       # prepare fData data.frame
       ri <-reporterIntensities(from)
-      colnames(ri) <- paste("X",reporterTagNames(from),"_ions",sep="")
+      colnames(ri) <- paste0("X",reporterTagNames(from),"_ions")
       rm <- reporterMasses(from)
-      colnames(rm) <- paste("X",reporterTagNames(from),"_mass",sep="")
+      colnames(rm) <- paste0("X",reporterTagNames(from),"_mass")
       fdata.df <- cbind(fData(from),rm,ri)
 
       # merge data.frames
@@ -1054,9 +1055,8 @@ setAs("IBSpectra","data.frame.concise",
           c(intersect(c(.PROTEIN.COLS,.PEPTIDE.COLS,"n.groups","n.acs","n.variants",.SPECTRUM.COLS),colnames(res)),
             colnames(rm),colnames(ri))]
     }
-)
 
-.IBSpectraAsConciseDataFrame <- function(from,show.phospho.position=FALSE) {
+.IBSpectraAsConciseDataFrameNew <- function(from,show.phospho.position=FALSE) {
   # prepare ProteinGroup data.frame
   indist.proteins <- indistinguishableProteins(proteinGroup(from))
   pg.df <- as(proteinGroup(from),"data.frame.concise")
@@ -1065,9 +1065,9 @@ setAs("IBSpectra","data.frame.concise",
 
   # prepare fData data.frame
   ri <-reporterIntensities(from)
-  colnames(ri) <- paste("X",reporterTagNames(from),"_ions",sep="")
+  colnames(ri) <- paste0("X",reporterTagNames(from),"_ions")
   rm <- reporterMasses(from)
-  colnames(rm) <- paste("X",reporterTagNames(from),"_mass",sep="")
+  colnames(rm) <- paste0("X",reporterTagNames(from),"_mass")
   fdata.df <- cbind(fData(from),rm,ri)
 
   # merge data.frames
@@ -1247,7 +1247,8 @@ setMethod("spectrumSel",signature(x="IBSpectra",peptide="character",protein="mis
 )
 
 setMethod("spectrumSel",signature(x="IBSpectra",peptide="missing",protein="character"),
-    function(x,protein,specificity=REPORTERSPECIFIC,modif=NULL,spectrum.titles=FALSE,use.for.quant.only=TRUE,...) {
+    function(x,protein,specificity=REPORTERSPECIFIC,modif=NULL,spectrum.titles=FALSE,use.for.quant.only=TRUE,
+             do.warn=TRUE,...) {
       
       peptides <- peptides(x=proteinGroup(x),protein=protein,specificity=specificity,do.warn=FALSE,...)
       if (length(peptides) == 0)

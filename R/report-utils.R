@@ -72,7 +72,8 @@ write.xls.report <- function(report.type,properties.env,report.env,file="isobar-
       ## in principle, it works by defining the protein.group.ids attr, but does not here - 
       ## probably due to the environment it does not
       attr(proteinGroup(report.env$ibspectra),"protein.group.ids") <- .as.vect(unique(get.val('quant.tbl')[,c("ac","group")]))
-      protein.id.df <- as(get('ibspectra',report.env),"data.frame.concise")
+      #protein.id.df <- as(get('ibspectra',report.env),"data.frame.concise")
+      protein.id.df <- .IBSpectraAsConciseDataFrame(get('ibspectra',report.env))
 
       ## make columns w/ multiple groups gray
       sel.1group  <- protein.id.df$n.groups == 1
@@ -82,24 +83,25 @@ write.xls.report <- function(report.type,properties.env,report.env,file="isobar-
       #protein.id.df[!sel.1group | !protein.id.df$use.for.quant,1] <- paste("#color=gray#",protein.id.df[!sel.1group,1],sep="")
 
     } else {
-      protein.id.df <- as(get('ibspectra',report.env),"data.frame.concise")
+      #protein.id.df <- as(get('ibspectra',report.env),"data.frame.concise")
+      protein.id.df <- .IBSpectraAsConciseDataFrame(get('ibspectra',report.env))
       protein.group <- proteinGroup(get('ibspectra',report.env))
       if (!is.null(properties.env$phosphosite.dataset)) {
         sites <- do.call(rbind,lapply(properties.env$phosphosite.dataset,
                                       read.delim,sep="\t",header=TRUE,skip=3,stringsAsFactors=FALSE))
         colnames(sites)[colnames(sites)=="ACC."]  <- "accession"
         colnames(sites) <- tolower(colnames(sites))
+        modificationSites <- subset(sites,accession %in% proteins)
       }
       proteins <- c(names(indistinguishableProteins(protein.group)),protein.ac(protein.group))
-      modificationSites <- subset(sites,accession %in% proteins)
     }
 
     ## Analysis Properties:
     nn <- reporterTagNames(get.val('ibspectra'))
-    ii <- rbind(c("@centeracross@Analysis Properties",rep("@centeracross@",length(nn))),
+    ii <- rbind(c("@centeracross@Analysis Properties",rep("@centeracross@Analysis Properties",length(nn))),
                 "",
                 c("@centeracross@Isotope Impurity Correction Matrix",
-                  rep("@centeracross@",length(nn))),
+                  rep("@centeracross@Isotope Impurity Correction Matrix",length(nn))),
                 cbind(c("",nn),rbind(nn,isotopeImpurities(get.val('ibspectra')))))
 
     cl <- classLabels(get.val('ibspectra'))
