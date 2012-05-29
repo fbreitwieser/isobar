@@ -152,7 +152,6 @@ setMethod("initialize","IBSpectra",
       } else {
 
         reporterTagNames <- reporterTagNames(.Object)
-
         data <- .factor.to.chr(data)
         if (is.function(annotate.spectra.f)) {
           data <- annotate.spectra.f(data)
@@ -160,14 +159,13 @@ setMethod("initialize","IBSpectra",
           if (!is.null (annotate.spectra.f))
             stop("annotate.spectra.f should be a function!")
         }
- 
 
         SC <- .SPECTRUM.COLS[.SPECTRUM.COLS %in% colnames(data)]
         PC <- .PROTEIN.COLS[.PROTEIN.COLS %in% colnames(data)]
 
-        # check for neccesarray columns
+        # check that obligatory columns are present
         missing.cols = c()
-        for (col in c('SPECTRUM','PEPTIDE'))
+        for (col in c('SPECTRUM','PEPTIDE','MODIFSTRING'))
           if (!is.element(.SPECTRUM.COLS[col],SC))
             missing.cols <- c(missing.cols,.SPECTRUM.COLS[col])
         for (col in c('PROTEINAC'))
@@ -184,7 +182,7 @@ setMethod("initialize","IBSpectra",
 
         # handle missing columns
         if (length(missing.cols) > 0) {
-            msg <- paste("not all required columns in data, the following are missing: \n\n\t",
+            msg <- paste("not all required columns in data, the following are missing: \n\t",
                      paste(missing.cols,collapse="\n\t"))
             if (allow.missing.columns) {
                 warning(msg)
