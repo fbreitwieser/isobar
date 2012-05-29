@@ -716,7 +716,7 @@ combn.matrix <- function(x,method="global",cl=NULL,vs=NULL) {
       }
     }
     if (method == "versus.class") {
-      if (!vs %in% cl) stop("vs argument must be one of [",paste(cl,collapse=", "),"]")
+      if (!all(vs %in% cl)) stop("vs argument must be one of [",paste(cl,collapse=", "),"]")
       if (is.null(cl)) stop("class labels must be given with method versus.class")
       pos <- which(cl==vs)
       combn <- rbind(x[pos],rep(x[-pos],each=length(pos)))
@@ -786,6 +786,10 @@ combn.protein.tbl <- function(ibspectra,noise.model,ratiodistr,
       rownames(r) <- "prot1"
     }
     df <- as.data.frame(r,stringsAsFactors=FALSE)
+    if (is.null(rownames(r))) {
+      print(head(df))
+      #stop("no row.names present!!")
+    }
     df$ac <- rownames(df)
 
     if (is.matrix(attr(r,"input")))
@@ -819,13 +823,18 @@ peptideRatios <- function(ibspectra,...,protein=NULL,peptide=peptides(proteinGro
   proteinRatios(ibspectra,...,proteins=protein,peptide=peptide)
 }
 
-ratiosReshapeWide <- function(quant.tbl,grouped.cols=TRUE,vs.class=NULL,sep=".") {
+ratiosReshapeWide <- function(quant.tbl,grouped.cols=TRUE,vs.class=NULL,sep=".",cmbn=NULL) {
   attrs <- attributes(quant.tbl)
 
+  if (!is.null(cmbn)) {
+    sel <- paste(quant.tbl$r1,quant.tbl$r2) %in% paste(cmbn[1,],cmbn[2,])
+    quant.tbl <- quant.tbl[sel,]
+  }
   classes.unique <- "class1" %in% colnames(quant.tbl) &&
                     !any(is.na(quant.tbl$class1)) && !any(is.null(quant.tbl$class1)) && 
                     all(table(unique(quant.tbl[,c("r1","class1")])$class1)==1) &&
                     all(table(unique(quant.tbl[,c("r2","class2")])$class2)==1)
+
   if (!is.null(vs.class)) {
     if (length(vs.class)==1)
       quant.tbl$comp <- paste(quant.tbl$class2)

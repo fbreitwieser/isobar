@@ -112,7 +112,7 @@ write.xls.report <- function(report.type,properties.env,report.env,file="isobar-
     if (!is.null(cl)) {
       ii <- rbind(ii,
                   "",
-                  fill.up(c("@centeracross@Class Labels","@centeracross@","")))
+                  fill.up(c("@centeracross@Class Labels","@centeracross@Class Labels","")))
       
       for (i in seq_along(nn)) {
         ii <- rbind(ii,fill.up(c(nn[i],cl[i],names(cl)[i])))
@@ -144,8 +144,8 @@ write.xls.report <- function(report.type,properties.env,report.env,file="isobar-
 
     ## generate perl command line:
     perl.cl <- paste(system.file("pl","tab2xlsx.pl",package="isobar")," ",
-                     ifelse(properties.env$use.name.for.report,sprintf("%s.quant.xlsx"),"isobar-analysis.xlsx"),
-                     " ':autofilter,freeze_col=3,name=Quantifications:",protein.quant.f,"'",
+                     ifelse(properties.env$use.name.for.report,sprintf("%s.quant.xlsx",properties.env$name),"isobar-analysis.xlsx"),
+                     " ':autofilter,freeze_col=4,name=Quantifications:",protein.quant.f,"'",
                      ifelse(identical(report.type,"peptide") && !is.null(modificationSites),
                             paste(" ':autofilter,freeze_col=3,name=Modification Sites:",modifsites.f,"'",sep=""),""),
                      " ':autofilter,freeze_col=3,name=Identifications:",protein.id.f,"'",
@@ -608,14 +608,12 @@ initialize.env <- function(env,report.type="protein",properties.env) {
       compare.to.quant <- NULL
 
     if (isTRUE(properties.env$xls.report.format=="wide")) {
-      xls.quant.tbl.tmp  <- ratiosReshapeWide(env$quant.tbl,vs.class=properties.env$vs.class,sep="###")
+      xls.quant.tbl.tmp  <- ratiosReshapeWide(env$quant.tbl,vs.class=properties.env$vs.class,sep="###",cmbn=properties.env$combn)
       if (!is.null(compare.to.quant))
-        compare.to.quant <- lapply(compare.to.quant,ratiosReshapeWide,vs.class=properties.env$vs.class,sep="###")
+        compare.to.quant <- lapply(compare.to.quant,ratiosReshapeWide,vs.class=properties.env$vs.class,sep="###",cmbn=properties.env$combn)
     } else {
       xls.quant.tbl.tmp <- env$quant.tbl
     }
-
-
 
     round.digits <- 4;
     if (identical(report.type,"protein")) {
@@ -643,20 +641,23 @@ initialize.env <- function(env,report.type="protein",properties.env) {
 
       xls.quant.tbl.tmp <- merge(pnp,xls.quant.tbl.tmp,by="peptide")
       xls.quant.tbl.tmp$i  <- seq_len(nrow(xls.quant.tbl.tmp))
-      xls.quant.tbl <- data.frame(i=xls.quant.tbl.tmp$i,
-                                  Sequence=.convertPeptideModif(xls.quant.tbl.tmp$peptide,xls.quant.tbl.tmp$modif),
-                 Phospho.Position=.convertModifToPos(xls.quant.tbl.tmp$modif,"PHOS"),
-                 AC=.protein.acc(xls.quant.tbl.tmp[,"ac"],ip=indist.proteins),
-                 ID=proteinInfo(protein.group,xls.quant.tbl.tmp[,"ac"],do.warn=FALSE),
-                 n=sapply(xls.quant.tbl.tmp[,"ac"],function(p) {length(names(indist.proteins)[indist.proteins == p])}),
-                 Description=proteinInfo(protein.group,xls.quant.tbl.tmp[,"ac"],"protein_name",do.warn=FALSE),
-                 Gene=proteinInfo(protein.group,xls.quant.tbl.tmp[,"ac"],"gene_name",do.warn=FALSE),
-                 Spectra=apply(xls.quant.tbl.tmp,1,function(x) nrow(subset(fData(env$ibspectra),peptide==x['peptide'] & modif==x['modif']))))
+      xls.quant.tbl.tmp$Spectra <- apply(xls.quant.tbl.tmp,1,function(x) nrow(subset(fData(env$ibspectra),peptide==x['peptide'] & modif==x['modif'])))
+      pg.df <- .proteinGroupAsConciseDataFrame(protein.group,modif.pos=properties.env$ptm,ptm.info=properties.env$ptm.info)
+      xls.quant.tbl <- merge(pg.df,xls.quant.tbl.tmp[,c("peptide","modif","i","Spectra")],by=c("peptide","modif"),all.y=TRUE)
+      xls.quant.tbl$peptide <- .convertPeptideModif(xls.quant.tbl$peptide,xls.quant.tbl$modif)
+      colnames(xls.quant.tbl)[colnames(xls.quant.tbl)=="peptide"] <- "Sequence"
+      colnames(xls.quant.tbl)[colnames(xls.quant.tbl)=="proteins"] <- "ACs"
+      colnames(xls.quant.tbl)[colnames(xls.quant.tbl)=="modif.pos"] <- "@comment=Absolute modification position in protein. Modifications in the same protein are separated by '&', in different proteins by ';'. Stars denote positions which are annotated as phosphorylated in NextProt.@Phosphorylation Position"
+      xls.quant.tbl$modif <- NULL
+      xls.quant.tbl$pos <- NULL
+      xls.quant.tbl$n.groups <- NULL
+      xls.quant.tbl <- xls.quant.tbl[order(xls.quant.tbl$i),]
     }
     if (!is.null(compare.to.quant))
       for (ii in seq_along(compare.to.quant)) 
         xls.quant.tbl.tmp=merge(xls.quant.tbl.tmp,compare.to.quant[[ii]],by="ac",
                                 all.x=TRUE,suffixes=c("",paste(".",names(compare.to.quant)[ii])))
+
     xls.quant.tbl.tmp <- xls.quant.tbl.tmp[order(xls.quant.tbl.tmp$i),]
 #        xls.quant.tbl.tmp=merge(xls.quant.tbl.tmp,compare.to.quant[[ii]],by="ac",all.x=TRUE,suffixes=c("",".proteome"))
 
@@ -701,13 +702,9 @@ initialize.env <- function(env,report.type="protein",properties.env) {
       
       xls.quant.tbl <- cbind(xls.quant.tbl,protein.intensities(ibspectra,protein.tbl$protein))
     } else {
-      ## TODO: check that protein table has required columns
-
       if (isTRUE(properties.env$xls.report.format=="long")) {
-
        xls.quant.tbl <-cbind(xls.quant.tbl,
-                               "Channels"=paste(xls.quant.tbl.tmp$r2,"/",xls.quant.tbl.tmp$r1))
-
+                             "Channels"=paste(xls.quant.tbl.tmp$r2,"/",xls.quant.tbl.tmp$r1))
       }
  
       for (cc in properties.env$xls.report.columns) {
@@ -747,31 +744,12 @@ initialize.env <- function(env,report.type="protein",properties.env) {
 
     if (identical(report.type,"protein")) {
       return(xls.quant.tbl[order(xls.quant.tbl[,"group"]),])
-                  } else {
+    } else {
       return(xls.quant.tbl[order(xls.quant.tbl$ID,xls.quant.tbl$Sequence),])
     }
   })
 }
 
-.create.or.load.xls.peptide.tbl <- function(env,properties.env) {
-  .create.or.load("xls.peptide.tbl",envir=properties.env,
-                  msg.f="peptide table for Excel export",f=function() {
-                    
-    protein.group <- proteinGroup(env$ibspectra)
-    indist.proteins <- indistinguishableProteins(protein.group)
-    df.pg <- as(protein.group,"data.frame.concise")    
-
-    xls.peptide.tbl <- merge(df.pg,quant.tbl,by="peptide")
-    xls.peptide.tbl$Channels <- paste(xls.peptide.tbl$r2,"/",xls.peptide.tbl$r1)
-    message(paste(colnames(xls.peptide.tbl),collapse=":"))
-    return(xls.peptide.tbl)
-#    return(xls.peptide.tbl[,order(xls.peptide.tbl[,"proteins"],
-#                                  xls.peptide.tbl[,"peptide"],
-#                                  xls.peptide.tbl[,"modif"],
-#                                  xls.peptide.tbl[,"Channels"]
-#                              )])
-  })
-}
 .protein.acc <- function(prots,protein.info=NULL,ip=NULL) {
   if (is.null(ip)) {
     proteins <- list(prots)

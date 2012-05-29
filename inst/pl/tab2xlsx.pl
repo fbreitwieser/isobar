@@ -1,6 +1,6 @@
 #!/usr/bin/perl
 # Creation date : 2010-09-29
-# Last modified : Tue 29 May 2012 01:24:42 PM CEST
+# Last modified : Tue 29 May 2012 07:19:07 PM CEST
 
 # Module        : tab2xls.pl
 # Purpose       : converts csv files to XLS format
@@ -199,15 +199,20 @@ sub write_col {
   } 
   if ($field eq 'TRUE') { $format=colorfmt('green'); }
   elsif ($field eq '0') { $format=colorfmt('gray'); }
-  $worksheet->write($row,$col,$field,$format);
+  if (defined $props->{'link'}) {
+    $worksheet->write_url($row,$col,$props->{'link'},$field,$format);
+  } else {
+    $worksheet->write($row,$col,$field,$format);
+  }
 
   if (defined $props->{'comment'} && !($props->{'comment'} =~ /^[ \n]*$/)) {
     $props->{'comment'} =~ s/NULL//g;
     $props->{'comment'} =~ s/\n\s*\n+/\n/g;
     return if $props->{'comment'} =~ /^ *$/;
-    print STDERR "comment: [".$props->{'comment'}."]\n";
+    #print STDERR "comment: [".$props->{'comment'}."]\n";
     $worksheet->write_comment($row,$col,$props->{'comment'});
   }
+  return(0);
 }
 
 sub colorfmt {
