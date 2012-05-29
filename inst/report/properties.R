@@ -154,6 +154,13 @@ xls.report.columns <- c("ratio","is.significant","ratio.minus.sd","ratio.plus.sd
 ## Download site: http://www.phosphosite.org/staticDownloads.do
 phosphosite.dataset <- NULL
 
+## Modification to track. Use 'PHOS' for phosphorylation.
+ptm <- NULL
+## data.frame with known modification sites gathered from Nextprot. 
+## Excel report will be annotated.
+## Use getModificationInfoFromNextprot.
+ptm.info <- NULL
+
 ## quantification table whose columns are attached to the XLS quantification table
 compare.to.quant <- NULL
 
