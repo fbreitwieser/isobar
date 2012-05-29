@@ -1,5 +1,11 @@
 if(!isGeneric("as.data.frame")) setGeneric("as.data.frame", useAsDefault=as.data.frame)
 
+.paste_unique <- function(x,...,na.rm=TRUE) {
+  x <- unique(x)
+  x <- x[!is.na(x)]
+  paste(x,...)
+}
+
 .grep_columns <- function(df,pattern,...,logical=TRUE) {
   if (logical)
     grepl(pattern,colnames(df),...)
