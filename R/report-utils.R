@@ -128,9 +128,24 @@ write.xls.report <- function(report.type,properties.env,report.env,file="isobar-
     xls.quant.tbl <- get.val('xls.quant.tbl')
     if (report.type == "protein") {
       xls.quant.tbl <- xls.quant.tbl[order(xls.quant.tbl[,"group"]),]
+      ## Create links
     } else {
-      #xls.peptide.tbl <- get.val('xls.peptide.tbl')
-      #write.t(xls.peptide.tbl,file=protein.quant.f)
+      ## Create links
+      protein.id.df$peptide <- .convertPeptideModif(protein.id.df$peptide,protein.id.df$modif)
+      q.links <- sapply(protein.id.df$peptide,function(p) {
+                          res=which(xls.quant.tbl$Sequence==p)[1]
+                            if (is.na(res)) ""
+                            else paste0("@link=internal:Quantifications!A",res+1,"@q")
+                  })
+      protein.id.df <- cbind(q=q.links,protein.id.df)
+      xls.quant.tbl <- cbind(i=paste0("@link=internal:Identifications!A",
+                                      sapply(xls.quant.tbl$Sequence,
+                                             function(p) which(protein.id.df$peptide==p)[1]+1),
+                                      "@",xls.quant.tbl$Spectra),xls.quant.tbl)
+      #col_idx <- grep("Spectra", names(xls.quant.tbl))
+      #colnames(xls.quant.tbl)[col_idx] <- "i"
+      #xls.quant.tbl <- xls.quant.tbl[, c(col_idx, (1:ncol(df))[-col_idx])]
+
     }
     write.t(xls.quant.tbl,file=protein.quant.f)
     write.t(protein.id.df,file=protein.id.f)  
@@ -145,10 +160,10 @@ write.xls.report <- function(report.type,properties.env,report.env,file="isobar-
     ## generate perl command line:
     perl.cl <- paste(system.file("pl","tab2xlsx.pl",package="isobar")," ",
                      ifelse(properties.env$use.name.for.report,sprintf("%s.quant.xlsx",properties.env$name),"isobar-analysis.xlsx"),
-                     " ':autofilter,freeze_col=4,name=Quantifications:",protein.quant.f,"'",
+                     " ':autofilter,freeze_col=5,name=Quantifications:",protein.quant.f,"'",
                      ifelse(identical(report.type,"peptide") && !is.null(modificationSites),
                             paste(" ':autofilter,freeze_col=3,name=Modification Sites:",modifsites.f,"'",sep=""),""),
-                     " ':autofilter,freeze_col=3,name=Identifications:",protein.id.f,"'",
+                     " ':autofilter,freeze_col=6,name=Identifications:",protein.id.f,"'",
                      " ':name=Analysis Properties:",analysis.properties.f,"'",
                      " ':name=Log:",log.f,"'",sep="")
     

@@ -518,7 +518,7 @@ setAs("ProteinGroup","data.frame.concise",
                                     if (!is.null(ptm.info)) {
                                       modif.posi <- t(mapply(function(ac,pep.pos,start.pos) {
                                                            residue <- pepseq[pep.pos]
-                                                           poss <- start.pos + pep.pos
+                                                           poss <- start.pos + pep.pos - 1
                                                            comments <- sapply(poss,function(pp) {
                                                                               sel <- ptm.info$isoform_ac==ac & ptm.info$position==pp
                                                                               if (any(sel)) {
@@ -589,8 +589,9 @@ setAs("ProteinGroup","data.frame.concise",
                          res <- cbind(res,
                                       ID=.paste_unique(proteinInfo(from,protein.gs,do.warn=FALSE,collapse=","),collapse=","),
                                       Description=.paste_unique(proteinInfo(from,protein.gs,"protein_name",do.warn=FALSE,collapse=","),collapse=";"),
-                                      Gene=.paste_unique(proteinInfo(from,protein.gs,"gene_name",do.warn=FALSE,collapse=","),collapse=","),stringsAsFactors=FALSE,
-                                      Pos=paste(x$start.pos,collapse=";"))
+                                      Gene=.paste_unique(proteinInfo(from,protein.gs,"gene_name",do.warn=FALSE,collapse=","),collapse=","),stringsAsFactors=FALSE
+#                                      Pos=paste(x$start.pos,collapse=";")
+                                      )
                        res <- cbind(res,n.groups=length(protein.gs),stringsAsFactors=FALSE)
                        if (!is.null(attr(from,"from.ids"))) 
                          res  <- cbind(groups=paste(attr(from,"from.ids")[protein.gs],collapse=","),
