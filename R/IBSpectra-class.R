@@ -1173,14 +1173,14 @@ setMethod("spectrumSel",signature(x="IBSpectra",peptide="character",protein="mis
 )
 
 setMethod("spectrumSel",signature(x="IBSpectra",peptide="missing",protein="character"),
-    function(x,protein,specificity=REPORTERSPECIFIC,modif=NULL,spectrum.titles=FALSE,...) {
+    function(x,protein,specificity=REPORTERSPECIFIC,modif=NULL,spectrum.titles=FALSE,do.warn=FALSE,...) {
       
-      peptides <- peptides(x=proteinGroup(x),protein=protein,specificity=specificity,do.warn=FALSE,...)
+      peptides <- peptides(x=proteinGroup(x),protein=protein,specificity=specificity,do.warn=do.warn,...)
       if (length(peptides) == 0)
         return(FALSE)
 
       sel <- spectrumSel(x,peptide=peptides,spectrum.titles=spectrum.titles,
-                         modif=modif,do.warn=FALSE)
+                         modif=modif,do.warn=do.warn)
       if ((spectrum.titles & any(sel)) || (!spectrum.titles & !any(sel)))
         warning("No spectra for protein ",protein,
                 " with specificity ",paste(specificity,collapse=","))
