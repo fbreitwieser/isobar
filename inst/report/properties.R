@@ -156,6 +156,6 @@ compare.to.quant <- NULL
 
 sum.intensities=FALSE
 regen=FALSE
-use.name.for.report=TRUE
+use.name.for.report=FALSE
 
 scratch=list()

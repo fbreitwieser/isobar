@@ -78,7 +78,7 @@ write.xls.report <- function(report.type,properties.env,report.env,file="isobar-
       #sel.1ac  <- protein.id.df$n.acs == 1
       #sel.1variant  <- protein.id.df$n.variants == 1
       #protein.id.df[!sel.1ac & sel.1group,1] <- paste("#color silver#",protein.id.df[!sel.1ac & sel.1group,1],sep="")
-      protein.id.df[!sel.1group | !protein.id.df$use.for.quant,1] <- paste("#color=gray#",protein.id.df[!sel.1group,1],sep="")
+      #protein.id.df[!sel.1group | !protein.id.df$use.for.quant,1] <- paste("#color=gray#",protein.id.df[!sel.1group,1],sep="")
 
     } else {
       protein.id.df <- as(get('ibspectra',report.env),"data.frame.concise")
@@ -127,7 +127,7 @@ write.xls.report <- function(report.type,properties.env,report.env,file="isobar-
 
     ## generate perl command line:
     perl.cl <- paste(system.file("pl","tab2xlsx.pl",package="isobar")," ",
-                     ifelse(properties.env$use.name.for.report,sprintf("%s.quant.xlsx"),"isobar-analysis.xlsx"),
+                     ifelse(properties.env$use.name.for.report,sprintf("%s.quant.xlsx",properties.env$name),"isobar-analysis.xlsx"),
                      " ':autofilter,freeze_col=3,name=Quantifications:",protein.quant.f,"'",
                      " ':autofilter,freeze_col=3,name=Identifications:",protein.id.f,"'",
                      " ':name=Analysis Properties:",analysis.properties.f,"'",
