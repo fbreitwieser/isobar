@@ -1,6 +1,6 @@
 #!/usr/bin/perl
 # Creation date : 2010-09-29
-# Last modified : Fri 18 May 2012 05:07:39 PM CEST
+# Last modified : Tue 29 May 2012 07:19:07 PM CEST
 
 # Module        : tab2xls.pl
 # Purpose       : converts csv files to XLS format
@@ -117,28 +117,42 @@ for (my $file_i=0; $file_i <= $#ARGV; ++$file_i) {
       }
       $row = 1;
     }
-    chomp($line);
+    #chop($line);
     my @data = split("\t",$line);
     my $col = 0;
     my ($data0,$rowprops) = get_props($data[0],"#");
     $data[0] = $data0;
+    #print STDERR "data /vs/ header elems in line $row: $#data /vs/ $#header\n";
+    while (scalar @data < scalar @header) {
+      #print STDERR "push in next line\n";
+      my $line2 = <F>; #chomp($line2);
+      my @data2 = split("\t",$line2);
+      $data[$#data] = $data[$#data].(shift @data2);
+      @data = (@data,@data2);
+    }
+    if (scalar @data != scalar @header) {
+      die "Bad CSV in row $row: $#data /vs/ $#header";
+    }
+    chomp($data[$#data]);
+
     if (defined $rowprops->{'color'}||defined $rowprops->{'bottomborder'}) {
       $worksheet->set_row($row,undef,colorfmt($rowprops->{'color'},$rowprops->{'bottomborder'}));
     }
     if (defined $rowprops->{'level'}) {
-      $worksheet->set_row($row,undef,undef,
+      ## TODO: LEVEL
+      #$worksheet->set_row($row,undef,undef
     }
     my ($merge_from,$do_merge,$merge_val);
     for (my $i=0; $i<scalar(@data); ++$i) {
       ($do_merge,$merge_val) = write_col($worksheet,$row,$col,trim($data[$i]));
       if ($do_merge && $i < $#data) {
         $merge_from = $i unless (defined($merge_from));
-      } elsif (defined($merge_from)) {
-          $worksheet->merge_range($row,$merge_from,$row,
-                                  $do_merge? $i : $i-1,
-                                  $merge_val,$fmt_centeracross);
-          $merge_from = undef;
-        }
+      } elsif (defined($merge_from) && $merge_from > $i) {
+        $worksheet->merge_range($row,$merge_from,$row,
+          $do_merge? $i : $i-1,
+          $merge_val,$fmt_centeracross);
+        $merge_from = undef;
+      }
       ++$col;
 
     }
@@ -162,7 +176,7 @@ sub get_props {
 	my ($string,$sep) = @_;
   if (!defined $sep) { $sep = ":"; }
 	my %def;
-	if (my ($def,$f) = ($string =~ /^${sep}(.*)${sep}(.*)$/)) {
+	if (my ($def,$f) = ($string =~ /^${sep}(.*)${sep}(.*)$/s)) {
     
     for my $s (split /,/,$def) {
       my ($key,$val) = split /=/, $s;
@@ -185,11 +199,20 @@ sub write_col {
   } 
   if ($field eq 'TRUE') { $format=colorfmt('green'); }
   elsif ($field eq '0') { $format=colorfmt('gray'); }
-  $worksheet->write($row,$col,$field,$format);
+  if (defined $props->{'link'}) {
+    $worksheet->write_url($row,$col,$props->{'link'},$field,$format);
+  } else {
+    $worksheet->write($row,$col,$field,$format);
+  }
 
-  if (defined $props->{'comment'}) {
+  if (defined $props->{'comment'} && !($props->{'comment'} =~ /^[ \n]*$/)) {
+    $props->{'comment'} =~ s/NULL//g;
+    $props->{'comment'} =~ s/\n\s*\n+/\n/g;
+    return if $props->{'comment'} =~ /^ *$/;
+    #print STDERR "comment: [".$props->{'comment'}."]\n";
     $worksheet->write_comment($row,$col,$props->{'comment'});
   }
+  return(0);
 }
 
 sub colorfmt {
