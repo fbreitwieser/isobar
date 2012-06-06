@@ -508,11 +508,11 @@ initialize.env <- function(env,report.type="protein",properties.env) {
     if (identical(level,"peptide"))
       all.ratios <- peptideRatios(env$ibspectra,noise.model=env$noise.model,do.warn=FALSE,
                                   peptide=peptides(proteinGroup(env$ibspectra)),
-                                  cl=classLabels(env$ibspectra),method=method,symmetry=TRUE)
+                                  cl=classLabels(env$ibspectra),combn.method=method,symmetry=TRUE)
     else
       all.ratios <- proteinRatios(env$ibspectra,noise.model=env$noise.model,do.warn=FALSE,
                                       proteins=reporterProteins(proteinGroup(env$ibspectra)),peptide=NULL,
-                                      cl=classLabels(env$ibspectra),method=method,symmetry=TRUE)
+                                      cl=classLabels(env$ibspectra),combn.method=method,symmetry=TRUE)
 
     if (all(is.nan(all.ratios$lratio)))
       stop("Cannot compute protein ratio distribution - no ratios available.\n",
@@ -569,7 +569,7 @@ initialize.env <- function(env,report.type="protein",properties.env) {
       stop("don't known level ",level)
     }
 
-    set.ratioopts(list(method=properties.env$combn.method,
+    set.ratioopts(list(combn.method=properties.env$combn.method,
                        cl=classLabels(env$ibspectra),
                        summarize=properties.env$summarize,
                        combn=properties.env$combn,
