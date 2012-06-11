@@ -983,8 +983,12 @@ summarize.ratios <-
         do.call(rbind,lapply(seq_len(nrow(classes)),function(class_i) {
           class1 <- classes[class_i,1]
           class2 <- classes[class_i,2]
-          n.combination.c <- ifelse(is.matrix(n.combination),n.combination[class2,class1],n.combination)
-          min.detect.c <- ifelse(is.matrix(min.detect),min.detect[class2,class1],min.detect)
+          print(n.combination)
+          print(classes)
+          print(class1)
+          print(class2)
+          n.combination.c <- ifelse(is.matrix(n.combination),n.combination[class1,class2],n.combination)
+          min.detect.c <- ifelse(is.matrix(min.detect),min.detect[class1,class2],min.detect)
           ac.sel <-ac.sel.1 & ratios$class1 == class1 & ratios$class2 == class2
           if (!any(ac.sel)) {
             ## no data for ac
