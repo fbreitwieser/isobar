@@ -150,8 +150,12 @@ setMethod("ProteinGroup",signature(from="data.frame",template="missing",proteinI
       from$peptide <- gsub("I","L",from$peptide)
 
       spectrumToPeptide <- .as.vect(unique(from[,c("spectrum","peptide")]))
-      spectrumId <- unique(from[,c("spectrum","peptide","modif")])
-      peptideInfo <- unique(from[,c("protein","peptide","start.pos","modif")])
+      if ("modif" %in% colnames(from)) {
+        spectrumId <- unique(from[,c("spectrum","peptide","modif")])
+        peptideInfo <- unique(from[,c("protein","peptide","start.pos","modif")])
+      } else {
+        peptideInfo <- unique(from[,c("protein","peptide","start.pos")])
+      }
       peptideInfo <- peptideInfo[order(peptideInfo[,"protein"],
                                        peptideInfo[,"start.pos"],
                                        peptideInfo[,"peptide"]),]
