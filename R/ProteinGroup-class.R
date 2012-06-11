@@ -388,6 +388,7 @@ getProteinInfoFromBioDb <- function(x,...,con=NULL) {
   }
 
   protein.acs <- x@isoformToGeneProduct[names(indistinguishableProteins(x)),"proteinac.wo.splicevariant"]
+  #protein.acs <- names(indistinguishableProteins(x))
   query <- paste("SELECT primaryac AS accession,id AS name,",
                  "  description AS protein_name,",
                  "  (SELECT g.genename FROM genenames g WHERE g.entryid=d.entryid AND g.synonym=FALSE AND g.sourcedb=3 LIMIT 1) AS gene_name,",
@@ -724,7 +725,8 @@ setMethod("proteinInfo",signature(x="ProteinGroup",protein.g="character"),
           else 
             paste(sort(unique(protein.infos)),collapse=", ")
         } else {
-          #names(protein.infos) <- protein.info$accession[sel]
+	  if (length(select) == 1)
+            names(protein.infos) <- protein.info$accession[sel]
           protein.infos
         }
       },simplify=simplify)
@@ -1007,22 +1009,24 @@ spectra.count <- function(protein.group,protein.g=reporterProteins(protein.group
   return(spectra.count)
 }
 
+# TOFIX: proteinInfo does not contain splice information. With splice sequence, an accurate seqcov could be calculated
 sequence.coverage <- function(protein.group,protein.g=reporterProteins(protein.group),
                               specificity=c("reporter-specific","group-specific","unspecific"),
-                              simplify=TRUE,...) {
+                              simplify=TRUE,use.splice=FALSE,...) {
   if ("length" %in% colnames(proteinInfo(protein.group)) && 
       "start.pos" %in% colnames(protein.group@peptideInfo)) {
     lengths <- proteinInfo(protein.group,protein.g=protein.g,"length",simplify=FALSE)
     peptides <- peptides(protein.group,protein=protein.g,specificity=specificity,...)
     peptide.info <- unique(protein.group@peptideInfo[,c("protein","peptide","start.pos")])
+    peptide.info$protein.ac.wo.splice <- isobar:::.as.vect(protein.group@isoformToGeneProduct)[peptide.info$protein]
 
-    sapply(protein.g, function(p) {
+    res <- sapply(protein.g, function(p) {
                      protein.acs <- protein.ac(protein.group,p)
                      seqcov <- sapply(protein.acs,function(pp) {
                             if (is.na(lengths[[p]][pp]))
                               return(NA)
                             seqq <- rep(FALSE,lengths[[p]][pp])
-                            pi <- subset(peptide.info,protein==pp&peptide%in%peptides)
+                            pi <- subset(peptide.info,protein.ac.wo.splice==pp&peptide%in%peptides)
                             pi$peplength <- nchar(pi$peptide)
                             pi$end.pos <- pi$start.pos+pi$peplength-1
                             for (i_r in seq_len(nrow(pi)))
@@ -1033,7 +1037,9 @@ sequence.coverage <- function(protein.group,protein.g=reporterProteins(protein.g
                       mean(seqcov,na.rm=TRUE)
                     else
                       seqcov
-      })    
+      })
+    names(res) <- protein.g
+    res
   } else {
     stop("Necessary information for sequence coverage not available")
   }
