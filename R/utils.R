@@ -1,5 +1,12 @@
 if(!isGeneric("as.data.frame")) setGeneric("as.data.frame", useAsDefault=as.data.frame)
 
+.grep_columns <- function(df,pattern,...,logical=TRUE) {
+  if (logical)
+    grepl(pattern,colnames(df),...)
+  else
+    grep(pattern,colnames(df),...)
+}
+
 #TODO: unify factor.as.character and factor.to.chr
 .factor.as.character <- function(df) {
   for (col_i in seq_len(ncol(df))) {
