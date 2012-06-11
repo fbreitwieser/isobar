@@ -61,16 +61,25 @@ setGeneric("ProteinGroup",function(from,template=NULL,proteinInfo=data.frame())
            standardGeneric("ProteinGroup"))
 
 setMethod("ProteinGroup",signature(from="data.frame",template="ProteinGroup",proteinInfo="ANY"),
-          function(from,template,proteinInfo) {      
+          function(from,template,proteinInfo) {
       # TODO: exclude groups from beeing reporters when
       #       there's no reporter-specific peptide ?
-      # TODO: add isoformToGeneProduct
+
+      from <- .factor.as.character(from)
+
       if (ncol(from) == 3) {
-          colnames(from) <- c("spectrum","peptide","protein")
+        colnames(from) <- c("spectrum","peptide","protein")
+        from$start.pos <- 0
+      } else if (ncol(from) == 4) {
+        colnames(from) <- c("spectrum","peptide","start.pos","protein")
+      } else if (ncol(from) == 5) {
+        colnames(from) <- c("spectrum","peptide","modif","start.pos","protein")
+      } else {
+        stop("number of columns should be 3, 4 or 5 [is:",ncol(from),"]")
       }
-      if (ncol(from) == 4) {
-          colnames(from) <- c("spectrum","peptide","startpos","protein")
-      }
+      ## Substitute Isoleucins with Leucins (indistinguishable by Masspec)
+      from$peptide <- gsub("I","L",from$peptide)
+
       peptideNProtein <- peptideNProtein(template)[peptideNProtein(template)[,"peptide"] %in% from[,'peptide'],]
       protein.group.table <-
         subset(proteinGroupTable(template),protein.g %in% peptideNProtein[,"protein.g"])
@@ -100,11 +109,11 @@ setMethod("ProteinGroup",signature(from="data.frame",template="ProteinGroup",pro
 )
 
 readProteinGroup <- function(id.file,...) {
-  # TODO: check if this works
+  pg.cols <- c(.SPECTRUM.COLS[c('SPECTRUM','PEPTIDE','MODIFSTRING')],
+               .PEPTIDE.COLS['STARTPOS'],
+               .PROTEIN.COLS['PROTEINAC'])
   pp <- do.call(rbind,lapply(id.file,function(id.f)
-                read.table(id.f,header=T,stringsAsFactors=FALSE,sep="\t")[,c(.SPECTRUM.COLS[c('SPECTRUM','PEPTIDE')],
-           .PEPTIDE.COLS['STARTPOS'],
-           .PROTEIN.COLS['PROTEINAC'])]
+                read.table(id.f,header=T,stringsAsFactors=FALSE,sep="\t")[,pg.cols]
 ))
 #mzident <- lapply(id.file,read.table,header=T,stringsAsFactors=FALSE,sep="\t")
 # si <- do.call(rbind,lapply(mzident,function(x) x$spectrum.identifications))
@@ -128,14 +137,21 @@ setMethod("ProteinGroup",signature(from="data.frame",template="missing",proteinI
       from <- .factor.as.character(from)
 
       if (ncol(from) == 3) {
-          colnames(from) <- c("spectrum","peptide","protein")
-          from$start.pos <- 0
+        colnames(from) <- c("spectrum","peptide","protein")
+        from$start.pos <- 0
       } else if (ncol(from) == 4) {
-          colnames(from) <- c("spectrum","peptide","start.pos","protein")
+        colnames(from) <- c("spectrum","peptide","start.pos","protein")
+      } else if (ncol(from) == 5) {
+        colnames(from) <- c("spectrum","peptide","modif","start.pos","protein")
+      } else {
+        stop("number of columns should be 3, 4 or 5 [is:",ncol(from),"]")
       }
+      ## Substitute Isoleucins with Leucins (indistinguishable by Masspec)
+      from$peptide <- gsub("I","L",from$peptide)
 
       spectrumToPeptide <- .as.vect(unique(from[,c("spectrum","peptide")]))
-      peptideInfo <- unique(from[,c("protein","peptide","start.pos")])
+      spectrumId <- unique(from[,c("spectrum","peptide","modif")])
+      peptideInfo <- unique(from[,c("protein","peptide","start.pos","modif")])
       peptideInfo <- peptideInfo[order(peptideInfo[,"protein"],
                                        peptideInfo[,"start.pos"],
                                        peptideInfo[,"peptide"]),]
@@ -314,7 +330,7 @@ getProteinInfoFromBiomart <- function(x,database="Uniprot") {
   protein.acs <- x@isoformToGeneProduct[names(indistinguishableProteins(x)),"proteinac.wo.splicevariant"]
 
   protein.info <- data.frame(accession=c(),name=c(),protein_name=c(),
-                            gene_name=c(),organism=c())
+                             gene_name=c(),organism=c())
   if (database == "Uniprot") {
     #require(biomaRt)
     tryCatch({
@@ -343,9 +359,9 @@ getProteinInfoFromUniprot <- function(x,splice.by=200) {
   i <- 1
   while (i < length(protein.acs)) {
     url <- paste("http://www.uniprot.org/uniprot/?query=",
-                 paste("accession:",protein.acs[seq(from=i,to=min(length(protein.acs),i+splice.by-1))],collapse="+OR+",sep=""),
+                 paste0("accession:",protein.acs[seq(from=i,to=min(length(protein.acs),i+splice.by-1))],collapse="+OR+"),
                  "&format=tab&compress=no&columns=",
-                 paste(fields,collapse=","),sep="")
+                 paste0(fields,collapse=","))
     protein.info <- rbind(protein.info,read.delim(url,stringsAsFactors=FALSE,col.names=names(fields)))
     i <- i + splice.by
   }
@@ -368,12 +384,13 @@ getProteinInfoFromBioDb <- function(x,...,con=NULL) {
   }
 
   protein.acs <- x@isoformToGeneProduct[names(indistinguishableProteins(x)),"proteinac.wo.splicevariant"]
+  #protein.acs <- names(indistinguishableProteins(x))
   query <- paste("SELECT primaryac AS accession,id AS name,",
                  "  description AS protein_name,",
                  "  (SELECT g.genename FROM genenames g WHERE g.entryid=d.entryid AND g.synonym=FALSE AND g.sourcedb=3 LIMIT 1) AS gene_name,",
                  "  os AS organism, seqlength as length, sequence",
                  "FROM dbentries d ",
-                 "WHERE dbid IN (2,3) AND primaryac IN (",paste("'",protein.acs,"'",collapse=",",sep=""),")")
+                 "WHERE dbid IN (2,3) AND primaryac IN (",paste0("'",protein.acs,"'",collapse=","),")")
   res <- dbGetQuery(con,query)
   if (do.disconnect)
     dbDisconnect(con)
@@ -619,7 +636,8 @@ setMethod("proteinInfo",signature(x="ProteinGroup",protein.g="character"),
           else 
             paste(sort(unique(protein.infos)),collapse=", ")
         } else {
-          #names(protein.infos) <- protein.info$accession[sel]
+	  if (length(select) == 1)
+            names(protein.infos) <- protein.info$accession[sel]
           protein.infos
         }
       },simplify=simplify)
@@ -769,7 +787,7 @@ get.pep.group <- function(x,protein) {
 
 groupMemberPeptides <- function(x,reporter.protein.g,
                                 ordered.by.pos=TRUE,only.first.pos=TRUE) {
-   peptide.info <- x@peptideInfo
+   peptide.info <- unique(x@peptideInfo[,c("protein","peptide","start.pos")])
    group.table <- proteinGroupTable(x)
    indist.proteins <- x@indistinguishableProteins
 
@@ -902,6 +920,7 @@ spectra.count <- function(protein.group,protein.g=reporterProteins(protein.group
   return(spectra.count)
 }
 
+# TOFIX: proteinInfo does not contain splice information. With splice sequence, an accurate seqcov could be calculated
 sequence.coverage <- function(protein.group,protein.g=reporterProteins(protein.group),
                               specificity=c("reporter-specific","group-specific","unspecific"),
                               simplify=TRUE,...) {
@@ -909,14 +928,16 @@ sequence.coverage <- function(protein.group,protein.g=reporterProteins(protein.g
       "start.pos" %in% colnames(protein.group@peptideInfo)) {
     lengths <- proteinInfo(protein.group,protein.g=protein.g,"length",simplify=FALSE)
     peptides <- peptides(protein.group,protein=protein.g,specificity=specificity,...)
+    peptide.info <- unique(protein.group@peptideInfo[,c("protein","peptide","start.pos")])
+    peptide.info$protein.ac.wo.splice <- isobar:::.as.vect(protein.group@isoformToGeneProduct)[peptide.info$protein]
 
-    sapply(protein.g, function(p) {
+    res <- sapply(protein.g, function(p) {
                      protein.acs <- protein.ac(protein.group,p)
                      seqcov <- sapply(protein.acs,function(pp) {
                             if (is.na(lengths[[p]][pp]))
                               return(NA)
                             seqq <- rep(FALSE,lengths[[p]][pp])
-                            pi <- subset(protein.group@peptideInfo,protein==pp&peptide%in%peptides)
+                            pi <- subset(peptide.info,protein.ac.wo.splice==pp&peptide%in%peptides)
                             pi$peplength <- nchar(pi$peptide)
                             pi$end.pos <- pi$start.pos+pi$peplength-1
                             for (i_r in seq_len(nrow(pi)))
@@ -927,7 +948,9 @@ sequence.coverage <- function(protein.group,protein.g=reporterProteins(protein.g
                       mean(seqcov,na.rm=TRUE)
                     else
                       seqcov
-      })    
+      })
+    names(res) <- protein.g
+    res
   } else {
     stop("Necessary information for sequence coverage not available")
   }
