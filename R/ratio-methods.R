@@ -904,6 +904,7 @@ ratiosReshapeWide <- function(quant.tbl,grouped.cols=TRUE,vs.class=NULL,sep=".",
                     all(table(unique(quant.tbl[,c("r2","class2")])$class2)==1)
 
   if (!is.null(vs.class)) {
+    if (!any(quant.tbl[,"class1"]==vs.class)) stop("vs.class set to ",vs.class,", but it is not present in quant table")
     if (length(vs.class)==1)
       quant.tbl$comp <- paste(quant.tbl$class2)
     else 
