@@ -404,7 +404,7 @@ getPtmInfoFromNextprot <- function(protein.group,
                                    nextprot.url="http://www.nextprot.org/rest/protein/NX_XXX/ptm?format=json") {
   protein.acs <- unique(protein.group@isoformToGeneProduct$proteinac.wo.splicevariant)
   require(RJSONIO)
-  pb <- txtProgressBar(max=length(protein.acs))
+  pb <- txtProgressBar(max=length(protein.acs),style=3)
   nextprot.ptmInfo <- lapply(seq_along(protein.acs),function(ac_i) {
                              setTxtProgressBar(pb,ac_i)
                              fromJSON(sub("XXX",protein.acs[ac_i],nextprot.url))
@@ -520,7 +520,7 @@ setAs("ProteinGroup","data.frame.concise",
                                                            residue <- pepseq[pep.pos]
                                                            poss <- start.pos + pep.pos - 1
                                                            comments <- sapply(poss,function(pp) {
-                                                                              sel <- ptm.info$isoform_ac==ac & ptm.info$position==pp
+                                                                              sel <- ptm.info[,"isoform_ac"]==ac & ptm.info[,"position"]==pp
                                                                               if (any(sel)) {
                                                                                 res <- apply(ptm.info[sel,],1,
                                                                                              function(pi) paste(sprintf("%s pos %g: %s",pi["isoform_ac"],
@@ -530,7 +530,7 @@ setAs("ProteinGroup","data.frame.concise",
                                                                                 NA
                                                                               }
                                                              })
-                                                           known.pos <- sapply(poss,function(pp) any(ptm.info$isoform_ac==ac & ptm.info$position==pp))
+                                                           known.pos <- sapply(poss,function(pp) any(ptm.info[,"isoform_ac"]==ac & ptm.info[,"position"]==pp))
                                                            null.comments <- is.na(comments)
                                                            if (length(known.pos) > 0)
                                                              poss[known.pos] <- paste0(residue[known.pos],poss[known.pos],"*")
