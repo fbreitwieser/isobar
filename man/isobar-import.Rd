@@ -29,7 +29,7 @@
               id.file.domap = NULL,
               peaklist.format = NULL, id.format = NULL,
               fragment.precision = NULL,fragment.outlier.prob = NULL,
-              decode.titles = TRUE, scan.lines = 0)
+              decode.titles = TRUE, scan.lines = 0, ...)
 }
 
 \arguments{
@@ -103,6 +103,9 @@
   \item{scan.lines}{
     Read files sequentially scan.lines lines at a time. Can help in
     case of memory issues, set to 10000 or higher, for example.
+  }
+  \item{\dots}{
+    Further arguments handed down to \code{initialize}.
   }
 }
 
