@@ -131,7 +131,7 @@ write.xls.report <- function(report.type,properties.env,report.env,file="isobar-
       ## Create links
     } else {
       ## Create links
-      protein.id.df$peptide <- .convertPeptideModif(protein.id.df$peptide,protein.id.df$modif)
+      protein.id.df$peptide <- .convertPeptideModif(protein.id.df[,"peptide"],protein.id.df[,"modif"])
       q.links <- sapply(protein.id.df$peptide,function(p) {
                           res=which(xls.quant.tbl$Sequence==p)[1]
                             if (is.na(res)) ""
@@ -658,8 +658,9 @@ initialize.env <- function(env,report.type="protein",properties.env) {
       xls.quant.tbl.tmp$i  <- seq_len(nrow(xls.quant.tbl.tmp))
       xls.quant.tbl.tmp$Spectra <- apply(xls.quant.tbl.tmp,1,function(x) nrow(subset(fData(env$ibspectra),peptide==x['peptide'] & modif==x['modif'])))
       pg.df <- .proteinGroupAsConciseDataFrame(protein.group,modif.pos=properties.env$ptm,ptm.info=properties.env$ptm.info)
+      
       xls.quant.tbl <- merge(pg.df,xls.quant.tbl.tmp[,c("peptide","modif","i","Spectra")],by=c("peptide","modif"),all.y=TRUE)
-      xls.quant.tbl$peptide <- .convertPeptideModif(xls.quant.tbl$peptide,xls.quant.tbl$modif)
+      xls.quant.tbl$peptide <- .convertPeptideModif(xls.quant.tbl[,"peptide"],xls.quant.tbl[,"modif"])
       colnames(xls.quant.tbl)[colnames(xls.quant.tbl)=="peptide"] <- "Sequence"
       colnames(xls.quant.tbl)[colnames(xls.quant.tbl)=="proteins"] <- "ACs"
       colnames(xls.quant.tbl)[colnames(xls.quant.tbl)=="modif.pos"] <- "@comment=Absolute modification position in protein. Modifications in the same protein are separated by '&', in different proteins by ';'. Stars denote positions which are annotated as phosphorylated in NextProt.@Phosphorylation Position"
