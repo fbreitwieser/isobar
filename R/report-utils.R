@@ -28,9 +28,16 @@ create.reports <- function(properties.file="properties.R",args=NULL,
   if(properties.env$write.qc.report) {
     message("Weaving isobar-qc report")
     Sweave(system.file("report","isobar-qc.Rnw",package="isobar"))
-    zip.files <- c(zip.files,"isobar-qc.tex")
+    if (properties.env$use.name.for.report) {
+	qc.name <- sprintf("%s.qc",properties.env$name)
+    	file.rename("isobar-qc.tex",sprintf("%s.tex",qc.name))
+    } else {
+        qc.name <- "isobar-qc"
+    }
+
+    zip.files <- c(zip.files,sprintf("%s.tex",qc.name))
     if (compile) 
-      zip.files <- .compile.tex("isobar-qc",zip.files)
+      zip.files <- .compile.tex(qc.name,zip.files)
   }
 
   if(properties.env$write.report) {
@@ -40,8 +47,16 @@ create.reports <- function(properties.file="properties.R",args=NULL,
                    peptide="isobar-peptide-analysis",
                    stop(report.type," report type not known",
                         " - choose protein or peptide"))
-    
     Sweave(system.file("report",paste(name,".Rnw",sep=""),package="isobar"))
+
+    if (properties.env$use.name.for.report) {
+    	tex.name <- sprintf("%s.tex",name)
+	name <- sprintf("%s.quant",properties.env$name)
+    	file.rename(tex.name,sprintf("%s.tex",name))
+    } else {
+    }
+
+
     zip.files <- c(zip.files,sprintf("%s.tex",name))
     if (compile)
       zip.files <- .compile.tex(name,zip.files)
@@ -474,11 +489,11 @@ initialize.env <- function(env,report.type="protein",properties.env) {
     if (identical(level,"peptide"))
       all.ratios <- peptideRatios(env$ibspectra,noise.model=env$noise.model,do.warn=FALSE,
                                   peptide=peptides(proteinGroup(env$ibspectra)),
-                                  cl=classLabels(env$ibspectra),method=method,symmetry=TRUE)
+                                  cl=classLabels(env$ibspectra),combn.method=method,symmetry=TRUE)
     else
       all.ratios <- proteinRatios(env$ibspectra,noise.model=env$noise.model,do.warn=FALSE,
                                       proteins=reporterProteins(proteinGroup(env$ibspectra)),peptide=NULL,
-                                      cl=classLabels(env$ibspectra),method=method,symmetry=TRUE)
+                                      cl=classLabels(env$ibspectra),combn.method=method,symmetry=TRUE)
 
     if (all(is.nan(all.ratios$lratio)))
       stop("Cannot compute protein ratio distribution - no ratios available.\n",
@@ -534,8 +549,13 @@ initialize.env <- function(env,report.type="protein",properties.env) {
     } else {
       stop("don't known level ",level)
     }
+    if (is.null(properties.env$combn) & !is.null(properties.env$vs.class))
+      properties.env$combn <- combn.matrix(reporterTagNames(env$ibspectra),
+					   "versus.class",
+					   properties.env$class.labels,
+					   vs=properties.env$vs.class)
 
-    set.ratioopts(list(method=properties.env$combn.method,
+    set.ratioopts(list(combn.method=properties.env$combn.method,
                        cl=classLabels(env$ibspectra),
                        summarize=properties.env$summarize,
                        combn=properties.env$combn,
