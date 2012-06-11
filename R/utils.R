@@ -1,10 +1,7 @@
 if(!isGeneric("as.data.frame")) setGeneric("as.data.frame", useAsDefault=as.data.frame)
 
-<<<<<<< HEAD
-=======
 paste0 <- function(...,sep="") paste(...,sep=sep)
 
->>>>>>> devel
 .paste_unique <- function(x,...,na.rm=TRUE) {
   x <- unique(x)
   x <- x[!is.na(x)]
