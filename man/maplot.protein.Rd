@@ -7,7 +7,11 @@
     Plots ratio-versus-intensity for a selected protein against a reference channel.
 }
 \usage{
-maplot.protein(x, relative.to, protein, noise.model = NULL, channels = NULL, ylim = NULL, identify = FALSE, add = FALSE, pchs = NULL, log="xy", legend.pos = "topright", names = NULL, legend.cex = 0.8, cols = pchs, ltys = NULL, main = protein, xlab = "average intensity", ylab = "ratio", type="ma", ...)
+maplot.protein(x, relative.to, protein, noise.model = NULL, channels = NULL, 
+               xlim = NULL, ylim = NULL, identify = FALSE, add = FALSE, 
+               pchs = NULL, log="xy", legend.pos = "topright", names = NULL, 
+               legend.cex = 0.8, cols = pchs, ltys = NULL, main = protein, 
+               xlab = NULL, ylab = NULL, type="ma", ...)
 }
 %- maybe also 'usage' for other objects documented here.
 \arguments{
@@ -24,6 +28,9 @@ maplot.protein(x, relative.to, protein, noise.model = NULL, channels = NULL, yli
   }
   \item{channels}{
        Reporter tag names.
+  }
+  \item{xlim}{
+      See par.
   }
   \item{ylim}{
       See par.
