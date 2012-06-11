@@ -69,7 +69,7 @@ summarize.ratios(ratios, summarize.method, min.detect, n.combination, strict.sam
   \item{combine}{If true, a single ratio for all proteins and peptides, resp., is calculated. See \code{\link{estimateRatio}}.}
   \item{p.adjust}{Set to one of p.adjust.methods to adjust ratio p-values for multiple comparisions. See \code{\link{p.adjust}}.}
   \item{reverse}{reverse}
-  \item{n.combination}{numbero fo combinations possible}
+  \item{n.combination}{number of combinations possible}
 }
 \value{
 'data.frame':	11 variables:

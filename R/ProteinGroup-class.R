@@ -700,32 +700,36 @@ setMethod("proteinInfo",signature(x="ProteinGroup",protein.g="missing"),function
 setMethod("proteinInfo",signature(x="ProteinGroup",protein.g="character"),
     function(x,protein.g,select="name",collapse=", ",simplify=TRUE,do.warn=TRUE) {
       protein.info <- proteinInfo(x)
-      sapply(protein.g,function(p) {
-        if (is.null(proteinInfo(x)) || nrow(proteinInfo(x)) == 0) {
-          if (do.warn)
-            warning("protein info is NULL! Set for ProteinGroup.")
+      if (!all(select %in% colnames(protein.info))) 
+        warning("column ",select," not available.\n",
+          "Available columns:\n","\t",paste(colnames(protein.info),collapse="\n\t"))
+
+      if ((is.null(protein.info) || nrow(protein.info) == 0) && do.warn)
+        warning("protein info is NULL! Set for ProteinGroup.")
+
+      res <- sapply(protein.g,function(p) {
+        if (!all(select %in% colnames(protein.info))) 
           return(NA)
-        }
-        if (!select %in% colnames(proteinInfo(x))) {
-          if (do.warn)
-            warning("column ",select," not available.\n",
-                    "Available columns:\n","\t",paste(colnames(proteinInfo(x)),collapse="\n\t"))
-          return(NA)
-        }
+        
         protein.acs <- x@isoformToGeneProduct[indistinguishableProteins(x,protein.g=p),"proteinac.wo.splicevariant"]
         sel <- protein.info$accession %in% protein.acs
         if (!any(sel)) {
           if (do.warn) warning("No protein info for ",p)
-          return(NA)
+          return(rep(NA,length(select)))
         }
         protein.infos <- protein.info[sel,select]
         if (simplify) {
-          paste(sort(unique(protein.infos)),collapse=", ")
+          if (length(select) > 1)
+            apply(protein.infos,2,function(pi) paste(sort(unique(pi)),collapse=", "))
+          else 
+            paste(sort(unique(protein.infos)),collapse=", ")
         } else {
-          names(protein.infos) <- protein.info$accession[sel]
+          #names(protein.infos) <- protein.info$accession[sel]
           protein.infos
         }
-      })
+      },simplify=simplify)
+      if (simplify) t(res)
+      else res
     }
 )
 setReplaceMethod("proteinInfo","ProteinGroup",

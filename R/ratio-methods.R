@@ -674,7 +674,7 @@ setMethod("estimateRatio",
         res <- rbind(res,data.frame(channel1=c1,channel2=c2,
                                     t(as.data.frame(.call.estimateRatio(x,level,ibspectra,noise.model,channel1=c1,channel2=c2,
                                                                         specificity,modif,n.sample,groupspecific.if.same.ac,
-                                                                        use.precursor.purity,...))),
+                                                                        use.precursor.purity,do.warn=do.warn,...))),
                                     stringsAsFactors=FALSE))
       }
     }
@@ -777,24 +777,24 @@ combn.matrix <- function(x,method="global",cl=NULL,vs=NULL) {
     if (method == "versus.channel") {
       if (!vs %in% x) stop("vs argument must be one of [",paste(x,collapse=", "),"]")
       pos <- which(x==vs)
-      combn <- rbind(vs,x[-pos])
+      cmbn <- rbind(vs,x[-pos])
       if (!is.null(cl)) {
         vs.class <- cl[pos]
-        combn <- rbind(combn,vs.class,cl[-pos])
+        cmbn <- rbind(cmbn,vs.class,cl[-pos])
       }
     }
     if (method == "versus.class") {
       if (!all(vs %in% cl)) stop("vs argument must be one of [",paste(cl,collapse=", "),"]")
       if (is.null(cl)) stop("class labels must be given with method versus.class")
       pos <- which(cl==vs)
-      combn <- rbind(x[pos],rep(x[-pos],each=length(pos)))
-      combn <- rbind(combn,vs,rep(cl[-pos],each=length(pos)))
+      cmbn <- rbind(x[pos],rep(x[-pos],each=length(pos)))
+      cmbn <- rbind(cmbn,vs,rep(cl[-pos],each=length(pos)))
 
     }
   } else if (method == "global") {
-    combn <- combn(x,2) # take all combinations
+    cmbn <- combn(x,2) # take all combinations
     if (!is.null(cl))
-      combn <- rbind(combn,combn(cl,2))
+      cmbn <- rbind(cmbn,combn(cl,2))
   } else {
     x <- x[!is.na(cl)]
     cl <- cl[!is.na(cl)]
@@ -805,24 +805,24 @@ combn.matrix <- function(x,method="global",cl=NULL,vs=NULL) {
         warning("Some class labels are not repeated - ",
                 "those are ignored in intraclass ratios.")
           
-      combn <- do.call(cbind,lapply(names(t)[t>1],
+      cmbn <- do.call(cbind,lapply(names(t)[t>1],
                                     function(xx) rbind(combn(x[which(cl==xx)],2),class1=xx,class2=xx)))
       
     } else if (method == "interclass") {
       if (length(t) == 1) {
         warning("Cannot compute interclass ratios when there is only one class - taking ratios vs ALL")
-        combn <- matrix(c(x,rep("ALL",length(x))),nrow=2,byrow=TRUE)
+        cmbn <- matrix(c(x,rep("ALL",length(x))),nrow=2,byrow=TRUE)
       } else {
-        combn <- matrix(nrow=4,ncol=0)
+        cmbn <- matrix(nrow=4,ncol=0)
         for (name in names(t)) {
           pos=which(cl==name);posn=which(cl!=name);
           for (i in pos) 
             for (j in posn) {
               cc <- c(x[i],x[j],cl[i],cl[j])
-              if (ncol(combn) > 0 &
-                  any(apply(combn,2,function(xx) identical(rev(cc[1:2]),xx[1:2]))))
+              if (ncol(cmbn) > 0 &
+                  any(apply(cmbn,2,function(xx) identical(rev(cc[1:2]),xx[1:2]))))
                 next;
-              combn <- cbind(combn,cc)
+              cmbn <- cbind(cmbn,cc)
             }
         }
       }
@@ -830,7 +830,9 @@ combn.matrix <- function(x,method="global",cl=NULL,vs=NULL) {
       stop(paste("method",method,"not implemented."))
     }
   }
-  return(combn)
+  if (nrow(cmbn) == 2) rownames(cmbn) <- c("r1","r2")
+  else if (nrow(cmbn) == 4) rownames(cmbn) <- c("r1","r2","class1","class2")
+  return(cmbn)
 }
 
 ## create a table with all protein ratios
@@ -981,8 +983,9 @@ proteinRatios <-
         stop("summarization not meaningful with combn.method='global'. ",
              "Use combn.method='intraclass' or combn.method='interclass' to use ratios in or between classes.")
 
-      n.combination <- length(unique(combn[1,]))
-      if (n.combination < 2) 
+      #n.combination <- length(unique(combn[1,]))
+      n.combination <- table(combn["class1",],combn["class2",])
+      if (max(n.combination) < 2)
         stop("Summarize=TRUE makes no sense with only one combination, set summarize to FALSE or class labels differently.")
 
       if (is.null(min.detect))
@@ -1040,8 +1043,11 @@ summarize.ratios <-
       stop("ratios must specify classes w/ columns class1 and class2!")
 
     classes <- unique(ratios[,c("class1","class2")])
-    if (is.null(n.combination))
-      n.combination <- length(unique(classes[1]))
+    
+    if (is.null(n.combination)) {
+      cc <- unique(ratios[c("r1","r2","class1","class2"),])
+      n.combination <- table(cc["class1",],cc["class2",])
+    }
     if (is.null(min.detect))
       min.detect <- n.combination
 
@@ -1055,6 +1061,12 @@ summarize.ratios <-
         do.call(rbind,lapply(seq_len(nrow(classes)),function(class_i) {
           class1 <- classes[class_i,1]
           class2 <- classes[class_i,2]
+          print(n.combination)
+          print(classes)
+          print(class1)
+          print(class2)
+          n.combination.c <- ifelse(is.matrix(n.combination),n.combination[class1,class2],n.combination)
+          min.detect.c <- ifelse(is.matrix(min.detect),min.detect[class1,class2],min.detect)
           ac.sel <-ac.sel.1 & ratios$class1 == class1 & ratios$class2 == class2
           if (!any(ac.sel)) {
             ## no data for ac
@@ -1110,7 +1122,7 @@ summarize.ratios <-
             prod(p(ratiodistr)(ac.ratios,lower.tail=n.neg>n.pos))
         
           if (strict.sample.pval) {
-            p.value.sample <- getMultUnifPValues(product.p.vals*0.5^(n.combination-sum(ac.sel)),n=n.combination)
+            p.value.sample <- getMultUnifPValues(product.p.vals*0.5^(n.combination.c-sum(ac.sel)),n=n.combination.c)
           } else {
             p.value.sample <- getMultUnifPValues(product.p.vals,
                                                  n=sum(ac.sel))
@@ -1119,7 +1131,7 @@ summarize.ratios <-
           ## significance
           is.significant <- (p.value.sample <= sign.level.sample) &&
             (p.value.rat <= sign.level.rat) &&
-            (sum(ac.sel) >= min.detect) &&
+            (sum(ac.sel) >= min.detect.c) &&
             (is.pos | is.neg)
 
           return(list(ac=ac,lratio=lratio,variance=variance,
