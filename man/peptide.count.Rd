@@ -1,22 +1,33 @@
 \name{peptide.count}
 \alias{peptide.count}
 \alias{spectra.count}
+\alias{sequence.coverage}
 \title{
-  Peptide and spectral counts for ProteinGroup objects.
+  Peptide counts, spectral counts and sequence coverage for ProteinGroup objects.
 }
 \description{
-  Reports the peptide and spectral count for supplied proteins.
+  Report the peptide count, spectral count and sequence coverage for supplied proteins.
 }
 \usage{
 peptide.count(protein.group, protein.g = reporterProteins(protein.group), 
-              specificity = c("reporter-specific", "group-specific", "unspecific"))
+              specificity = c("reporter-specific", "group-specific", "unspecific"), ...)
+
 spectra.count(protein.group, protein.g = reporterProteins(protein.group), 
-              specificity = c("reporter-specific", "group-specific", "unspecific"))
+              specificity = c("reporter-specific", "group-specific", "unspecific"), ...)
+
+sequence.coverage(protein.group, protein.g = reporterProteins(protein.group), 
+                  specificity = c("reporter-specific", "group-specific", "unspecific"), 
+                  simplify = TRUE, ...)
 }
 \arguments{
   \item{protein.group}{ProteinGroup object.}
   \item{protein.g}{Protein group identifier.}
   \item{specificity}{Specificity of peptides.}
+  \item{simplify}{If simplify=TRUE, a named numeric vector is returned, 
+                  with the mean sequence coverage of the ACs of each protein.g supplied.
+                  Else, a list with the length of protein.g is returned having the sequence 
+                  coverage for each protein AC.}
+  \item{\dots}{Further arguments to \code{\link{peptides}}}
 }
 \author{
   Florian P Breitwieser
