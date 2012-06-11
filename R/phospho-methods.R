@@ -133,6 +133,8 @@ writePhosphoRSInput <- function(phosphoRS.infile,id.file,mgf.file,massTolerance,
 
 .convertPeptideModif <- function(peptide,modifstring,modifs=c("PHOS","Oxidation_M","Cys_CAM")) {
   names(letters) <- LETTERS
+  if (length(peptide)==0 || all(nchar(peptide)==0))
+	  stop("peptide length=0")
   mapply(function(pep,m) {
            m <- m[-c(1,length(m))]
            for (mm in modifs)
