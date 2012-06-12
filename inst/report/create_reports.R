@@ -46,6 +46,7 @@ peptide.report <- get.arg("--peptide")
 
 ## TODO: parse further arguments
 
+message("started at ",date())
 message("Loading package isobar v",packageDescription("isobar")$Version," ...")
 suppressPackageStartupMessages(library(isobar))
 
@@ -64,3 +65,4 @@ tryCatch({create.reports(report.type=ifelse(peptide.report,"peptide","protein"),
                  as.character(e))
          }
          )
+message("finished at ",date())
