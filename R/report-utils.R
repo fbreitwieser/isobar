@@ -742,7 +742,9 @@ initialize.env <- function(env,report.type="protein",properties.env) {
        xls.quant.tbl <-cbind(xls.quant.tbl,
                              "Channels"=paste(xls.quant.tbl.tmp$r2,"/",xls.quant.tbl.tmp$r1))
       }
+    
  
+      # TODO: Add z score?
       for (cc in properties.env$xls.report.columns) {
         res <- switch(cc,
               log10.ratio =    round.n.append.xls.tbl("lratio","log10.ratio"),

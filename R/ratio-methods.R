@@ -893,7 +893,7 @@ peptideRatios <- function(ibspectra,...,protein=NULL,peptide=peptides(proteinGro
   proteinRatios(ibspectra,...,proteins=protein,peptide=peptide)
 }
 
-ratiosReshapeWide <- function(quant.tbl,grouped.cols=TRUE,vs.class=NULL,sep=".",cmbn=NULL) {
+ratiosReshapeWide <- function(quant.tbl,grouped.cols=TRUE,vs.class=NULL,sep=".",cmbn=NULL,short.names=FALSE) {
   attrs <- attributes(quant.tbl)
 
   if (!is.null(cmbn)) {
@@ -907,7 +907,7 @@ ratiosReshapeWide <- function(quant.tbl,grouped.cols=TRUE,vs.class=NULL,sep=".",
 
   if (!is.null(vs.class)) {
     if (!any(quant.tbl[,"class1"]==vs.class)) stop("vs.class set to ",vs.class,", but it is not present in quant table")
-    if (length(vs.class)==1)
+    if (length(vs.class)==1 && short.names)
       quant.tbl$comp <- paste(quant.tbl$class2)
     else 
       quant.tbl$comp <- paste(quant.tbl$class2,quant.tbl$class1,sep="/")
