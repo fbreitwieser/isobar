@@ -814,6 +814,25 @@ initialize.env <- function(env,report.type="protein",properties.env) {
   })
 }
 
+.create.or.load.xls.peptide.tbl <- function(env,properties.env) {
+  .create.or.load("xls.peptide.tbl",envir=properties.env,
+                  msg.f="peptide table for Excel export",f=function() {
+                    
+    protein.group <- proteinGroup(env$ibspectra)
+    indist.proteins <- indistinguishableProteins(protein.group)
+    df.pg <- as(protein.group,"data.frame.concise")    
+
+    xls.peptide.tbl <- merge(df.pg,quant.tbl,by="peptide")
+    xls.peptide.tbl$Channels <- paste(xls.peptide.tbl$r2,"/",xls.peptide.tbl$r1)
+    message(paste(colnames(xls.peptide.tbl),collapse=":"))
+    return(xls.peptide.tbl)
+#    return(xls.peptide.tbl[,order(xls.peptide.tbl[,"proteins"],
+#                                  xls.peptide.tbl[,"peptide"],
+#                                  xls.peptide.tbl[,"modif"],
+#                                  xls.peptide.tbl[,"Channels"]
+#                              )])
+  })
+}
 
 .create.or.load.my.protein.infos <- function(env,properties.env) {
   .create.or.load("my.protein.infos",envir=properties.env,

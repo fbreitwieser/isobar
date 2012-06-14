@@ -24,6 +24,13 @@ paste0 <- function(...,sep="") paste(...,sep=sep)
   df
 }
 
+# from Gavin Simpson [http://stackoverflow.com/questions/9788026/change-the-order-of-columns]
+.moveToFirstCol <- function(df, colname) {
+  cnams <- colnames(df)
+  want <- which(colname == cnams)
+  df[, c(cnams[want], cnams[-want])]
+}
+
 .factor.to.chr <- function(df) {
   for (col in colnames(df))
     if (is.factor(df[,col])) df[,col] <- as.character(df[,col])
