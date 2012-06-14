@@ -773,34 +773,6 @@ initialize.env <- function(env,report.type="protein",properties.env) {
 #                              )])
   })
 }
-.protein.acc <- function(prots,protein.info=NULL,ip=NULL) {
-  if (is.null(ip)) {
-    proteins <- list(prots)
-  } else {
-    proteins <- lapply(prots,function(p) {names(ip)[ip == p]})
-  }
-
-  sapply(proteins,function(prots) {
-         ## consider ACs with -[0-9]*$ as splice variants (ACs w/ more than one dash are not considered)
-         pos.splice <- grepl("^[^-]*-[0-9]*$",prots)
-         df <- data.frame(protein=prots,accession=prots,splice=0,stringsAsFactors=FALSE)
-
-         if (any(pos.splice))
-           df[pos.splice,c("accession","splice")] <- 
-             do.call(rbind,strsplit(prots[pos.splice],"-"))
-
-         res <- 
-           ddply(df,"accession",function(y) {
-                 if(sum(y$splice>0) <= 1)
-                   return(data.frame(protein=unique(y$protein)))
-                 else 
-                   return(data.frame(protein=sprintf("%s-[%s]",unique(y$accession),
-                                                     paste(sort(y[y$splice>0,'splice']),collapse=","))))
-                                 })
-         return(paste(res$protein,collapse=", "))
-  })
-}
-
 
 .create.or.load.my.protein.infos <- function(env,properties.env) {
   .create.or.load("my.protein.infos",envir=properties.env,
