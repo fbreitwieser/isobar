@@ -27,11 +27,27 @@ create.meta.reports <- function(report.type="protein",properties.file="meta-prop
                     peptide = c("peptide","modif"),
                     stop("report type ",report.type," unknown"))
 
+  merge.cols <- c("class1","class2")
   merged.table <- get.merged.table(properties.env$samples,
-                                   cols=c(ac.vars,"r1","r2","lratio","variance"),
-                                   merge.by=c(ac.vars,"r1","r2"))
-  merged.table <- subset(merged.table,r1==merged.table$r1[1])
-  tbl.wide <- reshape(merged.table,idvar=ac.vars,timevar=c("r2"),direction="wide",drop="r1")
+                                   cols=c(ac.vars,merge.cols,"lratio","variance"),
+                                   merge.by=c(ac.vars,merge.cols),format="long")
+  merged.table$comp <- paste(merged.table[,merge.cols[2]],sep="/",merged.table[,merge.cols[1]])
+
+  tbl.wide <- reshape(merged.table,idvar=c(ac.vars,"sample"),timevar="comp",direction="wide",drop=merge.cols)
+
+
+
+
+
+  merge.cols <- c("class1","class2")
+  merged.table <- get.merged.table(properties.env$samples,
+                                   cols=c(ac.vars,merge.cols,"lratio","variance"),
+                                   merge.by=c(ac.vars,merge.cols))
+  merged.table$comp <- paste(merge.cols[2],sep="/",merge.cols[1])
+
+
+  #merged.table <- subset(merged.table,r1==merged.table$r1[1])
+  tbl.wide <- reshape(merged.table,idvar=ac.vars,timevar="comp",direction="wide",drop=merge.cols)
  # rownames(tbl.wide) <- tbl.wide$ac
   #all.names <- do.call(rbind,lapply(tbl.wide[,"ac"],get.names,protein.group=protein.group))
   #tbl.wide$dNSAF <- dnsaf[as.character(tbl.wide$ac)]

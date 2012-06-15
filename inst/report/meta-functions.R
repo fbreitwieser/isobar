@@ -1,20 +1,34 @@
-get.merged.table <- function(samples,cols=c("ac","r1","r2","lratio","variance"),merge.by=c("ac","r1","r2")) {
+calc.zscore <- function(qq) {
+  s.median <- median(qq,na.rm=TRUE)
+  s.mad <- mad(qq,na.rm=TRUE)
+  (qq-s.median)/s.mad
+}
+
+get.merged.table <- function(samples,cols=c("ac","r1","r2","lratio","variance"),merge.by=c("ac","r1","r2"),format="wide") {
   quant.tables <- lapply(seq(along=samples),
                          function(idx) {
                            load(paste(samples[idx],"/cache/quant.tbl.rda",sep=""))
                            q <- quant.tbl[,cols]
                            q[,"lratio"] <- round(q[,"lratio"],4)
                            q[,"variance"] <- round(q[,"variance"],4)
-                           sel <- !colnames(q) %in% merge.by
-                           colnames(q)[sel] <- paste(colnames(q)[sel],samples[idx],sep=".")
+                           if (format=="wide") {
+                             sel <- !colnames(q) %in% merge.by
+                             colnames(q)[sel] <- paste(colnames(q)[sel],samples[idx],sep=".")
+                           } else {
+                             q$sample <- samples[idx]
+                           }
                            message(paste(colnames(q),collapse=":"))
-                           return(q)
+                           ddply(q,c("class1","class2"),function(x) 
+                                 cbind(x,zscore=calc.zscore(x[,"lratio"])))
                          })
-  
-  merged.table <- quant.tables[[1]]
-  for (idx in  2:length(samples))
-    merged.table <- merge(merged.table,
-                          quant.tables[[idx]],by=merge.by)
+  if (format == "wide") {
+    merged.table <- quant.tables[[1]]
+    for (idx in  2:length(samples))
+      merged.table <- merge(merged.table,
+                            quant.tables[[idx]],by=merge.by,all=TRUE)
+  } else {
+    merged.table <- do.call(rbind,quant.tables)
+  }
   return(merged.table)
 }
 
