@@ -115,7 +115,8 @@ shared.ratios.sign <- function(ress,z.shared,min.spectra=1,plot=TRUE) {
 
   if (plot) {
     require(ggplot2)
-    breaks=c(0.1,0.25,0.5,1,2,3,4,5,10,20,30,40,50)
+    breaks <- c(0.1,0.25,0.5,1,2,3,4,5,10,20,30,40,50)
+    breaks <- breaks[log10(breaks) %inrange% range(xx$ratio)]
 
     print(ggplot(xx,aes(x=ratio,y=proteins)) +
           geom_vline(xintercept=0,alpha=0.5) + 
@@ -124,7 +125,7 @@ shared.ratios.sign <- function(ress,z.shared,min.spectra=1,plot=TRUE) {
           scale_x_continuous("Ratio",breaks=log10(breaks),labels=breaks) +
           scale_colour_manual("group",values = c("blue","darkgreen")) + 
           scale_shape("group") + 
-          scale_size(legend=FALSE))
+          scale_size(guide="none"))
   }
   xx
 }
