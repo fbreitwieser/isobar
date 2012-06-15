@@ -532,22 +532,6 @@ setAs("ProteinGroup","data.frame.concise",
                        by.x="protein",by.y="proteinac.w.splicevariant")
         ip.df <- merge(ip.df,proteinGroupTable(from)[,c("protein.g","reporter.protein")])
         ipp.df <- merge(ip.df,pep.n.prot)
-<<<<<<< HEAD
-        in.df <- 
-          ddply(ipp.df, c("reporter.protein"),
-                        function(x) {
-                          merged.splicevariants <- ddply(x,"proteinac.wo.splicevariant",
-                                  function(x) {
-                                    res <- c(ac=unique(x$proteinac.wo.splicevariant),
-                                             link=paste0("http://www.nextprot.org/db/entry/NX_",unique(x$proteinac.wo.splicevariant)))
-                                    if (!all(is.na(x$splicevariant))) {
-                                      if (nrow(x)==1) res['ac'] <- x$protein[1]
-                                      else res['ac'] <- sprintf("%s-[%s]",unique(x$proteinac.wo.splicevariant),
-                                                             number.ranges(as.numeric(x$splicevariant)))
-                                    }
-                                    return(res)
-                                  })
-                          merged.pepmodifs <- ddply(x,c("peptide","modif"),function(x) {
         in.df <- ddply(ipp.df, c("reporter.protein"),
           function(x) {
             merged.splicevariants <- ddply(x,"proteinac.wo.splicevariant",
