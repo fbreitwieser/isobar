@@ -28,9 +28,16 @@ create.reports <- function(properties.file="properties.R",args=NULL,
   if(properties.env$write.qc.report) {
     message("Weaving isobar-qc report")
     Sweave(system.file("report","isobar-qc.Rnw",package="isobar"))
-    zip.files <- c(zip.files,"isobar-qc.tex")
+    if (properties.env$use.name.for.report) {
+	qc.name <- sprintf("%s.qc",properties.env$name)
+    	file.rename("isobar-qc.tex",sprintf("%s.tex",qc.name))
+    } else {
+        qc.name <- "isobar-qc"
+    }
+
+    zip.files <- c(zip.files,sprintf("%s.tex",qc.name))
     if (compile) 
-      zip.files <- .compile.tex("isobar-qc",zip.files)
+      zip.files <- .compile.tex(qc.name,zip.files)
   }
 
   if(properties.env$write.report) {
@@ -40,8 +47,16 @@ create.reports <- function(properties.file="properties.R",args=NULL,
                    peptide="isobar-peptide-analysis",
                    stop(report.type," report type not known",
                         " - choose protein or peptide"))
-    
     Sweave(system.file("report",paste(name,".Rnw",sep=""),package="isobar"))
+
+    if (properties.env$use.name.for.report) {
+    	tex.name <- sprintf("%s.tex",name)
+	name <- sprintf("%s.quant",properties.env$name)
+    	file.rename(tex.name,sprintf("%s.tex",name))
+    } else {
+    }
+
+
     zip.files <- c(zip.files,sprintf("%s.tex",name))
     if (compile)
       zip.files <- .compile.tex(name,zip.files)
@@ -474,11 +489,11 @@ initialize.env <- function(env,report.type="protein",properties.env) {
     if (identical(level,"peptide"))
       all.ratios <- peptideRatios(env$ibspectra,noise.model=env$noise.model,do.warn=FALSE,
                                   peptide=peptides(proteinGroup(env$ibspectra)),
-                                  cl=classLabels(env$ibspectra),method=method,symmetry=TRUE)
+                                  cl=classLabels(env$ibspectra),combn.method=method,symmetry=TRUE)
     else
       all.ratios <- proteinRatios(env$ibspectra,noise.model=env$noise.model,do.warn=FALSE,
                                       proteins=reporterProteins(proteinGroup(env$ibspectra)),peptide=NULL,
-                                      cl=classLabels(env$ibspectra),method=method,symmetry=TRUE)
+                                      cl=classLabels(env$ibspectra),combn.method=method,symmetry=TRUE)
 
     if (all(is.nan(all.ratios$lratio)))
       stop("Cannot compute protein ratio distribution - no ratios available.\n",
@@ -534,8 +549,13 @@ initialize.env <- function(env,report.type="protein",properties.env) {
     } else {
       stop("don't known level ",level)
     }
+    if (is.null(properties.env$combn) & !is.null(properties.env$vs.class))
+      properties.env$combn <- combn.matrix(reporterTagNames(env$ibspectra),
+					   "versus.class",
+					   properties.env$class.labels,
+					   vs=properties.env$vs.class)
 
-    set.ratioopts(list(method=properties.env$combn.method,
+    set.ratioopts(list(combn.method=properties.env$combn.method,
                        cl=classLabels(env$ibspectra),
                        summarize=properties.env$summarize,
                        combn=properties.env$combn,
@@ -690,7 +710,9 @@ initialize.env <- function(env,report.type="protein",properties.env) {
                                "Channels"=paste(xls.quant.tbl.tmp$r2,"/",xls.quant.tbl.tmp$r1))
 
       }
+    
  
+      # TODO: Add z score?
       for (cc in properties.env$xls.report.columns) {
         res <- switch(cc,
               log10.ratio =    round.n.append.xls.tbl("lratio","log10.ratio"),
@@ -753,34 +775,6 @@ initialize.env <- function(env,report.type="protein",properties.env) {
 #                              )])
   })
 }
-.protein.acc <- function(prots,protein.info=NULL,ip=NULL) {
-  if (is.null(ip)) {
-    proteins <- list(prots)
-  } else {
-    proteins <- lapply(prots,function(p) {names(ip)[ip == p]})
-  }
-
-  sapply(proteins,function(prots) {
-         ## consider ACs with -[0-9]*$ as splice variants (ACs w/ more than one dash are not considered)
-         pos.splice <- grepl("^[^-]*-[0-9]*$",prots)
-         df <- data.frame(protein=prots,accession=prots,splice=0,stringsAsFactors=FALSE)
-
-         if (any(pos.splice))
-           df[pos.splice,c("accession","splice")] <- 
-             do.call(rbind,strsplit(prots[pos.splice],"-"))
-
-         res <- 
-           ddply(df,"accession",function(y) {
-                 if(sum(y$splice>0) <= 1)
-                   return(data.frame(protein=unique(y$protein)))
-                 else 
-                   return(data.frame(protein=sprintf("%s-[%s]",unique(y$accession),
-                                                     paste(sort(y[y$splice>0,'splice']),collapse=","))))
-                                 })
-         return(paste(res$protein,collapse=", "))
-  })
-}
-
 
 .create.or.load.my.protein.infos <- function(env,properties.env) {
   .create.or.load("my.protein.infos",envir=properties.env,

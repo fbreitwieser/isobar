@@ -1,7 +1,9 @@
 \name{proteinInfo-methods}
 \alias{getProteinInfoFromBiomart}
 \alias{getProteinInfoFromUniprot}
+\alias{getProteinInfoFromNextProt}
 \alias{getProteinInfoFromBioDb}
+\alias{proteinInfoIsOnSpliceVariants}
 \alias{proteinInfo}
 \alias{proteinInfo-methods}
 \alias{proteinInfo,ProteinGroup-method}
@@ -25,7 +27,11 @@
   \S4method{proteinInfo}{ProteinGroup,character}(x, protein.g, select="name", collapse=", ",
                                                  simplify = TRUE, do.warn = TRUE)
 
+  proteinInfoIsOnSpliceVariants(protein.info)
+
   getProteinInfoFromUniprot(x, splice.by = 200)
+
+  getProteinInfoFromNextProt(x)
 
   getProteinInfoFromBiomart(x, database = "Uniprot")
 
@@ -45,6 +51,7 @@
   \item{database}{database from which the ACs stem from. Only Uniprot is supported for now.}
   \item{con}{database connection}
   \item{...}{arguments to build database connection.}
+  \item{protein.info}{protein info data.frame}
 }
 
 \details{proteinInfo contains columns \code{accession}, \code{name}, 
@@ -53,7 +60,9 @@
   the entry AC is mapped to the entry AC in the database.
   \code{getProteinInfoFromUniprot} is the preferred methods to get the information.
   \code{getProteinInfoFromBioDb} is an example how to implement the query on a
-  local database.
+  local database. Depending on the database, protein information might be
+  available on protein ACs or also on the specific splice variants. This can be
+  queried with the \code{proteinInfoIsOnSpliceVariants} function.
 }
 \seealso{
   \link{protein.g}
