@@ -546,43 +546,6 @@ setAs("ProteinGroup","data.frame.concise",
                                              return(res)
                                            })
             merged.pepmodifs <- ddply(x,c("peptide","modif"),function(x) {
-                                    if (!is.null(ptm.info)) {
-                                      modif.posi <- t(mapply(function(ac,pep.pos,start.pos) {
-                                                           residue <- pepseq[pep.pos]
-                                                           poss <- start.pos + pep.pos - 1
-                                                           comments <- sapply(poss,function(pp) {
-                                                                              sel <- ptm.info[,"isoform_ac"]==ac & ptm.info[,"position"]==pp
-                                                                              if (any(sel)) {
-                                                                                res <- apply(ptm.info[sel,],1,
-                                                                                             function(pi) paste(sprintf("%s pos %g: %s",pi["isoform_ac"],
-                                                                                                                        as.numeric(pi["position"]),pi["description"])))
-                                                                                paste(res,collapse="\n")
-                                                                              } else {
-                                                                                NA
-                                                                              }
-                                                             })
-                                                           known.pos <- sapply(poss,function(pp) any(ptm.info[,"isoform_ac"]==ac & ptm.info[,"position"]==pp))
-                                                           null.comments <- is.na(comments)
-                                                           if (length(known.pos) > 0)
-                                                             poss[known.pos] <- paste0(residue[known.pos],poss[known.pos],"*")
-                                                           poss[!known.pos] <- paste0(residue[!known.pos],poss[!known.pos])
-                                                           c(paste(poss,collapse="&"),
-                                                             ifelse(all(null.comments),NA,paste(comments[!null.comments],collapse="\n")))
-                                                    },x$protein,modification.positions.foreach.protein,x$start.pos))
-                                    } else {
-                                      modif.posi <- mapply(function(x,y)paste(x+y,collapse="&"),modification.positions.foreach.protein,x$start.pos)
-                                    }
-                                    #print(modif.posi)
-                                    modif.posi <- modif.posi[modif.posi[,1] != "" | !is.na(modif.posi[,2]),,drop=FALSE]
-                                    #print(modif.posi)
-                                    #message("AFTER")
-                                    if (all(modif.posi[,1]==""))
-                                      my.modif.posi <- ""
-                                    else if (all(modif.posi[,1]==modif.posi[1,1]))
-                                      my.modif.posi <- modif.posi[1,1]
-                                    else
-                                      my.modif.posi <- paste(modif.posi[,1],collapse=";")
-
                                     modif.posi <- t(mapply(function(ac,sv,pep.pos,start.pos) {
                                         residue <- pepseq[pep.pos]
                                         poss <- start.pos + pep.pos - 1
@@ -627,7 +590,6 @@ setAs("ProteinGroup","data.frame.concise",
                                                  modif.comment=ifelse(any(!is.na(modif.posi[,2])),
                                                                       paste(modif.posi[!is.na(modif.posi[,2]),2],collapse="\n"),""),
                                                  stringsAsFactors=FALSE)
-                                  }
                                   res
                                   })
                           data.frame(proteinn=paste(merged.splicevariants$ac,collapse=","),link=merged.splicevariants$link[1],merged.pepmodifs,stringsAsFactors=FALSE)
