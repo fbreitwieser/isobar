@@ -1,6 +1,14 @@
 if(!isGeneric("as.data.frame")) setGeneric("as.data.frame", useAsDefault=as.data.frame)
 
-paste0 <- function(...,sep="") paste(...,sep=sep)
+# for R version pre 2.14
+#if (!exists("paste0")) # will show a warning on newer R versions
+  paste0 <- function(...,sep="") paste(...,sep=sep)
+
+"%inrange%" <- function(a,b) {
+  if (!is.numeric(a) || !is.numeric(b)) stop("Arguments must be numeric")
+  if (length(b) != 2) stop("Second argument must have 2 elements")
+  return(a >= b[1] & a <=b[2])
+}
 
 .paste_unique <- function(x,...,na.rm=TRUE) {
   x <- unique(x)
