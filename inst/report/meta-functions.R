@@ -1,11 +1,11 @@
-get.merged.table <- function(samples,cols=c("ac","r1","r2","lratio","variance")) {
+get.merged.table <- function(samples,cols=c("ac","r1","r2","lratio","variance"),merge.by=c("ac","r1","r2")) {
   quant.tables <- lapply(seq(along=samples),
                          function(idx) {
                            load(paste(samples[idx],"/cache/quant.tbl.rda",sep=""))
                            q <- quant.tbl[,cols]
                            q[,"lratio"] <- round(q[,"lratio"],4)
                            q[,"variance"] <- round(q[,"variance"],4)
-                           sel <- !colnames(q) %in% c('ac','r1','r2')
+                           sel <- !colnames(q) %in% merge.by
                            colnames(q)[sel] <- paste(colnames(q)[sel],samples[idx],sep=".")
                            message(paste(colnames(q),collapse=":"))
                            return(q)
@@ -14,9 +14,10 @@ get.merged.table <- function(samples,cols=c("ac","r1","r2","lratio","variance"))
   merged.table <- quant.tables[[1]]
   for (idx in  2:length(samples))
     merged.table <- merge(merged.table,
-                          quant.tables[[idx]],by=c("ac","r1","r2"))
+                          quant.tables[[idx]],by=merge.by)
   return(merged.table)
 }
+
 get.names <- function(p,protein.group) 
   apply(my.protein.info(protein.group,p)[,c("name","gene_name","protein_name")],2,
         function(s) paste(unique(sort(gsub("'","",s))),collapse=", "))
@@ -52,7 +53,42 @@ write.summarized.table <- function(tbl.wide,all.names,cols) {
   return(summarized.table)
 }
 
-plot.heatmaps <- function(ratio.matrix) {
+plot.heatmaps.gd <- function(ratio.matrix,name) {
+  require(gplots)
+  breaks <- seq(from=-max(abs(ratio.matrix)),to=max(abs(ratio.matrix)),length.out=51)
+  pdf(sprintf("heatmap_%s.pdf",name),width=15,height=30,title=name)
+  min.max <- quantile(ratio.matrix,probs=c(0.005,0.9995))
+  sel <- apply(ratio.matrix<min.max[1] | ratio.matrix > min.max[2],1,any)
+  if (sum(sel) > 2) {
+    ratio.matrix2 <- ratio.matrix[sel,,drop=FALSE]
+    heatmap.2(ratio.matrix2,Colv=NA,col=greenred(50),dendrogram="row",
+              margins=c(5,25),main=paste(name,"- above fold change of",round(10^min.max[2],1),
+                                "or below",round(10^min.max[1],1)),
+              key=FALSE, keysize=1.0, symkey=FALSE, density.info='none',
+              trace='none', colsep=1:10,
+              #labRow=all.names[sel,"gene_name"],
+              sepcolor='white', sepwidth=0.025,
+              scale="none",cexRow=2,cexCol=2,
+              labCol = colnames(ratio.matrix),                 
+              hclustfun=function(c){hclust(c, method='mcquitty')},
+              lmat=rbind( c(0, 3), c(2,1), c(0,4) ), lhei=c(0.25, 4, 0.25 ),breaks=breaks)
+  }
+  dev.off()
+
+  cols <- colnames(ratio.matrix)
+  correlation.matrix <- sapply(cols ,function(i) sapply(cols,function(j) corr(ratio.matrix[,c(i,j)],
+                                                            w=apply(1/variance.matrix,1,median))))
+
+  pdf(sprintf("heatmap_correlation_%s.pdf",name),width=15,height=30,title=name)
+  heatmap.2(correlation.matrix,scale="none",Rowv=NA,Colv=NA,col=greenred(50),
+            density.info='none',trace="none",cellnote=round(correlation.matrix,1),main="not re")
+  dev.off()
+
+}
+
+
+plot.heatmaps <- function(ratio.matrix,name) {
+  require(gplots)
   breaks <- seq(from=-max(abs(ratio.matrix)),to=max(abs(ratio.matrix)),length.out=51)
   pdf(sprintf("heatmap_%s.pdf",name),width=15,height=30,title=name)
   heatmap.2(ratio.matrix,Colv=NA,col=greenred(50),margins=c(5,25),main=paste(name),labRow=all.names[,"gene_name"],
@@ -92,7 +128,8 @@ plot.heatmaps <- function(ratio.matrix) {
 
 }
 
-plot.pairs <- function() {
+plot.pairs <- function(name) {
+  require(RColorBrewer)
   weights <- apply(1/variance.matrix,1,median)
   weights <- weights/sum(weights)
   
