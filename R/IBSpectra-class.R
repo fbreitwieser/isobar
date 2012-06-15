@@ -116,13 +116,13 @@ setValidity("IBSpectra",.valid.IBSpectra)
                    SPECTRUM="spectrum",
                    SPECTRUM.QUANT="spectrum.quant",
                    .ID.COLS,USEFORQUANT="use.for.quant",
-                   .PTM.COLS,PRECURSOR.PURITY="precursor.purity",
+                   .PTM.COLS,
                    DISSOCMETHOD="dissoc.method",
                    PRECURSOR.PURITY="precursor.purity",
                    SCANS.FROM="scans.from",SCANS.TO="scans.to",
                    RAWFILE="raw.file",NMC="nmc",DELTASCORE="deltascore",
                    SCANS="scans",MASSDELTA.ABS="massdelta.abs",MASSDELTA.PPM="massdelta.ppm",
-                   .ID.COLS,NOTES="notes")
+                   NOTES="notes")
 
 .PEPTIDE.COLS <- c(PROTEINAC="accession",STARTPOS="start.pos",
                   REALPEPTIDE="real.peptide")
