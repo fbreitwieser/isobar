@@ -546,6 +546,12 @@ setAs("ProteinGroup","data.frame.concise",
                                              return(res)
                                            })
             merged.pepmodifs <- ddply(x,c("peptide","modif"),function(x) {
+                                  res <- data.frame(peptide=x$peptide[1],start.pos=paste(x$start.pos,collapse=";"),
+                                                    stringsAsFactors=FALSE)
+                                  if (!is.null(modif.pos)) {
+                                    pepseq <- strsplit(x$peptide[1],"")[[1]]
+                                    # get modification position foreach protein (in peptide) from modification string
+                                    modification.positions.foreach.protein <- .convertModifToPos(x$modif,modif.pos,collapse=NULL,simplify=FALSE)
                                     modif.posi <- t(mapply(function(ac,sv,pep.pos,start.pos) {
                                         residue <- pepseq[pep.pos]
                                         poss <- start.pos + pep.pos - 1
