@@ -1,5 +1,21 @@
 if(!isGeneric("as.data.frame")) setGeneric("as.data.frame", useAsDefault=as.data.frame)
 
+# for R version pre 2.14
+#if (!exists("paste0")) # will show a warning on newer R versions
+  paste0 <- function(...,sep="") paste(...,sep=sep)
+
+"%inrange%" <- function(a,b) {
+  if (!is.numeric(a) || !is.numeric(b)) stop("Arguments must be numeric")
+  if (length(b) != 2) stop("Second argument must have 2 elements")
+  return(a >= b[1] & a <=b[2])
+}
+
+.paste_unique <- function(x,...,na.rm=TRUE) {
+  x <- unique(x)
+  x <- x[!is.na(x)]
+  paste(x,...)
+}
+
 .grep_columns <- function(df,pattern,...,logical=TRUE) {
   if (logical)
     grepl(pattern,colnames(df),...)
@@ -14,6 +30,13 @@ if(!isGeneric("as.data.frame")) setGeneric("as.data.frame", useAsDefault=as.data
       df[,col_i] <- as.character(df[,col_i])
   }
   df
+}
+
+# from Gavin Simpson [http://stackoverflow.com/questions/9788026/change-the-order-of-columns]
+.moveToFirstCol <- function(df, colname) {
+  cnams <- colnames(df)
+  want <- which(colname == cnams)
+  df[, c(cnams[want], cnams[-want])]
 }
 
 .factor.to.chr <- function(df) {
