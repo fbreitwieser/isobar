@@ -25,10 +25,10 @@
 
   \S4method{proteinInfo}{ProteinGroup}(x)
 
-  \S4method{proteinInfo}{ProteinGroup,character}(x, protein.g, select="name", collapse=", ",
+  \S4method{proteinInfo}{ProteinGroup,character,missing}(x, protein.g, select="name", collapse=", ",
                                                  simplify = TRUE, do.warn = TRUE)
 
-  \S4method{proteinInfo}{ProteinGroup,character}(x, protein.ac, select="name", collapse=", ",
+  \S4method{proteinInfo}{ProteinGroup,missing,character}(x, protein.ac, select="name", collapse=", ",
                                                  simplify = TRUE, do.warn = TRUE)
 
 
