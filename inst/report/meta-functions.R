@@ -9,6 +9,8 @@ get.merged.table <- function(samples,cols=c("ac","r1","r2","lratio","variance"),
                          function(idx) {
                            load(paste(samples[idx],"/cache/quant.tbl.rda",sep=""))
                            q <- quant.tbl[,cols]
+                           q <- ddply(q,c("class1","class2"),function(x) 
+                                 cbind(x,zscore=round(calc.zscore(x[,"lratio"]),4)))
                            q[,"lratio"] <- round(q[,"lratio"],4)
                            q[,"variance"] <- round(q[,"variance"],4)
                            if (format=="wide") {
@@ -18,14 +20,15 @@ get.merged.table <- function(samples,cols=c("ac","r1","r2","lratio","variance"),
                              q$sample <- samples[idx]
                            }
                            message(paste(colnames(q),collapse=":"))
-                           ddply(q,c("class1","class2"),function(x) 
-                                 cbind(x,zscore=calc.zscore(x[,"lratio"])))
+                           q
                          })
   if (format == "wide") {
     merged.table <- quant.tables[[1]]
     for (idx in  2:length(samples))
       merged.table <- merge(merged.table,
                             quant.tables[[idx]],by=merge.by,all=TRUE)
+    merged.table$lratio <- rowMeans(merged.table[,.grep_columns(merged.table,"lratio")],na.rm=TRUE)
+    merged.table$variance <- rowMeans(merged.table[,.grep_columns(merged.table,"variance")],na.rm=TRUE)
   } else {
     merged.table <- do.call(rbind,quant.tables)
   }

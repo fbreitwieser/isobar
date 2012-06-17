@@ -30,10 +30,76 @@ create.meta.reports <- function(report.type="protein",properties.file="meta-prop
   merge.cols <- c("class1","class2")
   merged.table <- get.merged.table(properties.env$samples,
                                    cols=c(ac.vars,merge.cols,"lratio","variance"),
-                                   merge.by=c(ac.vars,merge.cols),format="long")
+                                   merge.by=c(ac.vars,merge.cols),format="wide")
   merged.table$comp <- paste(merged.table[,merge.cols[2]],sep="/",merged.table[,merge.cols[1]])
 
-  tbl.wide <- reshape(merged.table,idvar=c(ac.vars,"sample"),timevar="comp",direction="wide",drop=merge.cols)
+  tbl.wide <- reshape(merged.table,idvar=ac.vars,timevar="comp",direction="wide",drop=merge.cols)
+  sel.zscore.both.f <- function(zscores) (zscores[,1] > 2.5 & zscores[,2] > 2.5) | (zscores[,1] < -2.5 & zscores[,2] < -2.5)
+  sel.zscore.one.f <- function(zscores) (abs(zscores[,1]) > 2.5 & is.na(zscores[,2])) | (abs(zscores[,2]) > 2.5 & is.na(zscores[,1]))
+
+  sel.zscore.one  <- sel.zscore.one.f(tbl.wide[,.grep_columns(tbl.wide,"zscore.*.RapaTNF/15mTNF")])
+  sel.zscore.both <- sel.zscore.both.f(tbl.wide[,.grep_columns(tbl.wide,"zscore.*.RapaTNF/15mTNF")])
+
+  tbl.wide$selected <- sprintf("not selected [n=%s]",sum(!sel.zscore.one & !sel.zscore.both,na.rm=T))
+  tbl.wide$selected[sel.zscore.one] <- sprintf("selected once [n=%s]",sum(sel.zscore.one,na.rm=T))
+  tbl.wide$selected[sel.zscore.both] <- sprintf("selected twice [n=%s]",sum(sel.zscore.both,na.rm=T))
+  tbl.wide$size = 2
+  tbl.wide$size[sel.zscore.one] <- 2.5
+  tbl.wide$size[sel.zscore.both] <- 3
+
+  pdf("/media/work/analysis/tk/scatter_ratio.pdf")
+  ggplot(tbl.wide,aes(x=`lratio.15mTNF/CTRL`,y=`lratio.RapaTNF/CTRL`)) + 
+    geom_point(aes(color=selected,size=size),alpha=0.8) +
+#    scale_size_discrete() +
+    xlab("log10 ratio (15m TNF/CTRL) [mean of tech reps]") +
+    ylab("log10 ratio (TNF+Rapamycin/CTRL) [mean of tech reps]") +
+    opts(title="RapaTNF/15mTNF significantly regulated proteins")
+  dev.off()
+
+  pdf("/media/work/analysis/tk/distr_zscores.pdf")
+  print(ggplot(tbl.wide) + 
+    geom_histogram(fill="#0000A0",binwidth=0.3,data=tbl.wide,aes(x=`zscore.P4041-1.RapaTNF/15mTNF`),alpha=0.5,color="black") + 
+    geom_histogram(color="black",fill="#A00000",binwidth=0.3,aes(x=`zscore.P4041-2.RapaTNF/15mTNF`),alpha=0.5) +
+    geom_vline(xintercept=c(-2.5,2.5),linetype="dashed",color="red") +
+    geom_text(aes(x,y,label=label),data=data.frame(x=c(-2.5,2.5),y=-5,label=c("-2.5 MAD","2.5 MAD")),size=4,color="red",hjust=0,vjust=0) +
+    #geom_line(aes(x,y),data=data.frame(x=range(pretty(c(tbl.wide[,"zscore.P4041-1.RapaTNF/15mTNF"],tbl.wide[,"zscore.P4041-2.RapaTNF/15mTNF"]),na.rm=TRUE)),y=50)) +
+    xlab("log10 (TNF+Rapamycin/TNF only) z-score") + ylab("Frequency") +
+    opts(title="Distribution of robust z-scores of RapaTNF/15mTNF",
+         subtitle="(Median absolute deviations (MADs) away from the median ratio)",
+         plot.title=theme_text(size = 14)))
+  dev.off()
+
+  table(tbl.wide$selected)
+  #not selected  selected once selected twice 
+  #       2912             67              5 
+
+  t(sapply(.grep_columns(tbl.wide,"lratio.P",value=TRUE,logical=FALSE),function(i) isobar:::.sum.bool(!is.na(tbl.wide[,i]))))
+  tbl.pg <- merge(tbl.wide,pg.df)
+  sel <- apply(!is.na(tbl.pg[,.grep_columns(tbl.wide,"lratio.P")]),1,any)
+  sel.1 <- !is.na(tbl.pg[,"lratio.P4041-1.RapaTNF/15mTNF"])
+  sel.2 <- !is.na(tbl.pg[,"lratio.P4041-2.RapaTNF/15mTNF"])
+  sel.selected <- tbl.pg$selected != "not selected"
+  data.frame(
+             protein=c(total=length(unique(tbl.pg[,"proteins"])),
+                       quant.any=length(unique(tbl.pg[sel.1|sel.2,"proteins"])),
+                       quant.1=length(unique(tbl.pg[sel.1,"proteins"])),
+                       quant.2=length(unique(tbl.pg[sel.2,"proteins"])),
+                       quant.both=length(unique(tbl.pg[sel.1&sel.2,"proteins"])),
+                       selected=length(unique(tbl.pg[sel.selected,"proteins"]))),
+             peptide=c(total=length(unique(tbl.pg[,"peptide"])),
+                       quant.any=length(unique(tbl.pg[sel.1|sel.2,"peptide"])),
+                       quant.1=length(unique(tbl.pg[sel.1,"peptide"])),
+                       quant.2=length(unique(tbl.pg[sel.2,"peptide"])),
+                       quant.both=length(unique(tbl.pg[sel.1&sel.2,"peptide"])),
+                       selected=length(unique(tbl.pg[sel.selected,"peptide"]))),
+             phospopep=c(total=nrow(tbl.wide),
+                         quant.any=sum(sel.1|sel.2),
+                         quant.1=sum(sel.1),
+                         quant.2=sum(sel.2),
+                         quant.both=sum(sel.1&sel.2),
+                         selected=sum(sel.selected)))
+
+
 
 
 
