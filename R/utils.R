@@ -51,6 +51,12 @@ if(!isGeneric("as.data.frame")) setGeneric("as.data.frame", useAsDefault=as.data
 }
 
 # get a number range. E.g. 1,2,3,5,6 -> 1-3,5,6
+.string.number.ranges <- function(numbers) {
+  n <- number.ranges(numbers)
+  if (is.na(n)) return("")
+  else return(sprintf("[%s]",n))
+}
+
 number.ranges <- function(numbers) {
   if (all(is.na(numbers))) { return(NA) }
   numb=c()

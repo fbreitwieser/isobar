@@ -1,3 +1,4 @@
+#!/usr/bin/Rscript
 suppressPackageStartupMessages(library(gplots))
 suppressPackageStartupMessages(library(boot))
 suppressPackageStartupMessages(library(RColorBrewer))
