@@ -577,7 +577,6 @@ setAs("ProteinGroup","data.frame.concise",
                                                  modif.pos=my.modif.posi,
                                                  modif.comment=ifelse(any(!is.na(modif.posi[,2])),
                                                                       paste(modif.posi[!is.na(modif.posi[,2]),2],collapse="\n"),""),
-                                                 modif.gene=
                                                  stringsAsFactors=FALSE)
                                   }
                                   res
