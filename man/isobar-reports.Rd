@@ -3,6 +3,7 @@
 \alias{isobar-reports}
 \alias{connect.nodes}
 \alias{create.reports}
+\alias{create.meta.reports}
 \alias{draw.boxplot}
 \alias{draw.protein.group}
 \alias{initialize.env}

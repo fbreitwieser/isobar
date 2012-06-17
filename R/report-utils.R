@@ -1,4 +1,68 @@
 
+create.meta.reports <- function(report.type="protein",properties.file="meta-properties.R",args=NULL) {
+  source(system.file("report","meta-functions.R",package="isobar"))
+  if (!exists("properties.env")) {
+    properties.env <- load.properties(properties.file,
+                                      system.file("report","meta-properties.R",package="isobar"),
+                                      args=args)
+  }
+
+  protein.group <- .get.or.load("protein.group",properties.env,"protein group object","ProteinGroup")
+  if (!is.null(properties.env$protein.info.f)) 
+    proteinInfo(protein.group) <- 
+      .create.or.load("protein.info",envir=properties.env,
+                      f=properties.env$protein.info.f,
+                      x=protein.group,
+                      error=warning,default.value=proteinInfo(protein.group))
+  
+  if (is.null(proteinInfo(protein.group)) || length(proteinInfo(protein.group))==0)
+    stop("No protein information available.")
+
+  #if (properties.env$calculate.dnsaf)
+  #  dnsaf <- .create.or.load("dnsaf",envir=properties.env,f=calculate.dNSAF,protein.group=protein.group)
+
+  message("Merging tables ...")
+  ac.vars <- switch(report.type,
+                    protein = "ac",
+                    peptide = c("peptide","modif"),
+                    stop("report type ",report.type," unknown"))
+
+  merged.table <- get.merged.table(properties.env$samples,
+                                   cols=c(ac.vars,"r1","r2","lratio","variance"),
+                                   merge.by=c(ac.vars,"r1","r2"))
+  merged.table <- subset(merged.table,r1==merged.table$r1[1])
+  tbl.wide <- reshape(merged.table,idvar=ac.vars,timevar=c("r2"),direction="wide",drop="r1")
+ # rownames(tbl.wide) <- tbl.wide$ac
+  #all.names <- do.call(rbind,lapply(tbl.wide[,"ac"],get.names,protein.group=protein.group))
+  #tbl.wide$dNSAF <- dnsaf[as.character(tbl.wide$ac)]
+
+  if (report.type=="peptide") {
+    pg.df <- isobar:::.proteinGroupAsConciseDataFrame(protein.group)  
+    rownames(pg.df) <- do.call(paste,pg.df[,ac.vars,drop=FALSE])
+  }
+
+  p <- ggplot(sdf, aes(y,x))
+  p <- p + geom <- tile(aes(fill=height), colour="white")
+  p <- p + scale <- fill <- gradientn(colours = c("dark red", "white", "dark green" ), breaks=breaks, labels=format(breaks))
+  p <- p + opts(title='Day 1') 
+
+
+
+  ratio.matrix <- as.matrix(tbl.wide[,grep("lratio",colnames(tbl.wide))])
+  variance.matrix <- as.matrix(tbl.wide[,grep("var",colnames(tbl.wide))])
+  rownames(ratio.matrix)  <- do.call(paste,tbl.wide[,ac.vars,drop=FALSE])
+  rownames(variance.matrix)  <- do.call(paste,tbl.wide[,ac.vars,drop=FALSE])
+  sel <- !apply(is.na(ratio.matrix),1,any)
+  ratio.matrix <- ratio.matrix[sel,]
+  variance.matrix <- variance.matrix[sel,]
+
+  m.median <- apply(ratio.matrix,2,median)
+  normalized.ratio.matrix <- ratio.matrix-matrix(m.median,nrow=nrow(ratio.matrix),ncol=ncol(ratio.matrix),byrow=T)
+
+  plot.heatmaps(ratio.matrix,properties.env$name)
+  plot.pairs(properties.env$name)
+
+}
 
 create.reports <- function(properties.file="properties.R",args=NULL,
                            report.type="protein",compile=FALSE,zip=FALSE) {
@@ -11,7 +75,8 @@ create.reports <- function(properties.file="properties.R",args=NULL,
   }
   
   if (!exists("report.env")) {
-    initialize.env(.GlobalEnv,report.type,properties.env)
+    report.env <- .GlobalEnv
+    initialize.env(report.env,report.type,properties.env)
   }
 
   zip.files <- c(properties.file)
@@ -19,7 +84,7 @@ create.reports <- function(properties.file="properties.R",args=NULL,
   ## generate XLS report
   if(properties.env$write.xls.report) {
     message("Writing isobar-analysis.xls")
-    write.xls.report(report.type,properties.env,.GlobalEnv)
+    write.xls.report(report.type,properties.env,report.env)
     zip.files <- c(zip.files,"isobar-analysis.xls")
   }
   
@@ -261,7 +326,7 @@ initialize.env <- function(env,report.type="protein",properties.env) {
 #- property loading helper functions
 .DOES.NOT.EXIST = "NOT AVAILABLE"
 
-.get.or.load <- function(name,envir,msg.f=name,class=NULL,null.ok=FALSE) {
+.get.or.load <- function(name,envir,msg.f=name,class=NULL,null.ok=FALSE,do.load=FALSE) {
   if (.exists.property(name,envir,null.ok=null.ok)) {
     o <- .get.property(name,envir)
     if (is.null(o) && null.ok) return(NULL)
@@ -285,7 +350,7 @@ initialize.env <- function(env,report.type="protein",properties.env) {
 }
 
 .create.or.load <- function(name,envir,f,msg.f=name,do.load=FALSE,class=NULL,error=stop,default.value=NULL,...) {
-  x <- tryCatch(.get.or.load(name,envir,msg.f,class),error=function(e) .DOES.NOT.EXIST)
+  x <- tryCatch(.get.or.load(name,envir,msg.f,class,do.load=do.load),error=function(e) .DOES.NOT.EXIST)
   if (identical(x,.DOES.NOT.EXIST)) {
     message(paste("creating",msg.f,"..."))
     tryCatch({
@@ -626,8 +691,8 @@ initialize.env <- function(env,report.type="protein",properties.env) {
                  AC=.protein.acc(xls.quant.tbl.tmp[,"ac"],ip=indist.proteins),
                  ID=proteinInfo(protein.group,xls.quant.tbl.tmp[,"ac"],do.warn=FALSE),
                  n=sapply(xls.quant.tbl.tmp[,"ac"],function(p) {length(names(indist.proteins)[indist.proteins == p])}),
-                 Description=proteinInfo(protein.group,xls.quant.tbl.tmp[,"ac"],"protein_name",do.warn=FALSE),
-                 Gene=proteinInfo(protein.group,xls.quant.tbl.tmp[,"ac"],"gene_name",do.warn=FALSE),
+                 Description=proteinInfo(protein.group,xls.quant.tbl.tmp[,"ac"],select="protein_name",do.warn=FALSE),
+                 Gene=proteinInfo(protein.group,xls.quant.tbl.tmp[,"ac"],select="gene_name",do.warn=FALSE),
                  "@comment=Number of group-specific peptides@Peptide Count"= peptide.count(protein.group,xls.quant.tbl.tmp$ac,specificity=c(GROUPSPECIFIC,REPORTERSPECIFIC),do.warn=FALSE),
                  "@comment=Number of group-specific spectra@Spectral Count"= spectra.count(protein.group,xls.quant.tbl.tmp$ac,specificity=c(GROUPSPECIFIC,REPORTERSPECIFIC),do.warn=FALSE),
                  "Sequence Coverage"=round(sequence.coverage(protein.group,xls.quant.tbl.tmp$ac,do.warn=FALSE),round.digits),
@@ -650,8 +715,8 @@ initialize.env <- function(env,report.type="protein",properties.env) {
                  AC=.protein.acc(xls.quant.tbl.tmp[,"ac"],ip=indist.proteins),
                  ID=proteinInfo(protein.group,xls.quant.tbl.tmp[,"ac"],do.warn=FALSE),
                  n=sapply(xls.quant.tbl.tmp[,"ac"],function(p) {length(names(indist.proteins)[indist.proteins == p])}),
-                 Description=proteinInfo(protein.group,xls.quant.tbl.tmp[,"ac"],"protein_name",do.warn=FALSE),
-                 Gene=proteinInfo(protein.group,xls.quant.tbl.tmp[,"ac"],"gene_name",do.warn=FALSE),
+                 Description=proteinInfo(protein.group,xls.quant.tbl.tmp[,"ac"],select="protein_name",do.warn=FALSE),
+                 Gene=proteinInfo(protein.group,xls.quant.tbl.tmp[,"ac"],select="gene_name",do.warn=FALSE),
                  Spectra=apply(xls.quant.tbl.tmp,1,function(x) nrow(subset(fData(env$ibspectra),peptide==x['peptide'] & modif==x['modif']))))
     }
     if (!is.null(compare.to.quant))
@@ -710,7 +775,9 @@ initialize.env <- function(env,report.type="protein",properties.env) {
                                "Channels"=paste(xls.quant.tbl.tmp$r2,"/",xls.quant.tbl.tmp$r1))
 
       }
+    
  
+      # TODO: Add z score?
       for (cc in properties.env$xls.report.columns) {
         res <- switch(cc,
               log10.ratio =    round.n.append.xls.tbl("lratio","log10.ratio"),
@@ -773,34 +840,6 @@ initialize.env <- function(env,report.type="protein",properties.env) {
 #                              )])
   })
 }
-.protein.acc <- function(prots,protein.info=NULL,ip=NULL) {
-  if (is.null(ip)) {
-    proteins <- list(prots)
-  } else {
-    proteins <- lapply(prots,function(p) {names(ip)[ip == p]})
-  }
-
-  sapply(proteins,function(prots) {
-         ## consider ACs with -[0-9]*$ as splice variants (ACs w/ more than one dash are not considered)
-         pos.splice <- grepl("^[^-]*-[0-9]*$",prots)
-         df <- data.frame(protein=prots,accession=prots,splice=0,stringsAsFactors=FALSE)
-
-         if (any(pos.splice))
-           df[pos.splice,c("accession","splice")] <- 
-             do.call(rbind,strsplit(prots[pos.splice],"-"))
-
-         res <- 
-           ddply(df,"accession",function(y) {
-                 if(sum(y$splice>0) <= 1)
-                   return(data.frame(protein=unique(y$protein)))
-                 else 
-                   return(data.frame(protein=sprintf("%s-[%s]",unique(y$accession),
-                                                     paste(sort(y[y$splice>0,'splice']),collapse=","))))
-                                 })
-         return(paste(res$protein,collapse=", "))
-  })
-}
-
 
 .create.or.load.my.protein.infos <- function(env,properties.env) {
   .create.or.load("my.protein.infos",envir=properties.env,
