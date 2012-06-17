@@ -361,7 +361,7 @@ pep.shared <- pep.shared$peptide[pep.shared$n.shared.groups==2]
 When examining the global differences and differences in between
 classes, \Rfunction{proteinRatios} can be used. It is also suitable to
 inspect sample variability. The argument \Robject{cl} can be used to
-define class labels. If \Robject{method='interclass'} or
+define class labels. If \Robject{combn.method='interclass'} or
 \Robject{intraclass} and \Robject{summarize=TRUE},
 \Rfunction{proteinRatios} return a single summarized ratio across and
 within classes, resp..
@@ -374,7 +374,7 @@ str(protein.ratios)
 classLabels(ibspiked_set1) <- c("T","T","C","C")
 
 proteinRatios(ibspiked_set1,noise.model,protein=ceru.proteins,
-              cl=classLabels(ibspiked_set1),method="interclass",
+              cl=classLabels(ibspiked_set1),combn.method="interclass",
               summarize=T)[,c("ac","lratio","variance")]
 @ 
 
