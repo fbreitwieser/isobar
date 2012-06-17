@@ -691,8 +691,8 @@ initialize.env <- function(env,report.type="protein",properties.env) {
                  AC=.protein.acc(xls.quant.tbl.tmp[,"ac"],ip=indist.proteins),
                  ID=proteinInfo(protein.group,xls.quant.tbl.tmp[,"ac"],do.warn=FALSE),
                  n=sapply(xls.quant.tbl.tmp[,"ac"],function(p) {length(names(indist.proteins)[indist.proteins == p])}),
-                 Description=proteinInfo(protein.group,xls.quant.tbl.tmp[,"ac"],"protein_name",do.warn=FALSE),
-                 Gene=proteinInfo(protein.group,xls.quant.tbl.tmp[,"ac"],"gene_name",do.warn=FALSE),
+                 Description=proteinInfo(protein.group,xls.quant.tbl.tmp[,"ac"],select="protein_name",do.warn=FALSE),
+                 Gene=proteinInfo(protein.group,xls.quant.tbl.tmp[,"ac"],select="gene_name",do.warn=FALSE),
                  "@comment=Number of group-specific peptides@Peptide Count"= peptide.count(protein.group,xls.quant.tbl.tmp$ac,specificity=c(GROUPSPECIFIC,REPORTERSPECIFIC),do.warn=FALSE),
                  "@comment=Number of group-specific spectra@Spectral Count"= spectra.count(protein.group,xls.quant.tbl.tmp$ac,specificity=c(GROUPSPECIFIC,REPORTERSPECIFIC),do.warn=FALSE),
                  "Sequence Coverage"=round(sequence.coverage(protein.group,xls.quant.tbl.tmp$ac,do.warn=FALSE),round.digits),
@@ -715,8 +715,8 @@ initialize.env <- function(env,report.type="protein",properties.env) {
                  AC=.protein.acc(xls.quant.tbl.tmp[,"ac"],ip=indist.proteins),
                  ID=proteinInfo(protein.group,xls.quant.tbl.tmp[,"ac"],do.warn=FALSE),
                  n=sapply(xls.quant.tbl.tmp[,"ac"],function(p) {length(names(indist.proteins)[indist.proteins == p])}),
-                 Description=proteinInfo(protein.group,xls.quant.tbl.tmp[,"ac"],"protein_name",do.warn=FALSE),
-                 Gene=proteinInfo(protein.group,xls.quant.tbl.tmp[,"ac"],"gene_name",do.warn=FALSE),
+                 Description=proteinInfo(protein.group,xls.quant.tbl.tmp[,"ac"],select="protein_name",do.warn=FALSE),
+                 Gene=proteinInfo(protein.group,xls.quant.tbl.tmp[,"ac"],select="gene_name",do.warn=FALSE),
                  Spectra=apply(xls.quant.tbl.tmp,1,function(x) nrow(subset(fData(env$ibspectra),peptide==x['peptide'] & modif==x['modif']))))
     }
     if (!is.null(compare.to.quant))
