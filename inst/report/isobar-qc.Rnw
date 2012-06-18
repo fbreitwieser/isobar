@@ -90,7 +90,7 @@ cat(sprintf("\\input{%s}\n",system.file("report","report-utils.tex",package="iso
 #quant.tbl$ratio <- 10^ quant.tbl$lratio
 limits <- seq(from=min(quant.tbl$lratio,na.rm=TRUE),to=max(quant.tbl$lratio,na.rm=TRUE),length.out=1000)
 breaks=c(0.1,0.2,1,5,10)
-
+breaks <- breaks[log10(breaks) %inrange% range(xx$ratio)]
 
 g <- ggplot(quant.tbl,aes(x=lratio)) +
   geom_histogram(colour = "darkgreen", fill = "white",
