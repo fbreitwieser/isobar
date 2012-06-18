@@ -596,6 +596,7 @@ setAs("ProteinGroup","data.frame.concise",
                                                  modif.comment=ifelse(any(!is.na(modif.posi[,2])),
                                                                       paste(modif.posi[!is.na(modif.posi[,2]),2],collapse="\n"),""),
                                                  stringsAsFactors=FALSE)
+                                  }
                                   res
                                   })
                           data.frame(proteinn=paste(merged.splicevariants$ac,collapse=","),link=merged.splicevariants$link[1],merged.pepmodifs,stringsAsFactors=FALSE)
