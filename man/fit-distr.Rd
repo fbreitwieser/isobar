@@ -44,7 +44,7 @@ data(noise.model.hcd)
 #  for illustration purposes. For estimation of sample variability, data
 #  from all protein should be used
 pr <- proteinRatios(ibspiked_set1,noise.model=noise.model.hcd,
-                    cl=as.character(c(1,1,2,2)),method="intraclass",protein=c("136429","P00450"))
+                    cl=as.character(c(1,1,2,2)),combn.method="intraclass",protein=c("136429","P00450"))
 
 # fit a Cauchy distribution
 ratiodistr <- fitCauchy(pr$lratio)

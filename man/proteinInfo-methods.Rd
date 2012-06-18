@@ -7,8 +7,9 @@
 \alias{proteinInfo}
 \alias{proteinInfo-methods}
 \alias{proteinInfo,ProteinGroup-method}
-\alias{proteinInfo,ProteinGroup,character-method}
-\alias{proteinInfo,ProteinGroup,missing-method}
+\alias{proteinInfo,ProteinGroup,missing,missing-method}
+\alias{proteinInfo,ProteinGroup,character,missing-method}
+\alias{proteinInfo,ProteinGroup,missing,character-method}
 \alias{proteinInfo<-}
 \alias{proteinInfo<-,ProteinGroup-method}
 
@@ -24,8 +25,12 @@
 
   \S4method{proteinInfo}{ProteinGroup}(x)
 
-  \S4method{proteinInfo}{ProteinGroup,character}(x, protein.g, select="name", collapse=", ",
+  \S4method{proteinInfo}{ProteinGroup,character,missing}(x, protein.g, select="name", collapse=", ",
                                                  simplify = TRUE, do.warn = TRUE)
+
+  \S4method{proteinInfo}{ProteinGroup,missing,character}(x, protein.ac, select="name", collapse=", ",
+                                                 simplify = TRUE, do.warn = TRUE)
+
 
   proteinInfoIsOnSpliceVariants(protein.info)
 
@@ -40,6 +45,8 @@
 \arguments{
   \item{x}{ProteinGroup object}
   \item{protein.g}{Protein group identifier. If supplied, only information for 
+    these proteins is returned.}
+  \item{protein.ac}{Protein ACs. If supplied, only information for 
     these proteins is returned.}
   \item{select}{indicating columns to select. See Details.}
   \item{collapse}{passed to \code{\link{paste}} to concatenate information of

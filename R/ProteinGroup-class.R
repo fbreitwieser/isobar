@@ -578,7 +578,7 @@ setAs("ProteinGroup","data.frame.concise",
                                         poss[!known.pos] <- paste0(residue[!known.pos],poss[!known.pos])
                                         c(paste(poss,collapse="&"),
                                           ifelse(all(null.comments),NA,paste(comments[!null.comments],collapse="\n")),
-                                          proteinInfo(from,protein.ac=ac,"gene_name",do.warn=FALSE,collapse=","),sv)
+                                          proteinInfo(from,protein.ac=ac,select="gene_name",do.warn=FALSE,collapse=","),sv)
                                     },x$protein,x$splicevariant,modification.positions.foreach.protein,x$start.pos))
 
                                     #modif.posi <- modif.posi[modif.posi[,1] != "" | !is.na(modif.posi[,2]),,drop=FALSE]
@@ -626,10 +626,8 @@ setAs("ProteinGroup","data.frame.concise",
                        if (show.proteinInfo) 
                          res <- cbind(res,
                                       ID=.paste_unique(proteinInfo(from,protein.gs,do.warn=FALSE,collapse=","),collapse=","),
-                                      Description=.paste_unique(proteinInfo(from,protein.gs,"protein_name",do.warn=FALSE,collapse=","),collapse=";"),
-                                      Gene=.paste_unique(proteinInfo(from,protein.gs,"gene_name",do.warn=FALSE,collapse=","),collapse=","),stringsAsFactors=FALSE
-#                                      Pos=paste(x$start.pos,collapse=";")
-                                      )
+                                      Description=.paste_unique(proteinInfo(from,protein.gs,select="protein_name",do.warn=FALSE,collapse=","),collapse=";"),
+                                      Gene=.paste_unique(proteinInfo(from,protein.gs,select="gene_name",do.warn=FALSE,collapse=","),collapse=","),stringsAsFactors=FALSE)
                        res <- cbind(res,n.groups=length(protein.gs),stringsAsFactors=FALSE)
                        if (!is.null(attr(from,"from.ids"))) 
                          res  <- cbind(groups=paste(attr(from,"from.ids")[protein.gs],collapse=","),
@@ -1100,7 +1098,7 @@ sequence.coverage <- function(protein.group,protein.g=reporterProteins(protein.g
 
   if ("length" %in% colnames(proteinInfo(protein.group)) && 
       "start.pos" %in% colnames(protein.group@peptideInfo)) {
-    lengths <- proteinInfo(protein.group,protein.g=protein.g,"length",simplify=FALSE)
+    lengths <- proteinInfo(protein.group,protein.g=protein.g,select="length",simplify=FALSE)
     peptides <- peptides(protein.group,protein=protein.g,specificity=specificity,...)
     peptide.info <- subset(unique(protein.group@peptideInfo[,c("protein","peptide","start.pos")]),
                            peptide %in% peptides)
