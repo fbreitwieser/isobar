@@ -136,6 +136,10 @@ write.qc.report=TRUE
 write.report=TRUE
 write.xls.report=TRUE
 
+## Spreadsheet format: Either 'xlsx' or 'xls'
+# spreadsheet.format="xls"
+spreadsheet.format="xlsx"
+
 ## XLS report format 'wide' or 'long
 ## 'wide' format outputs ratios in separate columns of the same record (i.e. one line per protein)
 ## 'long' format outputs ratios in separate records (i.e. one line per ratio)

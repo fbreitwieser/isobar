@@ -44,6 +44,11 @@ do.zip <- get.arg("--zip")
 protein.report <- get.arg("--protein")
 peptide.report <- get.arg("--peptide")
 
+xls.report <- get.arg("--xls")
+xlsx.report <- get.arg("--xlsx")
+qc.report <- get.arg("--qc")
+pdf.report <- get.arg("--pdf")
+
 ## TODO: parse further arguments
 
 message("started at ",date())
@@ -54,6 +59,18 @@ if (!exists("properties.env",inherits=FALSE)) {
   properties.env <- load.properties(properties.file,
                                     system.file("report","properties.R",package="isobar"),
                                     args=args)
+}
+
+if (xls.report || xlsx.report || qc.report || pdf.report) {
+  if (xls.report || xlsx.report) {
+    properties.env$write.xls.report <- TRUE
+    if (xls.report) properties.env$spreadsheet.format <- 'xls'
+    if (xlsx.report) properties.env$spreadsheet.format <- 'xlsx'
+  }
+
+  properties.env$write.qc.report <- qc.report
+  properties.env$write.report <- pdf.report
+  do.compile <- TRUE
 }
 
 

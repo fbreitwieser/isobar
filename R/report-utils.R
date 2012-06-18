@@ -206,8 +206,14 @@ write.xls.report <- function(report.type,properties.env,report.env,file="isobar-
     write.t(get.val('ibspectra')@log,file=log.f,col.names=NA,row.names=TRUE)
 
     ## generate perl command line:
-    perl.cl <- paste(system.file("pl","tab2xlsx.pl",package="isobar")," ",
-                     ifelse(properties.env$use.name.for.report,sprintf("%s.quant.xlsx",properties.env$name),"isobar-analysis.xlsx"),
+    tab2spreadsheet.cmd <- switch(properties.env$spreadsheet.format,
+                                  xlsx=system.file("pl","tab2xlsx.pl",package="isobar"),
+                                  xls=system.file("pl","tab2xls.pl",package="isobar"),
+                                  stop("spreadsheet.format property must be either 'xlsx' or 'xls'."))
+
+    perl.cl <- paste(tab2spreadsheet.cmd," ",
+                     ifelse(properties.env$use.name.for.report,sprintf("%s.quant",properties.env$name),"isobar-analysis"),
+                     ".",properties.env$spreadsheet.format,
                      " ':autofilter,freeze_col=3,name=Quantifications:",protein.quant.f,"'",
                      " ':autofilter,freeze_col=3,name=Identifications:",protein.id.f,"'",
                      " ':name=Analysis Properties:",analysis.properties.f,"'",
@@ -269,7 +275,6 @@ load.properties <- function(properties.file="properties.R",
   tmp.properties.env <- new.env()
   message("parsing command line arguments ...")
   for (arg in args) {
-    
     if (grepl("^--",arg)) {
       arg.n.val <- strsplit(substring(arg,3),"=")[[1]]
       if (length(arg.n.val) == 1)
