@@ -138,7 +138,7 @@ write.xls.report=TRUE
 
 ## Spreadsheet format: Either 'xlsx' or 'xls'
 # spreadsheet.format="xls"
-spreadsheet.format="xlsx"
+spreadsheet.format="xls"
 
 ## XLS report format 'wide' or 'long
 ## 'wide' format outputs ratios in separate columns of the same record (i.e. one line per protein)
