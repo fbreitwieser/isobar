@@ -81,18 +81,15 @@ report.env$quant.tbl$sd <- sqrt(report.env$quant.tbl$variance)
 #report.env$quant.tbl$ac <- report.env$quant.tbl$protein # TEMPORARY
 print_longtablehdr_peptide(coldef,!is.single.comparision,ncol.p,TRUE)
 
-message("nrow q: ",nrow(report.env$quant.tbl))
 protein.group <- proteinGroup(report.env$ibspectra)
 df.pg <- unique(as(protein.group,"data.frame.concise")[,c("peptide","proteins")])
 report.env$quant.tbl <- merge(df.pg,report.env$quant.tbl,by="peptide",all.y=TRUE)
-message("nrow q: ",nrow(report.env$quant.tbl))
 #all.peps <- unique(report.env$quant.tbl[,c("peptide","modif","proteins")])
 all.peps <- ddply(report.env$quant.tbl,c("peptide","modif","proteins"),
-                  function(d) data.frame(n.spectra=max(d[,"n.spectra"],na.rm=T)))
+                  function(d) c(n.spectra=ifelse(any(!is.na(d[,"n.spectra"])),max(d[,"n.spectra"],na.rm=T),NA)))
 all.peps <- all.peps[,order(as.numeric(all.peps["n.spectra",]),decreasing=TRUE)]
 all.peps$n.spectra <- NULL
 all.peps <- as.matrix(all.peps)
-message("nrow all.pep: ",nrow(all.peps))
 
 for (ac_i in seq_len(nrow(all.peps))) {
 
@@ -103,7 +100,6 @@ for (ac_i in seq_len(nrow(all.peps))) {
   
   if (all(is.na(ac.rows[,'lratio']))) {
     acs.notquantified <- c(acs.notquantified,ac_i)
-    #message("SCHEISSA: ",paste(my.pep,collapse=" - "))
     next
   }
   groupnumber <- 1
