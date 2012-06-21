@@ -62,8 +62,8 @@ if (!exists("properties.env",inherits=FALSE)) {
 }
 
 if (xls.report || xlsx.report || qc.report || pdf.report) {
-  if (xls.report || xlsx.report) {
-    properties.env$write.xls.report <- TRUE
+  properties.env$write.xls.report <- (xls.report || xlsx.report)
+  if (properties.env$write.xls.report) {
     if (xls.report) properties.env$spreadsheet.format <- 'xls'
     if (xlsx.report) properties.env$spreadsheet.format <- 'xlsx'
   }
