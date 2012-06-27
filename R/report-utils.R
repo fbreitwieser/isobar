@@ -727,7 +727,7 @@ initialize.env <- function(env,report.type="protein",properties.env) {
     if (!is.null(compare.to.quant))
       for (ii in seq_along(compare.to.quant)) 
         xls.quant.tbl.tmp=merge(xls.quant.tbl.tmp,compare.to.quant[[ii]],by="ac",
-                                all.x=TRUE,suffixes=c("",paste(".",names(compare.to.quant)[ii])))
+                                all.x=TRUE,suffixes=c("",paste("###",names(compare.to.quant)[ii])))
     xls.quant.tbl.tmp <- xls.quant.tbl.tmp[order(xls.quant.tbl.tmp$i),]
 #        xls.quant.tbl.tmp=merge(xls.quant.tbl.tmp,compare.to.quant[[ii]],by="ac",all.x=TRUE,suffixes=c("",".proteome"))
 
