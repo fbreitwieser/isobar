@@ -125,13 +125,13 @@ writePhosphoRSInput <- function(phosphoRS.infile,id.file,mgf.file,massTolerance,
   sapply(strsplit(paste0(modifstring," "),":"),function(x) {
     x[length(x)] <- sub(" $","",x[length(x)])
     if (!is.null(collapse))
-      paste(which(x==modif)-1,collapse=collapse)
+      paste(which(x%in%modif)-1,collapse=collapse)
     else
-      which(x==modif)-1
+      which(x%in%modif)-1
   },simplify=simplify)
 }
 
-.convertPeptideModif <- function(peptide,modifstring,modifs=c("PHOS","Oxidation_M","Cys_CAM")) {
+.convertPeptideModif <- function(peptide,modifstring,modifs=c("PHOS","Oxidation_M","Cys_CAM","METH_KR","BIMETH_KR")) {
   names(letters) <- LETTERS
   if (length(peptide)==0 || all(nchar(peptide)==0))
 	  stop("peptide length=0")
