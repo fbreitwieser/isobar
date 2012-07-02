@@ -821,6 +821,11 @@ initialize.env <- function(env,report.type="protein",properties.env) {
       ## PEPTIDE REPORT
       pnp  <- subset(as.data.frame(peptideNProtein(protein.group),stringsAsFactors=FALSE),
                      protein.g %in% reporterProteins(protein.group))
+
+      my.ptm <- "PTM"
+      if ("PHOS" %in% properties.env$ptm) my.ptm="Phosphorylation"
+      if ("METH" %in% properties.env$ptm) my.ptm="Methylation"
+
       xls.quant.tbl.tmp$ac  <- NULL
       t <- table(pnp$peptide)
       pnp <- pnp[pnp$peptide %in% names(t)[t==1],]
@@ -835,7 +840,7 @@ initialize.env <- function(env,report.type="protein",properties.env) {
       xls.quant.tbl$peptide <- .convertPeptideModif(xls.quant.tbl[,"peptide"],xls.quant.tbl[,"modif"])
       colnames(xls.quant.tbl)[colnames(xls.quant.tbl)=="peptide"] <- "Sequence"
       colnames(xls.quant.tbl)[colnames(xls.quant.tbl)=="proteins"] <- "ACs"
-      colnames(xls.quant.tbl)[colnames(xls.quant.tbl)=="modif.pos"] <- "@comment=Absolute modification position in protein. Modifications in the same protein are separated by '&', in different proteins by ';'. Stars denote positions which are annotated as phosphorylated in NextProt.@Phosphorylation Position"
+      colnames(xls.quant.tbl)[colnames(xls.quant.tbl)=="modif.pos"] <- sprintf("@comment=Absolute modification position in protein. Modifications in the same protein are separated by '&', in different proteins by ';'. Stars denote positions which are annotated as phosphorylated in NextProt.@%s Position",my.ptm)
       xls.quant.tbl$modif <- NULL
       xls.quant.tbl$pos <- NULL
       xls.quant.tbl$n.groups <- NULL
