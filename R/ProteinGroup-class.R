@@ -438,7 +438,7 @@ getProteinInfoFromBioDb <- function(x,...,con=NULL) {
 }
 
 getPtmInfoFromNextprot <- function(protein.group,
-                                   nextprot.url="http://www.nextprot.org/rest/protein/NX_XXX/ptm?format=json") {
+                                   nextprot.url="http://www.nextprot.org/rest/entry/NX_XXX/ptm?format=json") {
   protein.acs <- unique(protein.group@isoformToGeneProduct$proteinac.wo.splicevariant)
   require(RJSONIO)
   pb <- txtProgressBar(max=length(protein.acs),style=3)
@@ -448,8 +448,15 @@ getPtmInfoFromNextprot <- function(protein.group,
                       })
   names(nextprot.ptmInfo) <- protein.acs
   nextprot.ptmInfo <- nextprot.ptmInfo[sapply(nextprot.ptmInfo,length)>0]
-  ptm.info <- do.call(rbind,lapply(nextprot.ptmInfo,function(x) do.call(rbind,lapply(x,data.frame,stringsAsFactors=FALSE))))
+  ptm.info <- ldply(nextprot.ptmInfo,
+                    function(x) 
+                      ldply(x,function(y) {
+                            y[sapply(y,is.null)] <- NA
+                            y$modifcation <- NULL # TODO: import modification also
+                            data.frame(y,stringsAsFactors=FALSE)
+                      }))
   ptm.info$isoform_ac <- sub("^NX_","",ptm.info$isoform_ac)
+  ptm.info$position <- ptm.info$first_position
   ptm.info
 }
 
