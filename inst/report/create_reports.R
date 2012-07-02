@@ -1,6 +1,6 @@
 #!/bin/Rscript
 
-
+{
 print_help_and_exit <- function() {
   cat("create_reports.R       Command line tool to create reports using the\n",
       "                       isobar R/Bioconductor package.\n",
@@ -83,3 +83,4 @@ tryCatch({create.reports(report.type=ifelse(peptide.report,"peptide","protein"),
          }
          )
 message("finished at ",date())
+}
