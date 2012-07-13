@@ -1,6 +1,6 @@
 #!/usr/bin/perl
 # Creation date : 2010-09-29
-# Last modified : Mon 18 Jun 2012 05:02:04 PM CEST
+# Last modified : Thu 05 Jul 2012 02:09:09 PM CEST
 
 # Module        : tab2xls.pl
 # Purpose       : converts csv files to XLS format
@@ -59,7 +59,6 @@ my @colors = (
 
 
 my %header_prop = (
-  color => 'white',
   text_wrap => 1,
   align => 'center');
 
@@ -97,13 +96,16 @@ for (my $file_i=0; $file_i <= $#ARGV; ++$file_i) {
       $n_worksheets += 1;
       $worksheet = $workbook->add_worksheet($name.($n_worksheets > 1? " $n_worksheets" : ""));
       $worksheet->add_write_handler(qr[\w], \&store_string_widths);
-      $worksheet->set_tab_color($colors[$file_i]);
+      my $fg_color = ($file_i <= $#colors)? "white" : "black";
+      my $bg_color = ($file_i <= $#colors)? $colors[$file_i] : "white";
+      $worksheet->set_tab_color($bg_color);
       if (defined $props->{'header'}) { $worksheet->set_header($props->{'header'}); }
       if (defined $props->{'footer'}) { $worksheet->set_footer($props->{'footer'}); }
       $worksheet->freeze_panes(1,(defined($props->{'freeze_col'})? $props->{'freeze_col'}:0)); # 1 row
 
       for my $i (0..$#header) {
-        $header_formats[$i] = $workbook->add_format(%header_prop,fg_color=>$colors[$file_i]);
+        $header_formats[$i] = $workbook->add_format(%header_prop,
+          color=>$fg_color,fg_color=>$bg_color);
       }
       write_header($worksheet,0,\@header_formats,@header);
       $row = 1;
@@ -267,6 +269,7 @@ sub autofit_columns {
     my $worksheet = shift;
     my $col       = 0;
     my $max_header = 4;
+    return unless defined $worksheet->{__col_widths}; 
 
     for (my $i=0;$i < @{$worksheet->{__col_widths}}; ++$i) {
       my $width = ${$worksheet->{__col_widths}}[$i];
