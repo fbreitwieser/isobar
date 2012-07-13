@@ -400,10 +400,10 @@ setMethod("readIBSpectra",
       else if (grepl(".ibspectra.csv$",f,ignore.case=TRUE) ||
                grepl(".id.csv$",f,ignore.case=TRUE))
         id.format.f <- "ibspectra.csv"
-      else if (grepl(".peptides.csv$",f)) 
+      else if (grepl(".peptides.csv$",f) || grepl(".peptides.txt$",f)) 
         id.format.f <- "rockerbox"
       else
-        stop(paste("cannot parse file ",f," - cannot deduce format based on extenstion (it is not ibspectra.csv, id.csv or mzid). Please provide id.format to readIBSpectra",sep=""))          
+        stop(paste("cannot parse file ",f," - cannot deduce format based on extenstion (it is not ibspectra.csv, id.csv, peptides.txt or mzid). Please provide id.format to readIBSpectra",sep=""))          
     } else {
       id.format.f <- id.format
     }
