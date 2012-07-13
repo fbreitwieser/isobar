@@ -174,8 +174,8 @@ write.xls.report <- function(report.type,properties.env,report.env,file="isobar-
 
     cl <- classLabels(get.val('ibspectra'))
     fill.up <- function(x,w="",n=length(nn)+1)
-      if (length(x) < n) c(x,rep(w,n-length(x)))
-      else stop("fill up")
+      if (length(x) <= n) c(x,rep(w,n-length(x)))
+      else stop("Can't fill up - length(x) > n")
       
     if (!is.null(cl)) {
       ii <- rbind(ii,
