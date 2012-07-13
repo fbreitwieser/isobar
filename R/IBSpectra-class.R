@@ -1810,7 +1810,8 @@ setMethod("maplot",
                 if (isTRUE(y.axis.labels))
                   y.axis.labels <- c(-Inf,y.axis,Inf)
                 axis(side=2,at=c(1/set.na.to.lim,y.axis,set.na.to.lim),
-                     labels= y.axis.labels)
+                     labels= y.axis.labels,las=2)
+                abline(h = y.axis, col = "#000000F0",lwd=0.15)
                 abline(h = c(1/set.na.to.lim,set.na.to.lim), col = "blue", lty = 3)
               } else {
                 axis(side=2,labels=y.axis.labels)
@@ -1938,7 +1939,7 @@ setMethod("maplot",
 
               }
               histlimits=log10(range(ions,na.rm=TRUE))
-              par(mfrow=c(ncol(ions),ncol(ions)),mar=c(2.5,2,0,1),
+              par(mfrow=c(ncol(ions),ncol(ions)),mar=c(2.5,2.25,0,0),
                   bty="n",fg="darkgray")
               for (i in colnames(ions)) {
                 for (j in colnames(ions)) {
@@ -1947,9 +1948,15 @@ setMethod("maplot",
                       plot(histlimits,c(1,1),type="n",bty="n", xaxt="n", yaxt="n", main="",ylim=c(0,1))
                     else
                       hist(log10(ions[,i]), col="#EEEEEE", freq=FALSE, 
-                           xlim=histlimits,cex=0.5,
+                           xlim=histlimits,cex=0.5,breaks=20,
                            bty="n", xaxt="n", yaxt="n", main="",ylim=c(0,1))
-                    text(sum(histlimits)/2,0.5,i,col="black",cex=1.4,font=2); 
+                    text(sum(histlimits)/2,0.5,i,col="black",cex=1.2,font=2); 
+                    #text(sum(histlimits)/2,0.4,sprintf("n = %s",sum(!is.na(ions[,i]))),col="black",cex=1,font=2); 
+                    #legend("center",
+                    #       legend=c(sprintf("%3s",i),
+                    #                sprintf("n = %s",sum(!is.na(ions[,i])))),
+                    #       bty="n",text.col="black",
+                    #       cex=1,text.font=c(2,1))
 
                   } else if (i > j) {
                     plot.labels.x = is.null(xlim) || (i == tail(colnames(ions),1) && j == head(colnames(ions),1))
