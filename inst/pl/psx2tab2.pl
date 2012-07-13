@@ -1,6 +1,6 @@
 #!/usr/bin/perl
 # Creation date : 2011-03-28
-# Last modified : Wed 05 Oct 2011 04:10:26 PM CEST
+# Last modified : Wed 27 Jun 2012 02:14:32 PM CEST
 
 # Module        : psx2tab2.pl
 # Purpose       : 
@@ -12,7 +12,6 @@ use strict;
 use warnings;
 use DBI;
 
-my $psxFile = shift @ARGV;
 my ($protID, $peptide, $modif, $charge, $theo_mass, $exp_mass, 
     $parent_intens, $start_pos, $rtime, @search_engine, @score,$spectrum);
 
@@ -20,6 +19,8 @@ my $numb = "[0-9]+\.?[0-9]*(?:e[+-][0-9]*)?";
 
 print "accession\tpeptide\tmodif\tcharge\ttheo.mass\texp.mass\tparent.intens".
       "\tstart.pos\tretention.time\tsearch.engine\tscore\tspectrum\n";
+
+foreach my $psxFile (@ARGV) {
 eval{
   my $XML;
   my $is_stdin = 0;
@@ -68,7 +69,9 @@ eval{
   }
   close($XML) unless $is_stdin;
 };
+
 if ($@){
   die("Encountered a problem: $@");
+}
 }
 
