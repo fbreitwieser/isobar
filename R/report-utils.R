@@ -780,6 +780,12 @@ initialize.env <- function(env,report.type="protein",properties.env) {
                                "Channels"=paste(xls.quant.tbl.tmp$r2,"/",xls.quant.tbl.tmp$r1))
 
       }
+
+      if ("zscore" %in% properties.env$xls.report.columns) {
+        ## TODO: zscore is calculated across all classes - 
+        ##       it is probably more appropriate to calculate it individual for each class
+        xls.quant.tbl.tmp$zscore <- calc.zscore(xls.quant.tbl.tmp$lratio)
+      }
     
  
       # TODO: Add z score?
@@ -794,6 +800,7 @@ initialize.env <- function(env,report.type="protein",properties.env) {
               n.na2 =          append.xls.tbl("n.na2"),
               p.value.ratio =  round.n.append.xls.tbl("p.value.rat"),
               p.value.sample = round.n.append.xls.tbl("p.value.sample"),
+              z.score =        round.n.append.xls.tbl("zscore"),
               ratio =          round.n.append.xls.tbl("lratio","ratio",f=function(x) 10^x),
               CI95.lower =     combine.n.append.xls.tbl("lratio","variance","CI95.lower",f=function(x,y) 10^qnorm(0.025,x,sqrt(y))),
               CI95.upper =     combine.n.append.xls.tbl("lratio","variance","CI95.upper",f=function(x,y) 10^qnorm(0.975,x,sqrt(y))),
