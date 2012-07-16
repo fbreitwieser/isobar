@@ -573,7 +573,7 @@ setMethod("estimateRatio",
           signature(ibspectra="IBSpectra",noise.model="ANY",
                     channel1="missing",channel2="missing",
                     protein="character",peptide="missing"),
-          function(ibspectra,noise.model=NULL,protein,val="lratio",summarize=FALSE,combine=TRUE,..) {
+          function(ibspectra,noise.model=NULL,protein,val="lratio",summarize=FALSE,combine=TRUE,...) {
             channels <- reporterTagNames(ibspectra)
             if (combine) {
               res <- matrix(NA,nrow=length(channels),ncol=length(channels),dimnames=list(channels,channels))
@@ -1156,3 +1156,10 @@ summarize.ratios <-
       stop (paste("summarize method",summarize.method,"not implemented."))
     }
   }
+
+
+calc.zscore <- function(lratio) {
+  s.median <- median(lratio,na.rm=TRUE)
+  s.mad <- mad(lratio,na.rm=TRUE)
+  (lratio-s.median)/s.mad
+}

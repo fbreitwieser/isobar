@@ -268,8 +268,8 @@ write.xls.report <- function(report.type,properties.env,report.env,file="isobar-
 
     cl <- classLabels(get.val('ibspectra'))
     fill.up <- function(x,w="",n=length(nn)+1)
-      if (length(x) < n) c(x,rep(w,n-length(x)))
-      else stop("fill up")
+      if (length(x) <= n) c(x,rep(w,n-length(x)))
+      else stop("Can't fill up - length(x) > n")
       
     if (!is.null(cl)) {
       ii <- rbind(ii,
@@ -849,8 +849,7 @@ initialize.env <- function(env,report.type="protein",properties.env) {
     if (!is.null(compare.to.quant))
       for (ii in seq_along(compare.to.quant)) 
         xls.quant.tbl.tmp=merge(xls.quant.tbl.tmp,compare.to.quant[[ii]],by="ac",
-                                all.x=TRUE,suffixes=c("",paste(".",names(compare.to.quant)[ii])))
-
+                                all.x=TRUE,suffixes=c("",paste("###",names(compare.to.quant)[ii])))
     xls.quant.tbl.tmp <- xls.quant.tbl.tmp[order(xls.quant.tbl.tmp$i),]
 #        xls.quant.tbl.tmp=merge(xls.quant.tbl.tmp,compare.to.quant[[ii]],by="ac",all.x=TRUE,suffixes=c("",".proteome"))
 
@@ -899,6 +898,12 @@ initialize.env <- function(env,report.type="protein",properties.env) {
        xls.quant.tbl <-cbind(xls.quant.tbl,
                              "Channels"=paste(xls.quant.tbl.tmp$r2,"/",xls.quant.tbl.tmp$r1))
       }
+
+      if ("zscore" %in% properties.env$xls.report.columns) {
+        ## TODO: zscore is calculated across all classes - 
+        ##       it is probably more appropriate to calculate it individual for each class
+        xls.quant.tbl.tmp$zscore <- calc.zscore(xls.quant.tbl.tmp$lratio)
+      }
     
  
       # TODO: Add z score?
@@ -906,13 +911,14 @@ initialize.env <- function(env,report.type="protein",properties.env) {
         res <- switch(cc,
               log10.ratio =    round.n.append.xls.tbl("lratio","log10.ratio"),
               log2.ratio =     round.n.append.xls.tbl("lratio","log2.ratio",f=function(x) x/log10(2)),
-              log10.variance = round.n.append.xls.tbl("variance","log10.var"),
-              log2.variance =  round.n.append.xls.tbl("variance","log2.var",f=function(x) (sqrt(x)/log10(2)^2)),
+              log10.variance = append.xls.tbl("variance","log10.var"),
+              log2.variance =  append.xls.tbl("variance","log2.var",f=function(x) (sqrt(x)/log10(2)^2)),
               is.significant = append.xls.tbl("is.significant"),
               n.na1 =          append.xls.tbl("n.na1"),
               n.na2 =          append.xls.tbl("n.na2"),
-              p.value.ratio =  round.n.append.xls.tbl("p.value.rat"),
-              p.value.sample = round.n.append.xls.tbl("p.value.sample"),
+              p.value.ratio =  append.xls.tbl("p.value.rat"),
+              p.value.sample = append.xls.tbl("p.value.sample"),
+              z.score =        round.n.append.xls.tbl("zscore"),
               ratio =          round.n.append.xls.tbl("lratio","ratio",f=function(x) 10^x),
               CI95.lower =     combine.n.append.xls.tbl("lratio","variance","CI95.lower",f=function(x,y) 10^qnorm(0.025,x,sqrt(y))),
               CI95.upper =     combine.n.append.xls.tbl("lratio","variance","CI95.upper",f=function(x,y) 10^qnorm(0.975,x,sqrt(y))),
