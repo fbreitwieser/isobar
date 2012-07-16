@@ -1156,3 +1156,10 @@ summarize.ratios <-
       stop (paste("summarize method",summarize.method,"not implemented."))
     }
   }
+
+
+calc.zscore <- function(lratio) {
+  s.median <- median(lratio,na.rm=TRUE)
+  s.mad <- mad(lratio,na.rm=TRUE)
+  (lratio-s.median)/s.mad
+}
