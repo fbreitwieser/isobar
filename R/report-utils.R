@@ -425,6 +425,8 @@ initialize.env <- function(env,report.type="protein",properties.env) {
   env$ibspectra <- .create.or.load.ibspectra(properties.env)
   env$noise.model <- .create.or.load.noise.model(env,properties.env)
   env$ratiodistr <- .create.or.load.ratiodistr(env,properties.env,level=report.type)
+  if (identical(report.type,"peptide") )
+    env$ptm.info  <- .create.or.load.ptm.info(env,properties.env)
   env$quant.tbl <- .create.or.load.quant.table(env,properties.env,level=report.type)
   if (!"ac" %in% colnames(env$quant.tbl) && "protein" %in% colnames(env$quant.tbl))
     env$quant.tbl$ac <- env$quant.tbl$protein
@@ -661,6 +663,12 @@ initialize.env <- function(env,report.type="protein",properties.env) {
   return(noise.model)
 }
 
+.create.or.load.ptm.info <- function(env,properties.env) {
+  return(.create.or.load("ptm.info",envir=properties.env,
+                         f=getPtmInfoFromNextprot,
+                         protein.group=proteinGroup(env$ibspectra)))
+}
+
 .create.or.load.ratiodistr <- function(env,properties.env,level) {
   
   return(.create.or.load("ratiodistr",envir=properties.env,class="Distribution",
@@ -834,7 +842,7 @@ initialize.env <- function(env,report.type="protein",properties.env) {
       xls.quant.tbl.tmp <- merge(pnp,xls.quant.tbl.tmp,by="peptide")
       xls.quant.tbl.tmp$i  <- seq_len(nrow(xls.quant.tbl.tmp))
       xls.quant.tbl.tmp$Spectra <- apply(xls.quant.tbl.tmp,1,function(x) nrow(subset(fData(env$ibspectra),peptide==x['peptide'] & modif==x['modif'])))
-      pg.df <- .proteinGroupAsConciseDataFrame(protein.group,modif.pos=properties.env$ptm,ptm.info=properties.env$ptm.info)
+      pg.df <- .proteinGroupAsConciseDataFrame(protein.group,modif.pos=properties.env$ptm,ptm.info=env$ptm.info)
       
       xls.quant.tbl <- merge(pg.df,xls.quant.tbl.tmp[,c("peptide","modif","i","Spectra")],by=c("peptide","modif"),all.y=TRUE)
       xls.quant.tbl$peptide <- .convertPeptideModif(xls.quant.tbl[,"peptide"],xls.quant.tbl[,"modif"])
