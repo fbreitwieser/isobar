@@ -217,12 +217,15 @@ sub write_col {
   my ($worksheet,$row,$col,$field,$format) = @_;
 
   my $props;
-	($field,$props) = get_props($field,"@");
+  ($field,$props) = get_props($field,"@");
   if (defined $props->{'centeracross'}) {
     return (1,$field);
   } 
   if ($field eq 'TRUE') { $format=colorfmt('green'); }
   elsif ($field eq '0') { $format=colorfmt('gray'); }
+
+  $field = getname($field) if ($row == 0);
+
   if (defined $props->{'link'}) {
     $worksheet->write_url($row,$col,$props->{'link'},$field,$format);
   } else {
