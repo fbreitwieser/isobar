@@ -578,6 +578,7 @@ setAs("ProteinGroup","data.frame.concise",
                                                           })
                                           known.pos <- sapply(poss,function(pp) any(ptm.info[,"isoform_ac"]==ac & ptm.info[,"position"]==pp))
                                         } else {
+                                          ## TODO: Not working
                                           comments <- NA
                                           known.pos <- rep(FALSE,seq_along(poss))
                                         }
