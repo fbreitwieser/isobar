@@ -1003,6 +1003,7 @@ human.protein.names <- function(my.protein.info) {
 
 my.protein.info <- function(x,protein.g) {
     protein.acs <- indistinguishableProteins(x,protein.g=protein.g)
+    if (all(is.na(protein.acs))) return()
     isoforms <- x@isoformToGeneProduct
     res <- data.frame(protein.ac=protein.acs,
                       accession=isoforms[protein.acs,"proteinac.wo.splicevariant"],
