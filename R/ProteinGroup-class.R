@@ -1098,12 +1098,21 @@ peptide.count <- function(protein.group,protein.g=reporterProteins(protein.group
 }
 
 spectra.count <- function(protein.group,protein.g=reporterProteins(protein.group),
-                          specificity=c("reporter-specific","group-specific","unspecific"),...) {
-  peptide.spectra.count <- table(spectrumToPeptide(protein.group))
+                          specificity=c("reporter-specific","group-specific","unspecific"),
+                          modif=NULL,...) {
   ## Calculate unique spectrum counts for all proteins
-  spectra.count <- sapply(protein.g, function(p)
-                 sum(peptide.spectra.count[peptides(protein.group,protein=p,
-                                              specificity=specificity,...)]))
+  if (is.null(modif)) {
+    peptide.spectra.count <- table(spectrumToPeptide(protein.group))
+    spectra.count <- sapply(protein.g, function(p) 
+                            sum(peptide.spectra.count[peptides(protein.group,protein=p,
+                                                               specificity=specificity,...)]))
+  } else {
+    si <- protein.group@spectrumId
+    spectra.count <- sapply(protein.g, function(p) {
+                            pep <- peptides(protein.group,protein=p,specificity=specificity,...)
+                            sum(si$peptide %in% pep & grepl(modif,si$modif)) })
+  }
+
   names(spectra.count) <- protein.g
   return(spectra.count)
 }
