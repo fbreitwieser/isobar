@@ -1260,14 +1260,17 @@ calculate.dNSAF <- function(protein.group) {
   return(length(pep))
 }
 
-n.observable.peptides <- function(seq,nmc=1,min.length=6,min.mass=800,max.mass=4000,...) {
+n.observable.peptides <- function(...) {
+  return(nrow(observable.peptides(...)))
+}
+
+observable.peptides <- function(seq,nmc=1,min.length=6,min.mass=600,max.mass=4000,...) {
   if (is.na(seq) || length(seq)==0 || nchar(seq) == 0)
     return(0)
   pep <- Digest(seq,missed=nmc,...)
   min.length.ok <- nchar(pep[,"peptide"]) >= min.length
-  mass.ok <- pep[,"mz2"] >= min.mass & pep[,"mz3"] <= max.mass
-  #pep[min.length.ok & mass.ok,]
-  return(sum(min.length.ok & mass.ok))
+  mass.ok <- pep[,"mz1"] >= min.mass & pep[,"mz1"] <= max.mass
+  pep[min.length.ok & mass.ok,]
 }
 
 calculate.emPAI <- function(protein.group,protein.g=reporterProteins(protein.group), ...) {
