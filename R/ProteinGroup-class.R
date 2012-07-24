@@ -452,9 +452,12 @@ getPtmInfoFromNextprot <- function(protein.group,
                     function(x) 
                       ldply(x,function(y) {
                             y[sapply(y,is.null)] <- NA
-                            y$modifcation <- NULL # TODO: import modification also
+                            y$modification.name <- y$modification['name']
+                            y$modification.accession <- y$modification['accession']
+                            y$modification <- NULL
                             data.frame(y,stringsAsFactors=FALSE)
-                      }))
+                      })
+                    )
   ptm.info$isoform_ac <- sub("^NX_","",ptm.info$isoform_ac)
   ptm.info$position <- ptm.info$first_position
   ptm.info
