@@ -1,6 +1,6 @@
 #!/usr/bin/perl
 # Creation date : 2010-09-29
-# Last modified : Thu 05 Jul 2012 02:09:09 PM CEST
+# Last modified : Mon 23 Jul 2012 02:04:30 PM CEST
 
 # Module        : tab2xls.pl
 # Purpose       : converts csv files to XLS format
@@ -237,7 +237,7 @@ sub write_col {
     $props->{'comment'} =~ s/\n\s*\n+/\n/g;
     return if $props->{'comment'} =~ /^ *$/;
     #print STDERR "comment: [".$props->{'comment'}."]\n";
-    $worksheet->write_comment($row,$col,$props->{'comment'});
+    $worksheet->write_comment($row,$col,$props->{'comment'},visible=>0);
   }
   return(0);
 }
