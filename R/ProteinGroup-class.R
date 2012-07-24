@@ -793,7 +793,8 @@ setMethod("peptides",signature(x="ProteinGroup",protein="character"),
     function(x,protein,
              specificity=c(UNSPECIFIC,GROUPSPECIFIC,REPORTERSPECIFIC),
              columns=c('peptide'),set=union,drop=TRUE,
-             groupspecific.if.same.ac=FALSE,do.warn=TRUE) {
+             groupspecific.if.same.ac=FALSE,do.warn=TRUE,
+             modif=NULL) {
 
       pnp <- peptideNProtein(x)
       ps <- peptideSpecificity(x)
@@ -811,8 +812,12 @@ setMethod("peptides",signature(x="ProteinGroup",protein="character"),
       peptides <- lapply(protein, function(p) pnp[pnp[,"protein.g"] == p,"peptide"])
       peptides <- Reduce(set,peptides)
 
-      peptides <- ps[ps$specificity %in% specificity & 
-                     ps$peptide %in% peptides,columns,drop=drop]
+      sel <- ps$specificity %in% specificity 
+      sel <- sel & ps$peptide %in% peptides
+      if (!is.null(modif))
+        sel <- sel & ps$peptide %in% x@peptideInfo$peptide[grep(modif,x@peptideInfo$modif)]
+
+      peptides <- ps[sel,columns,drop=drop]
       if (length(peptides) == 0 && do.warn)
         warning("No peptide for protein ",protein," with specificity ",paste(specificity,collapse=","))
       return(peptides)
