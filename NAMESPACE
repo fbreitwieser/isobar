@@ -11,4 +11,4 @@ exportClasses(IBSpectra,ProteinGroup)
 exportMethods("as.data.frame")
 
 export(IBSpectraTypes)
-exportPattern("^[a-zA-Z]")
+exportPattern("^[a-zA-Z%]")

@@ -211,8 +211,8 @@ setMethod("estimateRatioNumeric",signature(channel1="numeric",channel2="numeric"
       log.ratios = i2 - i1
 
       if (remove.outliers) {
-        sel.outliers <- .sel.outliers(log.ratios[sel],outliers.coef,outliers.trim)
-        sel[sel.outliers] <- FALSE
+        sel.outliers <- .sel.outliers(log.ratios,outliers.coef,outliers.trim)
+        sel <- sel & !sel.outliers
       }
       
       # Select non-NA outlier removed spectra
@@ -444,10 +444,10 @@ setMethod("estimateRatioNumeric",signature(channel1="numeric",channel2="numeric"
     sel.or <- (log.ratio >= bp$stats[1]) & (log.ratio <=bp$stats[5])
   } else {
     # use trim method
-    sel.or <- log.ratio > quantile(log.ratio,outliers.trim) & 
-              log.ratio < quantile(log.ratio,1-outliers.trim)
+    sel.or <- log.ratio > quantile(log.ratio,outliers.trim,na.rm=TRUE) & 
+              log.ratio < quantile(log.ratio,1-outliers.trim,na.rm=TRUE)
   }
-  !sel.or
+  is.na(log.ratio) | !sel.or
 }
                            
 .calc.weighted.ratio <- function(log.ratio,variance,
@@ -573,7 +573,7 @@ setMethod("estimateRatio",
           signature(ibspectra="IBSpectra",noise.model="ANY",
                     channel1="missing",channel2="missing",
                     protein="character",peptide="missing"),
-          function(ibspectra,noise.model=NULL,protein,val="lratio",summarize=FALSE,combine=TRUE,..) {
+          function(ibspectra,noise.model=NULL,protein,val="lratio",summarize=FALSE,combine=TRUE,...) {
             channels <- reporterTagNames(ibspectra)
             if (combine) {
               res <- matrix(NA,nrow=length(channels),ncol=length(channels),dimnames=list(channels,channels))
@@ -1156,3 +1156,10 @@ summarize.ratios <-
       stop (paste("summarize method",summarize.method,"not implemented."))
     }
   }
+
+
+calc.zscore <- function(lratio) {
+  s.median <- median(lratio,na.rm=TRUE)
+  s.mad <- mad(lratio,na.rm=TRUE)
+  (lratio-s.median)/s.mad
+}

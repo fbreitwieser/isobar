@@ -369,11 +369,13 @@ getProteinInfoFromUniprot <- function(x,splice.by=200) {
   protein.info <- c()
   i <- 1
   while (i < length(protein.acs)) {
-    url <- paste("http://www.uniprot.org/uniprot/?query=",
+    uniprot.url <- paste0("http://www.uniprot.org/uniprot/?query=",
                  paste0("accession:",protein.acs[seq(from=i,to=min(length(protein.acs),i+splice.by-1))],collapse="+OR+"),
                  "&format=tab&compress=no&columns=",
                  paste0(fields,collapse=","))
-    protein.info <- rbind(protein.info,read.delim(url,stringsAsFactors=FALSE,col.names=names(fields)))
+    if (isTRUE(opts_isobar$verbose))
+      message("fetching protein info from ",uniprot.url)
+    protein.info <- rbind(protein.info,read.delim(url(uniprot.url),stringsAsFactors=FALSE,col.names=names(fields)))
     i <- i + splice.by
   }
   if (nrow(protein.info) > 0) {
@@ -1001,6 +1003,7 @@ human.protein.names <- function(my.protein.info) {
 
 my.protein.info <- function(x,protein.g) {
     protein.acs <- indistinguishableProteins(x,protein.g=protein.g)
+    if (all(is.na(protein.acs))) return()
     isoforms <- x@isoformToGeneProduct
     res <- data.frame(protein.ac=protein.acs,
                       accession=isoforms[protein.acs,"proteinac.wo.splicevariant"],
