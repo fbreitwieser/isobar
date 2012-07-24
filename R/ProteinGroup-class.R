@@ -569,7 +569,12 @@ setAs("ProteinGroup","data.frame.concise",
                                         poss <- start.pos + pep.pos - 1
                                         if (!is.null(ptm.info)) {
                                           comments <- sapply(poss,function(pp) {
-                                                             sel <- ptm.info[,"isoform_ac"]==ac & ptm.info[,"position"]==pp
+                                                             if (grepl("-[0-9]$",ac)) 
+                                                               sel <- ptm.info[,"isoform_ac"]==ac
+                                                             else
+                                                               sel <- ptm.info[,"isoform_ac"]==paste(ac,"-1",sep="")
+                                                             sel  <- sel  & ptm.info[,"position"]==pp
+
                                                              if (any(sel)) {
                                                                res <- apply(ptm.info[sel,],1,
                                                                             function(pi) paste(sprintf("%s pos %g: %s",pi["isoform_ac"],
