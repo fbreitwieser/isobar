@@ -590,8 +590,11 @@ setMethod("readIBSpectra",
         }
 
         if (tolower(peaklist.format.f) == "mgf") {
+          .Object <- new(type)
+          reporterMasses <- .Object@reporterTagMasses
+          reporterTagNames <- .Object@reporterTagNames
 
-          intensities.f <- .read.mgf(peaklist.f,type,
+          intensities.f <- .read.mgf(peaklist.f,reporterMasses,reporterTagNames,
                                      fragment.precision=fragment.precision,
                                      prob=fragment.outlier.prob,scan.lines=scan.lines)
           if (nrow(intensities.f$ions) == 0) { stop("only NA data in ions/mass") }
@@ -858,7 +861,7 @@ read.mzid <- function(f) {
 ##' @param substitute.dta [boolean] internal. replace TITLEs: s/.dta.[0-9]*$/.dta/
 ##' @return list(ions, mass, spectrumtitles)
 ##' @author Florian P Breitwieser
-.read.mgf <- function(filename,type,spectra=NULL,fragment.precision=0.05,
+.read.mgf <- function(filename,reporterMasses,reporterTagNames,spectra=NULL,fragment.precision=0.05,
                       prob=NULL,substitute.dta=FALSE,check.id.ok=FALSE,
                       scan.lines=0) {
   if (is.null(fragment.precision)) { fragment.precision=0.05 }
@@ -866,9 +869,6 @@ read.mzid <- function(f) {
           " [fragment precision: ",fragment.precision,"]")
 
   ## get reporter masses and names from type
-  .Object <- new(type)
-  reporterMasses <- .Object@reporterTagMasses
-  reporterTagNames <- .Object@reporterTagNames
   nReporter <- length(reporterMasses)
   min.mass <- min(reporterMasses)-fragment.precision/2
   max.mass <- max(reporterMasses)+fragment.precision/2
