@@ -644,9 +644,7 @@ setAs("ProteinGroup","data.frame.concise",
                        }
                        if (show.proteinInfo) 
                          res <- cbind(res,
-                                      ID=.paste_unique(proteinInfo(from,protein.gs,do.warn=FALSE,collapse=","),collapse=","),
-                                      Description=.paste_unique(proteinInfo(from,protein.gs,select="protein_name",do.warn=FALSE,collapse=","),collapse=";"),
-                                      Gene=.paste_unique(proteinInfo(from,protein.gs,select="gene_name",do.warn=FALSE,collapse=","),collapse=","),stringsAsFactors=FALSE)
+                                      proteinNameAndDescription(from,protein.gs),collapse=TRUE)
                        res <- cbind(res,n.groups=length(protein.gs),stringsAsFactors=FALSE)
                        if (!is.null(attr(from,"from.ids"))) 
                          res  <- cbind(groups=paste(attr(from,"from.ids")[protein.gs],collapse=","),
@@ -658,6 +656,88 @@ setAs("ProteinGroup","data.frame.concise",
         return(unique(res))
 }
 
+proteinPtmInfo.full <- function(isoform.ac,protein.group,ptm.info,modif,modification.name=NULL) {
+  protein.length <- as.numeric(proteinInfo(protein.group,protein.ac=isoform.ac,select="length") )
+
+  my.ptm.info <- ptm.info[ptm.info$isoform_ac==ifelse(grepl("-[0-9]$",isoform.ac),
+                                                   isoform.ac,paste(isoform.ac,"-1",sep="")),]
+  if (!is.null(modif)) 
+    my.ptm.info <- my.ptm.info[my.ptm.info$modification.name==modification.name,]
+  
+  obs.peptides <- observable.peptides(proteinInfo(protein.group,protein.ac=isoform.ac,select="sequence"),nmc=2)
+  possible.sites <- t(sapply(seq_len(protein.length),function(p) c(possible.nmc1=any(p>=obs.peptides$start & p<=obs.peptides$stop & obs.peptides$mc <=1),
+                                                                   possible.nmc2=any(p>=obs.peptides$start & p<=obs.peptides$stop & obs.peptides$mc <=2))))
+  pi <- protein.group@peptideInfo
+  pi <- pi[pi$protein==isoform.ac & grepl(modif,pi$modif),]
+
+  pep.pos <- .convertModifToPos(pi$modif,modif,simplify=FALSE,collapse=NULL) 
+  modif.pos <- unlist(mapply(function(start.pos,pep.posi) start.pos + pep.posi -1,
+                             pi$start.pos,pep.pos))
+
+  return(list(peptideInfo=pi,modif.pos=modif.pos,
+              observable.peptides=obs.peptides,
+              known.sites=my.ptm.info))
+}
+
+
+
+proteinPtmInfo <- function(isoform.ac,protein.group,ptm.info,modif,modification.name=NULL,simplify=TRUE) {
+  protein.length <- as.numeric(proteinInfo(protein.group,protein.ac=isoform.ac,select="length") )
+
+  my.ptm.info <- ptm.info[ptm.info$isoform_ac==ifelse(grepl("-[0-9]$",isoform.ac),
+                                                   isoform.ac,paste(isoform.ac,"-1",sep="")),]
+  if (!is.null(modif)) 
+    my.ptm.info <- my.ptm.info[my.ptm.info$modification.name==modification.name,]
+  
+  obs.peptides <- observable.peptides(proteinInfo(protein.group,protein.ac=isoform.ac,select="sequence"),nmc=2)
+  possible.sites <- t(sapply(seq_len(protein.length),function(p) c(possible.nmc1=any(p>=obs.peptides$start & p<=obs.peptides$stop & obs.peptides$mc <=1),
+                                                                   possible.nmc2=any(p>=obs.peptides$start & p<=obs.peptides$stop & obs.peptides$mc <=2))))
+
+  known.sites <- rep(FALSE,protein.length)
+  if (nrow(my.ptm.info) > 0)
+    known.sites[my.ptm.info$first_position] <- TRUE
+  
+  pi <- protein.group@peptideInfo
+  pi <- pi[pi$protein==isoform.ac & grepl(modif,pi$modif),]
+
+  pep.pos <- .convertModifToPos(pi$modif,modif,simplify=FALSE,collapse=NULL) 
+  modif.pos <- unlist(mapply(function(start.pos,pep.posi) start.pos + pep.posi -1,
+                             pi$start.pos,pep.pos))
+
+  seen.sites <- rep(FALSE,protein.length)
+  seen.sites[modif.pos] <- TRUE
+
+  return(
+         c(seen.sites=sum(seen.sites),
+           known.sites=sum(known.sites),
+           oberserved.known.sites=sum(known.sites&seen.sites),
+           observable.known.sites.1mc=sum(known.sites&possible.sites[,"possible.nmc1"]),
+           observable.known.sites.2mc=sum(known.sites&possible.sites[,"possible.nmc2"]))
+         )
+}
+
+proteinID <- function(protein.group,protein.g=reporterProteins(protein.group)) {
+  proteinInfo(protein.group,protein.g,do.warn=FALSE,collapse=",")
+}
+proteinDescription <- function(protein.group,protein.g=reporterProteins(protein.group)) {
+  proteinInfo(protein.group,protein.g,select="protein_name",do.warn=FALSE,collapse=",")
+}
+proteinGeneName <- function(protein.group,protein.g=reporterProteins(protein.group)) {
+  proteinInfo(protein.group,protein.g,select="gene_name",do.warn=FALSE,collapse=",")
+}
+
+proteinNameAndDescription <- function(protein.group,protein.g=reporterProteins(protein.group),collapse=FALSE) {
+  if (collapse)
+    data.frame(ID=.paste_unique(proteinID(protein.group,protein.g),collapse=","),
+               Description=.paste_unique(proteinDescription(protein.group,protein.g),collapse=";"),
+               Gene=.paste_unique(proteinGeneName(protein.group,protein.g),collapse=","),
+               stringsAsFactors=FALSE)
+  else
+    data.frame(ID=proteinID(protein.group,protein.g),
+               Description=proteinDescription(protein.group,protein.g),
+               Gene=proteinGeneName(protein.group,protein.g),
+               stringsAsFactors=FALSE)
+}
 
 ### - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 ### Accessor-like methods.
