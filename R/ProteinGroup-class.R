@@ -644,7 +644,7 @@ setAs("ProteinGroup","data.frame.concise",
                        }
                        if (show.proteinInfo) 
                          res <- cbind(res,
-                                      proteinNameAndDescription(from,protein.gs),collapse=TRUE)
+                                      proteinNameAndDescription(from,protein.gs))
                        res <- cbind(res,n.groups=length(protein.gs),stringsAsFactors=FALSE)
                        if (!is.null(attr(from,"from.ids"))) 
                          res  <- cbind(groups=paste(attr(from,"from.ids")[protein.gs],collapse=","),
@@ -687,18 +687,21 @@ proteinPtmInfo <- function(isoform.ac,protein.group,ptm.info,modif,modification.
   my.ptm.info <- ptm.info[ptm.info$isoform_ac==ifelse(grepl("-[0-9]$",isoform.ac),
                                                    isoform.ac,paste(isoform.ac,"-1",sep="")),]
   if (!is.null(modif)) 
-    my.ptm.info <- my.ptm.info[my.ptm.info$modification.name==modification.name,]
+    my.ptm.info <- my.ptm.info[my.ptm.info$modification.name%in%modification.name,]
   
   obs.peptides <- observable.peptides(proteinInfo(protein.group,protein.ac=isoform.ac,select="sequence"),nmc=2)
   possible.sites <- t(sapply(seq_len(protein.length),function(p) c(possible.nmc1=any(p>=obs.peptides$start & p<=obs.peptides$stop & obs.peptides$mc <=1),
                                                                    possible.nmc2=any(p>=obs.peptides$start & p<=obs.peptides$stop & obs.peptides$mc <=2))))
 
+  # TO CHECK: first_position might be bigger than protein.length
   known.sites <- rep(FALSE,protein.length)
   if (nrow(my.ptm.info) > 0)
     known.sites[my.ptm.info$first_position] <- TRUE
+
   
   pi <- protein.group@peptideInfo
-  pi <- pi[pi$protein==isoform.ac & grepl(modif,pi$modif),]
+  sel.has.modif <- sapply(strsplit(pi$modif,":"),function(x) any(x %in% modif))
+  pi <- pi[pi$protein==isoform.ac & sel.has.modif,]
 
   pep.pos <- .convertModifToPos(pi$modif,modif,simplify=FALSE,collapse=NULL) 
   modif.pos <- unlist(mapply(function(start.pos,pep.posi) start.pos + pep.posi -1,
@@ -708,7 +711,8 @@ proteinPtmInfo <- function(isoform.ac,protein.group,ptm.info,modif,modification.
   seen.sites[modif.pos] <- TRUE
 
   return(
-         c(seen.sites=sum(seen.sites),
+         c(observed.site.pos=paste(which(seen.sites),collapse=","),
+           observed.sites=sum(seen.sites),
            known.sites=sum(known.sites),
            oberserved.known.sites=sum(known.sites&seen.sites),
            observable.known.sites.1mc=sum(known.sites&possible.sites[,"possible.nmc1"]),
