@@ -131,14 +131,27 @@ writePhosphoRSInput <- function(phosphoRS.infile,id.file,mgf.file,massTolerance,
   },simplify=simplify)
 }
 
-.convertPeptideModif <- function(peptide,modifstring,modifs=c("PHOS","Oxidation_M","Cys_CAM","METH_KR","BIMETH_KR")) {
+.convertPeptideModif <- function(peptide,modifstring,
+                                 modifs=c(p="PHOS",o="Oxidation_M",c="Cys_CAM",
+                                          me="METH_KR",me="METH_K",me="METH_R",
+                                          dime="BIMETH_KR",dime="BIMETH_K",dime="BIMETH_R",
+                                          trime="TRIMETH_K",
+                                          ac="ACET_K")) {
   names(letters) <- LETTERS
   if (length(peptide)==0 || all(nchar(peptide)==0))
 	  stop("peptide length=0")
   mapply(function(pep,m) {
            m <- m[-c(1,length(m))]
-           for (mm in modifs)
-             pep[m==mm] <- letters[pep[m==mm]]
+           if (is.null(names(modifs))) {
+             for (mm in modifs) {
+               pep[m==mm] <- letters[pep[m==mm]]
+             }
+           } else {
+             tmp <- names(modifs)
+             names(tmp) <- modifs
+             names(pep) <- m
+             pep[m[m%in%modifs]] <- paste(pep[m[m%in%modifs]],"(",tmp[m[m%in%modifs]],")",sep="")
+           }
            paste(pep,collapse="")
          },
          strsplit(peptide,""),
