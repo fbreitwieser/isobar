@@ -790,7 +790,7 @@ setMethod("indistinguishableProteins",signature(x="ProteinGroup",protein="charac
 setMethod("spectrumToPeptide",   "ProteinGroup", function(x) x@spectrumToPeptide)
 
 setMethod("peptides",signature(x="ProteinGroup",protein="missing"),
-    function(x) peptideSpecificity(x)[,"peptide"]
+    function(x,...) peptides(x,reporterProteins(x),...)
 )
 
 setMethod("peptides",signature(x="ProteinGroup",protein="character"),
@@ -818,8 +818,10 @@ setMethod("peptides",signature(x="ProteinGroup",protein="character"),
 
       sel <- ps$specificity %in% specificity 
       sel <- sel & ps$peptide %in% peptides
-      if (!is.null(modif))
-        sel <- sel & ps$peptide %in% x@peptideInfo$peptide[grep(modif,x@peptideInfo$modif)]
+      if (!is.null(modif)) {
+        sel.has.modif <- sapply(strsplit(x@peptideInfo$modif,":"),function(m) any(m %in% modif))
+        sel <- sel & ps$peptide %in% x@peptideInfo$peptide[sel.has.modif]
+      }
 
       peptides <- ps[sel,columns,drop=drop]
       if (length(peptides) == 0 && do.warn)
@@ -1186,7 +1188,30 @@ peptide.count <- function(protein.group,protein.g=reporterProteins(protein.group
   sapply(protein.g,
          function(p) length(peptides(protein.group,p,specificity=specificity,...)))
 }
+spectra.count2 <- function(protein.group,value=reporterProteins(protein.group),type="protein.g",
+                          specificity=c("reporter-specific","group-specific","unspecific"),
+                          modif=NULL,combine=FALSE,...) {
+  if (!isTRUE(combine)) {
+    spectra.count <- sapply(value, function(p) 
+                            spectra.count(protein.group,p,type,specificity,modif,combine=TRUE,...))
+    names(spectra.count) <- value
+    return(spectra.count)
+  }
 
+  pep <- switch(type,
+                protein.g=peptides(protein.group,protein=value,specificity=specificity,...),
+                peptide=value)
+  ## Calculate unique spectrum counts for all proteins
+  if (is.null(modif)) {
+    peptide.spectra.count <- table(spectrumToPeptide(protein.group))
+    return(sum(peptide.spectra.count[pep]))
+  } else {
+    si <- protein.group@spectrumId
+    has.modif <- sapply(strsplit(si$modif,":"),function(x) any(x %in% modif))
+    return(sum(si$peptide %in% pep & has.modif))
+  }
+
+}
 spectra.count <- function(protein.group,protein.g=reporterProteins(protein.group),
                           specificity=c("reporter-specific","group-specific","unspecific"),
                           modif=NULL,...) {
@@ -1198,9 +1223,10 @@ spectra.count <- function(protein.group,protein.g=reporterProteins(protein.group
                                                                specificity=specificity,...)]))
   } else {
     si <- protein.group@spectrumId
+    has.modif <- sapply(strsplit(si$modif,":"),function(x) any(x %in% modif))
     spectra.count <- sapply(protein.g, function(p) {
                             pep <- peptides(protein.group,protein=p,specificity=specificity,...)
-                            sum(si$peptide %in% pep & grepl(modif,si$modif)) })
+                            sum(si$peptide %in% pep & has.modif) })
   }
 
   names(spectra.count) <- protein.g
@@ -1368,12 +1394,13 @@ n.observable.peptides <- function(...) {
   return(nrow(observable.peptides(...)))
 }
 
-observable.peptides <- function(seq,nmc=1,min.length=6,min.mass=600,max.mass=4000,...) {
+observable.peptides <- function(seq,nmc=1,min.length=6,min.mass=600,max.mass=4000,
+                                custom=list(code="U",mass=150.953636),...) {
   if (is.na(seq) || length(seq)==0 || nchar(seq) == 0)
     return(0)
-  pep <- Digest(seq,missed=nmc,...)
+  pep <- Digest(seq,missed=nmc,custom=custom,...)
   min.length.ok <- nchar(pep[,"peptide"]) >= min.length
-  mass.ok <- pep[,"mz1"] >= min.mass & pep[,"mz1"] <= max.mass
+  mass.ok <- pep[,"mz1"] >= min.mass & pep[,"mz3"] <= max.mass
   pep[min.length.ok & mass.ok,]
 }
 

@@ -74,17 +74,23 @@ cat(sprintf("\\input{%s}\n",system.file("report","report-utils.tex",package="iso
 %ibspectra
 %@
 \subsection*{Reporter Mass Precision}
+Histogram representing the distribution of the delta mass (in \emph{m/z}) for each reporter tag between theoretical and observed mass.
+
 <<fig-reporterMassPrecision,fig=T,echo=F,width=6,height=2.5,results=hide>>=
  print(reporterMassPrecision(ibspectra))
 @
 
 \subsection*{Reporter Intensities}
+Box-plot of the reporter intensities before and after the normalization process. Isobar applies a normalization factor to impose equal median intensity in each channel.
+
 <<fig-reporterIntensityPlot,fig=T,echo=F,width=6,height=2.5,results=hide>>=
  print(reporterIntensityPlot(ibspectra))
 @
 
 
 \subsection*{Ratio distribution}
+Distribution of the computed protein ratios (bars) fitted by a Cauchy distribution (solid line).
+
 \begin{minipage}{0.5\textwidth}
 <<fig-ratiodistribution,fig=TRUE,echo=FALSE,width=3,height=2>>=
 #quant.tbl$ratio <- 10^ quant.tbl$lratio
@@ -120,6 +126,8 @@ if (!is.null(ratiodistr))
  \end{minipage}
 
 \subsection*{Ratio Intensity Plot}
+Display of the ratio (\emph{y-axis}) versus the log10 average signal intensity (\emph{x-axis}) for all the reporter ratio combinations. The noise model used by Isobar is indicated as a solid red line.
+
 <<fig-maplot,echo=FALSE,results=hide>>=
 png("fig_maplot.png",width=8,height=8,units="in",res=600,pointsize=14)
 maplot(ibspectra,noise.model=noise.model,bty="l")

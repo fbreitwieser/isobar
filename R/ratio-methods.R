@@ -856,14 +856,20 @@ combn.protein.tbl <- function(ibspectra,noise.model,ratiodistr,
       rownames(r) <- "prot1"
     }
     df <- as.data.frame(r,stringsAsFactors=FALSE)
-    if (is.null(rownames(r))) {
-      print(head(df))
-      #stop("no row.names present!!")
-    }
-    df$ac <- rownames(df)
+
 
     if (is.matrix(attr(r,"input")))
       df <- cbind(as.data.frame(attr(r,"input"),stringsAsFactors=FALSE),df)
+
+    if (is.null(rownames(r))) {
+      if (all(c("peptide","modif") %in% colnames(df))) {
+        # encode peptide and modif in AC
+        df$ac <- apply(df[,c("peptide","modif")],1,paste,collapse=" ")
+      } else 
+        stop("no row.names present!!")
+    } else {
+      df$ac <- rownames(df)
+    }
     
     #rownames(df) <- paste(df$ac,paste(x[2],x[1],sep=":"),sep="_")
     rownames(df) <- NULL
@@ -998,6 +1004,17 @@ proteinRatios <-
                              variance.function=variance.function,
                              ratiodistr=ratiodistr)
 
+      if (is.null(proteins) && !is.null(peptide) && "ac" %in% colnames(df)) {
+        # get peptide and modif back out of 
+        pepnmodif <- strsplit(df$ac," ")
+        if (any(sapply(pepnmodif,length) != 2))
+          stop("Could not get peptide and modif out of AC: \n\t",paste(df$ac,collapse="\n\r"))
+
+        df <- cbind(t(sapply(pepnmodif,function(x) c(peptide=x[1],modif=x[2]))),
+                    df[,-which(colnames(df)=="ac")],
+                    stringsAsFactors=FALSE)
+      }
+
       attributes(df) = c(attributes(df),list(
           classLabels=cl,combn.method=combn.method,symmetry=symmetry,
           summarize=TRUE,summarize.method=summarize.method,
@@ -1011,12 +1028,21 @@ proteinRatios <-
           variance.function=variance.function,
           combine=combine,p.adjust=p.adjust,reverse=reverse))
 
+
+      if (!is.null(p.adjust)) {
+        df$p.value.rat <- p.adjust(df$p.value.rat,p.adjust)
+        df$is.significant <- df$is.significant & df$p.value.rat < sign.level.rat
+      }
       return(df)
     } else {
 
+      if (is.null(proteins) && !is.null(peptide) && "ac" %in% colnames(ratios)) {
+        ratios <- ratios[,-which(colnames(ratios)=="ac")]
+      }
+
       if (!is.null(p.adjust)) {
-        stop("p.adjust argument is not working")
-        ##ratios$p.value.rat <- p.adjust(ratios$p.value.rat,p.adjust)
+        ratios$p.value.rat <- p.adjust(ratios$p.value.rat,p.adjust)
+        ratios$is.significant <- raiots$is.significant & ratios$p.value.rat < sign.level.rat
       }
 
       attributes(ratios) = c(attributes(ratios),list(
