@@ -1030,8 +1030,8 @@ proteinRatios <-
 
 
       if (!is.null(p.adjust)) {
-        df$p.value.rat <- p.adjust(df$p.value.rat,p.adjust)
-        df$is.significant <- df$is.significant & df$p.value.rat < sign.level.rat
+        df$p.value.rat.adjusted <- p.adjust(df$p.value.rat,p.adjust)
+        df$is.significant <- df$is.significant & df$p.value.rat.adjusted < sign.level.rat
       }
       return(df)
     } else {
@@ -1041,8 +1041,8 @@ proteinRatios <-
       }
 
       if (!is.null(p.adjust)) {
-        ratios$p.value.rat <- p.adjust(ratios$p.value.rat,p.adjust)
-        ratios$is.significant <- raiots$is.significant & ratios$p.value.rat < sign.level.rat
+        ratios$p.value.rat.adjusted <- p.adjust(ratios$p.value.rat,p.adjust)
+        ratios$is.significant <- ratios$is.significant & ratios$p.value.rat.adjusted < sign.level.rat
       }
 
       attributes(ratios) = c(attributes(ratios),list(

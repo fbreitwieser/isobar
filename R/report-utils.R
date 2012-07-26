@@ -913,7 +913,6 @@ initialize.env <- function(env,report.type="protein",properties.env) {
         xls.quant.tbl.tmp$zscore <- calc.zscore(xls.quant.tbl.tmp$lratio)
       }
     
- 
       # TODO: Add z score?
       for (cc in properties.env$xls.report.columns) {
         res <- switch(cc,
@@ -925,6 +924,7 @@ initialize.env <- function(env,report.type="protein",properties.env) {
               n.na1 =          append.xls.tbl("n.na1"),
               n.na2 =          append.xls.tbl("n.na2"),
               p.value.ratio =  append.xls.tbl("p.value.rat"),
+              p.value.ratio.adjusted =  append.xls.tbl("p.value.rat.adjusted"),
               p.value.sample = append.xls.tbl("p.value.sample"),
               z.score =        round.n.append.xls.tbl("zscore"),
               ratio =          round.n.append.xls.tbl("lratio","ratio",f=function(x) 10^x),
