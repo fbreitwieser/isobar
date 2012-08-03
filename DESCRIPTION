@@ -20,8 +20,8 @@ Collate: utils.R
 	 IBSpectra-class.R
 	 NoiseModel-class.R
 	 ratio-methods.R
-     sharedpep-methods.R
-     report-utils.R
-     phospho-methods.R
-     MSnSet-methods.R
+   sharedpep-methods.R
+   report-utils.R
+   ptm-methods.R
+   MSnSet-methods.R
 	 zzz.R
