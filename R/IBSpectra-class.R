@@ -312,17 +312,26 @@ setMethod("initialize","IBSpectra",
             THEOMASS='theoretical peptide mass',
             EXPMASS='experimental peptide mass',
             PARENTINTENS='parent ion intensity',
-            RT='retention time',SPECTRUM='spectrum title',
+            RT='retention time',
+            DISSOCMETHOD='dissociation METHOD',
+            SPECTRUM='spectrum title',
+            SPECTRUM.QUANT='title of spectrum used for quantiation',
             PRECURSOR.PURITY="precursor purity",
             SCANS.FROM="scans from",SCANS.TO="scans to",
             RAWFILE="raw file",NMC="nmc",DELTASCORE="deltascore",
             SCANS="scans",MASSDELTA.ABS="massdelta (abs)",MASSDELTA.PPM="massdelta (ppm)",
             SEARCHENGINE='protein search engine',
             SCORE='protein search engine score',
+            SCORE.MASCOT="Mascot search score",
+            SCORE.PHENYX="Phenyx search score",
             USEFORQUANT='use spectrum for quantification',
-            SCORE.PHOSPHORS='PhosphoRS pepscore',PEPPROB='PhosphoRS pepprob',
-            SEQPOS='PTM seqpos',SITEPROBS='PhosphoRS site.probs',
-            FILE='file',SAMPLE='sample',NOTE='note'
+            SCORE.PHOSPHORS='PhosphoRS pepscore',
+            PROB.PHOSPHORS="PhosphoRS probability",
+            PHOSPHO.SITES="phosphorylation sites",
+            PEPPROB='PhosphoRS pepprob',
+            SEQPOS='PTM seqpos',
+            SITEPROBS='PhosphoRS site.probs',
+            FILE='file',SAMPLE='sample',NOTES='notes'
             )
         if (!all(names(.SPECTRUM.COLS) %in% names(label.desc)))
           stop("Not all SPECTRUM COLS have a label description:\n\t",
@@ -353,12 +362,12 @@ setMethod("readIBSpectra",
     function(type,id.file,...) {
       ll <- lapply(seq_along(id.file),function(i) {
                    df <- read.table(id.file[i],header=T,sep="\t")
-                   df[,.SAMPLE.COLS['FILE']]  <- id.file[i]
+                   df[,.SPECTRUM.COLS['FILE']]  <- id.file[i]
                    if (!is.null(names(id.file)))
-                     df[,.SAMPLE.COLS['SAMPLE']]  <- names(id.file)[i]
+                     df[,.SPECTRUM.COLS['SAMPLE']]  <- names(id.file)[i]
                    df
             })
-      new(type,data=do.call(rbind,df),...)
+      new(type,data=do.call(rbind,ll),...)
     }
 )
 
