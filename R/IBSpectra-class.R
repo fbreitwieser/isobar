@@ -113,16 +113,15 @@ setValidity("IBSpectra",.valid.IBSpectra)
 .SPECTRUM.COLS <- c(PEPTIDE="peptide",MODIFSTRING="modif",CHARGE="charge",
                    THEOMASS="theo.mass",EXPMASS="exp.mass",
                    PARENTINTENS="parent.intens",RT="retention.time",
-                   SPECTRUM="spectrum",
-                   SPECTRUM.QUANT="spectrum.quant",
+                   SPECTRUM="spectrum",SPECTRUM.QUANT="spectrum.quant",
                    .ID.COLS,USEFORQUANT="use.for.quant",
                    .PTM.COLS,
                    DISSOCMETHOD="dissoc.method",
                    PRECURSOR.PURITY="precursor.purity",
-                   SCANS.FROM="scans.from",SCANS.TO="scans.to",
+                   SCANS="scans",SCANS.FROM="scans.from",SCANS.TO="scans.to",
                    RAWFILE="raw.file",NMC="nmc",DELTASCORE="deltascore",
-                   SCANS="scans",MASSDELTA.ABS="massdelta.abs",MASSDELTA.PPM="massdelta.ppm",
-                   NOTES="notes")
+                   MASSDELTA.ABS="massdelta.abs",MASSDELTA.PPM="massdelta.ppm",
+                   SAMPLE="sample",FILE="file",NOTES="notes")
 
 .PEPTIDE.COLS <- c(PROTEINAC="accession",STARTPOS="start.pos",
                   REALPEPTIDE="real.peptide")
@@ -323,7 +322,11 @@ setMethod("initialize","IBSpectra",
             USEFORQUANT='use spectrum for quantification',
             SCORE.PHOSPHORS='PhosphoRS pepscore',PEPPROB='PhosphoRS pepprob',
             SEQPOS='PTM seqpos',SITEPROBS='PhosphoRS site.probs'
+            FILE='file',SAMPLE='sample',NOTE='note'
             )
+        if (!all(names(.SPECTRUM.COLS) %in% names(label.desc)))
+          stop("Not all SPECTRUM COLS have a label description:\n\t",
+               paste(names(.SPECTRUM.COLS)[!names(.SPECTRUM.COLS) %in% names(label.desc)],collapse="\n\t"))
 
         VARMETADATA=data.frame(labelDescription=label.desc[names(.SPECTRUM.COLS)],
                                row.names=.SPECTRUM.COLS)
@@ -348,8 +351,14 @@ setGeneric("readIBSpectra", function(type,id.file,peaklist.file,...)
 setMethod("readIBSpectra",
           signature(type="character",id.file="character",peaklist.file="missing"),
     function(type,id.file,...) {
-      new(type,data=do.call(rbind,lapply(id.file,read.table,header=T,sep="\t")),...
-      )
+      ll <- lapply(seq_along(id.file),function(i) {
+                   df <- read.table(id.file[i],header=T,sep="\t")
+                   df[,.SAMPLE.COLS['FILE']]  <- id.file[i]
+                   if (!is.null(names(id.file)))
+                     df[,.SAMPLE.COLS['SAMPLE']]  <- names(id.file)[i]
+                   df
+            })
+      new(type,data=do.call(rbind,df),...)
     }
 )
 
