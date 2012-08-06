@@ -321,7 +321,7 @@ setMethod("initialize","IBSpectra",
             SCORE='protein search engine score',
             USEFORQUANT='use spectrum for quantification',
             SCORE.PHOSPHORS='PhosphoRS pepscore',PEPPROB='PhosphoRS pepprob',
-            SEQPOS='PTM seqpos',SITEPROBS='PhosphoRS site.probs'
+            SEQPOS='PTM seqpos',SITEPROBS='PhosphoRS site.probs',
             FILE='file',SAMPLE='sample',NOTE='note'
             )
         if (!all(names(.SPECTRUM.COLS) %in% names(label.desc)))
