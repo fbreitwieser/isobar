@@ -1356,7 +1356,7 @@ setMethod("correctIsotopeImpurities",signature(x="IBSpectra"),
 
 normalize <- function(x,f=median,target="intensity",exclude.protein=NULL,
                       use.protein=NULL,f.doapply=TRUE,log=TRUE,
-                      channels=NULL,na.rm=FALSE,...){
+                      channels=NULL,na.rm=FALSE,per.file=TRUE,...){
   
   ## NOTE: median normalizes might normalize too much when a lot of NA
   ##         values are present - mean or colSums better?
@@ -1365,13 +1365,22 @@ normalize <- function(x,f=median,target="intensity",exclude.protein=NULL,
     warning("Isotope impurity correction has not been logged",
             " - data might be uncorrected. See ?correctIsotopeImpurities.")
 
+  if (per.file) {
+    if (!.SPECTRUM.COLS['FILE'] %in% colnames(fData(x))) {
+      warning("No 'file' column is specified in IBSpectra, setting normalize per.file to FALSE")
+      per.file <- FALSE
+    } else if (length(unique(fData(x))[,.SPECTRUM.COLS['FILE']])==1) {
+      warning("Only one file - setting normalize per.file to FALSE.")
+      per.file <- FALSE
+    }
+  }
+
   ##if (is.logged(x,"is.normalized"))
   ##  warning("Normalization is logged already.")
   
   if (!is.null(exclude.protein) & !is.null(use.protein))
     stop("Provide either exclude.protein or use.protein, not both.")
 
-  ri <- reporterIntensities(x,na.rm=na.rm)
 
   if (!is.null(channels) ) {
     if (is.list(channels)) {
@@ -1384,9 +1393,11 @@ normalize <- function(x,f=median,target="intensity",exclude.protein=NULL,
       if (!all(channels %in% colnames(ri)))
         stop("channels must be reporterTagNames.")
                                                          
-      ri <- ri[,channels,drop=FALSE]
+      ri <- reporterIntensities(x,na.rm=na.rm)[,channels,drop=FALSE]
     }
-  } ## if !is.null(channels)
+  } else {
+    ri <- reporterIntensities(x,na.rm=na.rm)
+  } ## else is.null(channels)
   
   if (!is.null(exclude.protein))
     ri <- ri[!spectrumSel(x,protein=exclude.protein,
@@ -1396,9 +1407,48 @@ normalize <- function(x,f=median,target="intensity",exclude.protein=NULL,
     ri <- ri[spectrumSel(x,protein=use.protein,specificity=REPORTERSPECIFIC),]
   
   ## TODO: warning when ri is empty
+
+  x <- do.log(x,"is.normalized",TRUE)
+  ## save original reporter intensities for noise estimation
+  if (is.null(assayDataElement(x,"ions_not_normalized")))
+    assayDataElement(x,"ions_not_normalized") <- reporterIntensities(x)
+
+  if (per.file && .SPECTRUM.COLS['FILE'] %in% colnames(fData(x))) {
+    fd <- fData(x)
+    for (n.file in sort(unique(fd[,.SPECTRUM.COLS['FILE']]))) {
+      message(n.file)
+      sel <- fd[,.SPECTRUM.COLS['FILE']] == n.file
+      message(sum(sel))
+      factor <- .get.normalization.factors(ri[sel,,drop=FALSE],f,target,f.doapply,...)
+      reporterIntensities(x)[sel,colnames(ri)] <- 
+        reporterIntensities(x)[sel,colnames(ri)]*rep(factor,each=sum(sel))
+      for (i in seq_along(factor)) {
+        x <- do.log(x,paste("normalization.multiplicative.factor file",n.file,"channel",colnames(ri)[i]),
+                    round(factor[i],4))
+      } 
+    }
+  } else {
+    factor <- .get.normalization.factors(ri,f,target,f.doapply,...)
+    reporterIntensities(x)[,colnames(ri)] <- 
+      reporterIntensities(x)[,colnames(ri)]*
+      rep(factor,each=nrow(reporterIntensities(x)))
+    for (i in seq_along(factor)) {
+      x <- do.log(x,paste("normalization.multiplicative.factor channel",
+                          colnames(ri)[i]),
+                  round(factor[i],4))
+    }
+  }
+  ## FIXME: logging a function for f does not work
+  ##       x <- do.log(x,"normalization.method",
+  ##              sprintf("%s of %s",as.character(substitute(f)),target))
+ 
+  x
+}
+
+.get.normalization.factors <- function(ri,f,target,f.doapply,...) {
   
   if (target=="ratio") {
-    rs <- rowSums(ri,na.rm=T)
+    rs <- rowSums(ri,na.rm=TRUE)
     if (log)
       ri <- apply(ri,2,function(x) x/rs)
     else
@@ -1413,28 +1463,9 @@ normalize <- function(x,f=median,target="intensity",exclude.protein=NULL,
     res <- f(ri,na.rm=TRUE,...)
   else
     res <- apply(ri,2,f,na.rm=TRUE,...)
-  
-  factor <- max(res,na.rm=T)/res
-  
-  x <- do.log(x,"is.normalized",TRUE)
-  ## FIXME: function for f does not work
-  ##       x <- do.log(x,"normalization.method",
-  ##              sprintf("%s of %s",as.character(substitute(f)),target))
-  for (i in seq_along(factor)) {
-    x <- do.log(x,paste("normalization.multiplicative.factor channel",
-                        colnames(ri)[i]),
-                round(factor[i],4))
-  }
-  
-  ## save original reporter intensities for noise estimation
-  if (is.null(assayDataElement(x,"ions_not_normalized")))
-    assayDataElement(x,"ions_not_normalized") <- reporterIntensities(x)
-  
-  reporterIntensities(x)[,colnames(ri)] <- 
-    reporterIntensities(x)[,colnames(ri)]*
-      rep(factor,each=nrow(reporterIntensities(x)))
-  
-  x
+
+  return(max(res,na.rm=T)/res)
+ 
 }
 
 setGeneric("normalize")
