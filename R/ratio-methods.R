@@ -157,7 +157,7 @@ setMethod("estimateRatioNumeric",signature(channel1="numeric",channel2="numeric"
     function(channel1,channel2,noise.model,ratiodistr=NULL,
              variance.function="maxi",
              sign.level=0.05,sign.level.rat=sign.level,sign.level.sample=sign.level,
-             remove.outliers=TRUE,outliers.coef=1,outliers.trim=0,n.sample=NULL, 
+             remove.outliers=TRUE,outliers.args=list(method="iqr",coef=1.5),n.sample=NULL, 
              method="isobar",fc.threshold=1.3,channel1.raw=NULL,channel2.raw=NULL,
              use.na=FALSE,preweights=NULL) {
       
@@ -209,9 +209,17 @@ setMethod("estimateRatioNumeric",signature(channel1="numeric",channel2="numeric"
       ## Compute all the spectrum ratios and their individual
       ## variance based on the noise model
       log.ratios = i2 - i1
-
+      if (is.null(channel1.raw))
+        var.i <- variance(noise.model,i1,i2)
+      else 
+        var.i <- variance(noise.model,
+                          log10(channel1.raw),log10(channel2.raw))
+ 
       if (remove.outliers) {
-        sel.outliers <- .sel.outliers(log.ratios,outliers.coef,outliers.trim)
+        if (identical(outliers.args$method,"wtd.iqr")) 
+          outliers.args$weights <- 1/var.i
+        outliers.args$log.ratio <- log.ratios
+        sel.outliers <- do.call(.sel.outliers,outlier.args)
         sel <- sel & !sel.outliers
       }
       
@@ -221,13 +229,9 @@ setMethod("estimateRatioNumeric",signature(channel1="numeric",channel2="numeric"
       i1 <- i1[sel]
       i2 <- i2[sel]
       log.ratios <- log.ratios[sel]
+      var.i <- var.i[sel]
 
-      if (is.null(channel1.raw))
-        var.i <- variance(noise.model,i1,i2)
-      else 
-        var.i <- variance(noise.model,
-                          log10(channel1.raw[sel]),log10(channel2.raw[sel]))
-      
+     
       ## linear regression estimation
       if (method=="lm" || method=="compare.all") {
         res.lm <- .calc.lm(channel1,channel2,sign.level.sample,sign.level.rat,ratiodistr) 
@@ -436,19 +440,54 @@ setMethod("estimateRatioNumeric",signature(channel1="numeric",channel2="numeric"
     ri[,ch]
 }
 
-.sel.outliers <- function(log.ratio,outliers.coef,outliers.trim=0) {
-  # TODO: Weighted outlier removal
-  if (outliers.trim == 0) {
-    # use box-plot method
+.sel.outliers <- function(log.ratio,method="boxplot",
+                          outliers.coef=1.5,outliers.trim=0.1,
+                          weights=NULL) {
+  # discussion: http://stats.stackexchange.com/questions/7155/rigorous-definition-of-an-outlier
+  sel <- is.na(log.ratio)
+  if (method == "boxplot") {
+    # Tukey's (1977) method; see ?boxplot.stats and below at 'iqr'.
+    # outliers.coef=1.5, typically
     bp <- boxplot.stats(log.ratio,coef=outliers.coef)
-    sel.or <- (log.ratio >= bp$stats[1]) & (log.ratio <=bp$stats[5])
+    sel | log.ratio<bp$stats[1] | log.ratio>bp$stats[5]
+  } else if (method == "iqr") {
+    # Tukey's (1977) method
+    # applicable to skewed data (makes no distributional assumptions)
+    # may not be appropriate for small sample sizes
+    #   selects points which are more than outliers.coef times the interquartile range 
+    #   above the third quartile or below the first quartile.  
+    #  possible outliers: outlier.coef=1.5 (99.3% of the data within range in normal distribution)
+    #  probable outliers: outlier.coef=3
+
+    qs <- quantile(log.ratio,c(.25,.75),na.rm=TRUE)
+    iqr <- qs[2] - qs[1]
+    sel | log.ratio < qs[1]-outliers.coef*iqr | log.ratio > qs[2]+outliers.coef*iqr
+  } else if (method == "wtd.iqr") {
+    # weighted implementation of iqr method with weighted quantiles
+    require(Hmisc)
+    qs <- wtd.quantile(log.ratio,weights,c(.25,.75),na.rm=TRUE)
+    iqr <- qs[2] - qs[1]
+    sel | log.ratio < qs[1]-outliers.coef*iqr | log.ratio > qs[3]+outliers.coef*iqr
+  } else if (method == "robust.zscore") {
+    # modified z-score proposed by Iglewicz and Hoaglin (1993)
+    #  68% have zscores between +/- 1, 95% have zscores between +/- 2
+    #  99.7% have zscores between +/- 3
+    # outliers.coef=3.5, typically
+    sel | 0.6745*abs(log.ratio-mean(log.ratio,na.rm=TRUE))/mad(log.ratio,constant=1,na.rm=TRUE) > outliers.coef
+  } else if (method == "zscore") {
+    # 99.7% of the data lie within 3 standard deviations of the mean
+    # outliers.coef=3, typically
+    sel | abs(log.ratio-mean(log.ratio,na.rm=TRUE))/sd(log.ratio,na.rm=TRUE) > outliers.coef
+
+  } else if (method == "trim") {
+    sel | log.ratio < quantile(log.ratio,outliers.trim/2,na.rm=TRUE) |
+          log.ratio > quantile(log.ratio,1-outliers.trim/2,na.rm=TRUE)
   } else {
-    # use trim method
-    sel.or <- log.ratio > quantile(log.ratio,outliers.trim,na.rm=TRUE) & 
-              log.ratio < quantile(log.ratio,1-outliers.trim,na.rm=TRUE)
+    stop("method ",method," not known, use one of [boxplot,iqr,wtd.iqr,zscore,trim]")
   }
-  is.na(log.ratio) | !sel.or
 }
+
+
                            
 .calc.weighted.ratio <- function(log.ratio,variance,
                                  variance.function,preweights=NULL) {
