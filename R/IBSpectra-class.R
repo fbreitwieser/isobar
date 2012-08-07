@@ -193,7 +193,7 @@ setMethod("initialize","IBSpectra",
             }
         }
         
-        message("merge ids")
+        message("merging identifications")
         data <- .merge.identifications(data)
         SC <- .SPECTRUM.COLS[.SPECTRUM.COLS %in% colnames(data)]
         
@@ -361,6 +361,7 @@ setMethod("readIBSpectra",
           signature(type="character",id.file="character",peaklist.file="missing"),
     function(type,id.file,...) {
       ll <- lapply(seq_along(id.file),function(i) {
+                   message("\treading ",id.file[i])
                    df <- read.table(id.file[i],header=T,sep="\t")
                    df[,.SPECTRUM.COLS['FILE']]  <- id.file[i]
                    if (!is.null(names(id.file)))
@@ -1393,10 +1394,10 @@ normalize <- function(x,f=median,target="intensity",exclude.protein=NULL,
       if (!all(channels %in% colnames(ri)))
         stop("channels must be reporterTagNames.")
                                                          
-      ri <- reporterIntensities(x,na.rm=na.rm)[,channels,drop=FALSE]
+      ri <- reporterIntensities(x)[,channels,drop=FALSE]
     }
   } else {
-    ri <- reporterIntensities(x,na.rm=na.rm)
+    ri <- reporterIntensities(x)
   } ## else is.null(channels)
   
   if (!is.null(exclude.protein))
@@ -1405,6 +1406,11 @@ normalize <- function(x,f=median,target="intensity",exclude.protein=NULL,
   
   if (!is.null(use.protein))
     ri <- ri[spectrumSel(x,protein=use.protein,specificity=REPORTERSPECIFIC),]
+
+  if (na.rm) 
+    sel.na <- apply(!is.na(ri),1,all)
+  else
+    sel.na <- rep(TRUE,nrow(ri))
   
   ## TODO: warning when ri is empty
 
@@ -1416,10 +1422,10 @@ normalize <- function(x,f=median,target="intensity",exclude.protein=NULL,
   if (per.file && .SPECTRUM.COLS['FILE'] %in% colnames(fData(x))) {
     fd <- fData(x)
     for (n.file in sort(unique(fd[,.SPECTRUM.COLS['FILE']]))) {
-      message(n.file)
-      sel <- fd[,.SPECTRUM.COLS['FILE']] == n.file
-      message(sum(sel))
-      factor <- .get.normalization.factors(ri[sel,,drop=FALSE],f,target,f.doapply,...)
+      sel <- sel.na & fd[,.SPECTRUM.COLS['FILE']] == n.file
+      message("\tnormalizing ",n.file," [",sum(sel)," spectra]")
+      ri.sel <- ri[sel,,drop=FALSE]
+      factor <- .get.normalization.factors(ri.sel,f,target,f.doapply,...)
       reporterIntensities(x)[sel,colnames(ri)] <- 
         reporterIntensities(x)[sel,colnames(ri)]*rep(factor,each=sum(sel))
       for (i in seq_along(factor)) {
@@ -1428,7 +1434,7 @@ normalize <- function(x,f=median,target="intensity",exclude.protein=NULL,
       } 
     }
   } else {
-    factor <- .get.normalization.factors(ri,f,target,f.doapply,...)
+    factor <- .get.normalization.factors(ri[sel.na,,drop=FALSE],f,target,f.doapply,...)
     reporterIntensities(x)[,colnames(ri)] <- 
       reporterIntensities(x)[,colnames(ri)]*
       rep(factor,each=nrow(reporterIntensities(x)))

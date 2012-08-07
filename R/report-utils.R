@@ -567,11 +567,15 @@ initialize.env <- function(env,report.type="protein",properties.env) {
   readIBSpectra.args$fragment.outlier.prob=get.property('fragment.outlier.prob')
   readIBSpectra.args$proteinGroupTemplate=.get.or.load('protein.group.template',properties.env,"ProteinGroup",null.ok=TRUE)
 
-  if (file.exists(get.property('ibspectra'))) {
+  if (all(file.exists(get.property('ibspectra')))) {
     if (grepl(".csv",get.property('ibspectra'))) {
         message("ibspectra ends on .csv:\n",
-                sprintf('ibspectra <- readIBSpectra("%s","%s") ...',
-                        get.property('type'),get.property('ibspectra')))
+                sprintf('ibspectra <- readIBSpectra("%s",%s) ...',
+                        get.property('type'),
+                        ifelse(length(get.property('ibspectra'))==1,
+                               paste0('"',get.property('ibspectra'),'"'),
+                               paste0('c("',get.property('ibspectra'),'")',collapse='","')
+                               )))
         ibspectra <- do.call(readIBSpectra,readIBSpectra.args)
     } else if (grepl(".rda",get.property("ibspectra"))) {
         message("ibspectra ends on .rda: ","loading")
