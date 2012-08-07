@@ -157,7 +157,7 @@ setMethod("estimateRatioNumeric",signature(channel1="numeric",channel2="numeric"
     function(channel1,channel2,noise.model,ratiodistr=NULL,
              variance.function="maxi",
              sign.level=0.05,sign.level.rat=sign.level,sign.level.sample=sign.level,
-             remove.outliers=TRUE,outliers.args=list(method="iqr",coef=1.5),n.sample=NULL, 
+             remove.outliers=TRUE,outliers.args=list(method="iqr",outliers.coef=1.5),n.sample=NULL, 
              method="isobar",fc.threshold=1.3,channel1.raw=NULL,channel2.raw=NULL,
              use.na=FALSE,preweights=NULL) {
       
@@ -219,7 +219,7 @@ setMethod("estimateRatioNumeric",signature(channel1="numeric",channel2="numeric"
         if (identical(outliers.args$method,"wtd.iqr")) 
           outliers.args$weights <- 1/var.i
         outliers.args$log.ratio <- log.ratios
-        sel.outliers <- do.call(.sel.outliers,outlier.args)
+        sel.outliers <- do.call(.sel.outliers,outliers.args)
         sel <- sel & !sel.outliers
       }
       
