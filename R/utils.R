@@ -229,4 +229,36 @@ setMethod("weightedMean",
 .sum.bool.c  <- function(x) 
   paste('TRUE: ',sum(x),'; FALSE: ',sum(!x),'; TRUE %: ',round(sum(x)/length(x)*100,1),"; length: ",length(x),sep="")
 
+.combine.fisher <- function(p.values,signs) {
+  if (length(signs) != length(p.values))
+    stop("lratios and pvalues must have equal length!")
+  
+  sel.notna <- !is.na(p.values)
+  p.values <- p.values[sel.notna]
+  signs <- signs[sel.notna]
+  k <- length(p.values)
+
+  if (length(p.values) == 1) return(p.values)
+
+  ## require that the direction is the same for all p-values
+  if (!all(signs == signs[1])) return(1)
+
+  return(pchisq(-2*sum(log(p.values)),2*k,lower.tail=FALSE))
+}
+
+.combine.fisher.tblwide <- function(df) {
+  lr.cols <- grep("^lratio.",colnames(df))
+  p.cols <- grep("^p.value.rat.",colnames(df))
+  if (length(lr.cols) != length(p.cols))
+    stop("unequal number of '^lratio.' and '^p.value.rat' columns")
+
+  combined.p <- rep(1,nrow(df))
+  signs.equal <- apply(sign(df[,lr.cols]),1,function(x) all(x==x[1]))
+  ks <- apply(!is.na(df[,p.cols]),1,sum)
+  logsums <- rowSums(log(df[,p.cols]),na.rm=TRUE)
+  sel <-  ks > 1 & signs.equal
+  combined.p[sel] <- pchisq(-2*logsums[sel],2*ks[sel],lower.tail=FALSE)
+  return(combined.p)
+}
+
 
