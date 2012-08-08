@@ -24,12 +24,12 @@ ibspectra=paste(name,"ibspectra.csv",sep=".")
 ## beforehand. This then acts as a template and a subset is used.
 protein.group.template=NULL
 
-## Via database or internet connection informations on proteins 
+## Via database or internet connection, informations on proteins 
 ## (such as gene names and length) can be gathered. protein.info.f
 ## defines the function which takes a ProteinGroup object as argument
 protein.info.f=getProteinInfoFromUniprot
 
-## Where should cached files be saved?
+## Where should cached files be saved? Will be created if it does not exist
 # cachedir="cache"
 cachedir="."
 
@@ -136,6 +136,10 @@ write.qc.report=TRUE
 write.report=TRUE
 write.xls.report=TRUE
 
+## Spreadsheet format: Either 'xlsx' or 'xls'
+# spreadsheet.format="xls"
+spreadsheet.format="xls"
+
 ## XLS report format 'wide' or 'long
 ## 'wide' format outputs ratios in separate columns of the same record (i.e. one line per protein)
 ## 'long' format outputs ratios in separate records (i.e. one line per ratio)
@@ -155,6 +159,8 @@ xls.report.columns <- c("ratio","is.significant","ratio.minus.sd","ratio.plus.sd
 compare.to.quant <- NULL
 
 sum.intensities=FALSE
+
+## regenerate cache files
 regen=FALSE
 use.name.for.report=FALSE
 

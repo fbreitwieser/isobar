@@ -6,7 +6,7 @@ create.protein.group <- function(id.files,file="protein.group.rda") {
 
 	# create an IBSpectra object with all identifications
 	protein.group <- readProteinGroup(id.files)
-	proteinInfo(protein.group) <- getProteinInfoFromBiomart(protein.group)
+	proteinInfo(protein.group) <- getProteinInfoFromUniprot(protein.group)
 	print(protein.group)
 	# save ProteinGroup object
 	save(protein.group,file=file)

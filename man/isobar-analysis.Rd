@@ -34,7 +34,7 @@ estimateRatioForProtein(protein, ibspectra, noise.model, channel1, channel2, com
 
 \S4method{estimateRatioNumeric}{numeric,numeric,NoiseModel}(channel1,channel2,noise.model,ratiodistr=NULL,variance.function="maxi",
                                                             sign.level=0.05,sign.level.rat=sign.level,sign.level.sample=sign.level,
-                                                            remove.outliers=TRUE,outliers.coef=1,outliers.trim=0,
+                                                            remove.outliers=TRUE,outliers.args=list(method = "iqr", outliers.coef = 1.5),
                                                             n.sample=NULL,method="isobar",fc.threshold=1.3,
                                                             channel1.raw=NULL,channel2.raw=NULL,use.na=FALSE,preweights=NULL)
 
@@ -77,10 +77,7 @@ estimateRatioForProtein(protein, ibspectra, noise.model, channel1, channel2, com
   \item{sign.level.rat}{Signal p-value significiance level. }
   \item{sign.level.sample}{Sample p-value significiance level. }
   \item{remove.outliers}{Should outliers be removed? }
-  \item{outliers.coef}{outliers removal by boxplot.stats, see coef in 
-      \code{boxplot.stats}.}
-  \item{outliers.trim}{If this value is not zero, outliers will be removed
-    using trimmed mean approach.}
+  \item{outliers.args}{Arguments for outlier removal, see OUTLIERS function (TODO).}
   \item{n.sample}{For testing purposes: Only take a subset (sample) of the data.}
   \item{method}{ method taken for ratio computation and selection: one of
     'isobar','libra','multiq','pep','ttest' and 'compare.all'. }
