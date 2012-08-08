@@ -247,6 +247,8 @@ isotopeImpurities(ibspiked_set1)
 set.seed(123)
 data <- data.frame(spectrum=letters,
                    peptide=sample(c("pepA","pepB","pepC"),26,TRUE),
+                   start.pos=1,
+                   modif=sample(c("::X:::",":Y::::","::Z:::"),26,TRUE),
                    accession=c("protein1","protein2"))
 data.ions <- matrix(rnorm(26*2,1000,50),
                     ncol=2,dimnames=list(letters,NULL))

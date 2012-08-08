@@ -1,6 +1,6 @@
 #!/usr/bin/perl
 # Creation date : 2010-09-29
-# Last modified : Tue 29 May 2012 07:19:07 PM CEST
+# Last modified : Mon 23 Jul 2012 02:04:30 PM CEST
 
 # Module        : tab2xls.pl
 # Purpose       : converts csv files to XLS format
@@ -59,7 +59,6 @@ my @colors = (
 
 
 my %header_prop = (
-  color => 'white',
   text_wrap => 1,
   align => 'center');
 
@@ -97,24 +96,18 @@ for (my $file_i=0; $file_i <= $#ARGV; ++$file_i) {
       $n_worksheets += 1;
       $worksheet = $workbook->add_worksheet($name.($n_worksheets > 1? " $n_worksheets" : ""));
       $worksheet->add_write_handler(qr[\w], \&store_string_widths);
-      $worksheet->set_tab_color($colors[$file_i]);
+      my $fg_color = ($file_i <= $#colors)? "white" : "black";
+      my $bg_color = ($file_i <= $#colors)? $colors[$file_i] : "white";
+      $worksheet->set_tab_color($bg_color);
       if (defined $props->{'header'}) { $worksheet->set_header($props->{'header'}); }
       if (defined $props->{'footer'}) { $worksheet->set_footer($props->{'footer'}); }
       $worksheet->freeze_panes(1,(defined($props->{'freeze_col'})? $props->{'freeze_col'}:0)); # 1 row
-      my ($merge_from,$do_merge,$merge_val);
+
       for my $i (0..$#header) {
-        $header[$i] = trim($header[$i]);
-        $header_formats[$i] = $workbook->add_format(%header_prop,fg_color=>$colors[$file_i]);
-        ($do_merge,$merge_val) = write_col($worksheet,0,$i,getname($header[$i]),$header_formats[$i]);
-        if ($do_merge && $i < $#header) {
-          $merge_from = $i unless (defined($merge_from));
-        } elsif (defined($merge_from)) {
-          $worksheet->merge_range(0,$merge_from,0,
-                                  $do_merge? $i : $i-1,
-                                  $merge_val,$header_formats[$i]);
-          $merge_from = undef;
-        }
+        $header_formats[$i] = $workbook->add_format(%header_prop,
+          color=>$fg_color,fg_color=>$bg_color);
       }
+      write_header($worksheet,0,\@header_formats,@header);
       $row = 1;
     }
     #chop($line);
@@ -142,20 +135,9 @@ for (my $file_i=0; $file_i <= $#ARGV; ++$file_i) {
       ## TODO: LEVEL
       #$worksheet->set_row($row,undef,undef
     }
-    my ($merge_from,$do_merge,$merge_val);
-    for (my $i=0; $i<scalar(@data); ++$i) {
-      ($do_merge,$merge_val) = write_col($worksheet,$row,$col,trim($data[$i]));
-      if ($do_merge && $i < $#data) {
-        $merge_from = $i unless (defined($merge_from));
-      } elsif (defined($merge_from) && $merge_from > $i) {
-        $worksheet->merge_range($row,$merge_from,$row,
-          $do_merge? $i : $i-1,
-          $merge_val,$fmt_centeracross);
-        $merge_from = undef;
-      }
-      ++$col;
 
-    }
+    write_row($worksheet,$row,undef,$fmt_centeracross,\@data);
+
     ++$row;
     if (defined $props->{'autofilter'} && $row == $row_limit) { $worksheet->autofilter(0,0,$row-1,$col-1); }
   }
@@ -171,6 +153,48 @@ for (my $file_i=0; $file_i <= $#ARGV; ++$file_i) {
 
 $workbook->close;
 
+sub write_header {
+  my ($worksheet,$row,$format_ref,@data) = @_;
+  my ($merge_from,$do_merge,$merge_val,$mmerge_val);
+  for (my $i=0; $i<scalar(@data); ++$i) {
+    ($do_merge,$merge_val) = write_col($worksheet,$row,$i,trim($data[$i]),$format_ref->[$i]);
+    if ($do_merge) {
+      $merge_from = $i unless defined($merge_from);
+      $mmerge_val = $merge_val unless defined $mmerge_val;
+    } elsif (defined($merge_from)) {
+      $worksheet->merge_range($row,$merge_from,$row,$i-1,
+                              $mmerge_val,$format_ref->[$i]);
+      $merge_from = undef;
+      $mmerge_val = undef;
+    }
+  }
+  if (defined($merge_from)) {
+    $worksheet->merge_range($row,$merge_from,$row,$#data,
+      $mmerge_val,$format_ref->[0]);
+  }
+}
+
+
+sub write_row {
+  my ($worksheet,$row,$format,$format_merge,$data) = @_;
+  my ($merge_from,$do_merge,$merge_val,$mmerge_val);
+  for (my $i=0; $i<scalar(@$data); ++$i) {
+    ($do_merge,$merge_val) = write_col($worksheet,$row,$i,trim($data->[$i]),$format);
+    if ($do_merge) {
+      $merge_from = $i unless defined($merge_from);
+      $mmerge_val = $merge_val unless defined $mmerge_val;
+    } elsif (defined($merge_from)) {
+      $worksheet->merge_range($row,$merge_from,$row,$i-1,
+                              $mmerge_val,$format_merge);
+      $merge_from = undef;
+      $mmerge_val = undef;
+    }
+  }
+  if (defined($merge_from)) {
+    $worksheet->merge_range($row,$merge_from,$row,scalar(@$data)-1,
+      $mmerge_val,$format_merge);
+  }
+}
 
 sub get_props {
 	my ($string,$sep) = @_;
@@ -193,12 +217,15 @@ sub write_col {
   my ($worksheet,$row,$col,$field,$format) = @_;
 
   my $props;
-	($field,$props) = get_props($field,"@");
+  ($field,$props) = get_props($field,"@");
   if (defined $props->{'centeracross'}) {
     return (1,$field);
   } 
   if ($field eq 'TRUE') { $format=colorfmt('green'); }
   elsif ($field eq '0') { $format=colorfmt('gray'); }
+
+  $field = getname($field) if ($row == 0);
+
   if (defined $props->{'link'}) {
     $worksheet->write_url($row,$col,$props->{'link'},$field,$format);
   } else {
@@ -210,7 +237,7 @@ sub write_col {
     $props->{'comment'} =~ s/\n\s*\n+/\n/g;
     return if $props->{'comment'} =~ /^ *$/;
     #print STDERR "comment: [".$props->{'comment'}."]\n";
-    $worksheet->write_comment($row,$col,$props->{'comment'});
+    $worksheet->write_comment($row,$col,$props->{'comment'},visible=>0);
   }
   return(0);
 }
@@ -245,13 +272,13 @@ sub autofit_columns {
     my $worksheet = shift;
     my $col       = 0;
     my $max_header = 4;
+    return unless defined $worksheet->{__col_widths}; 
 
     for (my $i=0;$i < @{$worksheet->{__col_widths}}; ++$i) {
       my $width = ${$worksheet->{__col_widths}}[$i];
       my $header_width = ${$worksheet->{__header_widths}}[$i];
       if ($width && $header_width > $width) {
         $header_formats[$i]->set_rotation(90);
-#        print STDERR "$i: $header_width\t$width\n";
         $max_header = $header_width if ($header_width > $max_header);
       }
       $worksheet->set_column($col, $col, $width) if $width;

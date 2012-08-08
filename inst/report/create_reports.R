@@ -1,6 +1,6 @@
 #!/bin/Rscript
 
-
+{
 print_help_and_exit <- function() {
   cat("create_reports.R       Command line tool to create reports using the\n",
       "                       isobar R/Bioconductor package.\n",
@@ -44,6 +44,11 @@ do.zip <- get.arg("--zip")
 protein.report <- get.arg("--protein")
 peptide.report <- get.arg("--peptide")
 
+xls.report <- get.arg("--xls")
+xlsx.report <- get.arg("--xlsx")
+qc.report <- get.arg("--qc")
+pdf.report <- get.arg("--pdf")
+
 ## TODO: parse further arguments
 
 message("started at ",date())
@@ -56,6 +61,18 @@ if (!exists("properties.env",inherits=FALSE)) {
                                     args=args)
 }
 
+if (xls.report || xlsx.report || qc.report || pdf.report) {
+  properties.env$write.xls.report <- (xls.report || xlsx.report)
+  if (properties.env$write.xls.report) {
+    if (xls.report) properties.env$spreadsheet.format <- 'xls'
+    if (xlsx.report) properties.env$spreadsheet.format <- 'xlsx'
+  }
+
+  properties.env$write.qc.report <- qc.report
+  properties.env$write.report <- pdf.report
+  do.compile <- TRUE
+}
+
 
 tryCatch({create.reports(report.type=ifelse(peptide.report,"peptide","protein"),
                          compile=do.compile,zip=do.zip)},
@@ -66,3 +83,4 @@ tryCatch({create.reports(report.type=ifelse(peptide.report,"peptide","protein"),
          }
          )
 message("finished at ",date())
+}

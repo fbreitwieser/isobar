@@ -1,6 +1,7 @@
 \name{calculate.emPAI}
 \alias{calculate.emPAI}
 \alias{n.observable.peptides}
+\alias{observable.peptides}
 \title{
   emPAI approximate abundance calculations.
 }
@@ -12,7 +13,9 @@
 }
 \usage{
 calculate.emPAI(protein.group, protein.g = reporterProteins(protein.group), ...)
-n.observable.peptides(seq, nmc = 1, min.length = 6, min.mass = 800, max.mass = 4000, ...)
+n.observable.peptides(...)
+observable.peptides(seq, nmc = 1, min.length = 6, min.mass = 600, max.mass = 4000, 
+                    custom = list(code = "U", mass = 150.953636), ...)
 }
 \arguments{
   \item{protein.group}{ProteinGroup object. Its \code{@proteinInfo}
@@ -25,7 +28,8 @@ n.observable.peptides(seq, nmc = 1, min.length = 6, min.mass = 800, max.mass = 4
   \item{min.length}{Minimum length of peptide.}
   \item{min.mass}{Minimum mass of peptide.}
   \item{max.mass}{Maximum mass of peptide.}
-  \item{\dots}{Further arguments to \code{\link{n.observable.peptides}}/\code{\link[OrgMassSpecR]{Digest}}.}
+  \item{custom}{User defined residue for \code{\link[OrgMassSpecR]{Digest}}.}
+  \item{\dots}{Further arguments to \code{\link{observable.peptides}}/\code{\link[OrgMassSpecR]{Digest}}.}
 }
 \details{
   The formula is \deqn{emPAI = 10^{\frac{N <- {observed}}{N <- {observable}}} -1}{emPAI = 10^(N_observed/N_observable) -1}

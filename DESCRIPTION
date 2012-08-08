@@ -3,7 +3,7 @@ Title: Analysis and quantitation of isobarically tagged MSMS proteomics data
 Description: isobar provides methods for preprocessing, normalization, and
     report generation for the analysis of quantitative mass spectrometry
     proteomics data labeled with isobaric tags, such as iTRAQ and TMT.
-Version: 1.3.1
+Version: 1.3.2
 Author: Florian P Breitwieser <fbreitwieser@cemm.oeaw.ac.at> and
    Jacques Colinge <jcolinge@cemm.oeaw.ac.at>, with contributions from 
    Xavier Robin <xavier.robin@unige.ch>
@@ -11,13 +11,14 @@ Maintainer: Florian P Breitwieser <fbreitwieser@cemm.oeaw.ac.at>
 biocViews: Proteomics, MassSpectrometry, Bioinformatics, MultipleComparisons, QualityControl
 Depends: R (>= 2.10.0), Biobase, stats, methods, plyr
 Imports: distr
-Suggests: MSnbase, OrgMassSpecR, XML, biomaRt, ggplot2
+Suggests: MSnbase, OrgMassSpecR, XML, biomaRt, ggplot2, Hmisc, RJSONIO
 LazyLoad: yes
 License: LGPL-2
 URL: http://bioinformatics.cemm.oeaw.ac.at
 Collate: utils.R
 	 ProteinGroup-class.R
 	 IBSpectra-class.R
+	 IBSpectra-plots.R
 	 NoiseModel-class.R
 	 ratio-methods.R
      sharedpep-methods.R
