@@ -377,8 +377,8 @@ getProteinInfoFromUniprot <- function(x,splice.by=200) {
                  paste0("accession:",protein.acs[seq(from=i,to=min(length(protein.acs),i+splice.by-1))],collapse="+OR+"),
                  "&format=tab&compress=no&columns=",
                  paste0(fields,collapse=","))
-    if (isTRUE(opts_isobar$verbose))
-      message("fetching protein info from ",uniprot.url)
+    #if (isTRUE(opts_isobar$verbose))
+    #  message("fetching protein info from ",uniprot.url)
     protein.info <- rbind(protein.info,read.delim(url(uniprot.url),stringsAsFactors=FALSE,col.names=names(fields)))
     i <- i + splice.by
   }
@@ -1129,7 +1129,7 @@ spectra.count2 <- function(protein.group,value=reporterProteins(protein.group),t
                           modif=NULL,combine=FALSE,...) {
   if (!isTRUE(combine)) {
     spectra.count <- sapply(value, function(p) 
-                            spectra.count(protein.group,p,type,specificity,modif,combine=TRUE,...))
+                            spectra.count2(protein.group,p,type,specificity,modif,combine=TRUE,...))
     names(spectra.count) <- value
     return(spectra.count)
   }

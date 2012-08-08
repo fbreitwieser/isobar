@@ -451,15 +451,22 @@ setMethod("readIBSpectra",
   if (.SPECTRUM.COLS['SEARCHENGINE'] %in% colnames(identifications)) {
     if (any(grepl("|",identifications[,SC['SEARCHENGINE']],fixed=TRUE))) {
       ## scores are merged together
-      engines <- strsplit(identifications[,SC['SEARCHENGINE']],"|",fixed=TRUE)
-      scores <- strsplit(identifications[,SC['SCORE']],"|",fixed=TRUE)
+      if (.SPECTRUM.COLS['SCORE'] %in% colnames(identifications)) {
+        engines <- strsplit(identifications[,SC['SEARCHENGINE']],"|",fixed=TRUE)
+        scores <- strsplit(identifications[,SC['SCORE']],"|",fixed=TRUE)
+      } else {
+        engine.n.score <- strsplit(identifications[,SC['SEARCHENGINE']],"[ \\|]")
+        engines <- lapply(engine.n.score,function(x) x[seq(from=1,to=length(x),by=2)])
+        scores <- lapply(engine.n.score,function(x) x[seq(from=2,to=length(x),by=2)])
+      }
       for (engine in unique(unlist(engines))) {
         name <- paste0('score.',tolower(engine))
         e.scores <- mapply(function(e,s) if(any(e==engine)) as.numeric(s[e==engine]) else NA,engines,scores)
         identifications[,name] <- e.scores
       }
       identifications[,SC['SEARCHENGINE']] <- NULL
-      identifications[,SC['SCORE']] <- NULL
+      if ('SCORE' %in% names(SC))
+        identifications[,SC['SCORE']] <- NULL
     }
     ## keep only spectra which have same identification with both engines
   }

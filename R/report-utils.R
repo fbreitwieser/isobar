@@ -723,7 +723,7 @@ initialize.env <- function(env,report.type="protein",properties.env) {
       if ("zscore" %in% properties.env$xls.report.columns) {
         ## TODO: zscore is calculated across all classes - 
         ##       it is probably more appropriate to calculate it individual for each class
-        xls.quant.tbl.tmp$zscore <- calc.zscore(xls.quant.tbl.tmp$lratio)
+        xls.quant.tbl.tmp$zscore <- .calc.zscore(xls.quant.tbl.tmp$lratio)
       }
     
       # TODO: Add z score?
