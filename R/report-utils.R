@@ -1,12 +1,13 @@
 
 create.reports <- function(properties.file="properties.R",args=NULL,
-                           report.type="protein",compile=FALSE,zip=FALSE) {
+                           report.type="protein",compile=FALSE,zip=FALSE,warn=1) {
   ow <- options("warn")
-  options(warn=1)
+  options(warn=warn)
   if (!exists("properties.env")) {
     properties.env <- load.properties(properties.file,
                                       system.file("report","properties.R",package="isobar"),
                                       args=args)
+    assign("properties.env",properties.env,envir=.GlobalEnv)
   }
   
   if (!exists("report.env")) {
@@ -88,8 +89,8 @@ write.xls.report <- function(report.type,properties.env,report.env,file="isobar-
       ## probably due to the environment it does not
       attr(proteinGroup(report.env$ibspectra),"protein.group.ids") <- .as.vect(unique(get.val('quant.tbl')[,c("ac","group")]))
       #protein.id.df <- as(get('ibspectra',report.env),"data.frame.concise")
-      protein.id.df <- .IBSpectraAsConciseDataFrame(get('ibspectra',report.env))
 
+      protein.id.df <- .IBSpectraAsConciseDataFrame(get('ibspectra',report.env))
       ## make columns w/ multiple groups gray
       sel.1group  <- protein.id.df$n.groups == 1
       #sel.1ac  <- protein.id.df$n.acs == 1
@@ -767,7 +768,7 @@ initialize.env <- function(env,report.type="protein",properties.env) {
       if ("zscore" %in% properties.env$xls.report.columns) {
         ## TODO: zscore is calculated across all classes - 
         ##       it is probably more appropriate to calculate it individual for each class
-        xls.quant.tbl.tmp$zscore <- calc.zscore(xls.quant.tbl.tmp$lratio)
+        xls.quant.tbl.tmp$zscore <- .calc.zscore(xls.quant.tbl.tmp$lratio)
       }
     
       # TODO: Add z score?

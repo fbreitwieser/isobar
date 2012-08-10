@@ -451,15 +451,27 @@ setMethod("readIBSpectra",
   if (.SPECTRUM.COLS['SEARCHENGINE'] %in% colnames(identifications)) {
     if (any(grepl("|",identifications[,SC['SEARCHENGINE']],fixed=TRUE))) {
       ## scores are merged together
-      engines <- strsplit(identifications[,SC['SEARCHENGINE']],"|",fixed=TRUE)
-      scores <- strsplit(identifications[,SC['SCORE']],"|",fixed=TRUE)
+      if (.SPECTRUM.COLS['SCORE'] %in% colnames(identifications)) {
+        engines <- strsplit(identifications[,SC['SEARCHENGINE']],"|",fixed=TRUE)
+        scores <- strsplit(identifications[,SC['SCORE']],"|",fixed=TRUE)
+      } else {
+        engine.n.score <- strsplit(identifications[,SC['SEARCHENGINE']],"[ \\|]")
+        engines <- lapply(engine.n.score,function(x) x[seq(from=1,to=length(x),by=2)])
+        if (length(unique(unlist(engines))>10)) {
+          engines <- lapply(engine.n.score,function(x) x[seq(from=1,to=length(x)/2)])
+          scores <- lapply(engine.n.score,function(x) as.numeric(x[seq(from=length(x)/2+1,to=length(x))]))
+        } else {
+          scores <- lapply(engine.n.score,function(x) as.numeric(x[seq(from=2,to=length(x),by=2)]))
+        }
+      }
       for (engine in unique(unlist(engines))) {
         name <- paste0('score.',tolower(engine))
-        e.scores <- mapply(function(e,s) if(any(e==engine)) as.numeric(s[e==engine]) else NA,engines,scores)
+        e.scores <- mapply(function(e,s) if(any(e==engine)) s[e==engine] else NA,engines,scores)
         identifications[,name] <- e.scores
       }
       identifications[,SC['SEARCHENGINE']] <- NULL
-      identifications[,SC['SCORE']] <- NULL
+      if ('SCORE' %in% names(SC))
+        identifications[,SC['SCORE']] <- NULL
     }
     ## keep only spectra which have same identification with both engines
   }
@@ -1170,13 +1182,13 @@ setGeneric("reporterMasses<-", function(x,...,value)
            standardGeneric("reporterMasses<-"))
 
 setMethod("reporterData","IBSpectra",
-    function(x,element="ions",na.rm=FALSE,...) {
+    function(x,element="ions",na.rm=FALSE,na.rm.f='any',...) {
       sel <- spectrumSel(x,...)
       data <- assayDataElement(x,element)[sel,,drop=FALSE]
 
-      if (na.rm & length(data) > 0) 
-        return(data[apply(!is.na(data),1,all),,drop=FALSE])
-      else       
+      if (na.rm & length(data) > 0)
+        return(data[!apply(is.na(data),1,na.rm.f),,drop=FALSE])
+      else
         return(data)
     }
     )
@@ -1278,7 +1290,7 @@ setMethod("spectrumSel",signature(x="IBSpectra",peptide="missing",protein="chara
         return(FALSE)
       sel <- spectrumSel(x,peptide=peptides,spectrum.titles=spectrum.titles,
                          modif=modif,use.for.quant.only=use.for.quant.only,do.warn=do.warn)
-      if ((spectrum.titles & any(sel)) || (!spectrum.titles & !any(sel)))
+      if (do.warn && ((spectrum.titles & any(sel)) || (!spectrum.titles & !any(sel))))
         warning("No spectra for protein ",protein,
                 " with specificity ",paste(specificity,collapse=","))
       return(sel)

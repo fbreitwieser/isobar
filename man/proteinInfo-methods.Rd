@@ -3,6 +3,7 @@
 \alias{getProteinInfoFromUniprot}
 \alias{getProteinInfoFromNextProt}
 \alias{getProteinInfoFromBioDb}
+\alias{getPtmInfoFromNextprot}
 \alias{proteinInfoIsOnSpliceVariants}
 \alias{proteinInfo}
 \alias{proteinInfo-methods}
@@ -20,6 +21,7 @@
 
   \code{getProteinInfoFromUniprot} downloads information of contained proteins
   from Uniprot, \code{getProteinInfoFromBiomart} from Biomart.
+
 }
 \usage{
 
@@ -41,9 +43,12 @@
   getProteinInfoFromBiomart(x, database = "Uniprot")
 
   getProteinInfoFromBioDb(x, ..., con = NULL)
+
+  getPtmInfoFromNextprot(protein.group, nextprot.url = "http://www.nextprot.org/rest/entry/NX_XXX/ptm?format=json")
 }
 \arguments{
   \item{x}{ProteinGroup object}
+  \item{protein.group}{ProteinGroup object}
   \item{protein.g}{Protein group identifier. If supplied, only information for 
     these proteins is returned.}
   \item{protein.ac}{Protein ACs. If supplied, only information for 
@@ -59,6 +64,7 @@
   \item{con}{database connection}
   \item{...}{arguments to build database connection.}
   \item{protein.info}{protein info data.frame}
+  \item{nextprot.url}{URL for fetching Nextprot results. 'XXX' will be replaced by the Uniprot Protein AC.}
 }
 
 \details{proteinInfo contains columns \code{accession}, \code{name}, 
