@@ -866,13 +866,13 @@ setGeneric("protein.g",function(x,pattern,variables=c("AC","name"),...) standard
 setMethod("protein.g",signature("ProteinGroup","character","ANY"),
           function(x,pattern,variables=c("AC","name"),...) {
   ip <- indistinguishableProteins(x)
+  protein.info <- proteinInfo(x)
   result <- c()
   for (p in pattern) {
     protein.acs <- c()
     if ("AC" %in% variables)
       result <- c(result,ip[grep(p,names(ip),...)])
     if ("name" %in% variables) {
-      protein.info <- proteinInfo(x)
       if (length(protein.info) != 0L) {
         protein.acs <- unique(c(
            protein.info$accession[grep(p,protein.info$name,...)],
@@ -885,7 +885,8 @@ setMethod("protein.g",signature("ProteinGroup","character","ANY"),
       sel.isoforms <- i.to.gp[,"proteinac.wo.splicevariant"] %in% protein.acs
       protein.acs.w.isoforms <-
          i.to.gp[sel.isoforms,"proteinac.w.splicevariant"]
-      protein.gs <- ip[names(ip) %in% protein.acs.w.isoforms]
+      ## TODO: test for proteinInfoIsOnSpliceVariants
+      protein.gs <- ip[names(ip) %in% c(protein.acs.w.isoforms,protein.acs)]
       result <- c(result,protein.gs)
    }
  }
