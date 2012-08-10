@@ -59,7 +59,6 @@ my @colors = (
 
 
 my %header_prop = (
-  color => 'white',
   text_wrap => 1,
   align => 'center');
 
@@ -97,13 +96,16 @@ for (my $file_i=0; $file_i <= $#ARGV; ++$file_i) {
       $n_worksheets += 1;
       $worksheet = $workbook->add_worksheet($name.($n_worksheets > 1? " $n_worksheets" : ""));
       $worksheet->add_write_handler(qr[\w], \&store_string_widths);
-      $worksheet->set_tab_color($colors[$file_i]);
+      my $fg_color = ($file_i <= $#colors)? "white" : "black";
+      my $bg_color = ($file_i <= $#colors)? $colors[$file_i] : "white";
+      $worksheet->set_tab_color($bg_color);
       if (defined $props->{'header'}) { $worksheet->set_header($props->{'header'}); }
       if (defined $props->{'footer'}) { $worksheet->set_footer($props->{'footer'}); }
       $worksheet->freeze_panes(1,(defined($props->{'freeze_col'})? $props->{'freeze_col'}:0)); # 1 row
 
       for my $i (0..$#header) {
-        $header_formats[$i] = $workbook->add_format(%header_prop,fg_color=>$colors[$file_i]);
+        $header_formats[$i] = $workbook->add_format(%header_prop,
+          color=>$fg_color,fg_color=>$bg_color);
       }
       write_header($worksheet,0,\@header_formats,@header);
       $row = 1;
@@ -221,6 +223,9 @@ sub write_col {
   } 
   if ($field eq 'TRUE') { $format=colorfmt('green'); }
   elsif ($field eq '0') { $format=colorfmt('gray'); }
+
+  $field = getname($field) if ($row == 0);
+
   if (defined $props->{'link'}) {
     $worksheet->write_url($row,$col,$props->{'link'},$field,$format);
   } else {
@@ -232,7 +237,7 @@ sub write_col {
     $props->{'comment'} =~ s/\n\s*\n+/\n/g;
     return if $props->{'comment'} =~ /^ *$/;
     #print STDERR "comment: [".$props->{'comment'}."]\n";
-    $worksheet->write_comment($row,$col,$props->{'comment'});
+    $worksheet->write_comment($row,$col,$props->{'comment'},visible=>0);
   }
   return(0);
 }
@@ -267,6 +272,7 @@ sub autofit_columns {
     my $worksheet = shift;
     my $col       = 0;
     my $max_header = 4;
+    return unless defined $worksheet->{__col_widths}; 
 
     for (my $i=0;$i < @{$worksheet->{__col_widths}}; ++$i) {
       my $width = ${$worksheet->{__col_widths}}[$i];
