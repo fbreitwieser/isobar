@@ -181,10 +181,12 @@
     \item{\code{isotopeImpurities(x)}:}{Gets and sets the isotope
     impurities of the isobaric tags as defined by the manufacturers
     per batch.}  
-    \item{\code{reporterData(x,element="ions",...)}:}{
+    \item{\code{reporterData(x,element="ions",na.rm=FALSE,na.rm.f='any',...)}:}{
       Gets and sets the element ('ions' or 'mass') for each tag and spectrum.
       '...' is handed down to spectrumSel, so it is possible to
       select for peptides or proteins.
+      If na.rm is TRUE, than spectra missing quantitative information in 'any' or 'all'
+      channels (parameter na.rm.f) are removed.
     }
     
     \item{\code{reporterIntensities(x,...)}:}{

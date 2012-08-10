@@ -1182,13 +1182,13 @@ setGeneric("reporterMasses<-", function(x,...,value)
            standardGeneric("reporterMasses<-"))
 
 setMethod("reporterData","IBSpectra",
-    function(x,element="ions",na.rm=FALSE,...) {
+    function(x,element="ions",na.rm=FALSE,na.rm.f='any',...) {
       sel <- spectrumSel(x,...)
       data <- assayDataElement(x,element)[sel,,drop=FALSE]
 
-      if (na.rm & length(data) > 0) 
-        return(data[apply(!is.na(data),1,all),,drop=FALSE])
-      else       
+      if (na.rm & length(data) > 0)
+        return(data[!apply(is.na(data),1,na.rm.f),,drop=FALSE])
+      else
         return(data)
     }
     )
