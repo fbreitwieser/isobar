@@ -1,12 +1,13 @@
 
 create.reports <- function(properties.file="properties.R",args=NULL,
-                           report.type="protein",compile=FALSE,zip=FALSE) {
+                           report.type="protein",compile=FALSE,zip=FALSE,warn=1) {
   ow <- options("warn")
-  options(warn=1)
+  options(warn=warn)
   if (!exists("properties.env")) {
     properties.env <- load.properties(properties.file,
                                       system.file("report","properties.R",package="isobar"),
                                       args=args)
+    assign("properties.env",properties.env,envir=.GlobalEnv)
   }
   
   if (!exists("report.env")) {
@@ -86,8 +87,9 @@ write.xls.report <- function(report.type,properties.env,report.env,file="isobar-
       ## in principle, it works by defining the protein.group.ids attr, but does not here - 
       ## probably due to the environment it does not
       attr(proteinGroup(report.env$ibspectra),"protein.group.ids") <- .as.vect(unique(get.val('quant.tbl')[,c("ac","group")]))
-      protein.id.df <- as(get('ibspectra',report.env),"data.frame.concise")
+      #protein.id.df <- as(get('ibspectra',report.env),"data.frame.concise")
 
+      protein.id.df <- .IBSpectraAsConciseDataFrame(get('ibspectra',report.env))
       ## make columns w/ multiple groups gray
       sel.1group  <- protein.id.df$n.groups == 1
       #sel.1ac  <- protein.id.df$n.acs == 1
@@ -96,7 +98,8 @@ write.xls.report <- function(report.type,properties.env,report.env,file="isobar-
       #protein.id.df[!sel.1group | !protein.id.df$use.for.quant,1] <- paste("#color=gray#",protein.id.df[!sel.1group,1],sep="")
 
     } else {
-      protein.id.df <- as(get('ibspectra',report.env),"data.frame.concise")
+      #protein.id.df <- as(get('ibspectra',report.env),"data.frame.concise")
+      protein.id.df <- .IBSpectraAsConciseDataFrame(get('ibspectra',report.env))
     }
 
     ## Analysis Properties:
