@@ -1285,7 +1285,7 @@ setMethod("spectrumSel",signature(x="IBSpectra",peptide="missing",protein="chara
         return(FALSE)
       sel <- spectrumSel(x,peptide=peptides,spectrum.titles=spectrum.titles,
                          modif=modif,use.for.quant.only=use.for.quant.only,do.warn=do.warn)
-      if ((spectrum.titles & any(sel)) || (!spectrum.titles & !any(sel)))
+      if (do.warn && ((spectrum.titles & any(sel)) || (!spectrum.titles & !any(sel))))
         warning("No spectra for protein ",protein,
                 " with specificity ",paste(specificity,collapse=","))
       return(sel)
