@@ -457,11 +457,16 @@ setMethod("readIBSpectra",
       } else {
         engine.n.score <- strsplit(identifications[,SC['SEARCHENGINE']],"[ \\|]")
         engines <- lapply(engine.n.score,function(x) x[seq(from=1,to=length(x),by=2)])
-        scores <- lapply(engine.n.score,function(x) x[seq(from=2,to=length(x),by=2)])
+        if (length(unique(unlist(engines))>10)) {
+          engines <- lapply(engine.n.score,function(x) x[seq(from=1,to=length(x)/2)])
+          scores <- lapply(engine.n.score,function(x) as.numeric(x[seq(from=length(x)/2+1,to=length(x))]))
+        } else {
+          scores <- lapply(engine.n.score,function(x) as.numeric(x[seq(from=2,to=length(x),by=2)]))
+        }
       }
       for (engine in unique(unlist(engines))) {
         name <- paste0('score.',tolower(engine))
-        e.scores <- mapply(function(e,s) if(any(e==engine)) as.numeric(s[e==engine]) else NA,engines,scores)
+        e.scores <- mapply(function(e,s) if(any(e==engine)) s[e==engine] else NA,engines,scores)
         identifications[,name] <- e.scores
       }
       identifications[,SC['SEARCHENGINE']] <- NULL
