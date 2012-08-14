@@ -38,16 +38,17 @@ setMethod("reporterMassPrecision",
               melt.masses$reporter <-
                 factor(melt.masses$reporter,
                        levels=reporterTagNames(x),
-                       labels=sprintf("tag %s: m/z %.2f",
+                       #labels=sprintf("tag %s: m/z %.2f",
+                       labels=sprintf("%s: m/z %.2f",
                          reporterTagNames(x),reporterTagMasses(x)))
               
               ggplot(melt.masses,aes(x=mass)) + geom_vline(xintercept=0,alpha=0.8) +
                 geom_histogram(fill="white",aes(colour=factor(reporter)),alpha=0.8,
                                binwidth=1/20*(max(melt.masses$mass,na.rm=TRUE)-min(melt.masses$mass,na.rm=TRUE))) + 
                   facet_wrap(~reporter,scales="fixed",nrow=1) + 
-                  theme_bw() + xlab("mass difference theoretical vs observed reporter tag mass") +
+                  theme_bw(base_size=10) + xlab("mass difference theoretical vs observed reporter tag mass") +
                     opts(legend.position="none",
-                         axis.text.x = theme_text(angle=330,hjust=0,vjust=1,colour="grey50",size=7.5))
+                         axis.text.x = theme_text(angle=330,hjust=0,vjust=1,colour="grey50",size=7))
             }
 
             #return(summary(masses-matrix(reporterTagMasses(x),byrow=T,
@@ -83,7 +84,7 @@ setMethod("reporterIntensityPlot",
               geom_boxplot(aes(color=factor(normalized)),size=0.5,alpha=0.6,
                            outlier.size=0.5,position=position_dodge(width=0.25)) + 
               xlab("isobaric reporter tag") +
-              scale_y_log10() + theme_bw() + scale_color_hue("") 
+              scale_y_log10() + theme_bw(base_size=10) + scale_color_hue("") 
           }
 )
 
