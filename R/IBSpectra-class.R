@@ -1358,7 +1358,7 @@ setMethod("correctIsotopeImpurities",signature(x="IBSpectra"),
           }
       ))
       colnames(ri.corrected) <- reporterTagNames(x)
-      ri.corrected[ri.corrected<0] <- NA
+      ri.corrected[ri.corrected<1] <- NA
       reporterIntensities(x) <- ri.corrected
 
       x <- do.log(x,"isotopeImpurities.corrected",TRUE)
