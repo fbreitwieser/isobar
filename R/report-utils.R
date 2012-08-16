@@ -550,7 +550,11 @@ initialize.env <- function(env,report.type="protein",properties.env) {
     if (all(is.nan(all.ratios$lratio)))
       stop("Cannot compute protein ratio distribution - no ratios available.\n",
            "Probably due to missing reporter intensities.")
-    fitCauchy(all.ratios[,'lratio'])
+    ratiodistr <- fitCauchy(all.ratios[,'lratio'],round.digits=5)
+    attr(ratiodistr,"method") <- method
+    attr(ratiodistr,"cl") <- classLabels(env$ibspectra)
+    attr(ratiodistr,"tagNames") <- reporterTagNames(env$ibspectra)
+    ratiodistr
   }))
 }
 
