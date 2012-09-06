@@ -181,10 +181,12 @@
     \item{\code{isotopeImpurities(x)}:}{Gets and sets the isotope
     impurities of the isobaric tags as defined by the manufacturers
     per batch.}  
-    \item{\code{reporterData(x,element="ions",...)}:}{
+    \item{\code{reporterData(x,element="ions",na.rm=FALSE,na.rm.f='any',...)}:}{
       Gets and sets the element ('ions' or 'mass') for each tag and spectrum.
       '...' is handed down to spectrumSel, so it is possible to
       select for peptides or proteins.
+      If na.rm is TRUE, than spectra missing quantitative information in 'any' or 'all'
+      channels (parameter na.rm.f) are removed.
     }
     
     \item{\code{reporterIntensities(x,...)}:}{
@@ -247,6 +249,8 @@ isotopeImpurities(ibspiked_set1)
 set.seed(123)
 data <- data.frame(spectrum=letters,
                    peptide=sample(c("pepA","pepB","pepC"),26,TRUE),
+                   start.pos=1,
+                   modif=sample(c("::X:::",":Y::::","::Z:::"),26,TRUE),
                    accession=c("protein1","protein2"))
 data.ions <- matrix(rnorm(26*2,1000,50),
                     ncol=2,dimnames=list(letters,NULL))

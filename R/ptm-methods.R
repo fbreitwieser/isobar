@@ -214,7 +214,7 @@ readPhosphoRSOutput <- function(phosphoRS.outfile,simplify=FALSE,pepmodif.sep="#
   } else {
     names(res) <- sapply(xmlChildren(spectra),xmlGetAttr,"ID")
   }
-  if(besthit.only) {
+  if(besthit.only & simplify) {
     res <- ddply(res,'spectrum',function(d) d[which.max(d$pepprob),])
     rownames(res) <- res$spectrum
   }

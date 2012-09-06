@@ -1,159 +1,13 @@
 
-create.meta.reports <- function(report.type="protein",properties.file="meta-properties.R",args=NULL) {
-  source(system.file("report","meta-functions.R",package="isobar"))
-  if (!exists("properties.env")) {
-    properties.env <- load.properties(properties.file,
-                                      system.file("report","meta-properties.R",package="isobar"),
-                                      args=args)
-  }
-
-  protein.group <- .get.or.load("protein.group",properties.env,"protein group object","ProteinGroup")
-  if (!is.null(properties.env$protein.info.f)) 
-    proteinInfo(protein.group) <- 
-      .create.or.load("protein.info",envir=properties.env,
-                      f=properties.env$protein.info.f,
-                      x=protein.group,
-                      error=warning,default.value=proteinInfo(protein.group))
-  
-  if (is.null(proteinInfo(protein.group)) || length(proteinInfo(protein.group))==0)
-    stop("No protein information available.")
-
-  #if (properties.env$calculate.dnsaf)
-  #  dnsaf <- .create.or.load("dnsaf",envir=properties.env,f=calculate.dNSAF,protein.group=protein.group)
-
-  message("Merging tables ...")
-  ac.vars <- switch(report.type,
-                    protein = "ac",
-                    peptide = c("peptide","modif"),
-                    stop("report type ",report.type," unknown"))
-
-  merge.cols <- c("class1","class2")
-  merged.table <- get.merged.table(properties.env$samples,
-                                   cols=c(ac.vars,merge.cols,"lratio","variance"),
-                                   merge.by=c(ac.vars,merge.cols),format="wide")
-  merged.table$comp <- paste(merged.table[,merge.cols[2]],sep="/",merged.table[,merge.cols[1]])
-
-  tbl.wide <- reshape(merged.table,idvar=ac.vars,timevar="comp",direction="wide",drop=merge.cols)
-  sel.zscore.both.f <- function(zscores) (zscores[,1] > 2.5 & zscores[,2] > 2.5) | (zscores[,1] < -2.5 & zscores[,2] < -2.5)
-  sel.zscore.one.f <- function(zscores) (abs(zscores[,1]) > 2.5 & is.na(zscores[,2])) | (abs(zscores[,2]) > 2.5 & is.na(zscores[,1]))
-
-  sel.zscore.one  <- sel.zscore.one.f(tbl.wide[,.grep_columns(tbl.wide,"zscore.*.RapaTNF/15mTNF")])
-  sel.zscore.both <- sel.zscore.both.f(tbl.wide[,.grep_columns(tbl.wide,"zscore.*.RapaTNF/15mTNF")])
-
-  tbl.wide$selected <- sprintf("not selected [n=%s]",sum(!sel.zscore.one & !sel.zscore.both,na.rm=T))
-  tbl.wide$selected[sel.zscore.one] <- sprintf("selected once [n=%s]",sum(sel.zscore.one,na.rm=T))
-  tbl.wide$selected[sel.zscore.both] <- sprintf("selected twice [n=%s]",sum(sel.zscore.both,na.rm=T))
-  tbl.wide$size = 2
-  tbl.wide$size[sel.zscore.one] <- 2.5
-  tbl.wide$size[sel.zscore.both] <- 3
-
-  pdf("/media/work/analysis/tk/scatter_ratio.pdf")
-  ggplot(tbl.wide,aes(x=`lratio.15mTNF/CTRL`,y=`lratio.RapaTNF/CTRL`)) + 
-    geom_point(aes(color=selected,size=size),alpha=0.8) +
-#    scale_size_discrete() +
-    xlab("log10 ratio (15m TNF/CTRL) [mean of tech reps]") +
-    ylab("log10 ratio (TNF+Rapamycin/CTRL) [mean of tech reps]") +
-    opts(title="RapaTNF/15mTNF significantly regulated proteins")
-  dev.off()
-
-  pdf("/media/work/analysis/tk/distr_zscores.pdf")
-  print(ggplot(tbl.wide) + 
-    geom_histogram(fill="#0000A0",binwidth=0.3,data=tbl.wide,aes(x=`zscore.P4041-1.RapaTNF/15mTNF`),alpha=0.5,color="black") + 
-    geom_histogram(color="black",fill="#A00000",binwidth=0.3,aes(x=`zscore.P4041-2.RapaTNF/15mTNF`),alpha=0.5) +
-    geom_vline(xintercept=c(-2.5,2.5),linetype="dashed",color="red") +
-    geom_text(aes(x,y,label=label),data=data.frame(x=c(-2.5,2.5),y=-5,label=c("-2.5 MAD","2.5 MAD")),size=4,color="red",hjust=0,vjust=0) +
-    #geom_line(aes(x,y),data=data.frame(x=range(pretty(c(tbl.wide[,"zscore.P4041-1.RapaTNF/15mTNF"],tbl.wide[,"zscore.P4041-2.RapaTNF/15mTNF"]),na.rm=TRUE)),y=50)) +
-    xlab("log10 (TNF+Rapamycin/TNF only) z-score") + ylab("Frequency") +
-    opts(title="Distribution of robust z-scores of RapaTNF/15mTNF",
-         subtitle="(Median absolute deviations (MADs) away from the median ratio)",
-         plot.title=theme_text(size = 14)))
-  dev.off()
-
-  table(tbl.wide$selected)
-  #not selected  selected once selected twice 
-  #       2912             67              5 
-
-  t(sapply(.grep_columns(tbl.wide,"lratio.P",value=TRUE,logical=FALSE),function(i) isobar:::.sum.bool(!is.na(tbl.wide[,i]))))
-  tbl.pg <- merge(tbl.wide,pg.df)
-  sel <- apply(!is.na(tbl.pg[,.grep_columns(tbl.wide,"lratio.P")]),1,any)
-  sel.1 <- !is.na(tbl.pg[,"lratio.P4041-1.RapaTNF/15mTNF"])
-  sel.2 <- !is.na(tbl.pg[,"lratio.P4041-2.RapaTNF/15mTNF"])
-  sel.selected <- tbl.pg$selected != "not selected"
-  data.frame(
-             protein=c(total=length(unique(tbl.pg[,"proteins"])),
-                       quant.any=length(unique(tbl.pg[sel.1|sel.2,"proteins"])),
-                       quant.1=length(unique(tbl.pg[sel.1,"proteins"])),
-                       quant.2=length(unique(tbl.pg[sel.2,"proteins"])),
-                       quant.both=length(unique(tbl.pg[sel.1&sel.2,"proteins"])),
-                       selected=length(unique(tbl.pg[sel.selected,"proteins"]))),
-             peptide=c(total=length(unique(tbl.pg[,"peptide"])),
-                       quant.any=length(unique(tbl.pg[sel.1|sel.2,"peptide"])),
-                       quant.1=length(unique(tbl.pg[sel.1,"peptide"])),
-                       quant.2=length(unique(tbl.pg[sel.2,"peptide"])),
-                       quant.both=length(unique(tbl.pg[sel.1&sel.2,"peptide"])),
-                       selected=length(unique(tbl.pg[sel.selected,"peptide"]))),
-             phospopep=c(total=nrow(tbl.wide),
-                         quant.any=sum(sel.1|sel.2),
-                         quant.1=sum(sel.1),
-                         quant.2=sum(sel.2),
-                         quant.both=sum(sel.1&sel.2),
-                         selected=sum(sel.selected)))
-
-
-
-
-
-
-
-  merge.cols <- c("class1","class2")
-  merged.table <- get.merged.table(properties.env$samples,
-                                   cols=c(ac.vars,merge.cols,"lratio","variance"),
-                                   merge.by=c(ac.vars,merge.cols))
-  merged.table$comp <- paste(merge.cols[2],sep="/",merge.cols[1])
-
-
-  #merged.table <- subset(merged.table,r1==merged.table$r1[1])
-  tbl.wide <- reshape(merged.table,idvar=ac.vars,timevar="comp",direction="wide",drop=merge.cols)
- # rownames(tbl.wide) <- tbl.wide$ac
-  #all.names <- do.call(rbind,lapply(tbl.wide[,"ac"],get.names,protein.group=protein.group))
-  #tbl.wide$dNSAF <- dnsaf[as.character(tbl.wide$ac)]
-
-  if (report.type=="peptide") {
-    pg.df <- isobar:::.proteinGroupAsConciseDataFrame(protein.group)  
-    rownames(pg.df) <- do.call(paste,pg.df[,ac.vars,drop=FALSE])
-  }
-
-  p <- ggplot(sdf, aes(y,x))
-  p <- p + geom <- tile(aes(fill=height), colour="white")
-  p <- p + scale <- fill <- gradientn(colours = c("dark red", "white", "dark green" ), breaks=breaks, labels=format(breaks))
-  p <- p + opts(title='Day 1') 
-
-
-
-  ratio.matrix <- as.matrix(tbl.wide[,grep("lratio",colnames(tbl.wide))])
-  variance.matrix <- as.matrix(tbl.wide[,grep("var",colnames(tbl.wide))])
-  rownames(ratio.matrix)  <- do.call(paste,tbl.wide[,ac.vars,drop=FALSE])
-  rownames(variance.matrix)  <- do.call(paste,tbl.wide[,ac.vars,drop=FALSE])
-  sel <- !apply(is.na(ratio.matrix),1,any)
-  ratio.matrix <- ratio.matrix[sel,]
-  variance.matrix <- variance.matrix[sel,]
-
-  m.median <- apply(ratio.matrix,2,median)
-  normalized.ratio.matrix <- ratio.matrix-matrix(m.median,nrow=nrow(ratio.matrix),ncol=ncol(ratio.matrix),byrow=T)
-
-  plot.heatmaps(ratio.matrix,properties.env$name)
-  plot.pairs(properties.env$name)
-
-}
-
 create.reports <- function(properties.file="properties.R",args=NULL,
-                           report.type="protein",compile=FALSE,zip=FALSE) {
+                           report.type="protein",compile=FALSE,zip=FALSE,warn=1) {
   ow <- options("warn")
-  options(warn=1)
+  options(warn=warn)
   if (!exists("properties.env")) {
     properties.env <- load.properties(properties.file,
                                       system.file("report","properties.R",package="isobar"),
                                       args=args)
+    assign("properties.env",properties.env,envir=.GlobalEnv)
   }
   
   if (!exists("report.env")) {
@@ -235,8 +89,8 @@ write.xls.report <- function(report.type,properties.env,report.env,file="isobar-
       ## probably due to the environment it does not
       attr(proteinGroup(report.env$ibspectra),"protein.group.ids") <- .as.vect(unique(get.val('quant.tbl')[,c("ac","group")]))
       #protein.id.df <- as(get('ibspectra',report.env),"data.frame.concise")
-      protein.id.df <- .IBSpectraAsConciseDataFrame(get('ibspectra',report.env))
 
+      protein.id.df <- .IBSpectraAsConciseDataFrame(get('ibspectra',report.env))
       ## make columns w/ multiple groups gray
       sel.1group  <- protein.id.df$n.groups == 1
       #sel.1ac  <- protein.id.df$n.acs == 1
@@ -463,12 +317,12 @@ initialize.env <- function(env,report.type="protein",properties.env) {
   } else {
     file.name <- sprintf("%s/%s.rda",.get.property('cachedir',envir),name)
   }
-  if (file.exists(file.name) & (!envir$regen || do.load)) {
+  if (file.exists(file.name) && (!envir$regen || do.load)) {
     message(sprintf("loading %s from %s ...",msg.f, file.name))
     x <- .load.property(name,file.name)
     return(x)
   } else {
-    stop("Cannot get or load property ",name)
+    stop("Cannot get or load property [",name,"] - would expect it in [",file.name,"], but file does not exist.")
   }
 }
 
@@ -696,7 +550,11 @@ initialize.env <- function(env,report.type="protein",properties.env) {
     if (all(is.nan(all.ratios$lratio)))
       stop("Cannot compute protein ratio distribution - no ratios available.\n",
            "Probably due to missing reporter intensities.")
-    fitCauchy(all.ratios[,'lratio'])
+    ratiodistr <- fitCauchy(all.ratios[,'lratio'],round.digits=5)
+    attr(ratiodistr,"method") <- method
+    attr(ratiodistr,"cl") <- classLabels(env$ibspectra)
+    attr(ratiodistr,"tagNames") <- reporterTagNames(env$ibspectra)
+    ratiodistr
   }))
 }
 
@@ -914,7 +772,7 @@ initialize.env <- function(env,report.type="protein",properties.env) {
       if ("zscore" %in% properties.env$xls.report.columns) {
         ## TODO: zscore is calculated across all classes - 
         ##       it is probably more appropriate to calculate it individual for each class
-        xls.quant.tbl.tmp$zscore <- calc.zscore(xls.quant.tbl.tmp$lratio)
+        xls.quant.tbl.tmp$zscore <- .calc.zscore(xls.quant.tbl.tmp$lratio)
       }
     
       # TODO: Add z score?

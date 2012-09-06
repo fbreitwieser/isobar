@@ -25,8 +25,7 @@
               type, id.file,peaklist.file,
               proteinGroupTemplate = NULL,
               mapping.file = NULL, mapping = c(peaklist="even",id="odd"),
-              mapping.file.readopts = list(header=TRUE,stringsAsFactors=FALSE,sep=","),
-              id.file.domap = NULL,
+              id.file.domap = NULL, annotate.spectra.f = NULL,
               peaklist.format = NULL, id.format = NULL,
               fragment.precision = NULL,fragment.outlier.prob = NULL,
               decode.titles = TRUE, scan.lines = 0, ...)
@@ -65,15 +64,19 @@
     in mapping.file. The names must be 'peaklist' and 'id', and
     the values must correspond to colnames of the mapping files.
   }
-  \item{mapping.file.readopts}{ 
-    Read options for \code{\link{read.table}} when reading files specified
-    in \code{mapping.file}.
-  }
+%  \item{mapping.file.readopts}{ 
+%    Read options for \code{\link{read.table}} when reading files specified
+%    in \code{mapping.file}.
+%  }
   \item{id.file.domap}{
     When using HCD-CID or a method akin and every spectrum is used for 
     identification, the ID result files  of the HCD run can be
     specfied in \code{id.file.domap}. Then, the results are merged after
     mapping the identification results.
+  }
+  \item{annotate.spectra.f}{
+    Function which has the chance to annotate the spectra feature data
+    before it is written to IBpectra object.
   }
   \item{peaklist.format}{
     "mgf" (Mascot Generic format) or "mcn" (iTracker Machine Readable
