@@ -23,6 +23,7 @@ Collate: utils.R
 	 ratio-methods.R
    sharedpep-methods.R
    report-utils.R
+   metareport-utils.R
    ptm-methods.R
    MSnSet-methods.R
 	 zzz.R

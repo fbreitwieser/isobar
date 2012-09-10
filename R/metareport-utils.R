@@ -1,4 +1,5 @@
-create.meta.reports <- function(report.type="protein",properties.file="meta-properties.R",args=NULL) {
+create.meta.reports <- function(report.type="protein",properties.file="meta-properties.R",args=NULL,compile=FALSE,zip=FALSE) {
+  require(ggplot2)
   if (!exists("properties.env")) {
     properties.env <- load.properties(properties.file,
                                       system.file("report","meta-properties.R",package="isobar"),
@@ -9,8 +10,11 @@ create.meta.reports <- function(report.type="protein",properties.file="meta-prop
   if (file.exists("pg.df.rda")) 
     load("pg.df.rda")
   else {
+    message("Creating protein group data frame ... ")
     if (report.type=="peptide") {
-      pg.df <- isobar:::.proteinGroupAsConciseDataFrame(protein.group)
+      pg.df <- isobar:::.proteinGroupAsConciseDataFrame(protein.group,
+                                                        modif.pos=properties.env$ptm,
+                                                        ptm.info=properties.env$ptm.info)
     } else {
       acs <- reporterProteins(protein.group)
       pg.df <- data.frame(ac=acs,
@@ -53,13 +57,22 @@ create.meta.reports <- function(report.type="protein",properties.file="meta-prop
   merged.table$comp <- paste(merged.table[,merge.cols[2]],sep="/",merged.table[,merge.cols[1]])
 
   
-  ggplot(merged.table,aes(x=lratio,y=-log10(p.value.rat))) + geom_point(aes(color=factor(comp)),alpha=0.8) + facet_wrap(~comp,ncol=2) + geom_rug(alpha=0.5) + geom_hline(yintercept=-log10(0.05)) + geom_text(data=ddply(merged.table,"comp",function(x) c(x=Inf,y=-log10(0.05),isobar:::.sum.bool.na(x$p.value.rat < 0.05))),aes(x=x,y=y,label=`TRUE`),vjust=-0.5,hjust=1)
+  ggplot(merged.table,aes(x=lratio,y=-log10(p.value.rat))) + 
+    geom_point(aes(color=factor(comp)),alpha=0.8) + 
+    facet_wrap(~comp,ncol=2) + 
+    geom_rug(alpha=0.5) + 
+    geom_hline(yintercept=-log10(0.05)) + 
+    geom_text(data=ddply(merged.table,"comp",
+                         function(x) c(x=Inf,y=-log10(0.05),isobar:::.sum.bool.na(x$p.value.rat < 0.05))),
+              aes(x=x,y=y,label=`TRUE`),vjust=-0.5,hjust=1)
 
   tbl.wide <- reshape(merged.table,idvar=ac.vars,timevar="comp",direction="wide",drop=merge.cols)
 
   #rownames(pg.df) <- do.call(paste,pg.df[,ac.vars,drop=FALSE])
 
-  t(sapply(.grep_columns(tbl.wide,"lratio.P",value=TRUE,logical=FALSE),function(i) isobar:::.sum.bool(!is.na(tbl.wide[,i]))))
+  t(sapply(.grep_columns(tbl.wide,"lratio.P",value=TRUE,logical=FALSE),
+           function(i) isobar:::.sum.bool(!is.na(tbl.wide[,i]))))
+
   tbl.pg <- merge(pg.df,tbl.wide,by=ac.vars)
 
   sel <- apply(!is.na(tbl.pg[,grep("^lratio",colnames(tbl.pg))]),1,any)

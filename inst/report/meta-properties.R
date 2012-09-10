@@ -24,3 +24,6 @@ protein.info.f <- getProteinInfoFromUniprot
 cachedir="."
 
 spreadsheet.format="xlsx"
+
+ptm=NULL
+ptm.info=NULL
