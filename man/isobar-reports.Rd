@@ -27,9 +27,10 @@
 }
 
 \usage{
-create.reports(properties.file = "properties.R", args,
+create.reports(properties.file = "properties.R", args = NULL,
                report.type = "protein",
-               compile = FALSE, zip = FALSE)
+               compile = FALSE, zip = FALSE,
+               warn = 1)
 
 load.properties(properties.file = "properties.R",
                 global.properties.file = system.file("report","properties.R",package="isobar"),
@@ -58,6 +59,7 @@ initialize.env(env, report.type = "protein", properties.env)
     and the properties.file are archived in a file named
     \code{name.zip} (name as defined as property) using
     \code{\link{zip}.}}
+  \item{warn}{Warning level, see \code{\link{options}}.}
   \item{env}{Item to be initialized.}
   \item{properties.env}{Environment into which properties are read.}
 }
