@@ -169,6 +169,7 @@ protein.g(x, pattern, variables=c("AC","name"), ...)
 \examples{
 
 tbl <- data.frame(spectrum=1:14,peptide=c(rep(letters[1:3],4),"a","x"),
+                  modif=":",start.pos=1,
                   protein=c(rep(c("A","B"),each=6),"C","D"))
 pg <- ProteinGroup(tbl)
 pg

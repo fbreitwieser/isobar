@@ -13,7 +13,8 @@ peptide.count(protein.group, protein.g = reporterProteins(protein.group),
               specificity = c("reporter-specific", "group-specific", "unspecific"), ...)
 
 spectra.count(protein.group, protein.g = reporterProteins(protein.group), 
-              specificity = c("reporter-specific", "group-specific", "unspecific"), ...)
+              specificity = c("reporter-specific", "group-specific", "unspecific"), 
+              modif = NULL, ...)
 
 sequence.coverage(protein.group, protein.g = reporterProteins(protein.group), 
                   specificity = c("reporter-specific", "group-specific", "unspecific"), 
@@ -23,6 +24,7 @@ sequence.coverage(protein.group, protein.g = reporterProteins(protein.group),
   \item{protein.group}{ProteinGroup object.}
   \item{protein.g}{Protein group identifier.}
   \item{specificity}{Specificity of peptides.}
+  \item{modif}{Only count peptides having a certain modification.}
   \item{simplify}{If simplify=TRUE, a named numeric vector is returned, 
                   with the mean sequence coverage of the ACs of each protein.g supplied.
                   Else, a list with the length of protein.g is returned having the sequence 

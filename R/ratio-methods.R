@@ -44,7 +44,7 @@ fitGumbel <- function(x) {
 }
 
 
-fitCauchy <- function(x) {
+fitCauchy <- function(x,round.digits=NULL) {
   cauchy.fit <- function(theta,x){
     -sum(dcauchy(x,location=theta[1],scale=theta[2],log=TRUE),na.rm=T)
   }
@@ -52,7 +52,10 @@ fitCauchy <- function(x) {
   theta.start <- c(median(x[good]),IQR(x[good])/2)
   res <- nlminb(theta.start,cauchy.fit,x=x[good],
                 lower=c(-10,1e-20),upper=c(10,10)) 
-  new("Cauchy",location=res$par[1],scale=res$par[2])
+  if (!is.null(round.digits))
+    new("Cauchy",location=round(res$par[1],round.digits),scale=round(res$par[2],round.digits))
+  else
+    new("Cauchy",location=res$par[1],scale=res$par[2])
 }
 
 fitTd <- function(x) {
@@ -1223,7 +1226,7 @@ summarize.ratios <-
   }
 
 
-calc.zscore <- function(lratio) {
+.calc.zscore <- function(lratio) {
   s.median <- median(lratio,na.rm=TRUE)
   s.mad <- mad(lratio,na.rm=TRUE)
   (lratio-s.median)/s.mad
