@@ -1031,7 +1031,7 @@ proteinRatios <-
         stop("summarization not meaningful with combn.method='global'. ",
              "Use combn.method='intraclass' or combn.method='interclass' to use ratios in or between classes.")
 
-      #n.combination <- length(unique(combn[1,]))
+      ## calculate the number of combinations for each class-combination
       n.combination <- table(combn["class1",],combn["class2",])
       if (nrow(n.combination)==1 & ncol(n.combination)==1) n.combination <- as.numeric(n.combination)
       if (max(n.combination) < 2)
@@ -1131,8 +1131,8 @@ summarize.ratios <-
         do.call(rbind,lapply(seq_len(nrow(classes)),function(class_i) {
           class1 <- classes[class_i,1]
           class2 <- classes[class_i,2]
-          n.combination.c <- ifelse(is.matrix(n.combination),n.combination[class2,class1],n.combination)
-          min.detect.c <- ifelse(is.matrix(min.detect),min.detect[class2,class1],min.detect)
+          n.combination.c <- ifelse(is.matrix(n.combination),n.combination[class1,class2],n.combination)
+          min.detect.c <- ifelse(is.matrix(min.detect),min.detect[class1,class2],min.detect)
           ac.sel <-ac.sel.1 & ratios$class1 == class1 & ratios$class2 == class2
           if (!any(ac.sel)) {
             ## no data for ac
