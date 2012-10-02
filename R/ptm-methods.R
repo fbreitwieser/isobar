@@ -13,7 +13,7 @@ getPhosphoRSProbabilities <- function(
                       mapping.file,mapping,pepmodif.sep)
   
   system(paste("java -jar",phosphors.jar,infile,outfile))
-  readPhosphoRSOutput(outfile,simplify=simplify,pepmodif.sep,besthit.only=besthit.only)
+  readPhosphoRSOutput(outfile,simplify=simplify,pepmodif.sep=pepmodif.sep,besthit.only=besthit.only)
 }
 
 .iTRAQ.mass = c(monoisotopic = 144.102063, average = 144.1544)
