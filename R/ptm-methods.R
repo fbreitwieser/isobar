@@ -15,9 +15,20 @@ getPhosphoRSProbabilities <- function(
   system(paste("java -jar",phosphors.jar,infile,outfile))
   readPhosphoRSOutput(outfile,simplify=simplify,pepmodif.sep,besthit.only=besthit.only)
 }
+
+.iTRAQ.mass = c(monoisotopic = 144.102063, average = 144.1544)
+.CysCAM.mass = c(monoisotopic = 57.021464, average =  57.0513)
+.OxidationM.mass = c(monoisotopic = 15.994915, average =  15.9994)
   
-writePhosphoRSInput <- function(phosphoRS.infile,id.file,mgf.file,massTolerance,activationType,
-                                mapping.file=NULL,mapping=c(peaklist="even",id="odd"),pepmodif.sep="##.##") {
+writePhosphoRSInput <- 
+  function(phosphoRS.infile,id.file,mgf.file,massTolerance,activationType,
+           mapping.file=NULL,mapping=c(peaklist="even",id="odd"),pepmodif.sep="##.##",
+           modif_masses=
+           rbind(c("PHOS",       "1","1:Phospho:Phospho:79.966331:PhosphoLoss:97.976896:STY"),
+                 c("Oxidation_M","2","2:Oxidation:Oxidation:15.994919:null:0:M"),
+                 c("Cys_CAM",    "3","3:Carbamidomethylation:Carbamidomethylation:57.021464:null:0:C"),
+                 c("iTRAQ4plex", "4","4:iTRAQ:iTRAQ:144.1544:null:0:KX")) #average mass? or monoisotopic?
+) {
 
   if (is.data.frame(id.file)) 
     ids <- id.file
@@ -54,12 +65,6 @@ writePhosphoRSInput <- function(phosphoRS.infile,id.file,mgf.file,massTolerance,
     close(con)
   }
 
-  modifs <- 
-    rbind(c("PHOS",        "1","1:Phospho:Phospho:79.966331:PhosphoLoss:97.976896:STY"),
-          c("Oxidation_M", "2","2:Oxidation:Oxidation:15.994919:null:0:M"),
-          c("Cys_CAM",     "3","3:Carbamidomethylation:Carbamidomethylation:57.021464:null:0:C"), # check Cys_CAM mass!
-          c("iTRAQ4plex","4","4:iTRAQ:iTRAQ:144.1544:null:0:KX")) #average mass? or monoisotopic?
-
   begin_ions <- which(input=="BEGIN IONS")+1
   end_ions <- which(input=="END IONS")-1
   titles <- gsub("TITLE=","",grep("TITLE",input,value=TRUE),fixed=TRUE)
@@ -72,7 +77,7 @@ writePhosphoRSInput <- function(phosphoRS.infile,id.file,mgf.file,massTolerance,
          " of BEGIN IONS and END IONS tags");
 
   modif <- "PHOS"
-  ids$modifrs <- .convertModifToPhosphoRS(ids$modif,modifs)
+  ids$modifrs <- .convertModifToPhosphoRS(ids$modif,modif_masses)
 
   pepid <- 0
   for (title in unique(ids[grep(modif,ids$modif),"spectrum"])) {
@@ -102,8 +107,8 @@ writePhosphoRSInput <- function(phosphoRS.infile,id.file,mgf.file,massTolerance,
 
   cat.f("  </Spectra>")
   cat.f("  <ModificationInfos>")
-  for (i in seq_len(nrow(modifs))) {
-    cat.f("    <ModificationInfo Symbol='",modifs[i,2],"' Value='",modifs[i,3],"' />")
+  for (i in seq_len(nrow(modif_masses))) {
+    cat.f("    <ModificationInfo Symbol='",modif_masses[i,2],"' Value='",modif_masses[i,3],"' />")
   }
   cat.f("  </ModificationInfos>")
   cat.f("</phosphoRSInput>")
