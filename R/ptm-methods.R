@@ -131,6 +131,19 @@ writePhosphoRSInput <- function(phosphoRS.infile,id.file,mgf.file,massTolerance,
   },simplify=simplify)
 }
 
+.convertPhosphoRSPepProb <- function(peptide,pepprob) {
+  mapply(function(pep,pprob) {
+           pprob <- as.numeric(pprob)
+           prob <- rep(-1,length(pep))
+           prob[pprob[seq(from=1,to=length(pprob),by=2)]] <- pprob[seq(from=2,to=length(pprob),by=2)]
+
+           pep[prob>=0] <- paste0(pep[prob>=0],"(",prob[prob>=0],")")
+           paste0(pep,collapse="")
+         },
+         strsplit(peptide,""),
+         strsplit(pepprob,"[;:]"))
+}
+
 .convertPeptideModif <- function(peptide,modifstring,
                                  modifs=c(p="PHOS",o="Oxidation_M",c="Cys_CAM",
                                           me="METH_KR",me="METH_K",me="METH_R",
