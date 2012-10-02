@@ -161,14 +161,11 @@ writePhosphoRSInput <-
   mapply(function(pep,m) {
            m <- m[-c(1,length(m))]
            if (is.null(names(modifs))) {
-             for (mm in modifs) {
+             for (mm in modifs) 
                pep[m==mm] <- letters[pep[m==mm]]
-             }
            } else {
-             tmp <- names(modifs)
-             names(tmp) <- modifs
-             names(pep) <- m
-             pep[m[m%in%modifs]] <- paste(pep[m[m%in%modifs]],"(",tmp[m[m%in%modifs]],")",sep="")
+             for (i in seq_along(modifs)) 
+               pep[m==modifs[i]] <- paste0(pep[m==modifs[i]],"(",names(modifs)[i],")")
            }
            paste(pep,collapse="")
          },
