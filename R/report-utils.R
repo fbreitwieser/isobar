@@ -147,6 +147,8 @@ write.xls.report <- function(report.type,properties.env,report.env,file="isobar-
       ## Create links
     } else {
       ## Create links
+      protein.id.df$peptide.sequence <- protein.id.df$peptide
+      protein.id.df$site.probs <- .convertPhosphoRSPepProb(protein.id.df$peptide,protein.id.df$site.probs)
       protein.id.df$peptide <- .convertPeptideModif(protein.id.df[,"peptide"],protein.id.df[,"modif"])
       q.links <- sapply(protein.id.df$peptide,function(p) {
                           res=which(xls.quant.tbl$Sequence==p)[1]

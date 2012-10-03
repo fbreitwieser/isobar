@@ -13,11 +13,22 @@ getPhosphoRSProbabilities <- function(
                       mapping.file,mapping,pepmodif.sep)
   
   system(paste("java -jar",phosphors.jar,infile,outfile))
-  readPhosphoRSOutput(outfile,simplify=simplify,pepmodif.sep,besthit.only=besthit.only)
+  readPhosphoRSOutput(outfile,simplify=simplify,pepmodif.sep=pepmodif.sep,besthit.only=besthit.only)
 }
+
+.iTRAQ.mass = c(monoisotopic = 144.102063, average = 144.1544)
+.CysCAM.mass = c(monoisotopic = 57.021464, average =  57.0513)
+.OxidationM.mass = c(monoisotopic = 15.994915, average =  15.9994)
   
-writePhosphoRSInput <- function(phosphoRS.infile,id.file,mgf.file,massTolerance,activationType,
-                                mapping.file=NULL,mapping=c(peaklist="even",id="odd"),pepmodif.sep="##.##") {
+writePhosphoRSInput <- 
+  function(phosphoRS.infile,id.file,mgf.file,massTolerance,activationType,
+           mapping.file=NULL,mapping=c(peaklist="even",id="odd"),pepmodif.sep="##.##",
+           modif_masses=
+           rbind(c("PHOS",       "1","1:Phospho:Phospho:79.966331:PhosphoLoss:97.976896:STY"),
+                 c("Oxidation_M","2","2:Oxidation:Oxidation:15.994919:null:0:M"),
+                 c("Cys_CAM",    "3","3:Carbamidomethylation:Carbamidomethylation:57.021464:null:0:C"),
+                 c("iTRAQ4plex", "4","4:iTRAQ:iTRAQ:144.1544:null:0:KX")) #average mass? or monoisotopic?
+) {
 
   if (is.data.frame(id.file)) 
     ids <- id.file
@@ -54,12 +65,6 @@ writePhosphoRSInput <- function(phosphoRS.infile,id.file,mgf.file,massTolerance,
     close(con)
   }
 
-  modifs <- 
-    rbind(c("PHOS",        "1","1:Phospho:Phospho:79.966331:PhosphoLoss:97.976896:STY"),
-          c("Oxidation_M", "2","2:Oxidation:Oxidation:15.994919:null:0:M"),
-          c("Cys_CAM",     "3","3:Carbamidomethylation:Carbamidomethylation:57.021464:null:0:C"), # check Cys_CAM mass!
-          c("iTRAQ4plex","4","4:iTRAQ:iTRAQ:144.1544:null:0:KX")) #average mass? or monoisotopic?
-
   begin_ions <- which(input=="BEGIN IONS")+1
   end_ions <- which(input=="END IONS")-1
   titles <- gsub("TITLE=","",grep("TITLE",input,value=TRUE),fixed=TRUE)
@@ -72,7 +77,7 @@ writePhosphoRSInput <- function(phosphoRS.infile,id.file,mgf.file,massTolerance,
          " of BEGIN IONS and END IONS tags");
 
   modif <- "PHOS"
-  ids$modifrs <- .convertModifToPhosphoRS(ids$modif,modifs)
+  ids$modifrs <- .convertModifToPhosphoRS(ids$modif,modif_masses)
 
   pepid <- 0
   for (title in unique(ids[grep(modif,ids$modif),"spectrum"])) {
@@ -102,8 +107,8 @@ writePhosphoRSInput <- function(phosphoRS.infile,id.file,mgf.file,massTolerance,
 
   cat.f("  </Spectra>")
   cat.f("  <ModificationInfos>")
-  for (i in seq_len(nrow(modifs))) {
-    cat.f("    <ModificationInfo Symbol='",modifs[i,2],"' Value='",modifs[i,3],"' />")
+  for (i in seq_len(nrow(modif_masses))) {
+    cat.f("    <ModificationInfo Symbol='",modif_masses[i,2],"' Value='",modif_masses[i,3],"' />")
   }
   cat.f("  </ModificationInfos>")
   cat.f("</phosphoRSInput>")
@@ -131,6 +136,19 @@ writePhosphoRSInput <- function(phosphoRS.infile,id.file,mgf.file,massTolerance,
   },simplify=simplify)
 }
 
+.convertPhosphoRSPepProb <- function(peptide,pepprob) {
+  mapply(function(pep,pprob) {
+           pprob <- as.numeric(pprob)
+           prob <- rep(-1,length(pep))
+           prob[pprob[seq(from=1,to=length(pprob),by=2)]] <- pprob[seq(from=2,to=length(pprob),by=2)]
+
+           pep[prob>=0] <- paste0(pep[prob>=0],"(",prob[prob>=0],")")
+           paste0(pep,collapse="")
+         },
+         strsplit(peptide,""),
+         strsplit(pepprob,"[;:]"))
+}
+
 .convertPeptideModif <- function(peptide,modifstring,
                                  modifs=c(p="PHOS",o="Oxidation_M",c="Cys_CAM",
                                           me="METH_KR",me="METH_K",me="METH_R",
@@ -143,14 +161,11 @@ writePhosphoRSInput <- function(phosphoRS.infile,id.file,mgf.file,massTolerance,
   mapply(function(pep,m) {
            m <- m[-c(1,length(m))]
            if (is.null(names(modifs))) {
-             for (mm in modifs) {
+             for (mm in modifs) 
                pep[m==mm] <- letters[pep[m==mm]]
-             }
            } else {
-             tmp <- names(modifs)
-             names(tmp) <- modifs
-             names(pep) <- m
-             pep[m[m%in%modifs]] <- paste(pep[m[m%in%modifs]],"(",tmp[m[m%in%modifs]],")",sep="")
+             for (i in seq_along(modifs)) 
+               pep[m==modifs[i]] <- paste0(pep[m==modifs[i]],"(",names(modifs)[i],")")
            }
            paste(pep,collapse="")
          },
