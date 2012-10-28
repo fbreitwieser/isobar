@@ -551,9 +551,10 @@ setAs("ProteinGroup","data.frame.concise",
                                              res <- c(ac=unique(x$proteinac.wo.splicevariant),
                                                       link=paste0("http://www.nextprot.org/db/entry/NX_",unique(x$proteinac.wo.splicevariant)))
                                              if (!all(is.na(x$splicevariant))) {
-                                               if (nrow(x)==1) res['ac'] <- x$protein[1]
-                                               else res['ac'] <- sprintf("%s-[%s]",unique(x$proteinac.wo.splicevariant),
+                                               if (length(unique(x$splicevariant))==1) { res['ac'] <- x$protein[1] 
+                                               } else { res['ac'] <- sprintf("%s-[%s]",unique(x$proteinac.wo.splicevariant),
                                                                          number.ranges(as.numeric(x$splicevariant)))
+                                               }
                                              }
                                              return(res)
                                            })
