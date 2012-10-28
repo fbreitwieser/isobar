@@ -679,15 +679,22 @@ initialize.env <- function(env,report.type="protein",properties.env) {
       xls.quant.tbl.tmp$i  <- seq_len(nrow(xls.quant.tbl.tmp))
       xls.quant.tbl <- data.frame(i=xls.quant.tbl.tmp$i,
                                   group=xls.quant.tbl.tmp[,"group"],
-                 AC=.protein.acc(xls.quant.tbl.tmp[,"ac"],ip=indist.proteins),
-                 ID=proteinInfo(protein.group,xls.quant.tbl.tmp[,"ac"],do.warn=FALSE),
-                 n=sapply(xls.quant.tbl.tmp[,"ac"],function(p) {length(names(indist.proteins)[indist.proteins == p])}),
-                 Description=proteinInfo(protein.group,xls.quant.tbl.tmp[,"ac"],select="protein_name",do.warn=FALSE),
-                 Gene=proteinInfo(protein.group,xls.quant.tbl.tmp[,"ac"],select="gene_name",do.warn=FALSE),
-                 "@comment=Number of specific peptides@Peptide Count"= peptide.count(protein.group,xls.quant.tbl.tmp$ac,specificity=c(GROUPSPECIFIC,REPORTERSPECIFIC),do.warn=FALSE),
-                 "@comment=Number of specific spectra@Spectral Count"= spectra.count(protein.group,xls.quant.tbl.tmp$ac,specificity=c(GROUPSPECIFIC,REPORTERSPECIFIC),do.warn=FALSE),
-                 "@comment=Coverage ratio of the sequence compared to the full protein sequence@Sequence Coverage"=round(sequence.coverage(protein.group,xls.quant.tbl.tmp$ac,do.warn=FALSE),round.digits),
-                 check.names=FALSE)
+                 AC=.protein.acc(xls.quant.tbl.tmp[,"ac"],ip=indist.proteins))
+
+      if (is.data.frame(proteinInfo(protein.group)) && length(proteinInfo(protein.group)) > 0) {
+        xls.quant.tbl <- cbind(xls.quant.tbl,
+                               ID=proteinInfo(protein.group,xls.quant.tbl.tmp[,"ac"],do.warn=FALSE),
+                               Description=proteinInfo(protein.group,xls.quant.tbl.tmp[,"ac"],select="protein_name",do.warn=FALSE),
+                               Gene=proteinInfo(protein.group,xls.quant.tbl.tmp[,"ac"],select="gene_name",do.warn=FALSE))
+      }
+      xls.quant.tbl <- cbind(xls.quant.tbl,
+                             n=sapply(xls.quant.tbl.tmp[,"ac"],function(p) {length(names(indist.proteins)[indist.proteins == p])}),
+                             "@comment=Number of specific peptides@Peptide Count"= peptide.count(protein.group,xls.quant.tbl.tmp$ac,specificity=c(GROUPSPECIFIC,REPORTERSPECIFIC),do.warn=FALSE),
+                             "@comment=Number of specific spectra@Spectral Count"= spectra.count(protein.group,xls.quant.tbl.tmp$ac,specificity=c(GROUPSPECIFIC,REPORTERSPECIFIC),do.warn=FALSE))
+      if (is.data.frame(proteinInfo(protein.group))  && length(proteinInfo(protein.group)) > 0 && "length" %in% colnames(proteinInfo(protein.group))) {
+        xls.quant.tbl <- cbind(xls.quant.tbl,
+                               "@comment=Coverage ratio of the sequence compared to the full protein sequence@Sequence Coverage"=round(sequence.coverage(protein.group,xls.quant.tbl.tmp$ac,do.warn=FALSE),round.digits))
+      }
 
     } else {
       ## PEPTIDE REPORT
