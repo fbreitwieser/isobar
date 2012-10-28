@@ -645,7 +645,7 @@ setAs("ProteinGroup","data.frame.concise",
                        }
                        if (show.proteinInfo) 
                          res <- cbind(res,
-                                      proteinNameAndDescription(from,protein.gs))
+                                      proteinNameAndDescription(from,protein.gs,collapse=TRUE))
                        res <- cbind(res,n.groups=length(protein.gs),stringsAsFactors=FALSE)
                        if (!is.null(attr(from,"from.ids"))) 
                          res  <- cbind(groups=paste(attr(from,"from.ids")[protein.gs],collapse=","),
