@@ -1345,8 +1345,13 @@ n.observable.peptides <- function(...) {
   return(nrow(observable.peptides(...)))
 }
 
+# crude calculations:
+#   mass of B: (mass_N+mass_D)/2, mass_N=114.04293; mass_D=215.06680
+#   mass of Z: (mass_E+mass_Q)/2, mass_E=229.08245; mass_Q=328.13828
+#   mass of J: mass of L
 observable.peptides <- function(seq,nmc=1,min.length=6,min.mass=600,max.mass=4000,
-                                custom=list(code="U",mass=150.953636),...) {
+                                custom=list(code=c("B","Z","J","U"),
+                                            mass=c(164.554862,278.61037,213.12392,150.953636)),...) {
   if (is.na(seq) || length(seq)==0 || nchar(seq) == 0)
     return(0)
   pep <- Digest(seq,missed=nmc,custom=custom,...)
