@@ -75,8 +75,11 @@
     mapping the identification results.
   }
   \item{annotate.spectra.f}{
-    Function which has the chance to annotate the spectra feature data
-    before it is written to IBpectra object.
+    Function which changes or annotates the spectra feature data
+    before it is written to IBpectra object. This can be used to calculate 
+    and threshold additional scores, for example localization scores of post-
+    translational modifications such as Delta Score (filterSpectraDeltaScore) or
+    PhosphoRS site localization probabilities (annotateSpectraPhosphoRS).
   }
   \item{peaklist.format}{
     "mgf" (Mascot Generic format) or "mcn" (iTracker Machine Readable
