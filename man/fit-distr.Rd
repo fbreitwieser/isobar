@@ -12,7 +12,7 @@
     on ratio distribution.
 }
 \usage{
-fitCauchy(x)
+fitCauchy(x,round.digits=NULL)
 fitNorm(x, portion = 0.75)
 fitWeightedNorm(x, weights)
 fitNormalCauchyMixture(x)
@@ -22,6 +22,7 @@ fitTd(x)
 }
 \arguments{
   \item{x}{Ratios}
+  \item{round.digits}{If not null, round fitted parameters to given precision.}
   \item{weights}{Weights}
   \item{portion}{Central portion of data to take for computation}
   \item{n}{number of sampling steps}

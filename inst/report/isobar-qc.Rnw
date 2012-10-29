@@ -180,7 +180,7 @@ Display of the ratio (\emph{y-axis}) versus the log10 average signal intensity (
 <<fig-maplot,echo=FALSE,results=hide>>=
 ppi <- 300
 png("fig_maplot.png",width=6*ppi,height=4*ppi,res=ppi,pointsize=12)
-maplot(ibspectra,noise.model=noise.model,bty="l",pairs=FALSE)
+maplot(ibspectra,noise.model=noise.model,bty="l",pairs=properties.env$qc.maplot.pairs)
 dev.off()
 @
 \includegraphics{fig_maplot}

@@ -4,6 +4,7 @@
 %\VignettePackage{isobar}
 \documentclass[11pt]{article}
 
+\SweaveOpts{keep.source=TRUE}
 <<init,echo=FALSE>>=
   library(distr)
   require(ggplot2)
@@ -22,23 +23,16 @@
 \evensidemargin=.1in
 \headheight=-.3in
 
-\newcommand{\scscst}{\scriptscriptstyle}
-\newcommand{\scst}{\scriptstyle}
-
 \newcommand{\Rfunction}[1]{{\texttt{#1}}}
 \newcommand{\Robject}[1]{{\texttt{#1}}}
 \newcommand{\Rpackage}[1]{{\texttt{#1}}}
 \newcommand{\isobar}{\Rpackage{isobar}}
 
-\SweaveOpts{keep.source=TRUE}
-
+\title{Isobar Vignette - iTRAQ and TMT Analysis}
 \author{Florian P.\ Breitwieser, Jacques Colinge}
-
-\bibliographystyle{plainnat}
 
 \begin{document}
 
-\title{Isobar Vignette - iTRAQ and TMT Analysis}
 \maketitle
 \tableofcontents
 
@@ -646,3 +640,4 @@ The version number of R and packages loaded for generating the vignette were:
 
 \end{document}
 
+\bibliographystyle{plainnat}
