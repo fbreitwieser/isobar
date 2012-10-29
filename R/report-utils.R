@@ -1,77 +1,13 @@
 
-create.meta.reports <- function(report.type="protein",properties.file="meta-properties.R",args=NULL) {
-  source(system.file("report","meta-functions.R",package="isobar"))
-  if (!exists("properties.env")) {
-    properties.env <- load.properties(properties.file,
-                                      system.file("report","meta-properties.R",package="isobar"),
-                                      args=args)
-  }
-
-  protein.group <- .get.or.load("protein.group",properties.env,"protein group object","ProteinGroup")
-  if (!is.null(properties.env$protein.info.f)) 
-    proteinInfo(protein.group) <- 
-      .create.or.load("protein.info",envir=properties.env,
-                      f=properties.env$protein.info.f,
-                      x=protein.group,
-                      error=warning,default.value=proteinInfo(protein.group))
-  
-  if (is.null(proteinInfo(protein.group)) || length(proteinInfo(protein.group))==0)
-    stop("No protein information available.")
-
-  #if (properties.env$calculate.dnsaf)
-  #  dnsaf <- .create.or.load("dnsaf",envir=properties.env,f=calculate.dNSAF,protein.group=protein.group)
-
-  message("Merging tables ...")
-  ac.vars <- switch(report.type,
-                    protein = "ac",
-                    peptide = c("peptide","modif"),
-                    stop("report type ",report.type," unknown"))
-
-  merged.table <- get.merged.table(properties.env$samples,
-                                   cols=c(ac.vars,"r1","r2","lratio","variance"),
-                                   merge.by=c(ac.vars,"r1","r2"))
-  merged.table <- subset(merged.table,r1==merged.table$r1[1])
-  tbl.wide <- reshape(merged.table,idvar=ac.vars,timevar=c("r2"),direction="wide",drop="r1")
- # rownames(tbl.wide) <- tbl.wide$ac
-  #all.names <- do.call(rbind,lapply(tbl.wide[,"ac"],get.names,protein.group=protein.group))
-  #tbl.wide$dNSAF <- dnsaf[as.character(tbl.wide$ac)]
-
-  if (report.type=="peptide") {
-    pg.df <- isobar:::.proteinGroupAsConciseDataFrame(protein.group)  
-    rownames(pg.df) <- do.call(paste,pg.df[,ac.vars,drop=FALSE])
-  }
-
-  p <- ggplot(sdf, aes(y,x))
-  p <- p + geom <- tile(aes(fill=height), colour="white")
-  p <- p + scale <- fill <- gradientn(colours = c("dark red", "white", "dark green" ), breaks=breaks, labels=format(breaks))
-  p <- p + opts(title='Day 1') 
-
-
-
-  ratio.matrix <- as.matrix(tbl.wide[,grep("lratio",colnames(tbl.wide))])
-  variance.matrix <- as.matrix(tbl.wide[,grep("var",colnames(tbl.wide))])
-  rownames(ratio.matrix)  <- do.call(paste,tbl.wide[,ac.vars,drop=FALSE])
-  rownames(variance.matrix)  <- do.call(paste,tbl.wide[,ac.vars,drop=FALSE])
-  sel <- !apply(is.na(ratio.matrix),1,any)
-  ratio.matrix <- ratio.matrix[sel,]
-  variance.matrix <- variance.matrix[sel,]
-
-  m.median <- apply(ratio.matrix,2,median)
-  normalized.ratio.matrix <- ratio.matrix-matrix(m.median,nrow=nrow(ratio.matrix),ncol=ncol(ratio.matrix),byrow=T)
-
-  plot.heatmaps(ratio.matrix,properties.env$name)
-  plot.pairs(properties.env$name)
-
-}
-
 create.reports <- function(properties.file="properties.R",args=NULL,
-                           report.type="protein",compile=FALSE,zip=FALSE) {
+                           report.type="protein",compile=FALSE,zip=FALSE,warn=1) {
   ow <- options("warn")
-  options(warn=1)
+  options(warn=warn)
   if (!exists("properties.env")) {
     properties.env <- load.properties(properties.file,
                                       system.file("report","properties.R",package="isobar"),
                                       args=args)
+    assign("properties.env",properties.env,envir=.GlobalEnv)
   }
   
   if (!exists("report.env")) {
@@ -151,8 +87,9 @@ write.xls.report <- function(report.type,properties.env,report.env,file="isobar-
       ## in principle, it works by defining the protein.group.ids attr, but does not here - 
       ## probably due to the environment it does not
       attr(proteinGroup(report.env$ibspectra),"protein.group.ids") <- .as.vect(unique(get.val('quant.tbl')[,c("ac","group")]))
-      protein.id.df <- as(get('ibspectra',report.env),"data.frame.concise")
+      #protein.id.df <- as(get('ibspectra',report.env),"data.frame.concise")
 
+      protein.id.df <- .IBSpectraAsConciseDataFrame(get('ibspectra',report.env))
       ## make columns w/ multiple groups gray
       sel.1group  <- protein.id.df$n.groups == 1
       #sel.1ac  <- protein.id.df$n.acs == 1
@@ -161,7 +98,8 @@ write.xls.report <- function(report.type,properties.env,report.env,file="isobar-
       #protein.id.df[!sel.1group | !protein.id.df$use.for.quant,1] <- paste("#color=gray#",protein.id.df[!sel.1group,1],sep="")
 
     } else {
-      protein.id.df <- as(get('ibspectra',report.env),"data.frame.concise")
+      #protein.id.df <- as(get('ibspectra',report.env),"data.frame.concise")
+      protein.id.df <- .IBSpectraAsConciseDataFrame(get('ibspectra',report.env))
     }
 
     ## Analysis Properties:
@@ -345,12 +283,12 @@ initialize.env <- function(env,report.type="protein",properties.env) {
   } else {
     file.name <- sprintf("%s/%s.rda",.get.property('cachedir',envir),name)
   }
-  if (file.exists(file.name) & (!envir$regen || do.load)) {
+  if (file.exists(file.name) && (!envir$regen || do.load)) {
     message(sprintf("loading %s from %s ...",msg.f, file.name))
     x <- .load.property(name,file.name)
     return(x)
   } else {
-    stop("Cannot get or load property ",name)
+    stop("Cannot get or load property [",name,"] - would expect it in [",file.name,"], but file does not exist.")
   }
 }
 
@@ -449,11 +387,15 @@ initialize.env <- function(env,report.type="protein",properties.env) {
   readIBSpectra.args$fragment.outlier.prob=get.property('fragment.outlier.prob')
   readIBSpectra.args$proteinGroupTemplate=.get.or.load('protein.group.template',properties.env,"ProteinGroup",null.ok=TRUE)
 
-  if (file.exists(get.property('ibspectra'))) {
+  if (all(file.exists(get.property('ibspectra')))) {
     if (grepl(".csv",get.property('ibspectra'))) {
         message("ibspectra ends on .csv:\n",
-                sprintf('ibspectra <- readIBSpectra("%s","%s") ...',
-                        get.property('type'),get.property('ibspectra')))
+                sprintf('ibspectra <- readIBSpectra("%s",%s) ...',
+                        get.property('type'),
+                        ifelse(length(get.property('ibspectra'))==1,
+                               paste0('"',get.property('ibspectra'),'"'),
+                               paste0('c("',get.property('ibspectra'),'")',collapse='","')
+                               )))
         ibspectra <- do.call(readIBSpectra,readIBSpectra.args)
     } else if (grepl(".rda",get.property("ibspectra"))) {
         message("ibspectra ends on .rda: ","loading")
@@ -568,7 +510,11 @@ initialize.env <- function(env,report.type="protein",properties.env) {
     if (all(is.nan(all.ratios$lratio)))
       stop("Cannot compute protein ratio distribution - no ratios available.\n",
            "Probably due to missing reporter intensities.")
-    fitCauchy(all.ratios[,'lratio'])
+    ratiodistr <- fitCauchy(all.ratios[,'lratio'],round.digits=5)
+    attr(ratiodistr,"method") <- method
+    attr(ratiodistr,"cl") <- classLabels(env$ibspectra)
+    attr(ratiodistr,"tagNames") <- reporterTagNames(env$ibspectra)
+    ratiodistr
   }))
 }
 
@@ -693,15 +639,22 @@ initialize.env <- function(env,report.type="protein",properties.env) {
       xls.quant.tbl.tmp$i  <- seq_len(nrow(xls.quant.tbl.tmp))
       xls.quant.tbl <- data.frame(i=xls.quant.tbl.tmp$i,
                                   group=xls.quant.tbl.tmp[,"group"],
-                 AC=.protein.acc(xls.quant.tbl.tmp[,"ac"],ip=indist.proteins),
-                 ID=proteinInfo(protein.group,xls.quant.tbl.tmp[,"ac"],do.warn=FALSE),
-                 n=sapply(xls.quant.tbl.tmp[,"ac"],function(p) {length(names(indist.proteins)[indist.proteins == p])}),
-                 Description=proteinInfo(protein.group,xls.quant.tbl.tmp[,"ac"],select="protein_name",do.warn=FALSE),
-                 Gene=proteinInfo(protein.group,xls.quant.tbl.tmp[,"ac"],select="gene_name",do.warn=FALSE),
-                 "@comment=Number of specific peptides@Peptide Count"= peptide.count(protein.group,xls.quant.tbl.tmp$ac,specificity=c(GROUPSPECIFIC,REPORTERSPECIFIC),do.warn=FALSE),
-                 "@comment=Number of specific spectra@Spectral Count"= spectra.count(protein.group,xls.quant.tbl.tmp$ac,specificity=c(GROUPSPECIFIC,REPORTERSPECIFIC),do.warn=FALSE),
-                 "@comment=Coverage ratio of the sequence compared to the full protein sequence@Sequence Coverage"=round(sequence.coverage(protein.group,xls.quant.tbl.tmp$ac,do.warn=FALSE),round.digits),
-                 check.names=FALSE)
+                 AC=.protein.acc(xls.quant.tbl.tmp[,"ac"],ip=indist.proteins))
+
+      if (is.data.frame(proteinInfo(protein.group)) && length(proteinInfo(protein.group)) > 0) {
+        xls.quant.tbl <- cbind(xls.quant.tbl,
+                               ID=proteinInfo(protein.group,xls.quant.tbl.tmp[,"ac"],do.warn=FALSE),
+                               Description=proteinInfo(protein.group,xls.quant.tbl.tmp[,"ac"],select="protein_name",do.warn=FALSE),
+                               Gene=proteinInfo(protein.group,xls.quant.tbl.tmp[,"ac"],select="gene_name",do.warn=FALSE))
+      }
+      xls.quant.tbl <- cbind(xls.quant.tbl,
+                             n=sapply(xls.quant.tbl.tmp[,"ac"],function(p) {length(names(indist.proteins)[indist.proteins == p])}),
+                             "@comment=Number of specific peptides@Peptide Count"= peptide.count(protein.group,xls.quant.tbl.tmp$ac,specificity=c(GROUPSPECIFIC,REPORTERSPECIFIC),do.warn=FALSE),
+                             "@comment=Number of specific spectra@Spectral Count"= spectra.count(protein.group,xls.quant.tbl.tmp$ac,specificity=c(GROUPSPECIFIC,REPORTERSPECIFIC),do.warn=FALSE))
+      if (is.data.frame(proteinInfo(protein.group))  && length(proteinInfo(protein.group)) > 0 && "length" %in% colnames(proteinInfo(protein.group))) {
+        xls.quant.tbl <- cbind(xls.quant.tbl,
+                               "@comment=Coverage ratio of the sequence compared to the full protein sequence@Sequence Coverage"=round(sequence.coverage(protein.group,xls.quant.tbl.tmp$ac,do.warn=FALSE),round.digits))
+      }
 
     } else {
       ## PEPTIDE REPORT
@@ -784,7 +737,7 @@ initialize.env <- function(env,report.type="protein",properties.env) {
       if ("zscore" %in% properties.env$xls.report.columns) {
         ## TODO: zscore is calculated across all classes - 
         ##       it is probably more appropriate to calculate it individual for each class
-        xls.quant.tbl.tmp$zscore <- calc.zscore(xls.quant.tbl.tmp$lratio)
+        xls.quant.tbl.tmp$zscore <- .calc.zscore(xls.quant.tbl.tmp$lratio)
       }
     
       # TODO: Add z score?

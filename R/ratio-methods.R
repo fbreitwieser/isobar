@@ -44,7 +44,7 @@ fitGumbel <- function(x) {
 }
 
 
-fitCauchy <- function(x) {
+fitCauchy <- function(x,round.digits=NULL) {
   cauchy.fit <- function(theta,x){
     -sum(dcauchy(x,location=theta[1],scale=theta[2],log=TRUE),na.rm=T)
   }
@@ -52,7 +52,10 @@ fitCauchy <- function(x) {
   theta.start <- c(median(x[good]),IQR(x[good])/2)
   res <- nlminb(theta.start,cauchy.fit,x=x[good],
                 lower=c(-10,1e-20),upper=c(10,10)) 
-  new("Cauchy",location=res$par[1],scale=res$par[2])
+  if (!is.null(round.digits))
+    new("Cauchy",location=round(res$par[1],round.digits),scale=round(res$par[2],round.digits))
+  else
+    new("Cauchy",location=res$par[1],scale=res$par[2])
 }
 
 fitTd <- function(x) {
@@ -157,7 +160,7 @@ setMethod("estimateRatioNumeric",signature(channel1="numeric",channel2="numeric"
     function(channel1,channel2,noise.model,ratiodistr=NULL,
              variance.function="maxi",
              sign.level=0.05,sign.level.rat=sign.level,sign.level.sample=sign.level,
-             remove.outliers=TRUE,outliers.args=list(method="iqr",coef=1.5),n.sample=NULL, 
+             remove.outliers=TRUE,outliers.args=list(method="iqr",outliers.coef=1.5),n.sample=NULL, 
              method="isobar",fc.threshold=1.3,channel1.raw=NULL,channel2.raw=NULL,
              use.na=FALSE,preweights=NULL) {
       
@@ -219,7 +222,7 @@ setMethod("estimateRatioNumeric",signature(channel1="numeric",channel2="numeric"
         if (identical(outliers.args$method,"wtd.iqr")) 
           outliers.args$weights <- 1/var.i
         outliers.args$log.ratio <- log.ratios
-        sel.outliers <- do.call(.sel.outliers,outlier.args)
+        sel.outliers <- do.call(.sel.outliers,outliers.args)
         sel <- sel & !sel.outliers
       }
       
@@ -1028,7 +1031,7 @@ proteinRatios <-
         stop("summarization not meaningful with combn.method='global'. ",
              "Use combn.method='intraclass' or combn.method='interclass' to use ratios in or between classes.")
 
-      #n.combination <- length(unique(combn[1,]))
+      ## calculate the number of combinations for each class-combination
       n.combination <- table(combn["class1",],combn["class2",])
       if (nrow(n.combination)==1 & ncol(n.combination)==1) n.combination <- as.numeric(n.combination)
       if (max(n.combination) < 2)
@@ -1128,8 +1131,8 @@ summarize.ratios <-
         do.call(rbind,lapply(seq_len(nrow(classes)),function(class_i) {
           class1 <- classes[class_i,1]
           class2 <- classes[class_i,2]
-          n.combination.c <- ifelse(is.matrix(n.combination),n.combination[class2,class1],n.combination)
-          min.detect.c <- ifelse(is.matrix(min.detect),min.detect[class2,class1],min.detect)
+          n.combination.c <- ifelse(is.matrix(n.combination),n.combination[class1,class2],n.combination)
+          min.detect.c <- ifelse(is.matrix(min.detect),min.detect[class1,class2],min.detect)
           ac.sel <-ac.sel.1 & ratios$class1 == class1 & ratios$class2 == class2
           if (!any(ac.sel)) {
             ## no data for ac
@@ -1223,7 +1226,7 @@ summarize.ratios <-
   }
 
 
-calc.zscore <- function(lratio) {
+.calc.zscore <- function(lratio) {
   s.median <- median(lratio,na.rm=TRUE)
   s.mad <- mad(lratio,na.rm=TRUE)
   (lratio-s.median)/s.mad

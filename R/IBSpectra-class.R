@@ -193,7 +193,7 @@ setMethod("initialize","IBSpectra",
             }
         }
         
-        message("merge ids")
+        message("merging identifications")
         data <- .merge.identifications(data)
         SC <- .SPECTRUM.COLS[.SPECTRUM.COLS %in% colnames(data)]
         
@@ -361,6 +361,7 @@ setMethod("readIBSpectra",
           signature(type="character",id.file="character",peaklist.file="missing"),
     function(type,id.file,...) {
       ll <- lapply(seq_along(id.file),function(i) {
+                   message("\treading ",id.file[i])
                    df <- read.table(id.file[i],header=T,sep="\t")
                    df[,.SPECTRUM.COLS['FILE']]  <- id.file[i]
                    if (!is.null(names(id.file)))
@@ -450,15 +451,27 @@ setMethod("readIBSpectra",
   if (.SPECTRUM.COLS['SEARCHENGINE'] %in% colnames(identifications)) {
     if (any(grepl("|",identifications[,SC['SEARCHENGINE']],fixed=TRUE))) {
       ## scores are merged together
-      engines <- strsplit(identifications[,SC['SEARCHENGINE']],"|",fixed=TRUE)
-      scores <- strsplit(identifications[,SC['SCORE']],"|",fixed=TRUE)
+      if (.SPECTRUM.COLS['SCORE'] %in% colnames(identifications)) {
+        engines <- strsplit(identifications[,SC['SEARCHENGINE']],"|",fixed=TRUE)
+        scores <- strsplit(identifications[,SC['SCORE']],"|",fixed=TRUE)
+      } else {
+        engine.n.score <- strsplit(identifications[,SC['SEARCHENGINE']],"[ \\|]")
+        engines <- lapply(engine.n.score,function(x) x[seq(from=1,to=length(x),by=2)])
+        if (length(unique(unlist(engines))>10)) {
+          engines <- lapply(engine.n.score,function(x) x[seq(from=1,to=length(x)/2)])
+          scores <- lapply(engine.n.score,function(x) as.numeric(x[seq(from=length(x)/2+1,to=length(x))]))
+        } else {
+          scores <- lapply(engine.n.score,function(x) as.numeric(x[seq(from=2,to=length(x),by=2)]))
+        }
+      }
       for (engine in unique(unlist(engines))) {
         name <- paste0('score.',tolower(engine))
-        e.scores <- mapply(function(e,s) if(any(e==engine)) as.numeric(s[e==engine]) else NA,engines,scores)
+        e.scores <- mapply(function(e,s) if(any(e==engine)) s[e==engine] else NA,engines,scores)
         identifications[,name] <- e.scores
       }
       identifications[,SC['SEARCHENGINE']] <- NULL
-      identifications[,SC['SCORE']] <- NULL
+      if ('SCORE' %in% names(SC))
+        identifications[,SC['SCORE']] <- NULL
     }
     ## keep only spectra which have same identification with both engines
   }
@@ -1169,13 +1182,13 @@ setGeneric("reporterMasses<-", function(x,...,value)
            standardGeneric("reporterMasses<-"))
 
 setMethod("reporterData","IBSpectra",
-    function(x,element="ions",na.rm=FALSE,...) {
+    function(x,element="ions",na.rm=FALSE,na.rm.f='any',...) {
       sel <- spectrumSel(x,...)
       data <- assayDataElement(x,element)[sel,,drop=FALSE]
 
-      if (na.rm & length(data) > 0) 
-        return(data[apply(!is.na(data),1,all),,drop=FALSE])
-      else       
+      if (na.rm & length(data) > 0)
+        return(data[!apply(is.na(data),1,na.rm.f),,drop=FALSE])
+      else
         return(data)
     }
     )
@@ -1277,7 +1290,7 @@ setMethod("spectrumSel",signature(x="IBSpectra",peptide="missing",protein="chara
         return(FALSE)
       sel <- spectrumSel(x,peptide=peptides,spectrum.titles=spectrum.titles,
                          modif=modif,use.for.quant.only=use.for.quant.only,do.warn=do.warn)
-      if ((spectrum.titles & any(sel)) || (!spectrum.titles & !any(sel)))
+      if (do.warn && ((spectrum.titles & any(sel)) || (!spectrum.titles & !any(sel))))
         warning("No spectra for protein ",protein,
                 " with specificity ",paste(specificity,collapse=","))
       return(sel)
@@ -1345,7 +1358,7 @@ setMethod("correctIsotopeImpurities",signature(x="IBSpectra"),
           }
       ))
       colnames(ri.corrected) <- reporterTagNames(x)
-      ri.corrected[ri.corrected<0] <- NA
+      ri.corrected[ri.corrected<1] <- NA
       reporterIntensities(x) <- ri.corrected
 
       x <- do.log(x,"isotopeImpurities.corrected",TRUE)
@@ -1393,10 +1406,10 @@ normalize <- function(x,f=median,target="intensity",exclude.protein=NULL,
       if (!all(channels %in% colnames(ri)))
         stop("channels must be reporterTagNames.")
                                                          
-      ri <- reporterIntensities(x,na.rm=na.rm)[,channels,drop=FALSE]
+      ri <- reporterIntensities(x)[,channels,drop=FALSE]
     }
   } else {
-    ri <- reporterIntensities(x,na.rm=na.rm)
+    ri <- reporterIntensities(x)
   } ## else is.null(channels)
   
   if (!is.null(exclude.protein))
@@ -1405,6 +1418,11 @@ normalize <- function(x,f=median,target="intensity",exclude.protein=NULL,
   
   if (!is.null(use.protein))
     ri <- ri[spectrumSel(x,protein=use.protein,specificity=REPORTERSPECIFIC),]
+
+  if (na.rm) 
+    sel.na <- apply(!is.na(ri),1,all)
+  else
+    sel.na <- rep(TRUE,nrow(ri))
   
   ## TODO: warning when ri is empty
 
@@ -1416,10 +1434,10 @@ normalize <- function(x,f=median,target="intensity",exclude.protein=NULL,
   if (per.file && .SPECTRUM.COLS['FILE'] %in% colnames(fData(x))) {
     fd <- fData(x)
     for (n.file in sort(unique(fd[,.SPECTRUM.COLS['FILE']]))) {
-      message(n.file)
-      sel <- fd[,.SPECTRUM.COLS['FILE']] == n.file
-      message(sum(sel))
-      factor <- .get.normalization.factors(ri[sel,,drop=FALSE],f,target,f.doapply,...)
+      sel <- sel.na & fd[,.SPECTRUM.COLS['FILE']] == n.file
+      message("\tnormalizing ",n.file," [",sum(sel)," spectra]")
+      ri.sel <- ri[sel,,drop=FALSE]
+      factor <- .get.normalization.factors(ri.sel,f,target,f.doapply,...)
       reporterIntensities(x)[sel,colnames(ri)] <- 
         reporterIntensities(x)[sel,colnames(ri)]*rep(factor,each=sum(sel))
       for (i in seq_along(factor)) {
@@ -1428,7 +1446,7 @@ normalize <- function(x,f=median,target="intensity",exclude.protein=NULL,
       } 
     }
   } else {
-    factor <- .get.normalization.factors(ri,f,target,f.doapply,...)
+    factor <- .get.normalization.factors(ri[sel.na,,drop=FALSE],f,target,f.doapply,...)
     reporterIntensities(x)[,colnames(ri)] <- 
       reporterIntensities(x)[,colnames(ri)]*
       rep(factor,each=nrow(reporterIntensities(x)))

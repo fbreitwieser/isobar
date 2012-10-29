@@ -38,16 +38,17 @@ setMethod("reporterMassPrecision",
               melt.masses$reporter <-
                 factor(melt.masses$reporter,
                        levels=reporterTagNames(x),
-                       labels=sprintf("tag %s: m/z %.2f",
+                       #labels=sprintf("tag %s: m/z %.2f",
+                       labels=sprintf("%s: m/z %.2f",
                          reporterTagNames(x),reporterTagMasses(x)))
               
               ggplot(melt.masses,aes(x=mass)) + geom_vline(xintercept=0,alpha=0.8) +
                 geom_histogram(fill="white",aes(colour=factor(reporter)),alpha=0.8,
                                binwidth=1/20*(max(melt.masses$mass,na.rm=TRUE)-min(melt.masses$mass,na.rm=TRUE))) + 
                   facet_wrap(~reporter,scales="fixed",nrow=1) + 
-                  theme_bw() +
+                  theme_bw(base_size=10) + xlab("mass difference theoretical vs observed reporter tag mass") +
                     opts(legend.position="none",
-                         axis.text.x = theme_text(angle=330,hjust=0,vjust=1,colour="grey50",size=6.5))
+                         axis.text.x = theme_text(angle=330,hjust=0,vjust=1,colour="grey50",size=7))
             }
 
             #return(summary(masses-matrix(reporterTagMasses(x),byrow=T,
@@ -82,7 +83,8 @@ setMethod("reporterIntensityPlot",
             ggplot(melt.intensities,aes(x=tag,y=intensity)) +
               geom_boxplot(aes(color=factor(normalized)),size=0.5,alpha=0.6,
                            outlier.size=0.5,position=position_dodge(width=0.25)) + 
-              scale_y_log10() + theme_bw() + scale_color_hue("") 
+              xlab("isobaric reporter tag") +
+              scale_y_log10() + theme_bw(base_size=10) + scale_color_hue("") 
           }
 )
 
@@ -234,6 +236,15 @@ maplot.protein <- function(x,relative.to,protein,noise.model=NULL,
     }}
 }
 
+.get.ri <- function(ri,ch) {
+  if (ch == "ALL")
+    rowSums(ri,na.rm=TRUE)
+  else if (ch == "AVG")
+    apply(ri,1,mean,na.rm=TRUE)
+  else
+    ri[,ch]
+}
+
 # MA plots
 setMethod("maplot",
           signature(x="IBSpectra",channel1="character",channel2="character"),
@@ -347,7 +358,7 @@ setMethod("maplot",
               if (is(noise.model,"NoiseModel"))
                 noise.model <- c(noise.model)
 
-              ss <- seq(min(A),max(A),length.out=100)
+              ss <- seq(min(A,na.rm=TRUE),max(A,na.rm=TRUE),length.out=100)
               for (i in seq_along(noise.model)) {          
                 lines(ss,10^(1.96*sqrt(variance(noise.model[[i]],ss))),col=noise.model.col[i],lwd=2)
                 lines(ss,10^(-1.96*sqrt(variance(noise.model[[i]],ss))),col=noise.model.col[i],lwd=2)
@@ -396,6 +407,11 @@ setMethod("maplot",
           }
 )
 
+
+
+
+
+
 setMethod("maplot",
     signature=c(x="missing",channel1="numeric",channel2="numeric"),
     function(channel1,channel2,noise.model=NULL,pch=".",noise.model.col=1:10,...) {
@@ -436,7 +452,6 @@ setMethod("maplot",
           signature(x="IBSpectra",channel1="missing",channel2="missing"),
           function(x,noise.model=NULL,pairs=TRUE,xlim="fixed",ylim="fixed",...){
             ions <- reporterIntensities(x)
-            if (pairs) {
               set.na.to <- NULL
               set.na.to.lim <- NULL
               if (identical(xlim,"fixed")) 
@@ -453,6 +468,8 @@ setMethod("maplot",
                 ylim <- c(1/y.max,y.max)
 
               }
+
+            if (pairs) {
               histlimits=log10(range(ions,na.rm=TRUE))
               par(mfrow=c(ncol(ions),ncol(ions)),mar=c(2.5,2.25,0,0),
                   bty="n",fg="darkgray")
@@ -491,8 +508,19 @@ setMethod("maplot",
                 }
               }
             } else {
-              # TODO: pool data: all combinations
-              stop("pairs=FALSE not implemented")
+              par(mfrow=c(1,ncol(ions)),mar=c(2.5,2.25,2.25,0),
+                  bty="n",fg="darkgray")
+              for (i in colnames(ions)) {
+                plot.labels.y = is.null(ylim) || (i == colnames(ions)[1])
+                maplot(x=x,channel1=as.character(i),channel2="ALL",
+                       main=substitute(paste(i," ",italic(vs)," ALL",sep="")),
+                       noise.model=noise.model,xlim=xlim,ylim=ylim,
+                       set.na.to=set.na.to,set.na.to.lim=set.na.to.lim,
+                       x.axis.labels = TRUE,
+                       y.axis.labels = plot.labels.y,
+                       ...)
+
+              }
             }
           }
 )

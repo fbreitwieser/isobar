@@ -377,8 +377,8 @@ getProteinInfoFromUniprot <- function(x,splice.by=200) {
                  paste0("accession:",protein.acs[seq(from=i,to=min(length(protein.acs),i+splice.by-1))],collapse="+OR+"),
                  "&format=tab&compress=no&columns=",
                  paste0(fields,collapse=","))
-    if (isTRUE(opts_isobar$verbose))
-      message("fetching protein info from ",uniprot.url)
+    #if (isTRUE(opts_isobar$verbose))
+    #  message("fetching protein info from ",uniprot.url)
     protein.info <- rbind(protein.info,read.delim(url(uniprot.url),stringsAsFactors=FALSE,col.names=names(fields)))
     i <- i + splice.by
   }
@@ -551,9 +551,10 @@ setAs("ProteinGroup","data.frame.concise",
                                              res <- c(ac=unique(x$proteinac.wo.splicevariant),
                                                       link=paste0("http://www.nextprot.org/db/entry/NX_",unique(x$proteinac.wo.splicevariant)))
                                              if (!all(is.na(x$splicevariant))) {
-                                               if (nrow(x)==1) res['ac'] <- x$protein[1]
-                                               else res['ac'] <- sprintf("%s-[%s]",unique(x$proteinac.wo.splicevariant),
+                                               if (length(unique(x$splicevariant))==1) { res['ac'] <- x$protein[1] 
+                                               } else { res['ac'] <- sprintf("%s-[%s]",unique(x$proteinac.wo.splicevariant),
                                                                          number.ranges(as.numeric(x$splicevariant)))
+                                               }
                                              }
                                              return(res)
                                            })
@@ -644,7 +645,7 @@ setAs("ProteinGroup","data.frame.concise",
                        }
                        if (show.proteinInfo) 
                          res <- cbind(res,
-                                      proteinNameAndDescription(from,protein.gs))
+                                      proteinNameAndDescription(from,protein.gs,collapse=TRUE))
                        res <- cbind(res,n.groups=length(protein.gs),stringsAsFactors=FALSE)
                        if (!is.null(attr(from,"from.ids"))) 
                          res  <- cbind(groups=paste(attr(from,"from.ids")[protein.gs],collapse=","),
@@ -866,13 +867,13 @@ setGeneric("protein.g",function(x,pattern,variables=c("AC","name"),...) standard
 setMethod("protein.g",signature("ProteinGroup","character","ANY"),
           function(x,pattern,variables=c("AC","name"),...) {
   ip <- indistinguishableProteins(x)
+  protein.info <- proteinInfo(x)
   result <- c()
   for (p in pattern) {
     protein.acs <- c()
     if ("AC" %in% variables)
       result <- c(result,ip[grep(p,names(ip),...)])
     if ("name" %in% variables) {
-      protein.info <- proteinInfo(x)
       if (length(protein.info) != 0L) {
         protein.acs <- unique(c(
            protein.info$accession[grep(p,protein.info$name,...)],
@@ -885,7 +886,8 @@ setMethod("protein.g",signature("ProteinGroup","character","ANY"),
       sel.isoforms <- i.to.gp[,"proteinac.wo.splicevariant"] %in% protein.acs
       protein.acs.w.isoforms <-
          i.to.gp[sel.isoforms,"proteinac.w.splicevariant"]
-      protein.gs <- ip[names(ip) %in% protein.acs.w.isoforms]
+      ## TODO: test for proteinInfoIsOnSpliceVariants
+      protein.gs <- ip[names(ip) %in% c(protein.acs.w.isoforms,protein.acs)]
       result <- c(result,protein.gs)
    }
  }
@@ -1124,12 +1126,14 @@ peptide.count <- function(protein.group,protein.g=reporterProteins(protein.group
   sapply(protein.g,
          function(p) length(peptides(protein.group,p,specificity=specificity,...)))
 }
-spectra.count2 <- function(protein.group,value=reporterProteins(protein.group),type="protein.g",
+spectra.count2 <- function(ibspectra,value=reporterProteins(protein.group),type="protein.g",
                           specificity=c("reporter-specific","group-specific","unspecific"),
-                          modif=NULL,combine=FALSE,...) {
+                          modif=NULL,combine=FALSE,subset=NULL,require.quant=NULL,...) {
+  protein.group <- proteinGroup(ibspectra)
   if (!isTRUE(combine)) {
     spectra.count <- sapply(value, function(p) 
-                            spectra.count(protein.group,p,type,specificity,modif,combine=TRUE,...))
+                            spectra.count2(ibspectra,p,type,specificity,modif,combine=TRUE,
+                                           subset=subset,require.quant=require.quant,...))
     names(spectra.count) <- value
     return(spectra.count)
   }
@@ -1137,14 +1141,25 @@ spectra.count2 <- function(protein.group,value=reporterProteins(protein.group),t
   pep <- switch(type,
                 protein.g=peptides(protein.group,protein=value,specificity=specificity,...),
                 peptide=value)
+
   ## Calculate unique spectrum counts for all proteins
-  if (is.null(modif)) {
-    peptide.spectra.count <- table(spectrumToPeptide(protein.group))
-    return(sum(peptide.spectra.count[pep]))
+  if (!is.null(subset)) {
+    fd <- subset(fData(ibspectra),eval(subset) & peptide %in% pep)
   } else {
-    si <- protein.group@spectrumId
-    has.modif <- sapply(strsplit(si$modif,":"),function(x) any(x %in% modif))
-    return(sum(si$peptide %in% pep & has.modif))
+    fd <- subset(fData(ibspectra),peptide %in% pep)
+  }
+
+  if (!is.null(require.quant)) {
+    spectra <- rownames(reporterIntensities(ibspectra,na.rm=TRUE,na.rm.f=require.quant))
+    fd <- fd[fd$spectrum %in% spectra,]
+  }
+
+  if (is.null(modif)) {
+    peptide.spectra.count <- table(fd$peptide)
+    sum(peptide.spectra.count)
+  } else {
+    has.modif <- sapply(strsplit(fd$modif,":"),function(x) any(x %in% modif))
+    sum(has.modif)
   }
 
 }
@@ -1330,8 +1345,13 @@ n.observable.peptides <- function(...) {
   return(nrow(observable.peptides(...)))
 }
 
+# crude calculations:
+#   mass of B: (mass_N+mass_D)/2, mass_N=114.04293; mass_D=215.06680
+#   mass of Z: (mass_E+mass_Q)/2, mass_E=229.08245; mass_Q=328.13828
+#   mass of J: mass of L
 observable.peptides <- function(seq,nmc=1,min.length=6,min.mass=600,max.mass=4000,
-                                custom=list(code="U",mass=150.953636),...) {
+                                custom=list(code=c("B","Z","J","U"),
+                                            mass=c(164.554862,278.61037,213.12392,150.953636)),...) {
   if (is.na(seq) || length(seq)==0 || nchar(seq) == 0)
     return(0)
   pep <- Digest(seq,missed=nmc,custom=custom,...)

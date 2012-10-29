@@ -5,7 +5,7 @@
 suppressPackageStartupMessages(library(distr))
 suppressPackageStartupMessages(require(ggplot2))
 suppressPackageStartupMessages(library(isobar))
-pdf.options(pointsize=8)
+pdf.options(pointsize=6)
 
 if (!exists("properties.env",inherits=FALSE)) {
   stop("No properties.env?")
@@ -19,9 +19,10 @@ if (!all(needed.objects %in% objects())) {
 
 get.property <- function(name) { get(name,properties.env,inherits=FALSE) }
 
+n.tags <- length(reporterTagNames(ibspectra))
 @
 \SweaveOpts{eps=FALSE}
-\documentclass[11pt,oneside]{article}
+\documentclass[11pt,oneside,nogin]{article}
 
 \usepackage{amsmath}
 \usepackage{amsfonts}
@@ -74,25 +75,42 @@ cat(sprintf("\\input{%s}\n",system.file("report","report-utils.tex",package="iso
 %ibspectra
 %@
 \subsection*{Reporter Mass Precision}
-Histogram representing the distribution of the delta mass (in \emph{m/z}) for each reporter tag between theoretical and observed mass.
+Histogram representing the distribution of the delta mass (in \emph{m/z}) for each reporter tag between theoretical and observed mass. Reporter tag ions were extracted from MS2 fragment spectra at $\pm$ \Sexpr{properties.env$fragment.precision/2} $m/z$ around the theoretical masses.
 
-<<fig-reporterMassPrecision,fig=T,echo=F,width=6,height=2.5,results=hide>>=
+<<fig-reporterMassPrecision,fig=T,echo=F,width=6.5,height=2.5,results=hide>>=
  print(reporterMassPrecision(ibspectra))
 @
 
 \subsection*{Reporter Intensities}
 Box-plot of the reporter intensities before and after the normalization process. Isobar applies a normalization factor to impose equal median intensity in each channel.
 
-<<fig-reporterIntensityPlot,fig=T,echo=F,width=6,height=2.5,results=hide>>=
- print(reporterIntensityPlot(ibspectra))
+\begin{minipage}[c]{0.70\textwidth}
+<<fig-reporterIntensityPlot,fig=T,echo=F,width=4,height=2,results=hide>>=
+ print(reporterIntensityPlot(ibspectra) + opts(legend.position="bottom"))
 @
-
+\end{minipage}
+\hfill
+\begin{minipage}[b]{0.25\textwidth}
+\vspace{0pt}
+<<normalization factors,echo=FALSE,results=tex,strip.white=false>>=
+n.factors = ibspectra@log[grep("normalization.multiplicative.factor",rownames(ibspectra@log)),"Message"]
+if (length(n.factors) > 0) {
+   names(n.factors) <- sub(".* channel ","",names(n.factors))
+   cat("\\begin{tabular}{rr}",
+       "tag & factor \\\\ \\hline",
+       paste(names(n.factors),round(as.numeric(n.factors),5),sep=" & ",collapse="\\\\ \n"),
+       "\\end{tabular}",sep="\n")
+}
+@
+\end{minipage}
 
 \subsection*{Ratio distribution}
-Distribution of the computed protein ratios (bars) fitted by a Cauchy distribution (solid line).
+Distribution of the computed protein ratios (bars) and the probability density function of 
+a Cauchy distribution (solid line) fitted as described below.
 
-\begin{minipage}{0.5\textwidth}
+\begin{minipage}{0.45\textwidth}
 <<fig-ratiodistribution,fig=TRUE,echo=FALSE,width=3,height=2>>=
+
 #quant.tbl$ratio <- 10^ quant.tbl$lratio
 limits <- seq(from=min(quant.tbl$lratio,na.rm=TRUE),to=max(quant.tbl$lratio,na.rm=TRUE),length.out=1000)
 #breaks=c(0.1,0.2,1,5,10)
@@ -103,8 +121,8 @@ g <- ggplot(quant.tbl,aes(x=lratio)) +
                  aes(y=..density..),alpha=0.8,binwidth=1/20*(max(limits)-min(limits))) +
   geom_rug(alpha=0.1) +
 #  scale_x_continuous("Ratio",breaks=log10(breaks),labels=breaks) +
-  scale_x_continuous("log 10 ratio") +
-  theme_bw() +
+  scale_x_continuous(expression(paste(log[10]," ratio"))) +
+  theme_bw(base_size=10) +
   opts(legend.position="none",
        axis.text.x = theme_text(colour="grey50"))
 
@@ -116,21 +134,53 @@ if (!is.null(ratiodistr)) {
 print(g)
 @
 \end{minipage}
-\begin{minipage}{0.5\textwidth}
-\begin{verbatim}
-<<show-ratiodistribution,echo=FALSE,results=tex>>=
-if (!is.null(ratiodistr))
-  ratiodistr
-@
-\end{verbatim}
- \end{minipage}
+\hfill
+<<show-ratiodistribution,echo=FALSE,results=tex,strip.white=false>>=
+cat("\\begin{minipage}{0.5\\textwidth}\n")
+if (!is.null(ratiodistr)) {
+  cat("\\begin{verbatim}\n")
+  print(ratiodistr)
+  cat("\\end{verbatim}\n\n")
+  if (!is.null(attr(ratiodistr,"method"))) {
+     m <- attr(ratiodistr,"method")
+     classLabels <- attr(ratiodistr,"cl")
+     t <- table(classLabels)
+     tagNames <- attr(ratiodistr,"tagNames")
 
-\subsection*{Ratio Intensity Plot}
+     cat("Distribution calculated on \\emph{",m,"} ratios",sep="")
+     classTxt <- sapply(names(t),function(class) 
+                        sprintf("\\emph{%s} (tags %s)",class,
+                                paste(tagNames[classLabels==class],collapse=", ")))
+     if (m == "intraclass") {
+        cat(" within classes ",paste(classTxt[names(t)[t>1]],collapse=" and "),".")
+     } else {
+        cat(" with classes ",paste(classTxt[names(t)],collapse=", "),".")
+     }
+  }
+} else {
+   cat("No ratio distribution available.")
+}
+cat("\\end{minipage}")
+if (!is.null(ratiodistr)) {
+  probs <- c(0.005,0.01,0.025,0.05,0.95,0.975,0.99,0.995)
+  qs <- q(ratiodistr)(probs)
+  cat("\n\n \\small",
+      "\\begin{tabular}{r",rep("r",length(probs)),"}","\n",
+      "probabilities:&",paste(probs*100,"\\%",sep="",collapse="&"),"\\\\ \n",
+      "distribution quantiles ($log_{10}$):&",paste(round(qs,2),collapse="&"),"\\\\ \n",
+      "(normal scale):&",paste(round(10**qs,3),collapse="&"),"\\\\ \n",
+      "\\end{tabular} \\normalsize",
+      sep="")
+}
+@
+
+\subsection*{Ratio-Intensity Plot}
 Display of the ratio (\emph{y-axis}) versus the log10 average signal intensity (\emph{x-axis}) for all the reporter ratio combinations. The noise model used by Isobar is indicated as a solid red line.
 
 <<fig-maplot,echo=FALSE,results=hide>>=
-png("fig_maplot.png",width=8,height=8,units="in",res=600,pointsize=14)
-maplot(ibspectra,noise.model=noise.model,bty="l")
+ppi <- 300
+png("fig_maplot.png",width=6*ppi,height=4*ppi,res=ppi,pointsize=12)
+maplot(ibspectra,noise.model=noise.model,bty="l",pairs=properties.env$qc.maplot.pairs)
 dev.off()
 @
 \includegraphics{fig_maplot}
