@@ -17,6 +17,7 @@ getPhosphoRSProbabilities <- function(
 }
 
 .iTRAQ.mass = c(monoisotopic = 144.102063, average = 144.1544)
+.iTRAQ8.mass = c(monoisotopic = 304.2, average = 304.308)
 .CysCAM.mass = c(monoisotopic = 57.021464, average =  57.0513)
 .OxidationM.mass = c(monoisotopic = 15.994915, average =  15.9994)
   
@@ -27,7 +28,8 @@ writePhosphoRSInput <-
            rbind(c("PHOS",       "1","1:Phospho:Phospho:79.966331:PhosphoLoss:97.976896:STY"),
                  c("Oxidation_M","2","2:Oxidation:Oxidation:15.994919:null:0:M"),
                  c("Cys_CAM",    "3","3:Carbamidomethylation:Carbamidomethylation:57.021464:null:0:C"),
-                 c("iTRAQ4plex", "4","4:iTRAQ:iTRAQ:144.1544:null:0:KX")) #average mass? or monoisotopic?
+                 c("iTRAQ4plex", "4","4:iTRAQ4:iTRAQ4:144.1544:null:0:KX"),
+                 c("iTRAQ8plex", "5","5:iTRAQ8:iTRAQ8:304.308:null:0:KX"))
 ) {
 
   if (is.data.frame(id.file)) 
