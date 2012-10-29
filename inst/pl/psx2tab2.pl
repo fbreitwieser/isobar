@@ -1,6 +1,6 @@
 #!/usr/bin/perl
 # Creation date : 2011-03-28
-# Last modified : Mon 16 Jul 2012 04:43:20 PM CEST
+# Last modified : Mon 08 Oct 2012 10:41:45 AM CEST
 
 # Module        : psx2tab2.pl
 # Purpose       : 
@@ -13,16 +13,19 @@ use warnings;
 use DBI;
 use Getopt::Long;
 
-my $do_write;
-GetOptions("do-write"=>\$do_write) or die $!;
+my ($do_write,$use_deltaScore);
+GetOptions("do-write"=>\$do_write,
+           "deltascore" => \$use_deltaScore) or die $!;
 
 my ($protID, $peptide, $modif, $charge, $theo_mass, $exp_mass, 
-    $parent_intens, $start_pos, $rtime, @search_engine, @score,$spectrum);
+    $parent_intens, $start_pos, $rtime, @search_engine, @score,@deltaScore,@pValue,$spectrum);
 
 my $numb = "[0-9]+\.?[0-9]*(?:e[+-][0-9]*)?";
 
 my $header = "accession\tpeptide\tmodif\tcharge\ttheo.mass\texp.mass\tparent.intens".
-             "\tstart.pos\tretention.time\tsearch.engine\tscore\tspectrum\n";
+             "\tstart.pos\tretention.time\tsearch.engine\tscore\tp.value".
+             ($use_deltaScore? "\tdelta.score" : "").
+             "\tspectrum\n";
 
 my $file_i = 0;
 
@@ -64,15 +67,27 @@ eval{
     } elsif (/<ple:ParentMass><!.CDATA.($numb) ($numb) [0-9\.,]+..><\/ple:ParentMass>/) {
         $exp_mass = $1;
         $parent_intens = $2;
-    } elsif (/<idi:peptScore engine="([^"]+)".*>(.*)<\/idi:peptScore>/) {
+    } elsif (/<idi:peptScore engine="([^"]+)" (.*)>(.*)<\/idi:peptScore>/) {
+        my $i = scalar @search_engine;
+        $deltaScore[$i] = undef;
+        foreach my $attr (split(/ /,$2)) {
+          my ($k,$v) = split(/=/,$attr);
+          $v =~ s/"//g;
+          if ($k eq 'deltaScore') { $deltaScore[$i] = $v; }
+          elsif ($k eq 'pValue')  { $pValue[$i] = $v; }
+        }
         push @search_engine, $1;
-        push @score,$2;
+        push @score,$3;
     }
     elsif (/<\/idi:OneIdentification>/){
         die "not defined" if (!defined $spectrum);
         print $OUT join ("\t",$protID, $peptide, $modif, $charge, 
                     $theo_mass, $exp_mass, $parent_intens, 
-                    $start_pos, $rtime, join("|",@search_engine), join("|",@score), $spectrum)."\n";
+                    $start_pos, $rtime, 
+                    join("|",@search_engine), join("|",@score), 
+                    join("|",@pValue),
+                    ($use_deltaScore? join("|",@deltaScore) : ""), 
+                    $spectrum)."\n";
     
         undef $peptide;
         undef $modif;
@@ -84,6 +99,8 @@ eval{
         undef $rtime;
         undef @search_engine;
         undef @score;
+        undef @pValue;
+        undef @deltaScore;
         undef $spectrum;
 
     }
