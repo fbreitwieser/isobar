@@ -136,6 +136,13 @@ write.qc.report=TRUE
 write.report=TRUE
 write.xls.report=TRUE
 
+### QC REPORT OPTIONS ###
+#qc.maplot.pairs=FALSE # plot one MA plot per tag (versus all others)
+qc.maplot.pairs=TRUE # plot MA plot of each tag versus each tag
+
+
+
+### XLS REPORT OPTIONS ###
 ## Spreadsheet format: Either 'xlsx' or 'xls'
 # spreadsheet.format="xls"
 spreadsheet.format="xls"
