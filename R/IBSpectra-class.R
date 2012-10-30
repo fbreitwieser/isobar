@@ -906,7 +906,7 @@ read.mzid <- function(f) {
 ##' @param substitute.dta [boolean] internal. replace TITLEs: s/.dta.[0-9]*$/.dta/
 ##' @return list(ions, mass, spectrumtitles)
 ##' @author Florian P Breitwieser
-.read.mgf <- function(filename,reporterMasses,reporterTagNames,spectra=NULL,fragment.precision=0.05,
+.read.mgf <- function(filename,reporterMasses,reporterNames,spectra=NULL,fragment.precision=0.05,
                       prob=NULL,substitute.dta=FALSE,check.id.ok=FALSE,
                       scan.lines=0) {
   if (is.null(fragment.precision)) { fragment.precision=0.05 }
@@ -1038,8 +1038,8 @@ read.mzid <- function(f) {
   mass <- mass[sel,,drop=FALSE]
  
   spectrumtitles <- .trim(result[sel,1])
-  dimnames(ions) <- list(spectrumtitles,reporterTagNames)
-  dimnames(mass) <- list(spectrumtitles,reporterTagNames)
+  dimnames(ions) <- list(spectrumtitles,reporterNames)
+  dimnames(mass) <- list(spectrumtitles,reporterNames)
   rm(result)
   
   return(list(ions=ions, mass=mass,

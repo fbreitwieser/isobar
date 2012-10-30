@@ -13,19 +13,12 @@ use warnings;
 use DBI;
 use Data::Dumper;
 
-my $idfile = shift @ARGV;
-
 my $numb = "[0-9]+\.?[0-9]*(?:e[+-][0-9]*)?";
 
-my $ID;
-open $ID, "<", $idfile or die $!;
- 
-my $header = <$ID>; chomp $header;
-$header =~ s/"//g;
 my $i=0;
-my %header = map { $_ => $i++ } (split(/\t/,$header));
 #print STDERR Dumper \%header;
 #die;
+
 
 my $date = `date +%Y-%m-%d`; chomp $date;
 my $time = `date +%H:%M:%S`; chomp $time;
@@ -53,6 +46,16 @@ print <<eoi;
 eoi
 
 my $oldprotein;
+
+my $idfile = shift @ARGV;
+
+if (defined ($idfile)) {
+open my $ID, "<", $idfile or die $!;
+my $header = <$ID>; chomp $header;
+$header =~ s/"//g;
+my %header = map { $_ => $i++ } (split(/\t/,$header));
+my $n_identifications = 0;
+
 while (<$ID>) {
   chomp;
   s/"//g;
@@ -60,6 +63,7 @@ while (<$ID>) {
   next if (defined $header{'pepprob'} && $data[$header{'pepprob'}] < 0.9);
   my $protein = $data[$header{'accession'}];
   if (!defined $oldprotein || $protein ne $oldprotein) {
+    ++$n_identifications;
     if (defined $oldprotein) {
       print "      </idi:OneProtein>\n";
     }
@@ -106,9 +110,14 @@ while (<$ID>) {
         <ple:PeptideDescr><![CDATA[",$data[$header{'spectrum'}],"]]></ple:PeptideDescr>
         <ple:ParentMass><![CDATA[",$data[$header{'exp.mass'}]," ",$data[$header{'parent.intens'}]," ",$data[$header{'charge'}],"]]></ple:ParentMass>\n";
   print       
-"        <ple:peaks><![CDATA[]]></ple:peaks>
+"        <ple:peaks><![CDATA[
+]]></ple:peaks>
         </ple:peptide>
       </idi:OneIdentification>\n";
+}
+close $ID;
+
+print "      <idi:OneProtein>\n" if $n_identifications > 0;
 }
 print <<eoi;
     </idi:Identifications>
@@ -116,4 +125,3 @@ print <<eoi;
 </idi:ProtSpectraIdentifications>
 eoi
 
-close $ID;
