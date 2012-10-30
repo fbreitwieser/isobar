@@ -444,7 +444,13 @@ getPtmInfoFromNextprot <- function(protein.group,
   pb <- txtProgressBar(max=length(protein.acs),style=3)
   nextprot.ptmInfo <- lapply(seq_along(protein.acs),function(ac_i) {
                              setTxtProgressBar(pb,ac_i)
-                             fromJSON(sub("XXX",protein.acs[ac_i],nextprot.url))
+			     tryCatch(
+	                             fromJSON(sub("XXX",protein.acs[ac_i],nextprot.url)),
+				     error=function(e) {
+					     warning("Could not fetch from ",sub("XXX",protein.acs[ac_i],nextprot.url),":",
+						  e$message)
+					     return()
+				     })
                       })
   names(nextprot.ptmInfo) <- protein.acs
   nextprot.ptmInfo <- nextprot.ptmInfo[sapply(nextprot.ptmInfo,length)>0]
