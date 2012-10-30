@@ -251,6 +251,7 @@ setMethod("initialize","IBSpectra",
           assayDataElements$ions <- data.ions
           assayDataElements$mass <- data.mass
           
+          
           if (!identical(rownames(data),rownames(data.ions))) {
             id.n.quant <- intersect(rownames(data),rownames(data.mass))
             id.not.quant <- setdiff(rownames(data),rownames(data.mass))
@@ -322,13 +323,14 @@ setMethod("initialize","IBSpectra",
             SCANS="scans",MASSDELTA.ABS="massdelta (abs)",MASSDELTA.PPM="massdelta (ppm)",
             SEARCHENGINE='protein search engine',
             SCORE='protein search engine score',
+
             SCORE.MASCOT="Mascot search score",
             SCORE.PHENYX="Phenyx search score",
-            USEFORQUANT='use spectrum for quantification',
             SCORE.PHOSPHORS='PhosphoRS pepscore',
             PROB.PHOSPHORS="PhosphoRS probability",
+
             PHOSPHO.SITES="phosphorylation sites",
-            PEPPROB='PhosphoRS pepprob',
+            USEFORQUANT='use spectrum for quantification',
             SEQPOS='PTM seqpos',
             SITEPROBS='PhosphoRS site.probs',
             FILE='file',SAMPLE='sample',NOTES='notes'
@@ -467,7 +469,7 @@ setMethod("readIBSpectra",
       for (engine in unique(unlist(engines))) {
         name <- paste0('score.',tolower(engine))
         e.scores <- mapply(function(e,s) if(any(e==engine)) s[e==engine] else NA,engines,scores)
-        identifications[,name] <- e.scores
+        identifications[,name] <- as.numeric(e.scores)
       }
       identifications[,SC['SEARCHENGINE']] <- NULL
       if ('SCORE' %in% names(SC))
@@ -476,20 +478,32 @@ setMethod("readIBSpectra",
     ## keep only spectra which have same identification with both engines
   }
 
-  score.colname <- .SPECTRUM.COLS[c('SCORE.PHOSPHORS','SCORE.MASCOT','SCORE.PHENYX')]
+#  score.colname <- .SPECTRUM.COLS[c('SCORE.MASCOT','SCORE.PHENYX','SCORE.PHOSPHORS')]
+  score.colname <- .SPECTRUM.COLS[c('PROB.PHOSPHORS','SCORE.MASCOT','SCORE.PHENYX')]
   score.colname <- score.colname[score.colname %in% colnames(identifications)]
   if (.SPECTRUM.COLS['SPECTRUM.QUANT'] %in% colnames(identifications)) {
+    message("Merging identifications from quantitation and identification spectra")
     tt <- table(identifications[,SC['SPECTRUM.QUANT']])
     if (any(tt>1)) {
       identifications <- ddply(identifications,.SPECTRUM.COLS['SPECTRUM.QUANT'],function(x) {
                                if (nrow(x) == 1) return(x)
-                               my.args <- as.list(x[,score.colname])
+                               my.args <- as.list(x[,score.colname,drop=FALSE])
+                               my.args <- lapply(my.args,round,digits=2) # take two significant digits before taking next score into account as top hitter
                                my.args$decreasing=TRUE
                                max.hit <- do.call(order,my.args)[1]
-                               if (!all(x[,SC['PEPTIDE']] == x[max.hit,SC['PEPTIDE']]))
+                               if (!all(x[,SC['PEPTIDE']] == x[1,SC['PEPTIDE']]))
                                  return(NULL)
-                               if (all(x[,SC['MODIFSTRING']] == x[max.hit,SC['MODIFSTRING']]) && 'DISSOCMETHOD' %in% names(SC))
-                                 x[max.hit,SC['DISSOCMETHOD']] <- paste(sort(unique(x[,SC['DISSOCMETHOD']])),collapse="&")
+
+                               x[max.hit,SC['DISSOCMETHOD']] = paste0("[",x[max.hit,SC['DISSOCMETHOD']],"]")
+                               if (all(x[,SC['MODIFSTRING']] == x[max.hit,SC['MODIFSTRING']]) && 'DISSOCMETHOD' %in% names(SC)) {
+                                 if ("cid" %in% x[,SC['DISSOCMETHOD']])
+                                   x[max.hit,SC['SPECTRUM']] <- x[x[,SC['DISSOCMETHOD']]=="cid",SC['SPECTRUM']][1]
+
+                                 x[max.hit,SC['DISSOCMETHOD']] <- paste(x[,SC['DISSOCMETHOD']],collapse="&")
+                                 for (sc in score.colname[c(2,3)])
+                                   x[max.hit,sc] <- paste(x[,sc],collapse="&")
+                               }
+
                                return(x[max.hit,])
       })
     }
@@ -671,32 +685,32 @@ setMethod("readIBSpectra",
 )
 
 ## TODO: return log
-.read.mapping <- function(mapping.file,readopts,mapping) {
-  ## STUB
-  if (is.null(mapping.file)) return(NULL)
+#.read.mapping <- function(mapping.file,readopts,mapping) {
+#  ## STUB
+#  if (is.null(mapping.file)) return(NULL)
 
-  if (!all(c("peaklist","id") %in% names(mapping))) {
-    stop("readIBSpectra/mapping must be a named vector with the",
-         " names peaklist and id.")
-  }
+#  if (!all(c("peaklist","id") %in% names(mapping))) {
+#    stop("readIBSpectra/mapping must be a named vector with the",
+#         " names peaklist and id.")
+#  }
   ## read mapping file(s)
-  mapping.quant2id <- do.call(rbind,lapply(mapping.file,function(f) {
-                                           readopts$file <- f
-                                           do.call(read.table,readopts)
-                }))
+#  mapping.quant2id <- do.call(rbind,lapply(mapping.file,function(f) {
+#                                           readopts$file <- f
+#                                           do.call(read.table,readopts)
+#                }))
 
-  cn <-  colnames(mapping.quant2id)
-  colnames(mapping.quant2id)[c(mapping['id'],mapping['peaklist'])] <- c('id','peaklist')
-  colnames(mapping.quant2id)[cn == mapping['peaklist']] <- 'peaklist'
-  log <- rbind(log,data.frame(rep("mapping file",length(mapping.file)),mapping.file,stringsAsFactors=FALSE))
-  if (!is.null(id.file.domap)) {
-    data.m <- .read.idfile(id.file.domap,id.format,decode.titles=decode.titles,log)
-    map.spectrum <- mapping.quant2id[,"id"]
-    names(map.spectrum) <- mapping.quant2id[,"peaklist"]
-    data.m[,"spectrum"] <- map.spectrum[data.m[,"spectrum"]]
-    data <- rbind(data,data.m)
-  }
-}
+#  cn <-  colnames(mapping.quant2id)
+#  colnames(mapping.quant2id)[c(mapping['id'],mapping['peaklist'])] <- c('id','peaklist')
+#  colnames(mapping.quant2id)[cn == mapping['peaklist']] <- 'peaklist'
+#  log <- rbind(log,data.frame(rep("mapping file",length(mapping.file)),mapping.file,stringsAsFactors=FALSE))
+#  if (!is.null(id.file.domap)) {
+#    data.m <- .read.idfile(id.file.domap,id.format,decode.titles=decode.titles,log)
+#    map.spectrum <- mapping.quant2id[,"id"]
+#    names(map.spectrum) <- mapping.quant2id[,"peaklist"]
+#    data.m[,"spectrum"] <- map.spectrum[data.m[,"spectrum"]]
+#    data <- rbind(data,data.m)
+#  }
+#}
 
 .do.map <- function(spectrumtitles,mapping.quant2id) {
   #mapped.spectra.pl <-
@@ -892,7 +906,7 @@ read.mzid <- function(f) {
 ##' @param substitute.dta [boolean] internal. replace TITLEs: s/.dta.[0-9]*$/.dta/
 ##' @return list(ions, mass, spectrumtitles)
 ##' @author Florian P Breitwieser
-.read.mgf <- function(filename,reporterMasses,reporterTagNames,spectra=NULL,fragment.precision=0.05,
+.read.mgf <- function(filename,reporterMasses,reporterNames,spectra=NULL,fragment.precision=0.05,
                       prob=NULL,substitute.dta=FALSE,check.id.ok=FALSE,
                       scan.lines=0) {
   if (is.null(fragment.precision)) { fragment.precision=0.05 }
@@ -1024,8 +1038,8 @@ read.mzid <- function(f) {
   mass <- mass[sel,,drop=FALSE]
  
   spectrumtitles <- .trim(result[sel,1])
-  dimnames(ions) <- list(spectrumtitles,reporterTagNames)
-  dimnames(mass) <- list(spectrumtitles,reporterTagNames)
+  dimnames(ions) <- list(spectrumtitles,reporterNames)
+  dimnames(mass) <- list(spectrumtitles,reporterNames)
   rm(result)
   
   return(list(ions=ions, mass=mass,
