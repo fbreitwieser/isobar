@@ -67,17 +67,20 @@ setMethod("ProteinGroup",signature(from="data.frame",template="ProteinGroup",pro
       #       there's no reporter-specific peptide ?
 
       from <- .factor.as.character(from)
-
-      if (ncol(from) == 3) {
-        colnames(from) <- c("spectrum","peptide","protein")
-        from$start.pos <- 0
-      } else if (ncol(from) == 4) {
-        colnames(from) <- c("spectrum","peptide","start.pos","protein")
-      } else if (ncol(from) == 5) {
-        colnames(from) <- c("spectrum","peptide","modif","start.pos","protein")
-      } else {
-        stop("number of columns should be 3, 4 or 5 [is:",ncol(from),"]")
+      if ('accession' in colnames(from)) 
+        colnames(from)[colnames(from)=='accession'] <- 'protein'
+        
+      required.cols <- c("spectrum","peptide","modif","protein")
+      required.cols.present <- sapply(required.cols,function(x) x %in% colnames(from))
+      if (!all(required.cols.present)) {
+        stop("Not all required columns ['spectrum','peptide','modif','accession' or 'protein'] present:\n",
+             paste(required.cols[!required.cols.present],collapse=" and ")," missing")
       }
+      if (!'start.pos' %in% colnames(from)) {
+        warning('start.pos not in supplied data.frame, setting to NA')
+        from$start.pos <- NA
+      }
+      
       ## Substitute Isoleucins with Leucins (indistinguishable by Masspec)
       from$peptide <- gsub("I","L",from$peptide)
 
