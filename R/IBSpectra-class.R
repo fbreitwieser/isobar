@@ -482,9 +482,9 @@ setMethod("readIBSpectra",
   score.colname <- .SPECTRUM.COLS[c('PROB.PHOSPHORS','SCORE.MASCOT','SCORE.PHENYX')]
   score.colname <- score.colname[score.colname %in% colnames(identifications)]
   if (.SPECTRUM.COLS['SPECTRUM.QUANT'] %in% colnames(identifications)) {
-    message("Merging identifications from quantitation and identification spectra")
     tt <- table(identifications[,SC['SPECTRUM.QUANT']])
     if (any(tt>1)) {
+      message("Merging identifications from quantitation and identification spectra")
       identifications <- ddply(identifications,.SPECTRUM.COLS['SPECTRUM.QUANT'],function(x) {
                                if (nrow(x) == 1) return(x)
                                my.args <- as.list(x[,score.colname,drop=FALSE])
