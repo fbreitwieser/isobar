@@ -67,7 +67,7 @@ setMethod("ProteinGroup",signature(from="data.frame",template="ProteinGroup",pro
       #       there's no reporter-specific peptide ?
 
       from <- .factor.as.character(from)
-      if ('accession' in colnames(from)) 
+      if ('accession' %in% colnames(from)) 
         colnames(from)[colnames(from)=='accession'] <- 'protein'
         
       required.cols <- c("spectrum","peptide","modif","protein")
