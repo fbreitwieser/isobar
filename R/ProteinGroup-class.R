@@ -440,7 +440,7 @@ getProteinInfoFromBioDb <- function(x,...,con=NULL) {
   return(res)
 }
 
-getPtmInfoFromPhosphoSitePlus <- function(protein.group,file.name=NULL,modification=NULL,
+getPtmInfoFromPhosphoSitePlus <- function(protein.group,file.name=NULL,modification="PHOS",
                                           psp.url="http://www.phosphosite.org/downloads/",
                                           mapping=c(PHOS="Phosphorylation_site_dataset.gz",
                                                     ACET="Acetylation_site_dataset.gz",
@@ -464,7 +464,7 @@ getPtmInfoFromPhosphoSitePlus <- function(protein.group,file.name=NULL,modificat
   sites$PUBMED_MS2[!is.na(sites$PUBMED_MS2)] <- paste("n.publ htp:",sites$PUBMED_MS2[!is.na(sites$PUBMED_MS2)])
 
   data.frame(.id=sites[,"ACC."],
-             isoform.ac=sapply(sites[,"ACC."],function(ac) ifelse(grepl("-[0-9]$",ac),ac,paste0(ac,"-1"))),
+             isoform_ac=sapply(sites[,"ACC."],function(ac) ifelse(grepl("-[0-9]$",ac),ac,paste0(ac,"-1"))),
              description=apply(sites,1,function(x) {
                                y <- tolower(x['MOD_TYPE'])
                                if (nchar(x['IN_DOMAIN']) > 0)
@@ -476,8 +476,6 @@ getPtmInfoFromPhosphoSitePlus <- function(protein.group,file.name=NULL,modificat
              position=as.numeric(substr(sites$RSD,2,nchar(sites$RSD))),
              stringsAsFactors=FALSE)
 }
-
-
 
 getPtmInfoFromNextprot <- function(protein.group,
                                    nextprot.url="http://www.nextprot.org/rest/entry/NX_XXX/ptm?format=json") {
@@ -574,6 +572,7 @@ setAs("ProteinGroup","data.frame.concise",
                      })
         return(unique(res))
       })
+
 .proteinGroupAsConciseDataFrame <- 
   function(from,only.reporters=TRUE,show.proteinInfo=TRUE,
            human.protein.acs=TRUE,show.startpos=TRUE,modif.pos=NULL,
