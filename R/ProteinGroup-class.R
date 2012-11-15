@@ -594,7 +594,8 @@ setAs("ProteinGroup","data.frame.concise",
                                                                NA
                                                              }
                                                           })
-                                          known.pos <- sapply(poss,function(pp) any(ptm.info[,"isoform_ac"]==ac & ptm.info[,"position"]==pp))
+                                          #known.pos <- sapply(poss,function(pp) any(ptm.info[,"isoform_ac"]==ac & ptm.info[,"position"]==pp))
+                                          known.pos <- !is.na(comments)
                                         } else {
                                           ## TODO: Not working
                                           comments <- NA
