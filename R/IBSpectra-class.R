@@ -1256,8 +1256,8 @@ setMethod("spectrumSel",signature(x="IBSpectra",peptide="matrix",protein="missin
           warning("0L peptide provided")
           return(FALSE)
         }
-        if (ncol(peptide) != 2)
-          stop("don't know how to handle matrix with ",ncol(peptide)," columns!")
+        if (ncol(peptide) != 2 && do.warn)
+          warning("don't know how to handle matrix with ",ncol(peptide)," columns! expecting 2.")
         
         sel <- fData(x)[,.SPECTRUM.COLS['PEPTIDE']]  %in% peptide[,1] & 
                fData(x)[,.SPECTRUM.COLS['MODIFSTRING']]  %in% peptide[,2]
