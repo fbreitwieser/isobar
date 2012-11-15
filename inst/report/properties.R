@@ -122,10 +122,15 @@ phosphosite.dataset <- NULL
 
 ## Modification to track. Use 'PHOS' for phosphorylation.
 ptm <- NULL
+
 ## data.frame with known modification sites gathered from Nextprot. 
 ## Excel report will be annotated.
-## Use getModificationInfoFromNextprot.
 ptm.info <- NULL
+
+## Function to get PTM modification sites from public datasets
+# ptm.info.f <- getPtmInfoFromNextprot
+# ptm.info.f <- function(...) getPtmInfoFromPhosphoSitePlus(...,modification="PHOS")
+ptm.info.f <- getPtmInfoFromNextprot
 
 ## data.frame with the columns protein AC (named 'protein.g'), log10 ratio (named 'correct.ratio'), and eventually variance (named 'variance') of the ratio.
 ##  The ratio and variance are used to correct the calculated ratios

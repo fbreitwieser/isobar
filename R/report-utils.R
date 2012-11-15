@@ -524,8 +524,11 @@ initialize.env <- function(env,report.type="protein",properties.env) {
 }
 
 .create.or.load.ptm.info <- function(env,properties.env) {
+  if (is.null(properties.env$ptm.info.f)) 
+    properties.env$ptm.info.f <- getPtmInfoFromNextprot
+
   return(.create.or.load("ptm.info",envir=properties.env,
-                         f=getPtmInfoFromNextprot,
+                         f=properties.env$ptm.info.f,
                          protein.group=proteinGroup(env$ibspectra)))
 }
 
@@ -601,7 +604,13 @@ initialize.env <- function(env,report.type="protein",properties.env) {
       if (!is.null(properties.env$correct.ratios.with)) {
         pnp <- as.data.frame(peptideNProtein(proteinGroup(env$ibspectra)),stringsAsFactors=FALSE)
         pmp <- merge(pep.n.modif,pnp,all=TRUE)
-        pmp.r <- merge(pmp,properties.env$correct.ratios.with,all.x=TRUE)
+        if (!all(c("ac","lratio") %in% colnames(properties.env$correct.ratios.with)))
+          stop("ac and lratio need to be columns in correct.ratios.with!")
+
+        colnames(properties.env$correct.ratios.with)[colnames(properties.env$correct.ratios.with)=="lratio"] <- "correct.ratio"
+        pmp.r <- merge(pmp,properties.env$correct.ratios.with,
+                       by.x="protein.g",by.y="ac",
+                       all.x=TRUE)
         cols <- c("peptide","modif","correct.ratio","variance")
 
         pep.n.modif <- ddply(pmp.r,c("peptide","modif"),function(x) {
@@ -609,7 +618,7 @@ initialize.env <- function(env,report.type="protein",properties.env) {
                                x <- x[!is.na(x$correct.ratio),]
                              return(x[1,])
                })
-        pep.n.modif <- pep.n.modif[,cols]
+        pep.n.modif <- as.matrix(pep.n.modif[,cols[cols %in% colnames(pep.n.modif)]])
       }
       set.ratioopts(list(
                          peptide=pep.n.modif,
