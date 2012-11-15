@@ -291,7 +291,7 @@ setMethod("estimateRatioNumeric",signature(channel1="numeric",channel2="numeric"
         if (!is.null(correct.ratio) && !is.na(correct.ratio[1])) {
           weigthed.ratio <- weighted.ratio - correct.ratio[1]
           if (length(correct.ratio) == 2)
-            calc.variance <- calc.variance + correct.ratio[2]
+            calc.variance <- calc.variance + as.numeric(correct.ratio[2])
         }
  
 
@@ -732,8 +732,12 @@ setMethod("estimateRatio",
   }
 
   if (is.matrix(x) && 'correct.ratio' %in% colnames(x)) {
-    correct.ratio <- x[,'correct.ratio']
-    x <- x[,-which(colnames(x)=='correct.ratio')]
+    correct.ratio <- as.numeric(x[,'correct.ratio'])
+    x <- x[,-which(colnames(x)=='correct.ratio'),drop=FALSE]
+    if ('variance' %in% colnames(x)) {
+      correct.ratio <- c(correct.ratio,as.numeric(x[,'variance']))
+      x <- x[,-which(colnames(x)=='variance'),drop=FALSE]
+    }
   } else {
     correct.ratio <- NULL
   }
