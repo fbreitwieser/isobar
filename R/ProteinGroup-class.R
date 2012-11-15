@@ -440,6 +440,45 @@ getProteinInfoFromBioDb <- function(x,...,con=NULL) {
   return(res)
 }
 
+getPtmInfoFromPhosphoSitePlus <- function(protein.group,file.name=NULL,modification=NULL,
+                                          psp.url="http://www.phosphosite.org/downloads/",
+                                          mapping=c(PHOS="Phosphorylation_site_dataset.gz",
+                                                    ACET="Acetylation_site_dataset.gz",
+                                                    METH="Methylation_site_dataset.gz",
+                                                    SUMO="Sumoylation_site_dataset.gz",
+                                                    UBI="Ubiquitination_site_dataset.gz")) {
+
+  if (is.null(file.name)) file.name <- mapping[modification]
+
+  if (!file.exists(file.name) && is.null(modification)) stop("provide PhosphoSitePlus file or modification name")
+  if (!file.exists(file.name) && !is.null(modification)) {
+    download.file(paste0(psp.url,mapping[modification]),mapping[modification])
+    file.name <- mapping[modification]
+  }
+
+  sites <- read.delim(file.name,
+                      sep="\t",header=TRUE,skip=3,stringsAsFactors=FALSE)
+  sites <- sites[sites$ACC. %in% names(indistinguishableProteins(protein.group)),]
+
+  sites$PUBMED_LTP[!is.na(sites$PUBMED_LTP)] <- paste("n.publ ltp:",sites$PUBMED_LTP[!is.na(sites$PUBMED_LTP)])
+  sites$PUBMED_MS2[!is.na(sites$PUBMED_MS2)] <- paste("n.publ htp:",sites$PUBMED_MS2[!is.na(sites$PUBMED_MS2)])
+
+  data.frame(.id=sites[,"ACC."],
+             isoform.ac=sapply(sites[,"ACC."],function(ac) ifelse(grepl("-[0-9]$",ac),ac,paste0(ac,"-1"))),
+             description=apply(sites,1,function(x) {
+                               y <- tolower(x['MOD_TYPE'])
+                               if (nchar(x['IN_DOMAIN']) > 0)
+                                 y <- paste0(y," (domain ",x['IN_DOMAIN'],")")
+                               y
+                             }),
+             evidence=apply(sites[,c("PUBMED_LTP","PUBMED_MS2")],1,
+                            function(x) { x<-x[!is.na(x)]; paste(x,collapse=";")}),
+             position=as.numeric(substr(sites$RSD,2,nchar(sites$RSD))),
+             stringsAsFactors=FALSE)
+}
+
+
+
 getPtmInfoFromNextprot <- function(protein.group,
                                    nextprot.url="http://www.nextprot.org/rest/entry/NX_XXX/ptm?format=json") {
   protein.acs <- unique(protein.group@isoformToGeneProduct$proteinac.wo.splicevariant)
