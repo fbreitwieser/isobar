@@ -597,8 +597,22 @@ initialize.env <- function(env,report.type="protein",properties.env) {
     set.ratioopts(name="ratiodistr",env$ratiodistr)
     
     if(identical(level,"peptide")){
+      pep.n.modif <- unique(apply(fData(env$ibspectra)[,c("peptide","modif")],2,cbind))
+      if (!is.null(properties.env$correct.ratios.with)) {
+        pnp <- as.data.frame(peptideNProtein(proteinGroup(env$ibspectra)),stringsAsFactors=FALSE)
+        pmp <- merge(pep.n.modif,pnp,all=TRUE)
+        pmp.r <- merge(pmp,properties.env$correct.ratios.with,all.x=TRUE)
+        cols <- c("peptide","modif","correct.ratio","variance")
+
+        pep.n.modif <- ddply(pmp.r,c("peptide","modif"),function(x) {
+                             if (nrow(x) > 1 && !all(is.na(x$correct.ratio)))
+                               x <- x[!is.na(x$correct.ratio),]
+                             return(x[1,])
+               })
+        pep.n.modif <- pep.n.modif[,cols]
+      }
       set.ratioopts(list(
-                         peptide=unique(apply(fData(env$ibspectra)[,c("peptide","modif")],2,cbind)),
+                         peptide=pep.n.modif,
                          proteins=NULL))
     } else if (identical(level,"protein")) {
       set.ratioopts(list(peptide=NULL,
