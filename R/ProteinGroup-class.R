@@ -439,7 +439,7 @@ getProteinInfoFromBioDb <- function(x,...,con=NULL) {
   return(res)
 }
 
-getPtmInfoFromPhosphoSitePlus <- function(protein.group,file.name=NULL,modification="PHOS",
+getPtmInfoFromPhosphoSitePlus <- function(protein.group,file.name=NULL,modif="PHOS",
                                           psp.url="http://www.phosphosite.org/downloads/",
                                           mapping=c(PHOS="Phosphorylation_site_dataset.gz",
                                                     ACET="Acetylation_site_dataset.gz",
@@ -447,12 +447,12 @@ getPtmInfoFromPhosphoSitePlus <- function(protein.group,file.name=NULL,modificat
                                                     SUMO="Sumoylation_site_dataset.gz",
                                                     UBI="Ubiquitination_site_dataset.gz")) {
 
-  if (is.null(file.name)) file.name <- mapping[modification]
+  if (is.null(file.name)) file.name <- mapping[modif]
 
-  if (!file.exists(file.name) && is.null(modification)) stop("provide PhosphoSitePlus file or modification name")
-  if (!file.exists(file.name) && !is.null(modification)) {
-    download.file(paste0(psp.url,mapping[modification]),mapping[modification])
-    file.name <- mapping[modification]
+  if (!file.exists(file.name) && is.null(modif)) stop("provide PhosphoSitePlus file or modif name")
+  if (!file.exists(file.name) && !is.null(modif)) {
+    download.file(paste0(psp.url,mapping[modif]),mapping[modif])
+    file.name <- mapping[modif]
   }
 
   sites <- read.delim(file.name,
@@ -1173,6 +1173,7 @@ peptide.count <- function(protein.group,protein.g=reporterProteins(protein.group
   sapply(protein.g,
          function(p) length(peptides(protein.group,p,specificity=specificity,...)))
 }
+
 spectra.count2 <- function(ibspectra,value=reporterProteins(protein.group),type="protein.g",
                           specificity=c("reporter-specific","group-specific","unspecific"),
                           modif=NULL,combine=FALSE,subset=NULL,require.quant=NULL,...) {

@@ -15,7 +15,8 @@
 calculate.emPAI(protein.group, protein.g = reporterProteins(protein.group), ...)
 n.observable.peptides(...)
 observable.peptides(seq, nmc = 1, min.length = 6, min.mass = 600, max.mass = 4000, 
-                    custom = list(code = "U", mass = 150.953636), ...)
+                    custom = list(code = c("B", "Z", "J", "U"),
+                                  mass = c(164.554862, 278.61037, 213.12392, 150.953636)), ...)
 }
 \arguments{
   \item{protein.group}{ProteinGroup object. Its \code{@proteinInfo}
