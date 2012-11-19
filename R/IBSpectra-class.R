@@ -373,6 +373,11 @@ setMethod("readIBSpectra",
       new(type,data=do.call(rbind,ll),...)
     }
 )
+setMethod("readIBSpectra",
+          signature(type="character",id.file="data.frame",peaklist.file="missing"),
+    function(type,id.file,...) new(type,data=id.file,...)
+)
+
 
 ## TODO: log is not returned
 .read.idfile <- function(id.file,id.format=NULL,decode.titles=TRUE,log=NULL) {
