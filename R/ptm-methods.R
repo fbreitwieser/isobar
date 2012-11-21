@@ -2,7 +2,7 @@
 getPhosphoRSProbabilities <- function(
   id.file,mgf.file,massTolerance,activationType,simplify=FALSE,
   mapping.file=NULL,mapping=c(peaklist="even",id="odd"),pepmodif.sep="##.##",besthit.only=TRUE,
-  phosphors.jar=system.file("phosphors","phosphoRS.jar",package="isobar",mustWork=TRUE)) {
+  phosphors.cmd=paste("java -jar",system.file("phosphors","phosphoRS.jar",package="isobar",mustWork=TRUE))) {
   
   tmpfile <- tempfile("phosphors.")
   infile <- paste0(tmpfile,".in.xml")
@@ -12,7 +12,7 @@ getPhosphoRSProbabilities <- function(
                       id.file,mgf.file,massTolerance,activationType,
                       mapping.file,mapping,pepmodif.sep)
   
-  system(paste("java -jar",phosphors.jar,infile,outfile))
+  system(paste(phosphors.cmd,infile,outfile))
   readPhosphoRSOutput(outfile,simplify=simplify,pepmodif.sep=pepmodif.sep,besthit.only=besthit.only)
 }
 
