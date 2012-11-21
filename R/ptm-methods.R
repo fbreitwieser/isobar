@@ -117,6 +117,45 @@ writePhosphoRSInput <-
   close(con.out)
 }
 
+calc.delta.score <- function(a.delta) {
+  pep.n.prot <- unique(a.delta[,c("accession","peptide","start.pos")])
+  a.delta$accession <- NULL
+  a.delta$start.pos <- NULL
+  a.delta <- unique(a.delta)
+  if (!any(by(a.delta$score,a.delta$spectrum, length)>1)) {
+    stop("Cannot calculate delta score: Only one hit per spectrum available")
+  }
+
+  a.delta$delta.score <- a.delta$score
+  a.delta$n.pep <- 1
+  a.delta$n.loc <- 1
+
+  res <- ddply(a.delta,"spectrum",function(x) {
+    if (nrow(x) == 1) return(x);
+    res <- x[which.max(x$score),,drop=FALSE]
+    res$n.pep <- length(unique(x$peptide))
+    x <- x[-which.max(x$score),] # remove best hit from x
+    res$delta.score <- res[,'score'] - x[which.max(x$score),'score'] # calc delta score w/ max
+    res$delta.score.pep <- res$delta.score
+    x <- x[x$peptide == res[,'peptide',],] # only keep same peptide hits in x
+    if (nrow(x) == 0) return(res);
+    res$delta.score.pep <- res[,'score'] - x[which.max(x$score),'score'] # calc delta score w/ max (same pep)
+    res$n.loc <- nrow(x) + 1
+    return(res);
+  })
+
+  a.delta <- merge(pep.n.prot,res,by="peptide",all.y=TRUE)
+
+  return(a.delta[order(a.delta[,"accession"],a.delta[,"peptide"]),])
+}
+
+filterSpectraDeltaScore <- function(data,...,min.delta.score=10) {
+  if (!"delta.score" %in% colnames(data))
+    data <- calc.delta.score(data)
+  return(data[data$delta.score >= min.delta.score,])
+}
+
+
 .convertModifToPhosphoRS <- function(modifstring,modifs) {
   sapply(strsplit(paste0(modifstring," "),":"),function(x) {
     x[length(x)] <- sub(" $","",x[length(x)])
