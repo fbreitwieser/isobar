@@ -119,7 +119,7 @@ setValidity("IBSpectra",.valid.IBSpectra)
                    DISSOCMETHOD="dissoc.method",
                    PRECURSOR.PURITY="precursor.purity",
                    SCANS="scans",SCANS.FROM="scans.from",SCANS.TO="scans.to",
-                   RAWFILE="raw.file",NMC="nmc",DELTASCORE="deltascore",
+                   RAWFILE="raw.file",NMC="nmc",DELTASCORE="delta.score",DELTASCORE.PEP="delta.score.pep",
                    MASSDELTA.ABS="massdelta.abs",MASSDELTA.PPM="massdelta.ppm",
                    SAMPLE="sample",FILE="file",NOTES="notes")
 
@@ -133,7 +133,7 @@ setValidity("IBSpectra",.valid.IBSpectra)
 .ROCKERBOX.COLS <- c(PROTEINAC="accession",STARTPOS="start.pos",MODIFSTRING="modif",
                      QN="mascot.query.number",RANK="rank",SCANS="scan.number.s.",RT="retention.time",
                      RAWFILE="raw.file",PEPTIDE="sequence", "phosphosequence",NMC="miscleavages",
-                     SCORE="score",DELTASCORE="deltascore",PHOSPHO.DELTASCORE="phospho_deltascore",
+                     SCORE="score",DELTASCORE="deltascore",PHOSPHO.DELTASCORE.PEP="phospho_deltascore",
                      EXPMASS="peptide.mr",MASSDELTA.ABS="mass.delta..abs.",MASSDELTA.PPM="mass.delta..ppm.",
                      ROCKERBOX_MOD="modifications",PROTEINACS="all.protein.matches",SPECTRUM="scan.title")
 
@@ -319,7 +319,7 @@ setMethod("initialize","IBSpectra",
             SPECTRUM.QUANT='title of spectrum used for quantiation',
             PRECURSOR.PURITY="precursor purity",
             SCANS.FROM="scans from",SCANS.TO="scans to",
-            RAWFILE="raw file",NMC="nmc",DELTASCORE="deltascore",
+            RAWFILE="raw file",NMC="nmc",DELTASCORE="delta score",DELTASCORE.PEP="delta score peptide",
             SCANS="scans",MASSDELTA.ABS="massdelta (abs)",MASSDELTA.PPM="massdelta (ppm)",
             SEARCHENGINE='protein search engine',
             SCORE='protein search engine score',
@@ -620,6 +620,11 @@ setMethod("readIBSpectra",
       data <- .read.identifications(id.file,mapping=mapping.file,mapping.names=mapping,
                                     identifications.quant=id.file.domap,
                                     identifications.format=id.format,decode.titles=decode.titles)
+
+      if (is.function(annotate.spectra.f)) {
+        data <- annotate.spectra.f(data,peaklist.file)
+      }
+
 
       # all identified spectrum titles
       id.spectra <- unique(data[,.SPECTRUM.COLS['SPECTRUM']])
