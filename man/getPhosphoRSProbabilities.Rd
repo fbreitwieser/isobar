@@ -18,7 +18,7 @@
   getPhosphoRSProbabilities(id.file, mgf.file, massTolerance, activationType, simplify = FALSE,
                             mapping.file = NULL, mapping = c(peaklist = "even", id = "odd"), 
                             pepmodif.sep = "##.##", besthit.only = TRUE,
-                            phosphors.jar = system.file("phosphors", "phosphoRS.jar", package = "isobar", mustWork = TRUE))
+                            phosphors.cmd=paste("java -jar",system.file("phosphors","phosphoRS.jar",package="isobar",mustWork=TRUE)))
 
   writePhosphoRSInput(phosphoRS.infile, id.file, mgf.file, massTolerance, activationType, 
                       mapping.file = NULL, mapping = c(peaklist = "even", id = "odd"),
@@ -48,7 +48,7 @@
   \item{mapping.file}{Mapping file. See also \code{\link{readIBSpectra}}.}
   \item{mapping}{Mapping columns. }
   \item{besthit.only}{Only show best hit, simplifies result to data.frame instead of list.}
-  \item{phosphors.jar}{Location of the PhosphoRS jar file.}
+  \item{phosphors.cmd}{PhosphoRS script.}
   \item{phosphoRS.infile}{PhosphoRS input XML file name.}
   \item{phosphoRS.outfile}{PhosphoRS output XML file name.}
   \item{pepmodif.sep}{separator of peptide and modification in XML id}
