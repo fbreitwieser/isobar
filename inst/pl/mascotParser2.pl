@@ -183,6 +183,9 @@ my $minProtScore     = $config->val(uc($defaultSet),'minProtScore');
 my $minNumPept       = $config->val(uc($defaultSet),'minNumPept');
 my $minLen           = $config->val(uc($defaultSet),'minLen');
 my $minBigRed        = $config->val(uc($defaultSet),'minBigRed');
+my $minDeltaScore    = $config->val(uc($defaultSet),'deltaScore');
+
+$minDeltaScore = 0 unless defined $minDeltaScore;
 
 my $result = 
   GetOptions('help' => \$help,
@@ -196,6 +199,7 @@ my $result =
 		'minbigred=i' => \$minBigRed,
 		'basicscore=f' => \$basicScore,
 		'savescore=f' => \$saveScore,
+    'deltascore' => \$minDeltaScore,
 		'minseqcovsph=f' => \$minSeqCovSPH,
 		'outputscore=f' => \$outputScore,
 		'minscore=f' => \$minScore,
@@ -204,8 +208,8 @@ my $result =
 		'minlen=i' => \$minLen,
 		'instrument=s' => \$instrument,
 		'modifconv=s' => \$modifconv_file,
-                'deltascore' => \$useDeltaScore,
-                'verbose' => \$verbose);
+    'use-deltascore-as-score' => \$useDeltaScore,
+    'verbose' => \$verbose);
 
 pod2usage(-verbose=>2, -exitval=>2) if (!$result);
 pod2usage(get_params()) if (defined($help) && defined($defaultSet));
@@ -533,6 +537,7 @@ foreach my $ac (sort {-$protScore{$a} <=> -$protScore{$b}} keys(%Gprot)){
         #my $score = $useDeltaScore? $query{$query}{deltaScore} : $query{$query}{bestScore};
         my $deltaScore = ($query{$query}{bestScore} == $Gprot{$ac}{queries}{$query}{score}->[$i]) ?
                          $query{$query}{deltaScore} : 0;
+        next unless $deltaScore < $minDeltaScore;
         my $score = $useDeltaScore? $deltaScore : $Gprot{$ac}{queries}{$query}{score}->[$i];
         my $peptide_score_ge_outputScore =  ($score >= $outputScore);
         if ($proteinForce{$ac} || ($peptide_length_ge_min && $peptide_isvalid && $peptide_score_ge_outputScore)){
