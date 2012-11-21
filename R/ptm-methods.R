@@ -277,7 +277,7 @@ readPhosphoRSOutput <- function(phosphoRS.outfile,simplify=FALSE,pepmodif.sep="#
   res
 }
 
-annotateSpectraPhosphoRS <- function(id.file,mgf.file,min.prob=NULL,...) {
+filterSpectraPhosphoRS <- function(id.file,mgf.file,...,min.prob=NULL) {
   if (is(id.file,"character"))
     id.file <- .read.idfile(id.file)
   probs <- getPhosphoRSProbabilities(id.file,mgf.file,...,simplify=TRUE)
