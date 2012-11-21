@@ -6,6 +6,7 @@
 \alias{readIBSpectra}
 \alias{readIBSpectra,character,character,character-method}
 \alias{readIBSpectra,character,character,missing-method}
+\alias{readIBSpectra,character,data.frame,missing-method}
 \alias{readIBSpectra,character,character-method}
 \alias{read.mzid}
 

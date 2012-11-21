@@ -524,8 +524,11 @@ initialize.env <- function(env,report.type="protein",properties.env) {
 }
 
 .create.or.load.ptm.info <- function(env,properties.env) {
+  if (is.null(properties.env$ptm.info.f)) 
+    properties.env$ptm.info.f <- getPtmInfoFromNextprot
+
   return(.create.or.load("ptm.info",envir=properties.env,
-                         f=getPtmInfoFromNextprot,
+                         f=properties.env$ptm.info.f,
                          protein.group=proteinGroup(env$ibspectra)))
 }
 
@@ -597,8 +600,28 @@ initialize.env <- function(env,report.type="protein",properties.env) {
     set.ratioopts(name="ratiodistr",env$ratiodistr)
     
     if(identical(level,"peptide")){
+      pep.n.modif <- unique(apply(fData(env$ibspectra)[,c("peptide","modif")],2,cbind))
+      if (!is.null(properties.env$correct.ratios.with)) {
+        pnp <- as.data.frame(peptideNProtein(proteinGroup(env$ibspectra)),stringsAsFactors=FALSE)
+        pmp <- merge(pep.n.modif,pnp,all=TRUE)
+        if (!all(c("ac","lratio") %in% colnames(properties.env$correct.ratios.with)))
+          stop("ac and lratio need to be columns in correct.ratios.with!")
+
+        colnames(properties.env$correct.ratios.with)[colnames(properties.env$correct.ratios.with)=="lratio"] <- "correct.ratio"
+        pmp.r <- merge(pmp,properties.env$correct.ratios.with,
+                       by.x="protein.g",by.y="ac",
+                       all.x=TRUE)
+        cols <- c("peptide","modif","correct.ratio","variance")
+
+        pep.n.modif <- ddply(pmp.r,c("peptide","modif"),function(x) {
+                             if (nrow(x) > 1 && !all(is.na(x$correct.ratio)))
+                               x <- x[!is.na(x$correct.ratio),]
+                             return(x[1,])
+               })
+        pep.n.modif <- as.matrix(pep.n.modif[,cols[cols %in% colnames(pep.n.modif)]])
+      }
       set.ratioopts(list(
-                         peptide=unique(apply(fData(env$ibspectra)[,c("peptide","modif")],2,cbind)),
+                         peptide=pep.n.modif,
                          proteins=NULL))
     } else if (identical(level,"protein")) {
       set.ratioopts(list(peptide=NULL,

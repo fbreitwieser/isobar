@@ -162,7 +162,7 @@ setMethod("estimateRatioNumeric",signature(channel1="numeric",channel2="numeric"
              sign.level=0.05,sign.level.rat=sign.level,sign.level.sample=sign.level,
              remove.outliers=TRUE,outliers.args=list(method="iqr",outliers.coef=1.5),n.sample=NULL, 
              method="isobar",fc.threshold=1.3,channel1.raw=NULL,channel2.raw=NULL,
-             use.na=FALSE,preweights=NULL) {
+             use.na=FALSE,preweights=NULL,correct.ratio=NULL) {
       
       if (length(channel1) != length(channel2))
         stop("length of channel 1 does not equal length of channel 2")
@@ -233,8 +233,7 @@ setMethod("estimateRatioNumeric",signature(channel1="numeric",channel2="numeric"
       i2 <- i2[sel]
       log.ratios <- log.ratios[sel]
       var.i <- var.i[sel]
-
-     
+    
       ## linear regression estimation
       if (method=="lm" || method=="compare.all") {
         res.lm <- .calc.lm(channel1,channel2,sign.level.sample,sign.level.rat,ratiodistr) 
@@ -287,6 +286,14 @@ setMethod("estimateRatioNumeric",signature(channel1="numeric",channel2="numeric"
 
         weighted.ratio <- as.numeric(lratio.n.var['lratio'])
         calc.variance <- as.numeric(lratio.n.var['calc.variance'])
+
+
+        if (!is.null(correct.ratio) && !is.na(correct.ratio[1])) {
+          weigthed.ratio <- weighted.ratio - correct.ratio[1]
+          if (length(correct.ratio) == 2)
+            calc.variance <- calc.variance + as.numeric(correct.ratio[2])
+        }
+ 
 
         res.isobar <- 
           c(lratio=weighted.ratio, variance=calc.variance,
@@ -595,7 +602,7 @@ estimateRatioForPeptide <- function(peptide,ibspectra,noise.model,channel1,chann
       } else {
         if (is.matrix(peptide)) {
           r <- t(apply(peptide,1,function(individual.peptide) 
-                  .call.estimateRatio(matrix(individual.peptide,ncol=2),"peptide",ibspectra,noise.model,
+                  .call.estimateRatio(matrix(individual.peptide,nrow=1),"peptide",ibspectra,noise.model,
                                       channel1,channel2,...)))
         
         } else {
@@ -723,6 +730,18 @@ setMethod("estimateRatio",
     rownames(res) <- NULL
     return(res)
   }
+
+  if (is.matrix(x) && 'correct.ratio' %in% colnames(x)) {
+    correct.ratio <- as.numeric(x[,'correct.ratio'])
+    x <- x[,-which(colnames(x)=='correct.ratio'),drop=FALSE]
+    if ('variance' %in% colnames(x)) {
+      correct.ratio <- c(correct.ratio,as.numeric(x[,'variance']))
+      x <- x[,-which(colnames(x)=='variance'),drop=FALSE]
+    }
+  } else {
+    correct.ratio <- NULL
+  }
+
   if (level=="protein")
     sel <- spectrumSel(ibspectra,protein=x,specificity=specificity,do.warn=do.warn,
                        modif=modif,groupspecific.if.same.ac=groupspecific.if.same.ac)
@@ -741,9 +760,9 @@ setMethod("estimateRatio",
   i2 <- .get.ri(ri,channel2)
 
   if (is.null(ri.raw)) {
-    estimateRatioNumeric(channel1=i1,channel2=i2,noise.model=noise.model,...,preweights=precursor.purity)
+    estimateRatioNumeric(channel1=i1,channel2=i2,noise.model=noise.model,...,correct.ratio=correct.ratio,preweights=precursor.purity)
   } else {
-    estimateRatioNumeric(channel1=i1,channel2=i2,noise.model=noise.model,...,preweights=precursor.purity,
+    estimateRatioNumeric(channel1=i1,channel2=i2,noise.model=noise.model,...,correct.ratio=correct.ratio,preweights=precursor.purity,
                   channel1.raw=.get.ri(ri.raw,channel1),
                   channel2.raw=.get.ri(ri.raw,channel2))
   }

@@ -373,6 +373,11 @@ setMethod("readIBSpectra",
       new(type,data=do.call(rbind,ll),...)
     }
 )
+setMethod("readIBSpectra",
+          signature(type="character",id.file="data.frame",peaklist.file="missing"),
+    function(type,id.file,...) new(type,data=id.file,...)
+)
+
 
 ## TODO: log is not returned
 .read.idfile <- function(id.file,id.format=NULL,decode.titles=TRUE,log=NULL) {
@@ -482,9 +487,9 @@ setMethod("readIBSpectra",
   score.colname <- .SPECTRUM.COLS[c('PROB.PHOSPHORS','SCORE.MASCOT','SCORE.PHENYX')]
   score.colname <- score.colname[score.colname %in% colnames(identifications)]
   if (.SPECTRUM.COLS['SPECTRUM.QUANT'] %in% colnames(identifications)) {
-    message("Merging identifications from quantitation and identification spectra")
     tt <- table(identifications[,SC['SPECTRUM.QUANT']])
     if (any(tt>1)) {
+      message("Merging identifications from quantitation and identification spectra")
       identifications <- ddply(identifications,.SPECTRUM.COLS['SPECTRUM.QUANT'],function(x) {
                                if (nrow(x) == 1) return(x)
                                my.args <- as.list(x[,score.colname,drop=FALSE])
@@ -1256,8 +1261,8 @@ setMethod("spectrumSel",signature(x="IBSpectra",peptide="matrix",protein="missin
           warning("0L peptide provided")
           return(FALSE)
         }
-        if (ncol(peptide) != 2)
-          stop("don't know how to handle matrix with ",ncol(peptide)," columns!")
+        if (ncol(peptide) != 2 && do.warn)
+          warning("don't know how to handle matrix with ",ncol(peptide)," columns! expecting 2.")
         
         sel <- fData(x)[,.SPECTRUM.COLS['PEPTIDE']]  %in% peptide[,1] & 
                fData(x)[,.SPECTRUM.COLS['MODIFSTRING']]  %in% peptide[,2]
