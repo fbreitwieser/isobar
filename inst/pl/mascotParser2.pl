@@ -287,7 +287,7 @@ foreach (@ARGV){
       	my $bestScore = $query{$query}{bestScore};
         my $i = 0;
       	foreach my $ac (@{$query{$query}{ac}}){
-      	  if ($prot{$ac}{queries}{$query}{score} < $bestScore){
+      	  if ($prot{$ac}{queries}{$query}{score}->[0] < $bestScore){
       	    undef($prot{$ac}{queries}{$query});
       	    delete(${$query{$query}{ac}}[$i]);
       	  }
@@ -299,74 +299,74 @@ foreach (@ARGV){
     # Selects and saves peptide/spectrum matches, i.e. no file level validation
     if ($noFileLevel){
       foreach my $ac (keys(%prot)){
-	foreach my $query (keys(%{$prot{$ac}{queries}})){
-	  $Gprot{$ac}{queries}{$query} = $prot{$ac}{queries}{$query};
-	  $Gcmpd{$query} = $cmpd{$query};
-	}
+        foreach my $query (keys(%{$prot{$ac}{queries}})){
+          $Gprot{$ac}{queries}{$query} = $prot{$ac}{queries}{$query};
+          $Gcmpd{$query} = $cmpd{$query};
+        }
       }
-    }
+    } # end if noFileLevel
     else{
       # File level validation
 
       # Number of distinct peptides per protein that are above $minScore
       my (%numPept, %distinct, %sphScore, %protScore);
       foreach my $ac (keys(%prot)){
-	my %pept;
-	foreach my $query (keys(%{$prot{$ac}{queries}})){
-	  my $score = $useDeltaScore? $query{$query}{deltaScore} : $query{$query}{bestScore};
-	  my $peptide = $prot{$ac}{queries}{$query}{pept};
-	  if ($proteinForce{$ac} || (($score >= $minScore) && (length($peptide) >= $minLen) && ($peptide =~ $qrValidAASeq))){
-	    $pept{$peptide} = $score if (!defined($pept{$peptide}) || $score > $pept{$peptide});
-	  }
-	  if ($score > $distinct{$ac}{$peptide}){
-	    $distinct{$ac}{$peptide} = $score;
-	  }
-	}
-	$numPept{$ac} = scalar(keys(%pept));
-	foreach my $pept (keys(%pept)){
-	  $sphScore{$ac} += $pept{$pept};
-	}
-	foreach my $score (values(%{$distinct{$ac}})){
-	  $protScore{$ac} += $score;
-	}
-	#print STDERR "$ac has $numPept{$ac} distinct peptides, prot score $protScore{$ac} (".join('+',sort {$a<=>$b} values(%{$distinct{$ac}})).", sph score $sphScore{$ac} (".join('+',sort {$a<=>$b} values(%{$pept{$ac}})).")\n";
+        my %pept;
+        foreach my $query (keys(%{$prot{$ac}{queries}})){
+          my $score = $useDeltaScore? $query{$query}{deltaScore} : $query{$query}{bestScore};
+          my $peptide = $prot{$ac}{queries}{$query}{pept}->[0];
+          if ($proteinForce{$ac} || (($score >= $minScore) && (length($peptide) >= $minLen) && ($peptide =~ $qrValidAASeq))){
+            $pept{$peptide} = $score if (!defined($pept{$peptide}) || $score > $pept{$peptide});
+          }
+          if ($score > $distinct{$ac}{$peptide}){
+            $distinct{$ac}{$peptide} = $score;
+          }
+        }
+        $numPept{$ac} = scalar(keys(%pept));
+        foreach my $pept (keys(%pept)){
+          $sphScore{$ac} += $pept{$pept};
+        }
+        foreach my $score (values(%{$distinct{$ac}})){
+          $protScore{$ac} += $score;
+        }
+        #print STDERR "$ac has $numPept{$ac} distinct peptides, prot score $protScore{$ac} (".join('+',sort {$a<=>$b} values(%{$distinct{$ac}})).", sph score $sphScore{$ac} (".join('+',sort {$a<=>$b} values(%{$pept{$ac}})).")\n";
       }
 
       # Puts in global structure if good enough
       foreach my $ac (keys(%prot)){
-	my $seqcov = 0;
-	if ($saveScore < $defaultSaveScore){
-	  # Single peptide hits are accepted, collect seq cov
-	  my ($seq) = undef; ##fix
-	  if ($seq){
-	    my @seq = split(//, $seq);
-	    foreach my $pept (keys(%{$distinct{$ac}})){
-	      my $pos = -1;
-	      while (($pos = index($seq, $pept, $pos+1)) != -1){
-		for (my $i = $pos; $i < $pos+length($pept); $i++){
-		  $seq[$i] = '*';
-		}
-	      }
-	    }
-	    my $count;
-	    foreach my $char (@seq){
-	      $count++ if ($char eq '*');
-	    }
-	    $seqcov = $count/length($seq);
-	  }
-	}
-	if ($proteinForce{$ac} || (($protScore{$ac} >= $minProtScore) && (($numPept{$ac} >= $minNumPept) || (($sphScore{$ac} >= $saveScore) && ($seqcov >= $minSeqCovSPH))))){
-	  foreach my $query (keys(%{$prot{$ac}{queries}})){
-	    my $peptide = $prot{$ac}{queries}{$query}{pept};
-	    my $score = $useDeltaScore? $query{$query}{deltaScore} : $query{$query}{bestScore};
-	    if ($proteinForce{$ac} || ((length($peptide) >= $minLen) && ($peptide =~ $qrValidAASeq) && ($score >= $outputScore))){
-	      $Gprot{$ac}{queries}{$query} = $prot{$ac}{queries}{$query};
-	      $Gcmpd{$query} = $cmpd{$query};
-	    }
-	  }
-	}
+        my $seqcov = 0;
+        if ($saveScore < $defaultSaveScore){
+          # Single peptide hits are accepted, collect seq cov
+          my ($seq) = undef; ##fix
+          if ($seq){
+            my @seq = split(//, $seq);
+            foreach my $pept (keys(%{$distinct{$ac}})){
+              my $pos = -1;
+              while (($pos = index($seq, $pept, $pos+1)) != -1){
+                for (my $i = $pos; $i < $pos+length($pept); $i++){
+                  $seq[$i] = '*';
+                }
+              }
+            }
+            my $count;
+            foreach my $char (@seq){
+              $count++ if ($char eq '*');
+            }
+            $seqcov = $count/length($seq);
+          }
+        }
+        if ($proteinForce{$ac} || (($protScore{$ac} >= $minProtScore) && (($numPept{$ac} >= $minNumPept) || (($sphScore{$ac} >= $saveScore) && ($seqcov >= $minSeqCovSPH))))){
+          foreach my $query (keys(%{$prot{$ac}{queries}})){
+            my $peptide = $prot{$ac}{queries}{$query}{pept}->[0];
+            my $score = $useDeltaScore? $query{$query}{deltaScore} : $query{$query}{bestScore};
+            if ($proteinForce{$ac} || ((length($peptide) >= $minLen) && ($peptide =~ $qrValidAASeq) && ($score >= $outputScore))){
+              $Gprot{$ac}{queries}{$query} = $prot{$ac}{queries}{$query};
+              $Gcmpd{$query} = $cmpd{$query};
+            }
+          }
+        }
       }
-    }
+    } # end else noFileLevel
   }
 }
 
@@ -397,7 +397,7 @@ foreach my $ac (keys(%Gprot)){
   my %pept;
   foreach my $query (keys(%{$Gprot{$ac}{queries}})){
     my $score = $useDeltaScore? $query{$query}{deltaScore} : $query{$query}{bestScore};
-    my $peptide = $Gprot{$ac}{queries}{$query}{pept};
+    my $peptide = $Gprot{$ac}{queries}{$query}{pept}->[0];
     if ($proteinForce{$ac} || (($score > $minScore) && (length($peptide) >= $minLen) && ($peptide =~ $qrValidAASeq))){
       $pept{$peptide} = $score if (!defined($pept{$peptide}) || $score > $pept{$peptide});
     }
@@ -448,16 +448,16 @@ if ($minBigRed > 0){
     if (($protScore{$ac} >= $minProtScore) && (($numPept{$ac} >= $minNumPept) || (($sphScore{$ac} >= $saveScore) && ($seqcov{$ac} >= $minSeqCovSPH)))){
       my $numBigRed;
       foreach my $query (keys(%{$Gprot{$ac}{queries}})){
-	my $peptide = $Gprot{$ac}{queries}{$query}{pept};
-	if (!$already{$peptide}){
-	  # First time we assign this peptide to a protein
-	  $numBigRed++;
-	  $already{$peptide} = $ac;
-	}
-	elsif ($acToPattern{$ac} eq $acToPattern{$already{$peptide}}){
-	  # Already assigne but to a protein that is identified based on the same peptides exactly
-	  $numBigRed++;
-	}
+        my $peptide = $Gprot{$ac}{queries}{$query}{pept}->[0];
+        if (!$already{$peptide}){
+          # First time we assign this peptide to a protein
+          $numBigRed++;
+          $already{$peptide} = $ac;
+        }
+        elsif ($acToPattern{$ac} eq $acToPattern{$already{$peptide}}){
+          # Already assigne but to a protein that is identified based on the same peptides exactly
+          $numBigRed++;
+        }
       }
       $bigRedProt{$ac} = 1 if ($numBigRed >= $minBigRed);
     }
@@ -526,53 +526,57 @@ foreach my $ac (sort {-$protScore{$a} <=> -$protScore{$b}} keys(%Gprot)){
     ##     I removed the sorting for now as it does not change output. Pattern: O-12345
     ## foreach my $query (sort {$a <=> $b} keys(%{$Gprot{$ac}{queries}}))
     foreach my $query (keys(%{$Gprot{$ac}{queries}})){
-      my $peptide = $Gprot{$ac}{queries}{$query}{pept};
-      my $peptide_length_ge_min = (length($peptide) >= $minLen);
-      my $peptide_isvalid = ($peptide =~ $qrValidAASeq);
-      my $score = $useDeltaScore? $query{$query}{deltaScore} : $query{$query}{bestScore};
-      my $peptide_score_ge_outputScore =  ($score >= $outputScore);
-      if ($proteinForce{$ac} || ($peptide_length_ge_min && $peptide_isvalid && $peptide_score_ge_outputScore)){
-	my ($modifStr, @modif);
-	convertMascotModif($peptide, $Gprot{$ac}{queries}{$query}{modif}, \$modifStr, \@modif);
-	if ($modifStr){
-	  my $theoMass = getPeptideMass(pept=>$peptide, modif=>\@modif);
-	  my ($charge, $moz2) = getCorrectCharge($theoMass, $Gcmpd{$query}{expMoz});
-	  my $pValue = sprintf "%.2e", exp(-log(10)*$score/10);
+      for (my $i = 0; $i <= scalar @{$Gprot{$ac}{queries}{$query}{pept}}; ++$i) {
+        my $peptide = $Gprot{$ac}{queries}{$query}{pept}->[$i];
+        my $peptide_length_ge_min = (length($peptide) >= $minLen);
+        my $peptide_isvalid = ($peptide =~ $qrValidAASeq);
+        #my $score = $useDeltaScore? $query{$query}{deltaScore} : $query{$query}{bestScore};
+        my $deltaScore = ($query{$query}{bestScore} == $Gprot{$ac}{queries}{$query}{score}->[$i]) ?
+                         $query{$query}{deltaScore} : 0;
+        my $score = $useDeltaScore? $deltaScore : $Gprot{$ac}{queries}{$query}{score}->[$i];
+        my $peptide_score_ge_outputScore =  ($score >= $outputScore);
+        if ($proteinForce{$ac} || ($peptide_length_ge_min && $peptide_isvalid && $peptide_score_ge_outputScore)){
+          my ($modifStr, @modif);
+          convertMascotModif($peptide, $Gprot{$ac}{queries}{$query}{modif}->[$i], \$modifStr, \@modif);
+          if ($modifStr){
+            my $theoMass = getPeptideMass(pept=>$peptide, modif=>\@modif);
+            my ($charge, $moz2) = getCorrectCharge($theoMass, $Gcmpd{$query}{expMoz});
+            my $pValue = sprintf "%.2e", exp(-log(10)*$score/10);
 
-	  print STDERR "$peptide ($query): $query{$query}{deltaScore} : $query{$query}{bestScore}\n" if ($verbose);
-	  print <<end_of_xml;
+            print STDERR "$peptide ($query): $deltaScore : $query{$query}{bestScore}\n" if ($verbose);
+            print <<end_of_xml;
       <idi:OneIdentification>
         <idi:answer>
           <idi:sequence>$peptide</idi:sequence>
           <idi:modif>$modifStr</idi:modif>
           <idi:theoMass>$theoMass</idi:theoMass>
           <idi:charge>$charge</idi:charge>
-          <idi:startPos>$Gprot{$ac}{queries}{$query}{start}</idi:startPos>
+          <idi:startPos>$Gprot{$ac}{queries}{$query}{start}->[$i]</idi:startPos>
           <idi:retentionTime>$Gcmpd{$query}{rt}</idi:retentionTime>
         </idi:answer>
         <idi:source>
           <idi:file>$Gcmpd{$query}{file}</idi:file>
-          <idi:peptScore engine="Mascot" deltaScore="$query{$query}{deltaScore}" pValue="$pValue">$query{$query}{bestScore}</idi:peptScore>
+          <idi:peptScore engine="Mascot" deltaScore="$deltaScore" pValue="$pValue">$Gprot{$ac}{queries}{$query}{score}->[$i]</idi:peptScore>
         </idi:source>
         <ple:peptide spectrumKey="$Gcmpd{$query}{title}" xmlns:ple="namespace/PeakListExport.html">
         <ple:PeptideDescr><![CDATA[$Gcmpd{$query}{title}]]></ple:PeptideDescr>
         <ple:ParentMass><![CDATA[$Gcmpd{$query}{expMoz} $Gcmpd{$query}{intensity} $Gcmpd{$query}{charge}]]></ple:ParentMass>
         <ple:peaks><![CDATA[
 end_of_xml
-	  if (!defined($lightXML)){
-            print "$Gcmpd{$query}{massList}";
-          }
-	  print "]]></ple:peaks>
+            if (!defined($lightXML)){
+              print "$Gcmpd{$query}{massList}";
+            }
+            print "]]></ple:peaks>
         </ple:peptide>
       </idi:OneIdentification>\n";
-	}
-	else{
-	  #print STDERR "Cannot use peptide [$peptide] because one modification has no InSilicoSpectro equivalent [$Gprot{$ac}{queries}{$query}{modif}]\n" if ($verbose);
-	  die "Cannot use peptide [$peptide] because one modification has no InSilicoSpectro equivalent [$Gprot{$ac}{queries}{$query}{modif}]\n";
-	}
+          } else {
+            #print STDERR "Cannot use peptide [$peptide] because one modification has no InSilicoSpectro equivalent [$Gprot{$ac}{queries}{$query}{modif}]\n" if ($verbose);
+            die "Cannot use peptide [$peptide] because one modification has no InSilicoSpectro equivalent [$Gprot{$ac}{queries}{$query}{modif}]\n";
+          }
+        }
       }
+      print "      </idi:OneProtein>\n";
     }
-    print "      </idi:OneProtein>\n";
   }
 }
 
@@ -650,11 +654,11 @@ sub mascotParse
       if (defined($query{$qKey}{bestScore})) {
         my $oldScore = $query{$qKey}{bestScore};
         if ($oldScore >= $score) {
-	  if ($query{$qKey}{deltaScore} > $oldScore - $score) {
-	    $query{$qKey}{deltaScore} = $oldScore - $score;
+          if ($query{$qKey}{deltaScore} > $oldScore - $score) {
+            $query{$qKey}{deltaScore} = $oldScore - $score;
           }
           $is_better_score=0;
-       	} else {
+        } else {
           $query{$qKey}{bestScore} = $score;
           $query{$qKey}{deltaScore} = $score - $oldScore;
           $is_better_score=1;
@@ -666,23 +670,22 @@ sub mascotParse
       }
 
       $score = $query{$qKey}{deltaScore} if ($useDeltaScore);
- 
+
       # set matches for ACs
       if ($score >= $basicScore){
-	for (my $i = 0; $i < @part; $i += 5){
-	  my $ac = $part[$i];
-	  $ac =~ s/"//go;
-	  if (!defined($prot{$ac}{queries}{$qKey}{score}) || $is_better_score){ 
+        for (my $i = 0; $i < @part; $i += 5){
+          my $ac = $part[$i];
+          $ac =~ s/"//go;
+          if (!defined($prot{$ac}{queries}{$qKey}{score}) || $is_better_score || $notOnlyBestPept){ 
             # test in case the same spectrum matches several peptides in the same DB entry
-	    $prot{$ac}{queries}{$qKey}{score} = $score;
-	    $prot{$ac}{queries}{$qKey}{pept} = $pept;
-	    $prot{$ac}{queries}{$qKey}{modif} = $modif;
-	    $prot{$ac}{queries}{$qKey}{start} = $part[$i+2];
-	    push(@{$query{$qKey}{ac}}, $ac);
-	  }
-	}
+            push @{$prot{$ac}{queries}{$qKey}{score}},$score;
+            push @{$prot{$ac}{queries}{$qKey}{pept}},$pept;
+            push @{$prot{$ac}{queries}{$qKey}{modif}},$modif;
+            push @{$prot{$ac}{queries}{$qKey}{start}},$part[$i+2];
+            push(@{$query{$qKey}{ac}}, $ac);
+          }
+        }
       }
-      
     }
     elsif (/^qmass(\d+)=(.+)/){
       $cmpd{"$fileNum-$1"}{expMass} = $2;
@@ -697,7 +700,6 @@ sub mascotParse
       parseOneExpSpectrum("$fileNum-$1", $shortFileName, $1, $F);
     }
   }
-
 } # mascotParse
 
 
