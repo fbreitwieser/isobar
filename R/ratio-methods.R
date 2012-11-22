@@ -617,15 +617,16 @@ estimateRatioForPeptide <- function(peptide,ibspectra,noise.model,channel1,chann
 
 
 ### Handling NULL protein or peptide argument
-
 setMethod("estimateRatio",
           signature(ibspectra="IBSpectra",noise.model="ANY",
                     channel1="missing",channel2="missing",
                     protein="character",peptide="missing"),
-          function(ibspectra,noise.model=NULL,protein,val="lratio",summarize=FALSE,combine=TRUE,...) {
+          function(ibspectra,noise.model=NULL,protein,
+                   val="lratio",summarize=FALSE,combine=TRUE,...) {
             channels <- reporterTagNames(ibspectra)
             if (combine) {
-              res <- matrix(NA,nrow=length(channels),ncol=length(channels),dimnames=list(channels,channels))
+              res <- matrix(NA,nrow=length(channels),ncol=length(channels),
+                            dimnames=list(channels,channels))
               for(channel1 in channels)
                 for (channel2 in channels) {
                   rat <- estimateRatio(ibspectra,noise.model=noise.model,
@@ -639,6 +640,38 @@ setMethod("estimateRatio",
               res <- estimateRatio(ibspectra,noise.model=noise.model,
                                    channel1=cmbn[i,1],channel2=cmbn[i,2],
                                    protein=protein,combine=FALSE,...)
+
+              apply(cmbn,1,function(i) 
+                    cbind(r1=cmbn[i,1],r2=cmbn[i,2],ac=rownames(res),res))
+            }
+            }
+)
+
+
+
+setMethod("estimateRatio",
+          signature(ibspectra="IBSpectra",noise.model="ANY",
+                    channel1="missing",channel2="missing",
+                    protein="missing",peptide="character"),
+          function(ibspectra,noise.model=NULL,peptide,
+                   val="lratio",summarize=FALSE,combine=TRUE,...) {
+            channels <- reporterTagNames(ibspectra)
+            if (combine) {
+              res <- matrix(NA,nrow=length(channels),ncol=length(channels),
+                            dimnames=list(channels,channels))
+              for(channel1 in channels)
+                for (channel2 in channels) {
+                  rat <- estimateRatio(ibspectra,noise.model=noise.model,
+                                       channel1=channel1,channel2=channel2,
+                                       peptide=peptide,...)
+                  res[channel1,channel2] <- rat[val]
+                }
+              return(res)
+            } else {
+              cmbn <- t(combn(channels,2))
+              res <- estimateRatio(ibspectra,noise.model=noise.model,
+                                   channel1=cmbn[i,1],channel2=cmbn[i,2],
+                                   peptide=peptide,combine=FALSE,...)
 
               apply(cmbn,1,function(i) 
                     cbind(r1=cmbn[i,1],r2=cmbn[i,2],ac=rownames(res),res))
