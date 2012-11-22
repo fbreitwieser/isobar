@@ -35,7 +35,7 @@ spectra.count2(ibspectra, value = reporterProteins(protein.group),
   data(ibspiked_set1)
   pg <- proteinGroup(ibspiked_set1)
   protein.gs <- protein.g(pg,"CERU")
-  sc <- spectra.count2(pg,protein.gs)
-  sc.ik <- spectra.count2(pg,protein.gs,modif="iTRAQ4plex_K")
+  sc <- spectra.count2(ibspiked_set1,protein.gs)
+  sc.ik <- spectra.count2(ibspiked_set1,protein.gs,modif="iTRAQ4plex_K")
   rbind(spectra.counts=sc,spectra.counts_iTRAQk=sc.ik)
 }

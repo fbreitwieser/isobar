@@ -4,6 +4,9 @@
 ## 
 ## It is standard R code and parsed using sys.source
 
+###############################################################################
+## General properties
+
 ## Isobaric tagging type. Use one of the following:
 # type='iTRAQ4plexSpectra'
 # type='iTRAQ8plexSpectra'
@@ -32,6 +35,8 @@ protein.info.f=getProteinInfoFromUniprot
 ## Where should cached files be saved? Will be created if it does not exist
 # cachedir="cache"
 cachedir="."
+## Regenerate cache files? By default, chache files are used.
+regen=FALSE
 
 ## An ibspectra object can be generated from peaklists and identifications.
 
@@ -52,34 +57,15 @@ readIBSpectra.args = list(
     mapping.file=NULL
 )
 
+###############################################################################
+## Quantification properties
+
 normalize=TRUE
 normalize.channels=NULL
 normalize.use.protein=NULL
 normalize.exclude.protein=NULL
 normalize.function=median
 normalize.na.rm=FALSE
-normalize.exclude.set = list (seppro_igy14=c(
-        "P02763",   #  Alpha1-Acid Glycoprotein
-        "P01009-1", #  Alpha1-Antitrypsin
-        "P19652",   #  Alpha1-Acid Glycoprotein
-        "P01023",   #  Alpha2-Macroglobulin
-        "P02768-1", #  Albumin
-        "P02647",   #  HDL: Apolipoprotein A1
-        "P02652",   #  HDL: Apolipoprotein A1
-        "P04114",   #  LDL: Apolipoprotein B
-        "P01024",   #  Complent C3
-        "P02671-1", #  Fibrinogen
-        "P00738",   #  Haptoglobin
-        "P01876",   #  IgA 1
-        "P01877",   #  IgA 2
-        "P01857",   #  IgG 1
-        "P01859",   #  IgG 2
-        "P01860",   #  IgG 3
-        "P01861",   #  IgG 4
-        "P01871-1", #  IgM
-        "P02787"    #  Transferrin
-        ));
-
 
 use.na=FALSE
 
@@ -111,10 +97,6 @@ class.labels=NULL
 combn=NULL
 vs.class=NULL
 
-## Analysis report sections: Significant proteins and protein details
-show.significant.proteins=FALSE
-show.protein.details=TRUE
-
 ## Arguments given to 'proteinRatios' function. See ?proteinRatios
 ratios.opts = list(
     sign.level.sample=0.01,
@@ -125,17 +107,58 @@ quant.w.grouppeptides=c("bcrabl","bcrabl,bcrabl_t315i","bcrabl,bcrabl_p185,bcrab
 
 min.detect=NULL
 
-datbase="Uniprot"
 preselected=c()
 
 ratiodistr=NULL
 ratiodistr.summarize=FALSE
 ratiodistr.summarize.method="global"
 
+###############################################################################
+## PTM properties
+
+## PhosphoSitePlus dataset which can be used to annotate known modification sites
+## Download site: http://www.phosphosite.org/staticDownloads.do
+phosphosite.dataset <- NULL
+
+## Modification to track. Use 'PHOS' for phosphorylation.
+ptm <- NULL
+
+## data.frame with known modification sites gathered from Nextprot. 
+## Excel report will be annotated.
+ptm.info <- NULL
+
+## Function to get PTM modification sites from public datasets
+# ptm.info.f <- getPtmInfoFromNextprot
+# ptm.info.f <- function(...) getPtmInfoFromPhosphoSitePlus(...,modification="PHOS")
+ptm.info.f <- getPtmInfoFromNextprot
+
+## data.frame with the columns protein AC (named 'protein.g'), log10 ratio (named 'correct.ratio'), and eventually variance (named 'variance') of the ratio.
+##  The ratio and variance are used to correct the calculated ratios
+## Typically a proteome quantification table
+correct.ratios.with <- NULL
+
+## quantification table whose columns are attached to the XLS quantification table
+compare.to.quant <- NULL
+
+###############################################################################
+## Report properties 
+
 write.qc.report=TRUE
 write.report=TRUE
 write.xls.report=TRUE
 
+## Use name for report, ie NAME.quant.xlsx instead of isobar-analysis.xlsx
+use.name.for.report=FALSE
+
+## PDF Analysis report sections: Significant proteins and protein details
+show.significant.proteins=FALSE
+show.protein.details=TRUE
+
+### QC REPORT OPTIONS ###
+#qc.maplot.pairs=FALSE # plot one MA plot per tag (versus all others)
+qc.maplot.pairs=TRUE # plot MA plot of each tag versus each tag
+
+### XLS REPORT OPTIONS ###
 ## Spreadsheet format: Either 'xlsx' or 'xls'
 # spreadsheet.format="xls"
 spreadsheet.format="xls"
@@ -147,31 +170,42 @@ spreadsheet.format="xls"
 xls.report.format="long"
 
 ## XLS report columns in quantification tab
-##  possible values: ratio, is.significant, CI95.lower, CI95.upper, ratio.minus.sd, ratio.plus.sd,
+##  possible values: ratio, is.significant, CI95.lower, CI95.upper, 
+##                   ratio.minus.sd, ratio.plus.sd,
 ##                   p.value.ratio, p.value.sample, n.na1, n.na2, 
-##                   log10.ratio,l og10.variance, log2.ratio, log2.variance
+##                   log10.ratio, log10.variance, log2.ratio, log2.variance
 ##  only for summarize=TRUE: n.pos, n.neg
 xls.report.columns <- c("ratio","is.significant","ratio.minus.sd","ratio.plus.sd",
                         "p.value.ratio","p.value.sample","log10.ratio","log10.variance")
 
-## PhosphoSitePlus dataset which can be used to annotate known modification sites
-## Download site: http://www.phosphosite.org/staticDownloads.do
-phosphosite.dataset <- NULL
-
-## Modification to track. Use 'PHOS' for phosphorylation.
-ptm <- NULL
-## data.frame with known modification sites gathered from Nextprot. 
-## Excel report will be annotated.
-## Use getModificationInfoFromNextprot.
-ptm.info <- NULL
-
-## quantification table whose columns are attached to the XLS quantification table
-compare.to.quant <- NULL
+###############################################################################
+## Etc
 
 sum.intensities=FALSE
 
-## regenerate cache files
-regen=FALSE
-use.name.for.report=FALSE
+datbase="Uniprot"
 
-scratch=list()
+scratch=list(normalize.exclude.set = list (seppro_igy14=c(
+        "P02763",   #  Alpha1-Acid Glycoprotein
+        "P01009-1", #  Alpha1-Antitrypsin
+        "P19652",   #  Alpha1-Acid Glycoprotein
+        "P01023",   #  Alpha2-Macroglobulin
+        "P02768-1", #  Albumin
+        "P02647",   #  HDL: Apolipoprotein A1
+        "P02652",   #  HDL: Apolipoprotein A1
+        "P04114",   #  LDL: Apolipoprotein B
+        "P01024",   #  Complent C3
+        "P02671-1", #  Fibrinogen
+        "P00738",   #  Haptoglobin
+        "P01876",   #  IgA 1
+        "P01877",   #  IgA 2
+        "P01857",   #  IgG 1
+        "P01859",   #  IgG 2
+        "P01860",   #  IgG 3
+        "P01861",   #  IgG 4
+        "P01871-1", #  IgM
+        "P02787"    #  Transferrin
+        )))
+
+
+

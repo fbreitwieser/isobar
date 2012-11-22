@@ -2,9 +2,10 @@
 \alias{getPhosphoRSProbabilities}
 \alias{readPhosphoRSOutput}
 \alias{writePhosphoRSInput}
+\alias{annotateSpectraPhosphoRS}
 
 \title{
-  Get phosphoRS probabilities
+  Generate input files for PhosphoRS, call it, and get modification site probabilities
 }
 \description{
   Get phosphorylation site localization probabilities by calling PhosphoRS
@@ -16,12 +17,24 @@
 \usage{
   getPhosphoRSProbabilities(id.file, mgf.file, massTolerance, activationType, simplify = FALSE,
                             mapping.file = NULL, mapping = c(peaklist = "even", id = "odd"), 
-                            phosphors.jar = system.file("phosphors", "phosphoRS.jar", package = "isobar", mustWork = TRUE))
+                            pepmodif.sep = "##.##", besthit.only = TRUE,
+                            phosphors.cmd=paste("java -jar",system.file("phosphors","phosphoRS.jar",package="isobar",mustWork=TRUE)))
 
   writePhosphoRSInput(phosphoRS.infile, id.file, mgf.file, massTolerance, activationType, 
-                      mapping.file = NULL, mapping = c(peaklist = "even", id = "odd"))
+                      mapping.file = NULL, mapping = c(peaklist = "even", id = "odd"),
+                      pepmodif.sep = "##.##", modif.masses = rbind(c("PHOS", "1",
+                 "1:Phospho:Phospho:79.966331:PhosphoLoss:97.976896:STY"),
+                 c("Oxidation_M", "2",
+                 "2:Oxidation:Oxidation:15.994919:null:0:M"),
+                 c("Cys_CAM", "3",
+                 "3:Carbamidomethylation:Carbamidomethylation:57.021464:null:0:C"),
+                 c("iTRAQ4plex", "4",
+                 "4:iTRAQ4:iTRAQ4:144.1544:null:0:KX"), c("iTRAQ8plex",
+                 "5", "5:iTRAQ8:iTRAQ8:304.308:null:0:KX")))
 
-  readPhosphoRSOutput(phosphoRS.outfile, simplify = FALSE)
+  readPhosphoRSOutput(phosphoRS.outfile, simplify = FALSE, pepmodif.sep = "##.##", besthit.only = TRUE)
+
+  annotateSpectraPhosphoRS(id.file, mgf.file, min.prob = NULL, ...)
 }
 \arguments{
   \item{id.file}{Database search results file in \code{ibspectra.csv} or
@@ -34,9 +47,14 @@
   \item{simplify}{If \code{TRUE}, returns a \code{data.frame} instead of a \code{list}.}
   \item{mapping.file}{Mapping file. See also \code{\link{readIBSpectra}}.}
   \item{mapping}{Mapping columns. }
-  \item{phosphors.jar}{Location of the PhosphoRS jar file.}
+  \item{besthit.only}{Only show best hit, simplifies result to data.frame instead of list.}
+  \item{phosphors.cmd}{PhosphoRS script.}
   \item{phosphoRS.infile}{PhosphoRS input XML file name.}
   \item{phosphoRS.outfile}{PhosphoRS output XML file name.}
+  \item{pepmodif.sep}{separator of peptide and modification in XML id}
+  \item{modif.masses}{masses and ID used for PhosphoRS}
+  \item{min.prob}{Threshold for PhosphoRS peptide probability to consider it for quantification}
+  \item{...}{Further arguments to getPhosphoRSProbabilities}
 }
 
 \details{
