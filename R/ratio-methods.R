@@ -289,7 +289,7 @@ setMethod("estimateRatioNumeric",signature(channel1="numeric",channel2="numeric"
 
 
         if (!is.null(correct.ratio) && !is.na(correct.ratio[1])) {
-          weigthed.ratio <- weighted.ratio - correct.ratio[1]
+          weighted.ratio <- weighted.ratio - correct.ratio[1]
           if (length(correct.ratio) == 2)
             calc.variance <- calc.variance + as.numeric(correct.ratio[2])
         }
@@ -601,8 +601,8 @@ estimateRatioForPeptide <- function(peptide,ibspectra,noise.model,channel1,chann
                                  channel1,channel2,...)
       } else {
         if (is.matrix(peptide)) {
-          r <- t(apply(peptide,1,function(individual.peptide) 
-                  .call.estimateRatio(matrix(individual.peptide,nrow=1),"peptide",ibspectra,noise.model,
+          r <- t(sapply(seq_len(nrow(peptide)),function(p_i) 
+                  .call.estimateRatio(peptide[p_i,,drop=FALSE],"peptide",ibspectra,noise.model,
                                       channel1,channel2,...)))
         
         } else {
@@ -612,6 +612,7 @@ estimateRatioForPeptide <- function(peptide,ibspectra,noise.model,channel1,chann
         }
       }
       attr(r,"input") <- peptide
+      attr(r,"combine") <- combine
       return(r)
 }
 
@@ -740,7 +741,8 @@ setMethod("estimateRatio",
                                 channel1,channel2,
                                 specificity=REPORTERSPECIFIC,modif=NULL,
                                 n.sample=NULL,groupspecific.if.same.ac=FALSE,
-                                use.precursor.purity=FALSE,do.warn=TRUE,...) {
+                                use.precursor.purity=FALSE,do.warn=TRUE,
+                                correct.ratio=NULL,...) {
   allowed.channels <- c(reporterTagNames(ibspectra),'AVG','ALL')
   if (is.null(channel1) || is.null(channel2))
     stop("channel1 and channel2 must not be NULL, but one of [",paste(allowed.channels,collapse=", "),"] !")
@@ -771,8 +773,6 @@ setMethod("estimateRatio",
       correct.ratio <- c(correct.ratio,as.numeric(x[,'variance']))
       x <- x[,-which(colnames(x)=='variance'),drop=FALSE]
     }
-  } else {
-    correct.ratio <- NULL
   }
 
   if (level=="protein")
