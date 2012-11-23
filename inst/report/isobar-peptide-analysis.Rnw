@@ -1,0 +1,160 @@
+% vim: set expandtab ts=2 sw=2:
+\documentclass[10pt,oneside]{article}
+\usepackage[margin=2cm]{geometry}
+\usepackage{tikz}
+\usepackage{amsmath}
+\usepackage{longtable}
+\usepackage{rotating}
+\usepackage{multirow}
+\usepackage{hyperref}
+\usepackage{ctable} % for midrule, etc
+\usepackage{pdfcomment}
+
+\newcommand{\tn}{\tabularnewline}
+\newcommand{\rh}[1]{\begin{rotate}{45}\textbf{#1}\end{rotate}}
+\newcommand{\rth}[1]{\begin{turn}{45}\textbf{#1}\end{turn}}
+\SweaveOpts{eps=FALSE}
+
+<<initialization,echo=FALSE,results=hide>>=
+suppressPackageStartupMessages(library(isobar))
+suppressPackageStartupMessages(library(distr))
+
+if (!exists("properties.env")) {
+#  stop("no properties.env?")
+  properties.env <- load.properties()
+}
+if (!exists("report.env")) {
+  report.env <- new.env()
+  initialize.env(report.env,"peptide",properties.env)
+}
+
+@
+<<def,echo=FALSE,results=tex>>=
+cat("\\newcommand{\\analysisname}{",sanitize(properties.env$name),"}")
+cat("\\newcommand{\\analysisauthor}{",sanitize(properties.env$author),"}")
+
+protein.group <- proteinGroup(report.env$ibspectra)
+protein.info <- proteinInfo(protein.group)
+isoforms <- protein.group@isoformToGeneProduct
+
+bndt <- 5
+bnd <- round(log10(bndt),1)
+cat(sprintf("\\newcommand{\\bnd}{%s}",bnd),"\n")
+cat(sprintf("\\newcommand{\\bndt}{%s}\n",bndt),"\n")
+cat(sprintf("\\input{%s}\n",
+            system.file("report","report-utils.tex",package="isobar")))
+
+cmbn <- t(unique(report.env$quant.tbl[,c("r1","r2")]))
+is.single.comparision <- ncol(cmbn) ==1
+
+if (is.single.comparision) {
+  name.w <- "11cm"
+  coldef <- "@{}rp{11cm}rr@{}r@{}r@{}"
+  coldef.s <- "@{}rp{11cm}rr@{}r@{}"
+  ncol.p <- 6
+  mr <- function(text,width=NULL) text  
+} else {
+  name.w <- "8cm"
+  coldef <- "@{}rp{8cm}rrrrr@{}r@{}"
+  coldef.s <- "@{}rp{8cm}rrrrr@{}"
+  ncol.p <- 8
+  mr <- function(text,width="*")
+           sprintf("\\multirow{%s}{%s}{%s}",ncol(cmbn),width,text)
+
+}
+
+@
+
+\title{Isobaric Tag Peptide Analysis Report\\ \analysisname\isobarthanks}
+\author{\analysisauthor}
+\date{\today}
+
+\begin{document}
+\maketitle
+
+\section{Peptide Quantifications}
+\small
+<<peptides,echo=FALSE,results=tex>>=
+acs.notquantified <- c()
+report.env$quant.tbl$ratio <- 10^report.env$quant.tbl$lratio
+report.env$quant.tbl$sd <- sqrt(report.env$quant.tbl$variance)
+#report.env$quant.tbl$ac <- report.env$quant.tbl$protein # TEMPORARY
+print_longtablehdr_peptide(coldef,!is.single.comparision,ncol.p,TRUE)
+
+protein.group <- proteinGroup(report.env$ibspectra)
+df.pg <- unique(as(protein.group,"data.frame.concise")[,c("peptide","proteins")])
+report.env$quant.tbl <- merge(df.pg,report.env$quant.tbl,by="peptide",all.y=TRUE)
+#all.peps <- unique(report.env$quant.tbl[,c("peptide","modif","proteins")])
+all.peps <- ddply(report.env$quant.tbl,c("peptide","modif","proteins"),
+                  function(d) c(n.spectra=ifelse(any(!is.na(d[,"n.spectra"])),max(d[,"n.spectra"],na.rm=T),NA)))
+all.peps <- all.peps[,order(as.numeric(all.peps["n.spectra",]),decreasing=TRUE)]
+all.peps$n.spectra <- NULL
+all.peps <- as.matrix(all.peps)
+
+for (ac_i in seq_len(nrow(all.peps))) {
+
+  my.pep <- all.peps[ac_i,]
+  ac.rows <- report.env$quant.tbl[which(report.env$quant.tbl[,"peptide"] == my.pep[1] &
+                                        report.env$quant.tbl[,"modif"] == my.pep[2]),,drop=FALSE]
+  ac.rows <- ac.rows[order(ac.rows$r1,ac.rows$r2),,drop=FALSE]
+  
+  if (all(is.na(ac.rows[,'lratio']))) {
+    acs.notquantified <- c(acs.notquantified,ac_i)
+    next
+  }
+  groupnumber <- 1
+
+  ##protein.groupnumber <- protein.rows[1,"group"]
+  ##prot.info <- my.protein.infos[[protein]]
+
+  ##reporter.peptides <- peptides(pg,protein=protein)
+  ##spectra <- names(spectrumToPeptide(pg))[spectrumToPeptide(pg)%in%reporter.peptides]
+  ##protein.names <- prot.info$collapsed.gene_name$protein_name
+  ##gene.names <- c()
+  ##for (prot.gene.name in prot.info$collapsed.gene_name$protein_name) {
+  ##  if (is.na(prot.gene.name)) next;
+  ##  prot.gene.name <- ifelse(nchar(prot.gene.name)>80,
+  ##                           paste(substr(prot.gene.name,0,76),"..."),
+  ##                           prot.gene.name)
+  ##  gene.names <- c(gene.names,prot.gene.name) 
+  ##}
+  ##if (!is.single.comparision) {
+  ##  if (length(gene.names) > ncol(cmbn) - 1) {
+  ##    gene.names <- gene.names[seq_len(ncol(cmbn)-1)]
+  ##    gene.names[length(gene.names)] <- paste(gene.names[length(gene.names)],", \\dots",sep="")
+  ##  }
+  ##}
+  cat(#mr(sprintf(" \\hyperref[ac.%s]{\\textbf{%s}}",groupnumber,groupnumber)),
+      " & ",mr(paste("{\\small \\tt ",
+                     transform_pepmodif(my.pep),
+                     "} Proteins: ",sanitize(my.pep[3])),name.w))
+#      " & ",mr(1),
+#      " & ",mr(1),
+#      " & ",mr(1))
+
+  for (i in seq_len(ncol(cmbn))) {
+    if (i > 1) { cat(paste(rep("&",1),collapse=" ")) }
+    if (!is.single.comparision) {
+        cat(" & ",ac.rows[i,'r1'])
+        cat(" & ",ac.rows[i,'r2'])
+    }
+    cat(" & ",ifelse(isTRUE(ac.rows[i,'n.spectra']>0),
+                     ac.rows[i,'n.spectra'],""))
+    if (is.na(ac.rows[i,"lratio"])) {
+      cat (" & & & ")
+    } else {
+      cat(" & ",sprintf("\\textbf{%.2f}",ac.rows[i,"ratio"]))
+      cat(" & ",ifelse(ac.rows[i,"is.significant"] == 1,"*",""))
+      cat(" & ",draw.boxplot(ac.rows[i,'lratio'],
+                             ac.rows[i,'sd'],bnd))
+    }
+    cat(" \\\\")
+    if (i < ncol(cmbn)) cat("*\n")
+  }
+  if (ac_i != length(all.peps) && ncol(cmbn) > 1)
+      cat(" \\midrule[0.02em] \n\n");
+}
+@
+\end{longtable}
+\normalsize
+\end{document}

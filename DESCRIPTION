@@ -11,7 +11,7 @@ Maintainer: Florian P Breitwieser <fbreitwieser@cemm.oeaw.ac.at>
 biocViews: Proteomics, MassSpectrometry, Bioinformatics, MultipleComparisons, QualityControl
 Depends: R (>= 2.10.0), Biobase, stats, methods, plyr
 Imports: distr
-Suggests: MSnbase, OrgMassSpecR, XML, biomaRt, ggplot2, Hmisc, RJSONIO
+Suggests: MSnbase, OrgMassSpecR, XML, biomaRt, ggplot2, RJSONIO, Hmisc
 LazyLoad: yes
 License: LGPL-2
 URL: http://bioinformatics.cemm.oeaw.ac.at
@@ -21,7 +21,9 @@ Collate: utils.R
 	 IBSpectra-plots.R
 	 NoiseModel-class.R
 	 ratio-methods.R
-     sharedpep-methods.R
-     report-utils.R
-     MSnSet-methods.R
+   sharedpep-methods.R
+   report-utils.R
+   metareport-utils.R
+   ptm-methods.R
+   MSnSet-methods.R
 	 zzz.R

@@ -16,6 +16,8 @@ create.protein.group <- function(id.files,file="protein.group.rda") {
 message("## CREATE PROTEINGROUP SCRIPT ##\n")
 if (length(commandArgs(TRUE)) == 0) 
   stop("Provide at least one id file as argument!\n")
-  
-create.protein.group(commandArgs(TRUE))
+
+args <- commandArgs(TRUE)
+create.protein.group(args[2:length(args)],args[1])
+
 

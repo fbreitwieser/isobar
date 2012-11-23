@@ -56,6 +56,14 @@ setMethod("reporterMassPrecision",
           }
 )
 
+.reshapeLong <- function(x,key="key",value="value") {
+  res <- data.frame(key=rep(colnames(x),each=nrow(x)),
+                    value=as.numeric(x),
+                    stringsAsFactors=FALSE)
+  colnames(res) <- c(key,value)
+  res
+}
+
 setMethod("reporterIntensityPlot",
           signature=c(x="IBSpectra"),function(x) {
             require(ggplot2)

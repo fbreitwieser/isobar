@@ -81,6 +81,7 @@ write.xls.report <- function(report.type,properties.env,report.env,file="isobar-
     get.property <- function(name) { get(name,properties.env,inherits=FALSE) }
     protein.group <- proteinGroup(get.val('ibspectra'))
     indist.proteins <- indistinguishableProteins(protein.group)
+    modificationSites <- NULL
     
     if (identical(report.type,"protein")) {
       ## TODO: add groups column to provide a link to the groups in report and quant table
@@ -100,14 +101,23 @@ write.xls.report <- function(report.type,properties.env,report.env,file="isobar-
     } else {
       #protein.id.df <- as(get('ibspectra',report.env),"data.frame.concise")
       protein.id.df <- .IBSpectraAsConciseDataFrame(get('ibspectra',report.env))
+      protein.group <- proteinGroup(get('ibspectra',report.env))
+      if (!is.null(properties.env$phosphosite.dataset)) {
+        sites <- do.call(rbind,lapply(properties.env$phosphosite.dataset,
+                                      read.delim,sep="\t",header=TRUE,skip=3,stringsAsFactors=FALSE))
+        colnames(sites)[colnames(sites)=="ACC."]  <- "accession"
+        colnames(sites) <- tolower(colnames(sites))
+        modificationSites <- subset(sites,accession %in% proteins)
+      }
+      proteins <- c(names(indistinguishableProteins(protein.group)),protein.ac(protein.group))
     }
 
     ## Analysis Properties:
     nn <- reporterTagNames(get.val('ibspectra'))
-    ii <- rbind(c("@centeracross@Analysis Properties",rep("@centeracross@",length(nn))),
+    ii <- rbind(c("@centeracross@Analysis Properties",rep("@centeracross@Analysis Properties",length(nn))),
                 "",
                 c("@centeracross@Isotope Impurity Correction Matrix",
-                  rep("@centeracross@",length(nn))),
+                  rep("@centeracross@Isotope Impurity Correction Matrix",length(nn))),
                 cbind(c("",nn),rbind(nn,isotopeImpurities(get.val('ibspectra')))))
 
     cl <- classLabels(get.val('ibspectra'))
@@ -118,7 +128,7 @@ write.xls.report <- function(report.type,properties.env,report.env,file="isobar-
     if (!is.null(cl)) {
       ii <- rbind(ii,
                   "",
-                  fill.up(c("@centeracross@Class Labels","@centeracross@","")))
+                  fill.up(c("@centeracross@Class Labels","@centeracross@Class Labels","")))
       
       for (i in seq_along(nn)) {
         ii <- rbind(ii,fill.up(c(nn[i],cl[i],names(cl)[i])))
@@ -134,14 +144,36 @@ write.xls.report <- function(report.type,properties.env,report.env,file="isobar-
     xls.quant.tbl <- get.val('xls.quant.tbl')
     if (report.type == "protein") {
       xls.quant.tbl <- xls.quant.tbl[order(xls.quant.tbl[,"group"]),]
+      ## Create links
     } else {
-      #xls.peptide.tbl <- get.val('xls.peptide.tbl')
-      #write.t(xls.peptide.tbl,file=protein.quant.f)
+      ## Create links
+      protein.id.df$peptide.sequence <- protein.id.df$peptide
+      protein.id.df$site.probs <- .convertPhosphoRSPepProb(protein.id.df$peptide,protein.id.df$site.probs)
+      protein.id.df$peptide <- .convertPeptideModif(protein.id.df[,"peptide"],protein.id.df[,"modif"])
+      q.links <- sapply(protein.id.df$peptide,function(p) {
+                          res=which(xls.quant.tbl$Sequence==p)[1]
+                            if (is.na(res)) ""
+                            else paste0("@link=internal:Quantifications!A",res+1,"@q")
+                  })
+      protein.id.df <- cbind(q=q.links,protein.id.df)
+      xls.quant.tbl <- cbind(i=paste0("@link=internal:Identifications!A",
+                                      sapply(xls.quant.tbl$Sequence,
+                                             function(p) which(protein.id.df$peptide==p)[1]+1),
+                                      "@",xls.quant.tbl$Spectra),xls.quant.tbl)
+      #col_idx <- grep("Spectra", names(xls.quant.tbl))
+      #colnames(xls.quant.tbl)[col_idx] <- "i"
+      #xls.quant.tbl <- xls.quant.tbl[, c(col_idx, (1:ncol(df))[-col_idx])]
+
     }
     write.t(xls.quant.tbl,file=protein.quant.f)
     write.t(protein.id.df,file=protein.id.f)  
     write.t(ii,file=analysis.properties.f,col.names=FALSE)
     write.t(get.val('ibspectra')@log,file=log.f,col.names=NA,row.names=TRUE)
+
+    if (identical(report.type,"peptide") && !is.null(modificationSites)) {
+      modifsites.f <- paste(get.property('cachedir'),"modification_sites.csv",sep="/")
+      write.t(modificationSites,file=modifsites.f)
+    }
 
     ## generate perl command line:
     tab2spreadsheet.cmd <- switch(properties.env$spreadsheet.format,
@@ -153,6 +185,8 @@ write.xls.report <- function(report.type,properties.env,report.env,file="isobar-
                      ifelse(properties.env$use.name.for.report,sprintf("%s.quant",properties.env$name),"isobar-analysis"),
                      ".",properties.env$spreadsheet.format,
                      " ':autofilter,freeze_col=3,name=Quantifications:",protein.quant.f,"'",
+                     ifelse(identical(report.type,"peptide") && !is.null(modificationSites),
+                            paste(" ':autofilter,freeze_col=3,name=Modification Sites:",modifsites.f,"'",sep=""),""),
                      " ':autofilter,freeze_col=3,name=Identifications:",protein.id.f,"'",
                      " ':name=Analysis Properties:",analysis.properties.f,"'",
                      " ':name=Log:",log.f,"'",sep="")
@@ -247,6 +281,8 @@ initialize.env <- function(env,report.type="protein",properties.env) {
   env$ibspectra <- .create.or.load.ibspectra(properties.env)
   env$noise.model <- .create.or.load.noise.model(env,properties.env)
   env$ratiodistr <- .create.or.load.ratiodistr(env,properties.env,level=report.type)
+  if (identical(report.type,"peptide") )
+    env$ptm.info  <- .create.or.load.ptm.info(env,properties.env)
   env$quant.tbl <- .create.or.load.quant.table(env,properties.env,level=report.type)
   if (!"ac" %in% colnames(env$quant.tbl) && "protein" %in% colnames(env$quant.tbl))
     env$quant.tbl$ac <- env$quant.tbl$protein
@@ -487,6 +523,15 @@ initialize.env <- function(env,report.type="protein",properties.env) {
   return(noise.model)
 }
 
+.create.or.load.ptm.info <- function(env,properties.env) {
+  if (is.null(properties.env$ptm.info.f)) 
+    properties.env$ptm.info.f <- getPtmInfoFromNextprot
+
+  return(.create.or.load("ptm.info",envir=properties.env,
+                         f=properties.env$ptm.info.f,
+                         protein.group=proteinGroup(env$ibspectra)))
+}
+
 .create.or.load.ratiodistr <- function(env,properties.env,level) {
   
   return(.create.or.load("ratiodistr",envir=properties.env,class="Distribution",
@@ -555,8 +600,28 @@ initialize.env <- function(env,report.type="protein",properties.env) {
     set.ratioopts(name="ratiodistr",env$ratiodistr)
     
     if(identical(level,"peptide")){
+      pep.n.modif <- unique(apply(fData(env$ibspectra)[,c("peptide","modif")],2,cbind))
+      if (!is.null(properties.env$correct.ratios.with)) {
+        pnp <- as.data.frame(peptideNProtein(proteinGroup(env$ibspectra)),stringsAsFactors=FALSE)
+        pmp <- merge(pep.n.modif,pnp,all=TRUE)
+        if (!all(c("ac","lratio") %in% colnames(properties.env$correct.ratios.with)))
+          stop("ac and lratio need to be columns in correct.ratios.with!")
+
+        colnames(properties.env$correct.ratios.with)[colnames(properties.env$correct.ratios.with)=="lratio"] <- "correct.ratio"
+        pmp.r <- merge(pmp,properties.env$correct.ratios.with,
+                       by.x="protein.g",by.y="ac",
+                       all.x=TRUE)
+        cols <- c("peptide","modif","correct.ratio","variance")
+
+        pep.n.modif <- ddply(pmp.r,c("peptide","modif"),function(x) {
+                             if (nrow(x) > 1 && !all(is.na(x$correct.ratio)))
+                               x <- x[!is.na(x$correct.ratio),]
+                             return(x[1,])
+               })
+        pep.n.modif <- as.matrix(pep.n.modif[,cols[cols %in% colnames(pep.n.modif)]])
+      }
       set.ratioopts(list(
-                         peptide=unique(apply(fData(env$ibspectra)[,c("peptide","modif")],2,cbind)),
+                         peptide=pep.n.modif,
                          proteins=NULL))
     } else if (identical(level,"protein")) {
       set.ratioopts(list(peptide=NULL,
@@ -625,14 +690,12 @@ initialize.env <- function(env,report.type="protein",properties.env) {
       compare.to.quant <- NULL
 
     if (isTRUE(properties.env$xls.report.format=="wide")) {
-      xls.quant.tbl.tmp  <- ratiosReshapeWide(env$quant.tbl,vs.class=properties.env$vs.class,sep="###")
+      xls.quant.tbl.tmp  <- ratiosReshapeWide(env$quant.tbl,vs.class=properties.env$vs.class,sep="###",cmbn=properties.env$combn)
       if (!is.null(compare.to.quant))
-        compare.to.quant <- lapply(compare.to.quant,ratiosReshapeWide,vs.class=properties.env$vs.class,sep="###")
+        compare.to.quant <- lapply(compare.to.quant,ratiosReshapeWide,vs.class=properties.env$vs.class,sep="###",cmbn=properties.env$combn)
     } else {
       xls.quant.tbl.tmp <- env$quant.tbl
     }
-
-
 
     round.digits <- 4;
     if (identical(report.type,"protein")) {
@@ -660,6 +723,11 @@ initialize.env <- function(env,report.type="protein",properties.env) {
       ## PEPTIDE REPORT
       pnp  <- subset(as.data.frame(peptideNProtein(protein.group),stringsAsFactors=FALSE),
                      protein.g %in% reporterProteins(protein.group))
+
+      my.ptm <- "PTM"
+      if ("PHOS" %in% properties.env$ptm) my.ptm="Phosphorylation"
+      if ("METH" %in% properties.env$ptm) my.ptm="Methylation"
+
       xls.quant.tbl.tmp$ac  <- NULL
       t <- table(pnp$peptide)
       pnp <- pnp[pnp$peptide %in% names(t)[t==1],]
@@ -667,15 +735,18 @@ initialize.env <- function(env,report.type="protein",properties.env) {
 
       xls.quant.tbl.tmp <- merge(pnp,xls.quant.tbl.tmp,by="peptide")
       xls.quant.tbl.tmp$i  <- seq_len(nrow(xls.quant.tbl.tmp))
-      xls.quant.tbl <- data.frame(i=xls.quant.tbl.tmp$i,
-                                  Sequence=.convertPeptideModif(xls.quant.tbl.tmp$peptide,xls.quant.tbl.tmp$modif),
-                 Phospho.Position=.convertModifToPos(xls.quant.tbl.tmp$modif,"PHOS"),
-                 AC=.protein.acc(xls.quant.tbl.tmp[,"ac"],ip=indist.proteins),
-                 ID=proteinInfo(protein.group,xls.quant.tbl.tmp[,"ac"],do.warn=FALSE),
-                 n=sapply(xls.quant.tbl.tmp[,"ac"],function(p) {length(names(indist.proteins)[indist.proteins == p])}),
-                 Description=proteinInfo(protein.group,xls.quant.tbl.tmp[,"ac"],select="protein_name",do.warn=FALSE),
-                 Gene=proteinInfo(protein.group,xls.quant.tbl.tmp[,"ac"],select="gene_name",do.warn=FALSE),
-                 Spectra=apply(xls.quant.tbl.tmp,1,function(x) nrow(subset(fData(env$ibspectra),peptide==x['peptide'] & modif==x['modif']))))
+      xls.quant.tbl.tmp$Spectra <- apply(xls.quant.tbl.tmp,1,function(x) nrow(subset(fData(env$ibspectra),peptide==x['peptide'] & modif==x['modif'])))
+      pg.df <- .proteinGroupAsConciseDataFrame(protein.group,modif.pos=properties.env$ptm,ptm.info=env$ptm.info)
+      
+      xls.quant.tbl <- merge(pg.df,xls.quant.tbl.tmp[,c("peptide","modif","i","Spectra")],by=c("peptide","modif"),all.y=TRUE)
+      xls.quant.tbl$peptide <- .convertPeptideModif(xls.quant.tbl[,"peptide"],xls.quant.tbl[,"modif"])
+      colnames(xls.quant.tbl)[colnames(xls.quant.tbl)=="peptide"] <- "Sequence"
+      colnames(xls.quant.tbl)[colnames(xls.quant.tbl)=="proteins"] <- "ACs"
+      colnames(xls.quant.tbl)[colnames(xls.quant.tbl)=="modif.pos"] <- sprintf("@comment=Absolute modification position in protein. Modifications in the same protein are separated by '&', in different proteins by ';'. Stars denote positions which are annotated as phosphorylated in NextProt.@%s Position",my.ptm)
+      xls.quant.tbl$modif <- NULL
+      xls.quant.tbl$pos <- NULL
+      xls.quant.tbl$n.groups <- NULL
+      xls.quant.tbl <- xls.quant.tbl[order(xls.quant.tbl$i),]
     }
     if (!is.null(compare.to.quant))
       for (ii in seq_along(compare.to.quant)) 
@@ -725,13 +796,9 @@ initialize.env <- function(env,report.type="protein",properties.env) {
       
       xls.quant.tbl <- cbind(xls.quant.tbl,protein.intensities(ibspectra,protein.tbl$protein))
     } else {
-      ## TODO: check that protein table has required columns
- 
       if (isTRUE(properties.env$xls.report.format=="long")) {
-
        xls.quant.tbl <-cbind(xls.quant.tbl,
-                               "Channels"=paste(xls.quant.tbl.tmp$r2,"/",xls.quant.tbl.tmp$r1))
-
+                             "Channels"=paste(xls.quant.tbl.tmp$r2,"/",xls.quant.tbl.tmp$r1))
       }
 
       if ("zscore" %in% properties.env$xls.report.columns) {
@@ -780,9 +847,37 @@ initialize.env <- function(env,report.type="protein",properties.env) {
 
     if (identical(report.type,"protein")) {
       return(xls.quant.tbl[order(xls.quant.tbl[,"group"]),])
-                  } else {
+    } else {
       return(xls.quant.tbl[order(xls.quant.tbl$ID,xls.quant.tbl$Sequence),])
     }
+  })
+}
+
+.protein.acc <- function(prots,protein.info=NULL,ip=NULL) {
+  if (is.null(ip)) {
+    proteins <- list(prots)
+  } else {
+    proteins <- lapply(prots,function(p) {names(ip)[ip == p]})
+  }
+
+  sapply(proteins,function(prots) {
+         ## consider ACs with -[0-9]*$ as splice variants (ACs w/ more than one dash are not considered)
+         pos.splice <- grepl("^[^-]*-[0-9]*$",prots)
+         df <- data.frame(protein=prots,accession=prots,splice=0,stringsAsFactors=FALSE)
+
+         if (any(pos.splice))
+           df[pos.splice,c("accession","splice")] <- 
+             do.call(rbind,strsplit(prots[pos.splice],"-"))
+
+         res <- 
+           ddply(df,"accession",function(y) {
+                 if(sum(y$splice>0) <= 1)
+                   return(data.frame(protein=unique(y$protein)))
+                 else 
+                   return(data.frame(protein=sprintf("%s-[%s]",unique(y$accession),
+                                                     paste(sort(y[y$splice>0,'splice']),collapse=","))))
+                                 })
+         return(paste(res$protein,collapse=", "))
   })
 }
 
