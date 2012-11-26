@@ -5,8 +5,9 @@
 \documentclass[11pt]{article}
 
 \SweaveOpts{keep.source=TRUE}
+\SweaveOpts{prefix.string=graphics/plot}
 <<init,echo=FALSE>>=
-  library(distr)
+  require(distr)
   require(ggplot2)
 @ 
 
@@ -205,11 +206,13 @@ apply(mass,2,function(x) sprintf("%.4f",quantile(x,na.rm=TRUE,probs=c(0.025,0.97
 
 \Rfunction{reporterMassPrecision} provides a plot of the distribution.
 
-\begin{center}
-\begin{figure}[htp]
-<<print-reporterMasses,fig=TRUE,width=6.6,height=3>>=
+<<print-reporterMasses,fig=TRUE,width=6.6,height=3,include=FALSE>>=
   print(reporterMassPrecision(ibspiked_set1))
 @ 
+
+\begin{center}
+\begin{figure}[htp]
+\includegraphics{graphics/plot-print-reporterMasses}
 \caption{Reporter mass precision plot.}
 \label{fig:reporterMassPrecision}
 \end{figure}
@@ -234,11 +237,8 @@ ibspiked_set1 <- correctIsotopeImpurities(ibspiked_set1)
 ibspiked_set1 <- normalize(ibspiked_set1)
 @ 
 
-
-\begin{center}
-\begin{figure}[htp]
 <<fig-maplot-normalize1,echo=FALSE>>=
-png("fig_maplot_normalize.png",width=6.6,height=3,units="in",res=300,pointsize=8)
+png("graphics/fig_maplot_normalize.png",width=6.6,height=3,units="in",res=300,pointsize=8)
 @
 <<fig-maplot-normalize2>>=
 par(mfrow=c(1,2))
@@ -252,7 +252,10 @@ abline(h=1,col="red",lwd=2)
 <<fig-maplot-normalize3,echo=FALSE,results=hide>>= 
 dev.off()
 @
-\includegraphics{fig_maplot_normalize}
+
+\begin{center}
+\begin{figure}[htp]
+\includegraphics{graphics/fig_maplot_normalize}
 \caption{Ratio versus intensity plots ('MA plots') before and after applying normalization.}
 \label{fig:normalization}
 \end{figure}
@@ -289,10 +292,8 @@ ib.ceru <- subsetIBSpectra(ibspiked_set1,protein=ceru.proteins,
 nm.ceru <- NoiseModel(ib.ceru,one.to.one=FALSE,pool=TRUE)
 @ 
 
-\begin{center}
-\begin{figure}[htp]
 <<maplot-noisemodel1,echo=FALSE>>=
-png("fig_maplot_noisemodel.png",width=3.3,height=3,units="in",res=300,pointsize=8)
+png("graphics/fig_maplot_noisemodel.png",width=3.3,height=3,units="in",res=300,pointsize=8)
 @
 <<maplot-noisemodel2,echo=TRUE>>=
 maplot(ib.background,noise.model=c(noise.model,nm.ceru),
@@ -302,7 +303,10 @@ maplot(ib.background,noise.model=c(noise.model,nm.ceru),
 <<maplot-noisemodel3,echo=FALSE,results=hide>>=
 dev.off()
 @ 
-\includegraphics{fig_maplot_noisemodel}
+
+\begin{center}
+\begin{figure}[htp]
+\includegraphics{graphics/fig_maplot_noisemodel}
 
 \caption{Red lines denote the 95 \% confidence interval as estimated
   by the noise model on background proteins. The blue line is

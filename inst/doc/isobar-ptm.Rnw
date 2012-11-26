@@ -1,4 +1,4 @@
-%\VignetteIndexEntry{Isobar's ProteinGroup Usage}
+%\VignetteIndexEntry{Isobar's PTM Modules}
 %\VignetteDepends{}
 %\VignetteKeywords{Documentation}
 %\VignettePackage{isobar}
@@ -10,8 +10,7 @@
 \SweaveOpts{keep.source=TRUE}
 \SweaveOpts{prefix.string=graphics/plot}
 <<init,echo=FALSE>>=
-#  library(isobar)
-library(ggplot2)
+  require(ggplot2)
 @ 
 
 \usepackage[utf8]{inputenc}
@@ -40,6 +39,28 @@ parts, and how to use it to generate quantification reports.
 <<load-isobar,results=hide>>=
   library(isobar) ## load the isobar package
 @
+
+Using \isobar{}, automatic report generation is straight-forward
+given proper input files using the script \texttt{report/create_reports.R}.
+When called, it parses the globabl properties file \texttt{report/properties.R}
+and then the \texttt{properties.R} in the current directory. Below is a small 
+example \texttt{properties.R} for creating a PDF Quality Control and XLSX 
+analysis report:
+
+\begin{verbatim}
+type="iTRAQ4plexSpectra"
+## peaklist files for quantitation, by default all mgf file in directory
+peaklist=list.files(pattern="*\\.mgf$")
+
+## id files, by default all id.csv files in directory
+identifications=list.files(pattern="*\\.id.csv$")
+
+modif="PHOS" # modification to track (eg PHOS, ACET, MET)
+ptm.info.f <- getPtmInfoFromNextprot
+spreadsheet.format="xlsx"
+\end{verbatim}
+
+Reports will be generated calling \texttt{path_to_isobar/report/create_reports.R --peptide} from the directory containing the peaklists, identifications and \texttt{properties.R}.
 
 \section{Modification Site Localization}
 \isobar{} supports PhosphoRS \cite{Taus_Mechtler2011-JPR} and Delta
