@@ -572,10 +572,11 @@ setAs("ProteinGroup","data.frame.concise",
         return(unique(res))
       })
 
+# nexprot url: "http://www.nextprot.org/db/entry/NX_"
 .proteinGroupAsConciseDataFrame <- 
   function(from,only.reporters=TRUE,show.proteinInfo=TRUE,
            human.protein.acs=TRUE,show.startpos=TRUE,modif.pos=NULL,
-           ptm.info=NULL) {
+           ptm.info=NULL,link.url="http://www.uniprot.org/uniprot/") {
 
         pep.n.prot <- merge(as.data.frame(peptideNProtein(from),stringsAsFactors=FALSE),
                             from@peptideInfo)
@@ -595,7 +596,7 @@ setAs("ProteinGroup","data.frame.concise",
             merged.splicevariants <- ddply(x,"proteinac.wo.splicevariant",
                                            function(x) {
                                              res <- c(ac=unique(x$proteinac.wo.splicevariant),
-                                                      link=paste0("http://www.nextprot.org/db/entry/NX_",unique(x$proteinac.wo.splicevariant)))
+                                                      link=paste0(link.url,unique(x$proteinac.wo.splicevariant)))
                                              if (!all(is.na(x$splicevariant))) {
                                                if (length(unique(x$splicevariant))==1) { res['ac'] <- x$protein[1] 
                                                } else { res['ac'] <- sprintf("%s-[%s]",unique(x$proteinac.wo.splicevariant),
