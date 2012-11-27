@@ -91,7 +91,7 @@ setMethod("ProteinGroup",signature(from="data.frame",template="ProteinGroup",pro
       indistinguishableProteins <- ipt[ipt %in% peptideNProtein[,"protein.g"]]
       peptideSpecificity <-
         subset(peptideSpecificity(template),peptide %in% from[,"peptide"])
-      spectrumId <- unique(from[,c("spectrum","peptide","modif")])
+      spectrumId <- unique(from[,setdiff(colnames(from),c("protein","start.pos"))])
       spectrumToPeptide <- spectrumToPeptide(template)[
                      names(spectrumToPeptide(template)) %in% from[,"spectrum"]]
       
@@ -122,12 +122,9 @@ setMethod("ProteinGroup",signature(from="data.frame",template="ProteinGroup",pro
 )
 
 readProteinGroup <- function(id.file,...) {
-  pg.cols <- c(.SPECTRUM.COLS[c('SPECTRUM','PEPTIDE','MODIFSTRING')],
-               .PEPTIDE.COLS['STARTPOS'],
-               .PROTEIN.COLS['PROTEINAC'])
   pp <- do.call(rbind,lapply(id.file,function(id.f)
-                read.table(id.f,header=T,stringsAsFactors=FALSE,sep="\t")[,pg.cols]
-))
+                read.table(id.f,header=T,stringsAsFactors=FALSE,sep="\t")
+                ))
 #mzident <- lapply(id.file,read.table,header=T,stringsAsFactors=FALSE,sep="\t")
 # si <- do.call(rbind,lapply(mzident,function(x) x$spectrum.identifications))
 # rownames(si) <- NULL
@@ -166,7 +163,7 @@ setMethod("ProteinGroup",signature(from="data.frame",template="missing",proteinI
       from$peptide <- gsub("I","L",from$peptide)
 
       spectrumToPeptide <- .as.vect(unique(from[,c("spectrum","peptide")]))
-      spectrumId <- unique(from[,c("spectrum","peptide","modif")])
+      spectrumId <- unique(from[,setdiff(colnames(from),c("protein","start.pos"))])
       peptideInfo <- unique(from[,c("protein","peptide","start.pos","modif")])
       peptideInfo <- peptideInfo[order(peptideInfo[,"protein"],
                                        peptideInfo[,"start.pos"],
@@ -1409,24 +1406,50 @@ observable.peptides <- function(seq,nmc=1,min.length=6,min.mass=600,max.mass=400
   pep[min.length.ok & mass.ok,]
 }
 
-calculate.emPAI <- function(protein.group,protein.g=reporterProteins(protein.group), ...) {
+calculate.emPAI <- function(protein.group,protein.g=reporterProteins(protein.group),
+                            normalize=FALSE,observed.pep=c("pep","mod.charge.pep"),
+                            use.mw=FALSE,combine.f=mean,...,nmc=0,report.all=FALSE) {
   require(OrgMassSpecR)
   if (is.null(proteinInfo(protein.group)) || length(proteinInfo(protein.group)) == 0)
     stop("slot proteinInfo not set - it is needed for sequence length")
   if (!"sequence" %in% colnames(proteinInfo(protein.group))) {
     stop("no column 'sequence' in proteinInfo slot")
   }
+  ip <- indistinguishableProteins(protein.group)
 
   sequences <- proteinInfo(protein.group)$sequence
   names(sequences) <- proteinInfo(protein.group)$accession
  
-  n.observed.peptides <- table(peptideNProtein(protein.group)[,"protein.g"])[protein.g]
-  n.observable.peptides <- sapply(protein.g,
-       function(protein.g) 
-         do.call(sum,lapply(unique(protein.ac(protein.group,protein.g)),
-             function(protein.ac) n.observable.peptides(sequences[protein.ac])),...)
-  )
+  n.observed.peptides <- switch(observed.pep[1],
+                                pep = table(peptideNProtein(protein.group)[,"protein.g"])[protein.g],
+                                mod.charge.pep = {
+                                  pep.cnt <- table(unique(protein.group@spectrumId[,c("peptide","modif","charge")])[,"peptide"])
+                                  tapply(peptideNProtein(protein.group)[,"peptide"],peptideNProtein(protein.group)[,"protein.g"],function(x) sum(pep.cnt[x]))[protein.g]
+                                })
+  if(proteinInfoIsOnSpliceVariants(proteinInfo(protein.group)))
+    get.to.acs <- function(my.protein.g) names(ip)[ip==my.protein.g]
+  else
+    get.to.acs <- function(my.protein.g) unique(protein.ac(protein.group,my.protein.g))
+
+  n.observable.peptides <- sapply(protein.g, function(my.protein.g) 
+                                  do.call(combine.f,lapply(get.to.acs(my.protein.g),
+                                                           function(protein.ac) n.observable.peptides(sequences[protein.ac],nmc=nmc,...))))
+  if (use.mw) {
+    mw <- sapply(protein.g, function(my.protein.g) 
+                 do.call(combine.f,lapply(get.to.acs(my.protein.g),
+                                          function(protein.ac) MolecularWeight(formula = ConvertPeptide(sequences[protein.ac])))))
+  } else {
+    mw <- 1
+  }
+
   empai <- 10^(n.observed.peptides/n.observable.peptides) - 1
+  if (report.all) 
+    return(data.frame(protein.g,n.observed.peptides,n.observable.peptides,mw,
+                      empai,prot_content_mol=empai/sum(empai,na.rm=TRUE),protein_content_weight=empai*mw/sum(empai*mw,na.rm=TRUE)))
+
+  if (use.mw) empai <- empai*mw
+  if (normalize) empai/sum(empai,na.rm=TRUE)
+
   return(empai)
 }
 

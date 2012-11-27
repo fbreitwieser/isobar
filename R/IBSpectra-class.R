@@ -212,9 +212,8 @@ setMethod("initialize","IBSpectra",
           PROTEINGROUP.COLS <- c(PROTEINGROUP.COLS,.PEPTIDE.COLS['STARTPOS'])
         PROTEINGROUP.COLS <- c(PROTEINGROUP.COLS,.PROTEIN.COLS['PROTEINAC'])
 
-        proteinGroup <-
-          ProteinGroup(unique(data[,PROTEINGROUP.COLS]),
-                       template=proteinGroupTemplate)
+        #proteinGroup <- ProteinGroup(unique(data[,PROTEINGROUP.COLS]),
+        proteinGroup <- ProteinGroup(data,template=proteinGroupTemplate)
         
         if (is.null(assayDataElements))
           assayDataElements <- list()
