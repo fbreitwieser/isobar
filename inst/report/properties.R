@@ -40,7 +40,7 @@ regen=FALSE
 
 ## An ibspectra object can be generated from peaklists and identifications.
 
-## peaklist files, by default all mgf file in directory
+## peaklist files for quantitation, by default all mgf file in directory
 peaklist=list.files(pattern="*\\.mgf$")
 ## id files, by default all id.csv files in directory
 identifications=list.files(pattern="*\\.id.csv$")

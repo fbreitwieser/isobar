@@ -41,7 +41,7 @@ parts, and how to use it to generate quantification reports.
 @
 
 Using \isobar{}, automatic report generation is straight-forward
-given proper input files using the script \texttt{report/create_reports.R}.
+given proper input files using the script \texttt{report/create\_reports.R}.
 When called, it parses the globabl properties file \texttt{report/properties.R}
 and then the \texttt{properties.R} in the current directory. Below is a small 
 example \texttt{properties.R} for creating a PDF Quality Control and XLSX 
@@ -60,7 +60,7 @@ ptm.info.f <- getPtmInfoFromNextprot
 spreadsheet.format="xlsx"
 \end{verbatim}
 
-Reports will be generated calling \texttt{path_to_isobar/report/create_reports.R --peptide} from the directory containing the peaklists, identifications and \texttt{properties.R}.
+Reports will be generated calling \texttt{path\_to\_isobar/report/create\_reports.R --peptide} from the directory containing the peaklists, identifications and \texttt{properties.R}.
 
 \section{Modification Site Localization}
 \isobar{} supports PhosphoRS \cite{Taus_Mechtler2011-JPR} and Delta
