@@ -1,0 +1,279 @@
+@ARTICLE{Breitwieser_Colinge2011-JPR,
+  author = {Florian P Breitwieser and André Müller and Loïc Dayon and Thomas
+	Köcher and Alexandre Hainard and Peter Pichler and Ursula Schmidt-Erfurth
+	and Giulio Superti-Furga and Jean-Charles Sanchez and Karl Mechtler
+	and Keiryn L Bennett and Jacques Colinge},
+  title = {General statistical modeling of data from protein relative expression
+	isobaric tags.},
+  journal = {J Proteome Res},
+  year = {2011},
+  volume = {10},
+  pages = {2758--2766},
+  number = {6},
+  month = {Jun},
+  abstract = {Quantitative comparison of the protein content of biological samples
+	is a fundamental tool of research. The TMT and iTRAQ isobaric labeling
+	technologies allow the comparison of 2, 4, 6, or 8 samples in one
+	mass spectrometric analysis. Sound statistical models that scale
+	with the most advanced mass spectrometry (MS) instruments are essential
+	for their efficient use. Through the application of robust statistical
+	methods, we developed models that capture variability from individual
+	spectra to biological samples. Classical experimental designs with
+	a distinct sample in each channel as well as the use of replicates
+	in multiple channels are integrated into a single statistical framework.
+	We have prepared complex test samples including controlled ratios
+	ranging from 100:1 to 1:100 to characterize the performance of our
+	method. We demonstrate its application to actual biological data
+	sets originating from three different laboratories and MS platforms.
+	Finally, test data and an R package, named isobar, which can read
+	Mascot, Phenyx, and mzIdentML files, are made available. The isobar
+	package can also be used as an independent software that requires
+	very little or no R programming skills.},
+  doi = {10.1021/pr1012784},
+  file = {Breitwieser_Colinge2011-JPR.pdf:Quant/Breitwieser_Colinge2011-JPR.pdf:PDF},
+  institution = {CeMM , Center for Molecular Medicine of the Austrian Academy of Sciences,
+	Vienna, Austria.},
+  language = {eng},
+  medline-pst = {ppublish},
+  owner = {fbreitwieser},
+  pmid = {21526793},
+  timestamp = {2011.08.09},
+  url = {http://dx.doi.org/10.1021/pr1012784}
+}
+
+
+@ARTICLE{Taus_Mechtler2011-JPR,
+  author = {Taus, Thomas and Köcher, Thomas and Pichler, Peter and Paschke, Carmen
+	and Schmidt, Andreas and Henrich, Christoph and Mechtler, Karl},
+  title = {Universal and Confident Phosphorylation Site Localization Using phosphoRS.},
+  journal = {J Proteome Res},
+  year = {2011},
+  month = {Nov},
+  abstract = {An algorithm for the assignment of phosphorylation sites in peptides
+	is described. The program uses tandem mass spectrometry data in conjunction
+	with the respective peptide sequences to calculate site probabilities
+	for all potential phosphorylation sites. Tandem mass spectra from
+	synthetic phosphopeptides were used for optimization of the scoring
+	parameters employing all commonly used fragmentation techniques.
+	Calculation of probabilities was adapted to the different fragmentation
+	methods and to the maximum mass deviation of the analysis. The software
+	includes a novel approach to peak extraction, required for matching
+	experimental data to the theoretical values of all isoforms, by defining
+	individual peak depths for the different regions of the tandem mass
+	spectrum. Mixtures of synthetic phosphopeptides were used to validate
+	the program by calculation of its false localization rate versus
+	site probability cutoff characteristic. Notably, the empirical obtained
+	precision was higher than indicated by the applied probability cutoff.
+	In addition, the performance of the algorithm was compared to existing
+	approaches to site localization such as Ascore. In order to assess
+	the practical applicability of the algorithm to large data sets,
+	phosphopeptides from a biological sample were analyzed, localizing
+	more than 3000 nonredundant phosphorylation sites. Finally, the results
+	obtained for the different fragmentation methods and localization
+	tools were compared and discussed.},
+  doi = {10.1021/pr200611n},
+  file = {Taus_Mechtler2011-JPR.pdf:Phospho_report/Taus_Mechtler2011-JPR.pdf:PDF},
+  institution = {Research Institute of Molecular Pathology (IMP) , Dr. Bohrgasse 7,
+	A-1030 Vienna, Austria.},
+  keywords = {sitelocalization},
+  language = {eng},
+  medline-pst = {aheadofprint},
+  owner = {fbreitwieser},
+  pmid = {22073976},
+  timestamp = {2011.11.16},
+  url = {http://dx.doi.org/10.1021/pr200611n}
+}
+
+@ARTICLE{Savitski_Kuster2011-MCP,
+  author = {Savitski, Mikhail M. and Lemeer, Simone and Boesche, Markus and Lang,
+	Manja and Mathieson, Toby and Bantscheff, Marcus and Kuster, Bernhard},
+  title = {Confident phosphorylation site localization using the Mascot Delta
+	Score.},
+  journal = {Mol Cell Proteomics},
+  year = {2011},
+  volume = {10},
+  pages = {M110.003830},
+  number = {2},
+  month = {Feb},
+  abstract = {Large scale phosphorylation analysis is more and more getting into
+	focus of proteomic research. Although it is now possible to identify
+	thousands of phosphorylated peptides in a biological system, confident
+	site localization remains challenging. Here we validate the Mascot
+	Delta Score (MD-score) as a simple method that achieves similar sensitivity
+	and specificity for phosphosite localization as the published Ascore,
+	which is mainly used in conjunction with Sequest. The MD-score was
+	evaluated using liquid chromatography-tandem MS data of 180 individually
+	synthesized phosphopeptides with precisely known phosphorylation
+	sites. We tested the MD-score for a wide range of commonly available
+	fragmentation methods and found it to be applicable throughout with
+	high statistical significance. However, the different fragmentation
+	techniques differ strongly in their ability to localize phosphorylation
+	sites. At 1\% false localization rate, the highest number of correctly
+	assigned phosphopeptides was achieved by higher energy collision
+	induced dissociation in combination with an Orbitrap mass analyzer
+	followed very closely by low resolution ion trap spectra obtained
+	after electron transfer dissociation. Both these methods are significantly
+	better than low resolution spectra acquired after collision induced
+	dissociation and multi stage activation. Score thresholds determined
+	from simple calibration functions for each fragmentation method were
+	stable over replicate analyses of the phosphopeptide set. The MD-score
+	outperforms the Ascore for tyrosine phosphorylated peptides and we
+	further show that the ability to call sites correctly increases with
+	increasing distance of two candidate sites within a peptide sequence.
+	The MD-score does not require complex computational steps which makes
+	it attractive in terms of practical utility. We provide all mass
+	spectra and the synthetic peptides to the community so that the development
+	of present and future localization software can be benchmarked and
+	any laboratory can determine MD-scores and localization probabilities
+	for their individual analytical set up.},
+  doi = {10.1074/mcp.M110.003830},
+  file = {Savitski_Kuster2011-MCP.pdf:Phospho/Savitski_Kuster2011-MCP.pdf:PDF;Savitski_Kuster2011-MCP:Phospho/Savitski_Kuster2011-MCP:},
+  institution = {Cellzome AG, Heidelberg, Germany.},
+  keywords = {Algorithms; Binding Sites; Chromatography, Liquid, methods; Computational
+	Biology, methods; Humans; Ions; Mass Spectrometry, methods; Peptides,
+	chemistry; Phosphopeptides, chemistry; Phosphorylation; Protein Processing,
+	Post-Translational; Proteome; Proteomics, methods; Reproducibility
+	of Results; Software, sitelocalization},
+  language = {eng},
+  medline-pst = {ppublish},
+  owner = {fbreitwieser},
+  pii = {M110.003830},
+  pmid = {21057138},
+  timestamp = {2011.12.07},
+  url = {http://dx.doi.org/10.1074/mcp.M110.003830}
+}
+
+
+@ARTICLE{Wu_Gygi2011-MCP,
+  author = {Ronghu Wu and Noah Dephoure and Wilhelm Haas and Edward L Huttlin
+	and Bo Zhai and Mathew E Sowa and Steven P Gygi},
+  title = {Correct interpretation of comprehensive phosphorylation dynamics
+	requires normalization by protein expression changes.},
+  journal = {Mol Cell Proteomics},
+  year = {2011},
+  volume = {10},
+  pages = {M111.009654},
+  number = {8},
+  month = {Aug},
+  abstract = {The interpretation of quantitative phosphoproteomics studies is complicated
+	because each differential phosphorylation event integrates both changes
+	in protein expression and phosphorylation. Here we investigated this
+	phenomenon by performing parallel comparisons of protein expression
+	and phosphorylation in S. cerevisiae. In each of two experiments
+	comparing yeast mutants bearing deletions in FUS3 or STE7 with their
+	wild-type counterparts, we quantified over 4100 proteins, including
+	all members of the yeast mating pathway. We also identified 12,499
+	unique phosphorylation sites in this work. We demonstrate the critical
+	importance of controlling the protein-level false-discovery rate
+	and provide a novel method to assess the accuracy of protein false-discovery
+	rate estimates. For the first time, 96\% of nonredundant phosphopeptide
+	ratios could be calibrated by protein levels, allowing truly differential
+	phosphorylation to be distinguished from altered protein expression.
+	This revealed a starkly different view, with 25\% of seemingly differential
+	phosphopeptides now attributed to changes in protein expression.
+	Combined protein expression and phosphorylation surveys uncovered
+	both independent and concerted changes in protein expression and
+	phosphorylation, while highlighting the partially redundant role
+	of a second MAPK (Kss1) in the mating pathway.},
+  doi = {10.1074/mcp.M111.009654},
+  file = {Wu_Gygi2011-MCP.pdf:Phospho/Wu_Gygi2011-MCP.pdf:PDF;Wu_Gygi2011-MCP:Phospho/Wu_Gygi2011-MCP:},
+  institution = {Department of Cell Biology, Harvard Medical School, Boston, MA 02115.},
+  language = {eng},
+  medline-pst = {ppublish},
+  owner = {fbreitwieser},
+  pii = {M111.009654},
+  pmid = {21551504},
+  timestamp = {2011.08.09},
+  url = {http://dx.doi.org/10.1074/mcp.M111.009654}
+}
+
+@ARTICLE{Lane_Bairoch2012-NAR,
+  author = {Lane, Lydie and Argoud-Puy, Ghislaine and Britan, Aurore and Cusin,
+	Isabelle and Duek, Paula D. and Evalet, Olivier and Gateau, Alain
+	and Gaudet, Pascale and Gleizes, Anne and Masselot, Alexandre and
+	Zwahlen, Catherine and Bairoch, Amos},
+  title = {neXtProt: a knowledge platform for human proteins.},
+  journal = {Nucleic Acids Res},
+  year = {2012},
+  volume = {40},
+  pages = {D76--D83},
+  number = {Database issue},
+  month = {Jan},
+  abstract = {neXtProt (http://www.nextprot.org/) is a new human protein-centric
+	knowledge platform. Developed at the Swiss Institute of Bioinformatics
+	(SIB), it aims to help researchers answer questions relevant to human
+	proteins. To achieve this goal, neXtProt is built on a corpus containing
+	both curated knowledge originating from the UniProtKB/Swiss-Prot
+	knowledgebase and carefully selected and filtered high-throughput
+	data pertinent to human proteins. This article presents an overview
+	of the database and the data integration process. We also lay out
+	the key future directions of neXtProt that we consider the necessary
+	steps to make neXtProt the one-stop-shop for all research projects
+	focusing on human proteins.},
+  doi = {10.1093/nar/gkr1179},
+  file = {Lane_Bairoch2012-NAR.pdf:Proteomics/Lane_Bairoch2012-NAR.pdf:PDF;Lane_Bairoch2012-NAR-neXtProt.pdf:Phospho_report/Lane_Bairoch2012-NAR-neXtProt.pdf:PDF},
+  institution = {CALIPHO Group, Swiss Institute of Bioinformatics, CMU - 1, Rue Michel
+	Servet 1211 Geneva 4, Switzerland.},
+  keywords = {Databases, Protein; Humans; Knowledge Bases; Proteins, genetics/metabolism;
+	User-Computer Interface},
+  language = {eng},
+  medline-pst = {ppublish},
+  owner = {fbreitwieser},
+  pii = {gkr1179},
+  pmid = {22139911},
+  timestamp = {2012.10.15},
+  url = {http://dx.doi.org/10.1093/nar/gkr1179}
+}
+
+@ARTICLE{Hornbeck_Sullivan2012-NAR,
+  author = {Hornbeck, Peter V. and Kornhauser, Jon M. and Tkachev, Sasha and
+	Zhang, Bin and Skrzypek, Elzbieta and Murray, Beth and Latham, Vaughan
+	and Sullivan, Michael},
+  title = {PhosphoSitePlus: a comprehensive resource for investigating the structure
+	and function of experimentally determined post-translational modifications
+	in man and mouse.},
+  journal = {Nucleic Acids Res},
+  year = {2012},
+  volume = {40},
+  pages = {D261--D270},
+  number = {Database issue},
+  month = {Jan},
+  abstract = {PhosphoSitePlus (http://www.phosphosite.org) is an open, comprehensive,
+	manually curated and interactive resource for studying experimentally
+	observed post-translational modifications, primarily of human and
+	mouse proteins. It encompasses 1,30,000 non-redundant modification
+	sites, primarily phosphorylation, ubiquitinylation and acetylation.
+	The interface is designed for clarity and ease of navigation. From
+	the home page, users can launch simple or complex searches and browse
+	high-throughput data sets by disease, tissue or cell line. Searches
+	can be restricted by specific treatments, protein types, domains,
+	cellular components, disease, cell types, cell lines, tissue and
+	sequences or motifs. A few clicks of the mouse will take users to
+	substrate pages or protein pages with sites, sequences, domain diagrams
+	and molecular visualization of side-chains known to be modified;
+	to site pages with information about how the modified site relates
+	to the functions of specific proteins and cellular processes and
+	to curated information pages summarizing the details from one record.
+	PyMOL and Chimera scripts that colorize reactive groups on residues
+	that are modified can be downloaded. Features designed to facilitate
+	proteomic analyses include downloads of modification sites, kinase-substrate
+	data sets, sequence logo generators, a Cytoscape plugin and BioPAX
+	download to enable pathway visualization of the kinase-substrate
+	interactions in PhosphoSitePlus®.},
+  doi = {10.1093/nar/gkr1122},
+  file = {Hornbeck_Sullivan2012-NAR.pdf:Phospho_report\\Hornbeck_Sullivan2012-NAR.pdf:PDF},
+  institution = {Cell Signaling Technology, 3 Trask Lane, Danvers, MA 01923, USA.
+	phornbeck@cellsignal.com},
+  keywords = {Acetylation; Amino Acid Sequence; Animals; Cattle; Databases, Protein;
+	Humans; Mice; Phosphorylation; Protein Processing, Post-Translational;
+	Proteins, chemistry/genetics/metabolism; Rats; Ubiquitination},
+  language = {eng},
+  medline-pst = {ppublish},
+  owner = {fbreitwieser},
+  pii = {gkr1122},
+  pmid = {22135298},
+  timestamp = {2012.10.09},
+  url = {http://dx.doi.org/10.1093/nar/gkr1122}
+}
+
+
