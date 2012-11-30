@@ -425,7 +425,7 @@ getProteinInfoFromBioDb <- function(x,...,con=NULL) {
   protein.acs <- names(indistinguishableProteins(x))
   query <- paste("SELECT primaryac AS accession,id AS name,",
                  "  description AS protein_name,",
-                 "  (SELECT g.genename FROM genenames g WHERE g.entryid=d.entryid AND g.synonym=FALSE AND g.sourcedb=3 LIMIT 1) AS gene_name,",
+                 "  (SELECT string_agg(g.genename,',') FROM genenames g WHERE g.entryid=d.entryid AND g.synonym=FALSE AND g.sourcedb=3) AS gene_name,",
                  "  os AS organism, seqlength as length, sequence",
                  "FROM dbentries d ",
                  "WHERE dbid IN (2,3) AND primaryac IN (",paste0("'",protein.acs,"'",collapse=","),")")
