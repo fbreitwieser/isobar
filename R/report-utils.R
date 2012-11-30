@@ -547,6 +547,7 @@ initialize.env <- function(env,report.type="protein",properties.env) {
     cl <- ifelse(!is.null(ratiodistr.class.labels),
                  ratiodistr.class.labels,
                  classLabels(ibspectra))
+    message("  Using class labels ",paste(cl,collapse=","))
 
     if (identical(level,"peptide"))
       all.ratios <- peptideRatios(env$ibspectra,noise.model=env$noise.model,do.warn=FALSE,
