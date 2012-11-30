@@ -1285,12 +1285,19 @@ sequence.coverage <- function(protein.group,protein.g=reporterProteins(protein.g
 }
 
 
-calculate.dNSAF <- function(protein.group) {
+
+calculate.dNSAF <- function(protein.group,use.mw=FALSE,normalize=TRUE,combine.f=mean) {
   if (is.null(proteinInfo(protein.group)) || length(proteinInfo(protein.group)) == 0)
     stop("slot proteinInfo not set - it is needed for sequence length")
-  if (!"length" %in% colnames(proteinInfo(protein.group))) {
+  if (!"length" %in% colnames(proteinInfo(protein.group)))
     stop("no column 'length' in proteinInfo slot")
-  }
+
+  ip <- indistinguishableProteins(protein.group)
+  if(proteinInfoIsOnSpliceVariants(proteinInfo(protein.group)))
+    get.to.acs <- function(my.protein.g) names(ip)[ip==my.protein.g]
+  else
+    get.to.acs <- function(my.protein.g) unique(protein.ac(protein.group,my.protein.g))
+
   seqlength <- proteinInfo(protein.group)$length
   names(seqlength) <- proteinInfo(protein.group)$accession
   
@@ -1322,14 +1329,20 @@ calculate.dNSAF <- function(protein.group) {
       d.sspc <- 0
 
     ## for protein length, we take the sum of lengths of all acs
-    protein.length <- sum(seqlength[unique(protein.ac(protein.group,p))],na.rm=TRUE)
+    protein.length <- sum(seqlength[get.to.acs(p)],na.rm=TRUE)
     dSAF <- (uspc[p] + d.sspc) / protein.length
     if (is.nan(dSAF) | !is.finite(dSAF)) dSAF <- NA
     return(dSAF)
   })
 
+  if (use.mw) {
+    mw <- calculate.mw(protein.group,protein.g,combine.f)
+    dSAF <- dSAF*mw
+  }
+
   ## normalize to dNSAF
-  dNSAF <- dSAF/sum(dSAF,na.rm=TRUE)
+  if (normalize) dNSAF <- dSAF/sum(dSAF,na.rm=TRUE)
+
   names(dNSAF) <- reporterProteins(protein.group)
   return(dNSAF)
 }
@@ -1406,10 +1419,25 @@ observable.peptides <- function(seq,nmc=1,min.length=6,min.mass=600,max.mass=400
   pep[min.length.ok & mass.ok,]
 }
 
+calculate.mw <- function(protein.group,protein.g,combine.f=mean) {
+  require(OrgMassSpecR)
+  sequences <- proteinInfo(protein.group)$sequence
+  ip <- indistinguishableProteins(protein.group)
+  names(sequences) <- proteinInfo(protein.group)$accession
+
+  if(proteinInfoIsOnSpliceVariants(proteinInfo(protein.group)))
+    get.to.acs <- function(my.protein.g) names(ip)[ip==my.protein.g]
+  else
+    get.to.acs <- function(my.protein.g) unique(protein.ac(protein.group,my.protein.g))
+
+  sapply(protein.g, function(my.protein.g) 
+         do.call(mean,lapply(get.to.acs(my.protein.g),
+                                  function(protein.ac) MolecularWeight(formula = ConvertPeptide(sequences[protein.ac])))))
+}
+
 calculate.emPAI <- function(protein.group,protein.g=reporterProteins(protein.group),
                             normalize=FALSE,observed.pep=c("pep","mod.charge.pep"),
                             use.mw=FALSE,combine.f=mean,...,nmc=0,report.all=FALSE) {
-  require(OrgMassSpecR)
   if (is.null(proteinInfo(protein.group)) || length(proteinInfo(protein.group)) == 0)
     stop("slot proteinInfo not set - it is needed for sequence length")
   if (!"sequence" %in% colnames(proteinInfo(protein.group))) {
@@ -1434,18 +1462,15 @@ calculate.emPAI <- function(protein.group,protein.g=reporterProteins(protein.gro
   n.observable.peptides <- sapply(protein.g, function(my.protein.g) 
                                   do.call(combine.f,lapply(get.to.acs(my.protein.g),
                                                            function(protein.ac) n.observable.peptides(sequences[protein.ac],nmc=nmc,...))))
-  if (use.mw) {
-    mw <- sapply(protein.g, function(my.protein.g) 
-                 do.call(combine.f,lapply(get.to.acs(my.protein.g),
-                                          function(protein.ac) MolecularWeight(formula = ConvertPeptide(sequences[protein.ac])))))
-  } else {
+  if (use.mw) 
+    mw <- calculate.mw(protein.group,protein.g,combine.f)
+   else 
     mw <- 1
-  }
 
   empai <- 10^(n.observed.peptides/n.observable.peptides) - 1
   if (report.all) 
     return(data.frame(protein.g,n.observed.peptides,n.observable.peptides,mw,
-                      empai,prot_content_mol=empai/sum(empai,na.rm=TRUE),protein_content_weight=empai*mw/sum(empai*mw,na.rm=TRUE)))
+                      empai,protein_mol=empai/sum(empai,na.rm=TRUE),protein_weight=empai*mw/sum(empai*mw,na.rm=TRUE)))
 
   if (use.mw) empai <- empai*mw
   if (normalize) empai/sum(empai,na.rm=TRUE)
