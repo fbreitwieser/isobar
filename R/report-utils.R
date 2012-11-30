@@ -536,21 +536,26 @@ initialize.env <- function(env,report.type="protein",properties.env) {
   
   return(.create.or.load("ratiodistr",envir=properties.env,class="Distribution",
                          msg.f="protein ratio distribution",f=function(){
+
     if (properties.env$summarize) {
       method <- "intraclass"
-   } else {
+    } else {
       message(" WARNING: ratiodistr will be computed based on global ratios!")
       method <- "global"
     }
+ 
+    cl <- ifelse(!is.null(ratiodistr.class.labels),
+                 ratiodistr.class.labels,
+                 classLabels(ibspectra))
 
     if (identical(level,"peptide"))
       all.ratios <- peptideRatios(env$ibspectra,noise.model=env$noise.model,do.warn=FALSE,
                                   peptide=peptides(proteinGroup(env$ibspectra)),
-                                  cl=classLabels(env$ibspectra),combn.method=method,symmetry=TRUE)
+                                  cl=cl,combn.method=method,symmetry=TRUE)
     else
       all.ratios <- proteinRatios(env$ibspectra,noise.model=env$noise.model,do.warn=FALSE,
                                       proteins=reporterProteins(proteinGroup(env$ibspectra)),peptide=NULL,
-                                      cl=classLabels(env$ibspectra),combn.method=method,symmetry=TRUE)
+                                      cl=cl,combn.method=method,symmetry=TRUE)
 
     if (all(is.nan(all.ratios$lratio)))
       stop("Cannot compute protein ratio distribution - no ratios available.\n",

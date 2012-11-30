@@ -110,8 +110,7 @@ min.detect=NULL
 preselected=c()
 
 ratiodistr=NULL
-ratiodistr.summarize=FALSE
-ratiodistr.summarize.method="global"
+ratiodistr.class.labels=NULL
 
 ###############################################################################
 ## PTM properties
