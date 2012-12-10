@@ -544,8 +544,8 @@ initialize.env <- function(env,report.type="protein",properties.env) {
       method <- "global"
     }
  
-    cl <- ifelse(!is.null(ratiodistr.class.labels),
-                 ratiodistr.class.labels,
+    cl <- ifelse(!is.null(properties.env$ratiodistr.class.labels),
+                 properties.env$ratiodistr.class.labels,
                  classLabels(ibspectra))
     message("  Using class labels ",paste(cl,collapse=","))
 
