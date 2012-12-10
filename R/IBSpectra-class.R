@@ -577,6 +577,22 @@ writeIBSpectra <- function(ibspectra,file,sep="\t",row.names=FALSE,...) {
   message("finished writing ibspectra to ",file)
 }
 
+
+setMethod("readIBSpectra",
+          signature(type="character",id.file="character",peaklist.file="character"),
+    function(type,id.file,peaklist.file,
+             mapping.file=NULL,mapping=c(peaklist="even",id="odd"),
+             id.file.domap=NULL,id.format=NULL,decode.titles=TRUE,...) {
+      
+      data <- .read.identifications(id.file,mapping=mapping.file,mapping.names=mapping,
+                                    identifications.quant=id.file.domap,
+                                    identifications.format=id.format,decode.titles=decode.titles)
+
+      readIBSpectra(type,data,peaklist.file,...)
+})
+
+
+
 ##' readIBSpectra - read IBSpectra object from files
 ##'
 ##' <details>
@@ -603,27 +619,18 @@ writeIBSpectra <- function(ibspectra,file,sep="\t",row.names=FALSE,...) {
 ##' @return IBSpectra object of type 
 ##' @author Florian P Breitwieser
 setMethod("readIBSpectra",
-          signature(type="character",id.file="character",peaklist.file="character"),
+          signature(type="character",id.file="data.frame",peaklist.file="character"),
     function(type,id.file,peaklist.file,
-             proteinGroupTemplate=NULL,
-             mapping.file=NULL,mapping=c(peaklist="even",id="odd"),
-#             mapping.file.readopts=list(header=TRUE,stringsAsFactors=FALSE,sep=","),
-             id.file.domap=NULL,annotate.spectra.f=NULL,
-             peaklist.format=NULL,id.format=NULL,fragment.precision=NULL,fragment.outlier.prob=NULL,
-             decode.titles=TRUE,scan.lines=0,...) {
+             proteinGroupTemplate=NULL,annotate.spectra.f=NULL,
+             peaklist.format=NULL,scan.lines=0,
+             fragment.precision=NULL,fragment.outlier.prob=NULL,...) {
       
       log <- data.frame(key=c(),message=c())
 
-      ## get identified spectra
-      #data <- .read.idfile(id.file,id.format,decode.titles=decode.titles,log)
-      data <- .read.identifications(id.file,mapping=mapping.file,mapping.names=mapping,
-                                    identifications.quant=id.file.domap,
-                                    identifications.format=id.format,decode.titles=decode.titles)
-
+      data <- id.file
       if (is.function(annotate.spectra.f)) {
         data <- annotate.spectra.f(data,peaklist.file)
       }
-
 
       # all identified spectrum titles
       id.spectra <- unique(data[,.SPECTRUM.COLS['SPECTRUM']])
