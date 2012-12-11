@@ -1,15 +1,17 @@
 % vim: set expandtab ts=2 sw=2:
+\SweaveOpts{eps=FALSE}
+\SweaveOpts{strip.white=false}
 <<initialization,echo=FALSE,results=hide>>=
 # this Rnw file should be called by create_reports.R. create_reports 
 # initializes the correct data objects to be used in the report.
 options(SweaveHooks=list(fig=function()
          par(mar=c(5.1, 4.1, 1.1, 2.1))))
-
 suppressPackageStartupMessages(library(isobar))
+options(encoding="UTF-8")  
 
 if (!exists("properties.env")) {
-  stop("no properties.env??")
-  properties.env <- load.properties()
+  stop("No properties.env??")
+  #properties.env <- load.properties()
 }
 needed.objects <- c('ibspectra','noise.model','quant.tbl','ratiodistr')
 if (!all(needed.objects %in% objects())) {
@@ -18,14 +20,10 @@ if (!all(needed.objects %in% objects())) {
 
 get.property <- function(name) { get(name,properties.env,inherits=FALSE) }
 @
-
-\SweaveOpts{eps=FALSE}
 \documentclass[10pt,oneside]{article}
-
-\usepackage{amsmath}
-%\usepackage{amsfonts}
-%\usepackage{amssymb}
 \usepackage[margin=2cm]{geometry}
+\usepackage[utf8]{inputenc}
+\usepackage{amsmath}
 \usepackage{graphicx}
 \usepackage{verbatim}
 \usepackage{array}
@@ -55,10 +53,11 @@ cat(sprintf("\\input{%s}\n",system.file("report","report-utils.tex",package="iso
 \newcommand{\rr}{\raggedright}
 \newcolumntype{x}[1]{>{\raggedright}p{#1}}
 \newcommand{\tn}{\tabularnewline}
-\newcommand{\rh}[1]{\begin{rotate}{45}\textbf{#1}\end{rotate}}
-\newcommand{\rth}[1]{\begin{turn}{45}\textbf{#1}\end{turn}}
+\newcommand{\rh}[1]{\begin{rotate}{65}\textbf{#1}\end{rotate}}
+\newcommand{\rth}[1]{\begin{turn}{65}\textbf{#1}\end{turn}}
 %\newcommand{\mboxc}[2]{\begin{minipage}{#1}#2\end{minipage}}
 \newcommand{\mboxc}[2]{#2}
+\newcommand{\secsubtitle}[1]{\begin{flushright}\small\textit{#1}\end{flushright}}
 
 \makeatletter
 \renewcommand\paragraph{%
@@ -74,10 +73,10 @@ cat(sprintf("\\input{%s}\n",system.file("report","report-utils.tex",package="iso
 \cfoot{\thepage}
 \rfoot{\analysisname}
 
-\bibliography{isobar}
-\bibliographystyle{plain}
+%\bibliography{isobar}
+%\bibliographystyle{plain}
 
-\title{Isobaric Tag Analysis Report\\ \analysisname\isobarthanks}
+\title{Isobaric Tag Quantification Report\\ \analysisname\isobarthanks}
 \author{\analysisauthor}
 \date{\today}
 \raggedbottom
@@ -97,6 +96,7 @@ cat(sprintf("\\newcommand{\\bnd}{%s}",bnd),"\n")
 cat(sprintf("\\newcommand{\\bndt}{%s}\n",bndt),"\n")
 
 cmbn <- t(unique(quant.tbl[,c("r1","r2")]))
+cmbn.class <- t(unique(quant.tbl[,c("class1","class2")]))
 is.single.comparision <- ncol(cmbn) ==1
 
 if (is.single.comparision) {
@@ -153,10 +153,12 @@ if (!is.null(cl)) {
 if (properties.env$show.significant.proteins) { 
 
 if (is.single.comparision) {
-  cat("\\section{Significantly Regulated Proteins ",cmbn[2,1],"/",cmbn[1,1],"}\n\n")
+  cat("\\section{Significantly Regulated Proteins ",cmbn.class[2,1],"/",cmbn.class[1,1],"}\n\n")
 } else {
   cat("\\section{Significantly Regulated Proteins}\n\n")
 }
+n.quant <- ddply(quant.tbl,c("class1","class2"),function(x) sum(!is.na(x$lratio) & x$is.significant))
+cat("\\secsubtitle{Number of significant proteins: ",paste(sprintf("%s/%s: %s",n.quant$class2,n.quant$class1,n.quant$V1),collapse="; "),"}\n" )
 
 
 if (any(quant.tbl$is.significant == 1,na.rm=TRUE)) {  
@@ -187,7 +189,7 @@ if (any(quant.tbl$is.significant == 1,na.rm=TRUE)) {
         cat(" \t",sprintf("\\hyperref[protein.%s]{%s}",
                           protein.row[,"group"],prot_i),
             " & ",sprintf("\\parbox{4cm}{%s}",prot.info$table.name),
-            " & ",paste(prot.info$n.reporter,prot.info$n.groupmember,sep="/"),
+            " & {\\footnotesize",paste(prot.info$n.reporter,prot.info$n.groupmember,sep="/"),"}",
             " & ",length(reporter.peptides),
             " & ",n.spectra)
         if (!is.single.comparision) {
@@ -214,9 +216,9 @@ if (any(quant.tbl$is.significant == 1,na.rm=TRUE)) {
 
 <<echo=FALSE,results=tex>>=
 if (is.single.comparision) {
-  cat("\\section{All Proteins Relative Expression ",cmbn[2,1],"/",cmbn[1,1],"}")
+  cat("\\section{Protein Relative Quantitation ",cmbn.class[2,1],"/",cmbn.class[1,1],"}")
 } else {
-  cat("\\section{All Proteins Relative Expression}")
+  cat("\\section{Protein Relative Quantitation}")
 }
 @
 
@@ -235,6 +237,8 @@ proteins <- proteins.n.group[order(proteins.n.group$group),"ac"]
  \setlength{\extrarowheight}{1.5pt}
 
 <<proteintbl,echo=FALSE,results=tex>>=
+n.quant <- ddply(quant.tbl,c("class1","class2"),function(x) sum(!is.na(x$lratio)))
+cat("\\secsubtitle{Number of quantified proteins: ",paste(sprintf("%s/%s: %s",n.quant$class2,n.quant$class1,n.quant$V1),collapse="; "),"}")
 
 cat("\\small")
 print_longtablehdr("protein",coldef,!is.single.comparision,ncol.p,TRUE)
@@ -273,10 +277,11 @@ for (protein in proteins) {
   }
   cat(mr(sprintf(" \\hyperref[protein.%s]{\\textbf{%s}}",
                  protein.groupnumber,protein.groupnumber)),
-      " & ",mr(paste(prot.info$table.name,"\\newline ","\\mboxc{",name.w,"}{",
+      " & ",mr(paste0("\\mboxc{",name.w,"}{",prot.info$table.name,". ",
                paste(gene.names,collapse=",\\newline ")
-               ,"}",sep=""),name.w),
-      " & ",mr(paste(prot.info$n.reporter,prot.info$n.groupmember,sep="/")),
+               ,"}"),name.w),
+    #  " & ",mr(paste(prot.info$n.reporter,prot.info$n.groupmember,sep="/")),
+      " & ",mr(paste0("{\\footnotesize ",prot.info$n.reporter,"/",prot.info$n.groupmember,"}")),
       " & ",mr(length(reporter.peptides)),
       " & ",mr(length(spectra)),sep=" ")
 
@@ -311,6 +316,8 @@ cat("\\normalsize")
 <<not.quantified,echo=FALSE,results=tex>>=
 if (length(proteins.notquantified) > 0) {
 cat("\\subsection{Not Quantified Proteins}\n")
+n.quant <- ddply(quant.tbl,c("class1","class2"),function(x) sum(is.na(x$lratio)))
+cat("\\secsubtitle{Number of identified but not quantified proteins: ",paste(sprintf("%s/%s: %s",n.quant$class2,n.quant$class1,n.quant$V1),collapse="; "),"}")
 cat("\\small")
 cat("\\begin{longtable}{rp{12cm}rrr}",
 "  \\#",
@@ -321,7 +328,7 @@ cat("\\begin{longtable}{rp{12cm}rrr}",
 "\\endhead",sep="\n")
 
 for (protein in proteins.notquantified) {
-  protein.rows <- quant.tbl[quant.tbl$protein==protein,,drop=FALSE]
+  protein.rows <- quant.tbl[quant.tbl$ac==protein,,drop=FALSE]
   protein.rows <- protein.rows[order(protein.rows$r1,protein.rows$r2),,drop=FALSE]
   protein.groupnumber <- protein.rows[1,"group"]
   prot.info <- my.protein.infos[[protein]]
@@ -342,10 +349,11 @@ for (protein in proteins.notquantified) {
 
   cat(sprintf(" \\hyperref[protein.%s]{%s}",
                  protein.groupnumber,protein.groupnumber),
-      " & ",paste(prot.info$table.name,"\\newline ","\\mboxc{",name.w,"}{",
+      " & ",paste0("\\mboxc{",name.w,"}{",prot.info$table.name,". ",
                paste(gene.names,collapse=",\\newline ")
-               ,"}",sep=""),
-      " & ",paste(prot.info$n.reporter,prot.info$n.groupmember,sep="/"),
+               ,"}"),
+     # " & ",paste(prot.info$n.reporter,prot.info$n.groupmember,sep="/"),
+      " & {\\footnotesize",paste(prot.info$n.reporter,prot.info$n.groupmember,sep="/"),"}",
       " & ",length(reporter.peptides),
       " & ",length(spectra),"\\\\ \n",sep=" ")
 }
