@@ -134,7 +134,12 @@ write.xls.report <- function(report.type,properties.env,report.env,file="isobar-
         ii <- rbind(ii,fill.up(c(nn[i],cl[i],names(cl)[i])))
       }
     }
-    
+
+    # TODO: add some info on number of quantified proteins
+    # n.quant.sign <- ddply(quant.tbl,c("class1","class2"),function(x) sum(!is.na(x$lratio) & x$is.significant))
+    # n.quant <- ddply(quant.tbl,c("class1","class2"),function(x) sum(!is.na(x$lratio)))
+    # n.noquant <- ddply(quant.tbl,c("class1","class2"),function(x) sum(is.na(x$lratio)))
+
     ## write tables to tab seperated files files:
     protein.quant.f <- paste(get.property('cachedir'),"protein_quant.csv",sep="/")
     protein.id.f <- paste(get.property('cachedir'),"protein_id.csv",sep="/")
@@ -468,6 +473,10 @@ initialize.env <- function(env,report.type="protein",properties.env) {
     isotopeImpurities(ibspectra) <- get.property("isotope.impurities")
   }
 
+  # only use used channels for normalization
+  #if (is.null(properties.env$normalize.channels) && !is.null(properties.env$class.labels)) 
+  #  properties.env$normalize.channels <- reporterTagNames(ibspectra)[!is.na(properties.env$class.labels)]
+  
  
   if (properties.env$correct.isotope.impurities)
     ibspectra <- correctIsotopeImpurities(ibspectra)
@@ -544,10 +553,11 @@ initialize.env <- function(env,report.type="protein",properties.env) {
       method <- "global"
     }
  
-    cl <- ifelse(!is.null(properties.env$ratiodistr.class.labels),
-                 properties.env$ratiodistr.class.labels,
-                 classLabels(ibspectra))
-    message("  Using class labels ",paste(cl,collapse=","))
+    cl <- classLabels(env$ibspectra)
+    if (!is.null(properties.env$ratiodistr.class.labels))
+      cl <- properties.env$ratiodistr.class.labels
+
+    message("  Using class labels ",paste(cl,collapse=", "))
 
     if (identical(level,"peptide"))
       all.ratios <- peptideRatios(env$ibspectra,noise.model=env$noise.model,do.warn=FALSE,
