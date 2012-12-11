@@ -490,7 +490,7 @@ initialize.env <- function(env,report.type="protein",properties.env) {
                 na.rm=properties.env$normalize.na.rm)
   }
 
-  class.labels <- as.character(c(1,rep(0,length(sampleNames(ibspectra))-1)))
+  class.labels <- as.character(c(1,rep(0,length(reporterTagNames(ibspectra))-1)))
   if (.exists.property('class.labels',properties.env,null.ok=FALSE))
     class.labels <- get.property('class.labels')
   if (!any(table(class.labels)>1) && properties.env$summarize) {
