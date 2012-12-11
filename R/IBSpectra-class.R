@@ -1433,9 +1433,10 @@ normalize <- function(x,f=median,target="intensity",exclude.protein=NULL,
                        log=log,channels=channels.set,na.rm=na.rm,...)
       return(x)
     } else {
-      if (!all(channels %in% colnames(ri)))
+      if (!all(channels %in% reporterTagNames(x)))
         stop("channels must be reporterTagNames.")
                                                          
+      message("normalizing channels ",paste(channels,collapse=", "))
       ri <- reporterIntensities(x)[,channels,drop=FALSE]
     }
   } else {
