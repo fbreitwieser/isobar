@@ -537,7 +537,7 @@ setAs("ProteinGroup","data.frame",function(from) {
 ##  - column n.acs: number of acs a peptide appears in (without splice variant!)
 ##      counts double if the same ACs are in different groups 
 ##  - column n.variants: number of acs a peptide appears in (with splice variant!)
-setAs("ProteinGroup","data.frame.concise",
+proteinGroup.as.concise.data.frame <-
       function(from) {
         ip.df <- .vector.as.data.frame(indistinguishableProteins(from),
                                        colnames=c("protein","protein.g"))
@@ -567,7 +567,7 @@ setAs("ProteinGroup","data.frame.concise",
 
                      })
         return(unique(res))
-      })
+      }
 
 # nexprot url: "http://www.nextprot.org/db/entry/NX_"
 .proteinGroupAsConciseDataFrame <- 
@@ -588,83 +588,16 @@ setAs("ProteinGroup","data.frame.concise",
                        by.x="protein",by.y="proteinac.w.splicevariant")
         ip.df <- merge(ip.df,proteinGroupTable(from)[,c("protein.g","reporter.protein")])
         ipp.df <- merge(ip.df,pep.n.prot)
+
         in.df <- ddply(ipp.df, c("reporter.protein"),
           function(x) {
-            merged.splicevariants <- ddply(x,"proteinac.wo.splicevariant",
-                                           function(x) {
-                                             res <- c(ac=unique(x$proteinac.wo.splicevariant),
-                                                      link=paste0(link.url,unique(x$proteinac.wo.splicevariant)))
-                                             if (!all(is.na(x$splicevariant))) {
-                                               if (length(unique(x$splicevariant))==1) { res['ac'] <- x$protein[1] 
-                                               } else { res['ac'] <- sprintf("%s-[%s]",unique(x$proteinac.wo.splicevariant),
-                                                                         number.ranges(as.numeric(x$splicevariant)))
-                                               }
-                                             }
-                                             return(res)
-                                           })
-            merged.pepmodifs <- ddply(x,c("peptide","modif"),function(x) {
-                                  res <- data.frame(peptide=x$peptide[1],start.pos=paste(x$start.pos,collapse=";"),
-                                                    stringsAsFactors=FALSE)
-                                  if (!is.null(modif.pos)) {
-                                    pepseq <- strsplit(x$peptide[1],"")[[1]]
-                                    # get modification position foreach protein (in peptide) from modification string
-                                    modification.positions.foreach.protein <- .convertModifToPos(x$modif,modif.pos,collapse=NULL,simplify=FALSE)
-                                    modif.posi <- t(mapply(function(ac,sv,pep.pos,start.pos) {
-                                        residue <- pepseq[pep.pos]
-                                        poss <- start.pos + pep.pos - 1
-                                        if (!is.null(ptm.info)) {
-                                          comments <- sapply(poss,function(pp) {
-                                                             if (grepl("-[0-9]$",ac)) 
-                                                               sel <- ptm.info[,"isoform_ac"]==ac
-                                                             else
-                                                               sel <- ptm.info[,"isoform_ac"]==paste(ac,"-1",sep="")
-                                                             sel  <- sel  & ptm.info[,"position"]==pp
+            # for each 'protein AC' (no splice variant), summarize the splice variants (eg P123-[1-3,5])
+            merged.splicevariants <- ddply(x,"proteinac.wo.splicevariant",.summarize.splice.variants,link.url=link.url)
 
-                                                             if (any(sel)) {
-                                                               res <- apply(ptm.info[sel,],1,
-                                                                            function(pi) paste(sprintf("%s pos %g: %s",pi["isoform_ac"],
-                                                                                                       as.numeric(pi["position"]),pi["description"])))
-                                                               paste(res,collapse="\n")
-                                                             } else {
-                                                               NA
-                                                             }
-                                                          })
-                                          #known.pos <- sapply(poss,function(pp) any(ptm.info[,"isoform_ac"]==ac & ptm.info[,"position"]==pp))
-                                          known.pos <- !is.na(comments)
-                                        } else {
-                                          ## TODO: Not working
-                                          comments <- NA
-                                          known.pos <- rep(FALSE,seq_along(poss))
-                                        }
-                                        null.comments <- is.na(comments)
-                                        if (length(known.pos) > 0)
-                                          poss[known.pos] <- paste0(residue[known.pos],poss[known.pos],"*")
-                                        poss[!known.pos] <- paste0(residue[!known.pos],poss[!known.pos])
-                                        c(paste(poss,collapse="&"),
-                                          ifelse(all(null.comments),NA,paste(comments[!null.comments],collapse="\n")),
-                                          proteinInfo(from,protein.ac=ac,select="gene_name",do.warn=FALSE,collapse=","),sv)
-                                    },x$protein,x$splicevariant,modification.positions.foreach.protein,x$start.pos))
-
-                                    #modif.posi <- modif.posi[modif.posi[,1] != "" | !is.na(modif.posi[,2]),,drop=FALSE]
-                                    ## TODO: FIX so we get protein AC with 
-                                    my.gene <- sprintf("%s %s",modif.posi[,3],.string.number.ranges(modif.posi[,4]))
-                                    if (all(modif.posi[,1]==modif.posi[1,1])) {
-                                      my.modif.posi <- modif.posi[1,1]
-                                    } else {
-                                      my.modif.posi <- paste(modif.posi[,1],collapse=";")
-                                    }
-
-
-                                    res <- cbind(res,modif=unique(x$modif),
-                                                 modif.pos=my.modif.posi,
-                                                 modif.comment=ifelse(any(!is.na(modif.posi[,2])),
-                                                                      paste(modif.posi[!is.na(modif.posi[,2]),2],collapse="\n"),""),
-                                                 stringsAsFactors=FALSE)
-                                  }
-                                  res
-                                  })
-                          data.frame(proteinn=paste(merged.splicevariants$ac,collapse=","),link=merged.splicevariants$link[1],merged.pepmodifs,stringsAsFactors=FALSE)
-                        })
+            # for each modified peptide, get one record summarizing its information
+            merged.pepmodifs <- ddply(x,c("peptide","modif"),.summarize.pepmodif,modif.pos=modif.pos,ptm.info=ptm.info,from=from)
+            data.frame(proteinn=paste(merged.splicevariants$ac,collapse=","),link=merged.splicevariants$link[1],merged.pepmodifs,stringsAsFactors=FALSE)
+        })
 
         #res <- ddply(merge(ip.df,in.df),c("peptide","modif"),
         res <- ddply(merge(ip.df,in.df),c("peptide","modif"),
@@ -680,7 +613,8 @@ setAs("ProteinGroup","data.frame.concise",
                          null.comments <- x$modif.comment == ""
                          comment <- ifelse(all(null.comments),
                                            "",paste0("@comment=",paste(x$modif.comment[!null.comments],collapse="\n"),"@"))
-                         res <- data.frame(modif=unique(x$modif),
+                         res <- data.frame(start.pos=ifelse(all(x$start.pos==x$start.pos[1]),x$start.pos[1],paste0(x$start.pos,collapse=";")),
+                                           modif=unique(x$modif),
                                            modif.pos=ifelse(any(x$modif.pos!=0),
                                                             paste0(comment,
                                                                    paste(x$modif.pos,collapse=";")),
@@ -701,6 +635,91 @@ setAs("ProteinGroup","data.frame.concise",
         #res$peptide <- .convertModifToPos(res$peptide,res$modif)
         return(unique(res))
 }
+
+.summarize.pepmodif <- function(x,modif.pos,ptm.info,from) {
+  res <- data.frame(peptide=x$peptide[1],start.pos=paste(x$start.pos,collapse=";"),
+                    stringsAsFactors=FALSE)
+  if (!is.null(modif.pos)) 
+    res <- cbind(res,.get.modif.pos(x,modif.pos,ptm.info,from))
+  
+  res
+}
+
+.summarize.splice.variants <- function(x,link.url) {
+  res <- c(ac=unique(x$proteinac.wo.splicevariant),
+           link=paste0(link.url,unique(x$proteinac.wo.splicevariant)))
+  if (!all(is.na(x$splicevariant))) {
+    if (length(unique(x$splicevariant))==1) { res['ac'] <- x$protein[1] 
+    } else { res['ac'] <- sprintf("%s-[%s]",unique(x$proteinac.wo.splicevariant),
+                              number.ranges(as.numeric(x$splicevariant)))
+    }
+  }
+  res
+}
+
+.get.modif.pos <- function(x,modif.pos,ptm.info,from) {
+   pepseq <- strsplit(x$peptide[1],"")[[1]]
+   # get modification position foreach protein (in peptide) from modification string
+   modification.positions.foreach.protein <- .convertModifToPos(x$modif,modif.pos,collapse=NULL,simplify=FALSE)
+   modif.posi <- t(mapply(.get.modif.pos.for.ac,x$protein,x$splicevariant,modification.positions.foreach.protein,x$start.pos,
+                          MoreArgs=list(from=from,pepseq=pepseq)))
+
+   my.gene <- sprintf("%s %s",modif.posi[,3],.string.number.ranges(modif.posi[,4]))
+   if (is.na(modif.posi[1,1]) || all(modif.posi[,1]==modif.posi[1,1])) {
+     my.modif.posi <- modif.posi[1,1]
+   } else {
+     my.modif.posi <- paste(modif.posi[,1],collapse=";")
+   }
+
+
+   cbind(modif=unique(x$modif),
+         modif.pos=my.modif.posi,
+         modif.comment=ifelse(any(!is.na(modif.posi[,2])),
+                              paste(modif.posi[!is.na(modif.posi[,2]),2],collapse="\n"),""),
+         stringsAsFactors=FALSE)
+} 
+
+.get.modif.pos.for.ac <- function(ac,sv,pep.pos,start.pos,from,pepseq) {
+  if (length(pep.pos) == 0) {
+    return(c(NA,NA,proteinInfo(from,protein.ac=ac,select="gene_name",do.warn=FALSE,collapse=","),sv))
+  }
+  residue <- pepseq[pep.pos]
+  poss <- start.pos + pep.pos - 1
+  if (!is.null(ptm.info) && all(c("isoform_ac","position") %in% colnames(ptm.info))) {
+    comments <- sapply(poss,function(pp) {
+                       if (grepl("-[0-9]$",ac)) 
+                         sel <- ptm.info[,"isoform_ac"]==ac
+                       else
+                         sel <- ptm.info[,"isoform_ac"]==paste(ac,"-1",sep="")
+                       sel  <- sel  & ptm.info[,"position"]==pp
+
+                       if (any(sel)) {
+                         res <- apply(ptm.info[sel,],1,
+                                      function(pi) paste(sprintf("%s pos %g: %s",pi["isoform_ac"],
+                                                                 as.numeric(pi["position"]),pi["description"])))
+                         paste(res,collapse="\n")
+                       } else {
+                         NA
+                       }
+                    })
+    #known.pos <- sapply(poss,function(pp) any(ptm.info[,"isoform_ac"]==ac & ptm.info[,"position"]==pp))
+    known.pos <- !is.na(comments)
+  } else {
+    comments <- NA
+    known.pos <- rep(FALSE,seq_along(start.pos))
+  }
+  null.comments <- is.na(comments)
+
+  if (sum(known.pos) > 0)
+    poss[known.pos] <- paste0(residue[known.pos],poss[known.pos],"*")
+  poss[!known.pos] <- paste0(residue[!known.pos],poss[!known.pos])
+  c(paste(poss,collapse="&"),
+    ifelse(all(null.comments),NA,paste(comments[!null.comments],collapse="\n")),
+    proteinInfo(from,protein.ac=ac,select="gene_name",do.warn=FALSE,collapse=","),
+    sv)
+}
+
+
 
 proteinID <- function(protein.group,protein.g=reporterProteins(protein.group)) {
   proteinInfo(protein.group,protein.g,do.warn=FALSE,collapse=",")
@@ -745,7 +764,7 @@ setMethod("peptideSpecificity", "ProteinGroup", function(x) x@peptideSpecificity
 setMethod("peptideNProtein",   "ProteinGroup", function(x) x@peptideNProtein)
 setMethod("proteinGroupTable",      "ProteinGroup", function(x) x@proteinGroupTable )
 
-setMethod("indistinguishableProteins","ProteinGroup",
+setMethod("indistinguishableProteins",signature(x="ProteinGroup",protein="missing",protein.g="missing"),
           function(x) x@indistinguishableProteins)
 setMethod("indistinguishableProteins",signature(x="ProteinGroup",protein="missing",protein.g="character"),
           function(x,protein.g) {

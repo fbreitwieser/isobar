@@ -60,15 +60,17 @@ fitCauchy <- function(x,round.digits=NULL) {
 
 fitTd <- function(x) {
   t.fit <- function(theta,x){
-    -sum(dt(x,df=theta[1],log=TRUE),na.rm=T)
+    #-sum(dtls(x,df=theta[3],location=theta[1],scale=theta[2],log=TRUE),na.rm=T)
+    -sum(log(dtls(x,df=theta[3],location=theta[1],scale=theta[2])),na.rm=T)
   }
+  dtls <- function(x,df,location,scale,log = FALSE)
+            1/scale * dt((x - location)/scale, df, log = log)
+
   good <- !is.na(x) & !is.nan(x)
-  theta.start <- c(1) # TODO: find good starting value
-  res <- nlminb(theta.start,t.fit,x=x[good])
-  new("Td",df=res$par[1])
+  theta.start <- c(median(x[good]),sd(x[good]),1) # TODO: find good starting value
+  res <- nlminb(theta.start,t.fit,x=x[good],lower=c(-1,0,0),upper=c(1,10,100))
+  new("Tlsd",df=res$par[3],location=res$par[1],scale=res$par[2])
 }
-
-
 
 fitNormalCauchyMixture <- function(x) {
   gc.fit <- function(theta,x){
@@ -160,7 +162,7 @@ setMethod("estimateRatioNumeric",signature(channel1="numeric",channel2="numeric"
     function(channel1,channel2,noise.model,ratiodistr=NULL,
              variance.function="maxi",
              sign.level=0.05,sign.level.rat=sign.level,sign.level.sample=sign.level,
-             remove.outliers=TRUE,outliers.args=list(method="iqr",outliers.coef=1.5),n.sample=NULL, 
+             remove.outliers=TRUE,outliers.args=list(method="iqr",outliers.coef=1.5),
              method="isobar",fc.threshold=1.3,channel1.raw=NULL,channel2.raw=NULL,
              use.na=FALSE,preweights=NULL,correct.ratio=NULL) {
       
@@ -442,6 +444,8 @@ setMethod("estimateRatioNumeric",signature(channel1="numeric",channel2="numeric"
 }
 
 .get.ri <- function(ri,ch) {
+  if (is.null(ri))
+    return(NULL)
   if (ch == "ALL")
     rowSums(ri,na.rm=TRUE)
   else if (ch == "AVG")
@@ -757,8 +761,9 @@ setMethod("estimateRatio",
       for (c2 in channel2) {
         res <- rbind(res,data.frame(channel1=c1,channel2=c2,
                                     t(as.data.frame(.call.estimateRatio(x,level,ibspectra,noise.model,channel1=c1,channel2=c2,
-                                                                        specificity,modif,n.sample,groupspecific.if.same.ac,
-                                                                        use.precursor.purity,do.warn=do.warn,...))),
+                                                                        specificity=specificity,modif=modif,n.sample=n.sample,
+                                                                        groupspecific.if.same.ac=groupspecific.if.same.ac,
+                                                                        use.precursor.purity=use.precursor.purity,do.warn=do.warn,...))),
                                     stringsAsFactors=FALSE))
       }
     }
@@ -788,17 +793,30 @@ setMethod("estimateRatio",
   else
     precursor.purity <- NULL
 
-  ## TODO: implement n.sample
   i1 <- .get.ri(ri,channel1)
   i2 <- .get.ri(ri,channel2)
+  i1.raw <- .get.ri(ri.raw,channel1)
+  i2.raw <- .get.ri(ri.raw,channel2)
 
-  if (is.null(ri.raw)) {
-    estimateRatioNumeric(channel1=i1,channel2=i2,noise.model=noise.model,...,correct.ratio=correct.ratio,preweights=precursor.purity)
-  } else {
-    estimateRatioNumeric(channel1=i1,channel2=i2,noise.model=noise.model,...,correct.ratio=correct.ratio,preweights=precursor.purity,
-                  channel1.raw=.get.ri(ri.raw,channel1),
-                  channel2.raw=.get.ri(ri.raw,channel2))
-  }
+  # sample data for testing puposes (TP/FP estimation)
+  if (!is.null(n.sample)) {
+    message("do sample")
+    if (n.sample <= length(i1)) {
+      indices <- sample(seq_along(i1),n.sample)
+      i1 <- i1[indices]
+      i2 <- i2[indices]
+      if (!is.null(ri.raw)) {
+        i1.raw <- i1.raw[indices]
+        i2.raw <- i2.raw[indices]
+      }
+    }
+    else
+      i1 <- i2 <- i1.raw <- i2.raw <- numeric()
+   }
+
+   estimateRatioNumeric(channel1=i1,channel2=i2,noise.model=noise.model,...,
+                        correct.ratio=correct.ratio,preweights=precursor.purity,
+                        channel1.raw=i1.raw,channel2.raw=i2.raw)
 }
 
 
