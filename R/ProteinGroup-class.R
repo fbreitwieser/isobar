@@ -685,7 +685,7 @@ proteinGroup.as.concise.data.frame <-
   }
   residue <- pepseq[pep.pos]
   poss <- start.pos + pep.pos - 1
-  if (!is.null(ptm.info)) {
+  if (!is.null(ptm.info) && all(c("isoform_ac","position") %in% colnames(ptm.info))) {
     comments <- sapply(poss,function(pp) {
                        if (grepl("-[0-9]$",ac)) 
                          sel <- ptm.info[,"isoform_ac"]==ac
