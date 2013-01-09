@@ -60,15 +60,17 @@ fitCauchy <- function(x,round.digits=NULL) {
 
 fitTd <- function(x) {
   t.fit <- function(theta,x){
-    -sum(dt(x,df=theta[1],log=TRUE),na.rm=T)
+    #-sum(dtls(x,df=theta[3],location=theta[1],scale=theta[2],log=TRUE),na.rm=T)
+    -sum(log(dtls(x,df=theta[3],location=theta[1],scale=theta[2])),na.rm=T)
   }
+  dtls <- function(x,df,location,scale,log = FALSE)
+            1/scale * dt((x - location)/scale, df, log = log)
+
   good <- !is.na(x) & !is.nan(x)
-  theta.start <- c(1) # TODO: find good starting value
-  res <- nlminb(theta.start,t.fit,x=x[good])
-  new("Td",df=res$par[1])
+  theta.start <- c(median(x[good]),sd(x[good]),1) # TODO: find good starting value
+  res <- nlminb(theta.start,t.fit,x=x[good],lower=c(-1,0,0),upper=c(1,10,100))
+  new("Tlsd",df=res$par[3],location=res$par[1],scale=res$par[2])
 }
-
-
 
 fitNormalCauchyMixture <- function(x) {
   gc.fit <- function(theta,x){
