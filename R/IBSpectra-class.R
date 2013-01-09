@@ -1100,7 +1100,7 @@ setAs("IBSpectra","data.frame",
 .IBSpectraAsConciseDataFrame  <- function(from) {
 
       # prepare ProteinGroup data.frame
-      pg.df <- as(proteinGroup(from),"data.frame.concise")
+      pg.df <- proteinGroup.as.concise.data.frame(from)
       colnames(pg.df)[colnames(pg.df) == "proteins"] <- .PROTEIN.COLS['PROTEINAC_CONCISE']
       colnames(pg.df)[colnames(pg.df) == "peptide"] <- .SPECTRUM.COLS['PEPTIDE']
 
@@ -1123,7 +1123,7 @@ setAs("IBSpectra","data.frame",
 .IBSpectraAsConciseDataFrameNew <- function(from,show.phospho.position=FALSE) {
   # prepare ProteinGroup data.frame
   indist.proteins <- indistinguishableProteins(proteinGroup(from))
-  pg.df <- as(proteinGroup(from),"data.frame.concise")
+      pg.df <- proteinGroup.as.concise.data.frame(from)
   colnames(pg.df)[colnames(pg.df) == "proteins"] <- .PROTEIN.COLS['PROTEINAC_CONCISE']
   colnames(pg.df)[colnames(pg.df) == "peptide"] <- .SPECTRUM.COLS['PEPTIDE']
 
@@ -1320,7 +1320,7 @@ setMethod("spectrumSel",signature(x="IBSpectra",peptide="missing",protein="chara
         return(FALSE)
       sel <- spectrumSel(x,peptide=peptides,spectrum.titles=spectrum.titles,
                          modif=modif,use.for.quant.only=use.for.quant.only,do.warn=do.warn)
-      if (do.warn && ((spectrum.titles & any(sel)) || (!spectrum.titles & !any(sel))))
+      if (do.warn && (isTRUE(spectrum.titles) && length(sel) == 0 || !isTRUE(spectrum.titles) && !any(sel)))
         warning("No spectra for protein ",protein,
                 " with specificity ",paste(specificity,collapse=","))
       return(sel)

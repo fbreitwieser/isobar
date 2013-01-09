@@ -537,7 +537,7 @@ setAs("ProteinGroup","data.frame",function(from) {
 ##  - column n.acs: number of acs a peptide appears in (without splice variant!)
 ##      counts double if the same ACs are in different groups 
 ##  - column n.variants: number of acs a peptide appears in (with splice variant!)
-setAs("ProteinGroup","data.frame.concise",
+proteinGroup.as.concise.data.frame <-
       function(from) {
         ip.df <- .vector.as.data.frame(indistinguishableProteins(from),
                                        colnames=c("protein","protein.g"))
@@ -567,7 +567,7 @@ setAs("ProteinGroup","data.frame.concise",
 
                      })
         return(unique(res))
-      })
+      }
 
 # nexprot url: "http://www.nextprot.org/db/entry/NX_"
 .proteinGroupAsConciseDataFrame <- 
