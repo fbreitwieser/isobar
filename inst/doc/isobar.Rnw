@@ -29,7 +29,7 @@
 \newcommand{\Rpackage}[1]{{\texttt{#1}}}
 \newcommand{\isobar}{\Rpackage{isobar}}
 
-\title{Isobar Vignette - iTRAQ and TMT Analysis}
+\title{\emph{isobar} package for iTRAQ and TMT protein quantification}
 \author{Florian P.\ Breitwieser, Jacques Colinge}
 
 \begin{document}

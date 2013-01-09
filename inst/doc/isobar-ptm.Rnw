@@ -20,10 +20,10 @@
 \oddsidemargin=.05in
 \evensidemargin=.05in
 \headheight=-.3in
-\newcommand{\isobar}{\emph{isobar}}
-\newcommand{\isobarPtm}{\emph{isobar}$^{\sc ptm}$}
+\newcommand{\isobar}{\texttt{isobar}}
+\newcommand{\isobarPtm}{\texttt{isobar}$^{\sc ptm}$}
 
-\title{\isobar{} for quantification of PTM datasets}
+\title{\emph{isobar} for quantification of PTM datasets}
 \author{Florian P.\ Breitwieser, Jacques Colinge}
 
 \begin{document}
