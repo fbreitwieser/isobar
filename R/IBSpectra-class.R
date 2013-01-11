@@ -1589,16 +1589,22 @@ setMethod("exclude",
 
 
 
-subsetIBSpectra <- function(x, protein=NULL, peptide=NULL, direction="exclude",
-                            specificity=c(REPORTERSPECIFIC,GROUPSPECIFIC,
-                                             UNSPECIFIC),...) {
+subsetIBSpectra <- 
+  function(x, protein=NULL, peptide=NULL, direction="exclude",
+           specificity=c(REPORTERSPECIFIC,GROUPSPECIFIC,UNSPECIFIC),...) {
 
-  if (is.null(protein))
+  if ((is.null(protein) && is.null(peptide)) || (!is.null(protein) && !is.null(peptide)))
+    stop("define either protein or peptide to include or exclude")
+
+  if (!is.null(peptide))
     sel.spectra <- spectrumSel(x,peptide=peptide,...)
   else
     sel.spectra <- spectrumSel(x,protein=protein,specificity=specificity,...)
-  if (direction=="exclude")
-    sel.spectra <- !sel.spectra
+
+  sel.spectra <- switch (direction,
+                         exclude = !sel.spectra,
+                         include = sel.spectra,
+                         stop("direction must be either 'exclude' or 'include'."))
 
   for (aden in assayDataElementNames(x)) {
     assayDataElement(x,aden) <- assayDataElement(x,aden)[sel.spectra,]
