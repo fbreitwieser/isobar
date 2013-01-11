@@ -327,8 +327,8 @@ setMethod("estimateRatioNumeric",signature(channel1="numeric",channel2="numeric"
                  lratio.lm=as.numeric(res.lm['lratio']),
                  lratio.wlm=as.numeric(res.wlm['lratio']),
                  variance=calc.variance,
-                 var.ev=lratio.n.var['estimator.variance'],
-                 var.sv=lratio.n.var['sample.variance'],
+                 var.ev=as.numeric(lratio.n.var['estimator.variance']),
+                 var.sv=as.numeric(lratio.n.var['sample.variance']),
                  var.lm=as.numeric(res.lm['stderr']**2),
                  var.lm.w=as.numeric(res.wlm['stderr']**2),
                  n.spectra=length(log.ratios),
@@ -800,7 +800,6 @@ setMethod("estimateRatio",
 
   # sample data for testing puposes (TP/FP estimation)
   if (!is.null(n.sample)) {
-    message("do sample")
     if (n.sample <= length(i1)) {
       indices <- sample(seq_along(i1),n.sample)
       i1 <- i1[indices]
