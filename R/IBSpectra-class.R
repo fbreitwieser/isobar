@@ -1266,6 +1266,9 @@ setGeneric("spectrumSel", function(x,peptide,protein,...) standardGeneric("spect
 setMethod("spectrumSel",signature(x="IBSpectra",peptide="missing",protein="missing"),
     function(x) rep(TRUE,nrow(fData(x))))
 
+setMethod("spectrumSel",signature(x="IBSpectra",peptide="data.frame",protein="missing"),
+    function(x,peptide,...) spectrumSel(x,as.matrix(peptide),...) )
+
 setMethod("spectrumSel",signature(x="IBSpectra",peptide="matrix",protein="missing"),
     function(x,peptide,modif=NULL,spectrum.titles=FALSE,use.for.quant.only=TRUE,do.warn=TRUE) {
         if (length(peptide) == 0) {
@@ -1283,6 +1286,7 @@ setMethod("spectrumSel",signature(x="IBSpectra",peptide="matrix",protein="missin
         
         for (m in modif)
           sel <- sel & grepl(m,fData(x)[,.SPECTRUM.COLS['MODIFSTRING']])
+
         if (!any(sel) && do.warn) warning("No spectra for peptide ",peptide)
         if (spectrum.titles)
           return(rownames(fData(x))[sel])
