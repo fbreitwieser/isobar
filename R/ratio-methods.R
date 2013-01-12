@@ -970,7 +970,7 @@ combn.matrix <- function(x,method="global",cl=NULL,vs=NULL) {
 ## create a table with all protein ratios
 combn.protein.tbl <- function(ibspectra,noise.model,ratiodistr,
                               proteins=NULL,cmbn,peptide=NULL,modif=NULL,
-                              symmetry=FALSE,reverse=FALSE,variance.function="maxi",...) {
+                              reverse=FALSE,variance.function="maxi",...) {
   
   ratios <- do.call(rbind,apply(cmbn,2,function(x) {
     if (reverse)
@@ -987,40 +987,28 @@ combn.protein.tbl <- function(ibspectra,noise.model,ratiodistr,
       r <- t(r)
       rownames(r) <- "prot1"
     }
-    df <- as.data.frame(r,stringsAsFactors=FALSE)
-
 
     if (is.matrix(attr(r,"input")))
-      df <- cbind(as.data.frame(attr(r,"input"),stringsAsFactors=FALSE),df)
+      df <- data.frame(attr(r,"input"),r,stringsAsFactors=FALSE)
+    else
+     df <- data.frame(r,stringsAsFactors=FALSE)
 
     if (!is.null(rownames(r))) 
       df$ac <- rownames(df)
-    
-    #rownames(df) <- paste(df$ac,paste(x[2],x[1],sep=":"),sep="_")
     rownames(df) <- NULL
-    df$r1 <- x[1]
-    df$r2 <- x[2]
+
+    df$r1 <- x[1]; df$r2 <- x[2]
     if (length(x) == 4) {
-      df$class1 <- x[3]
-      df$class2 <- x[4]
+      df$class1 <- x[3]; df$class2 <- x[4]
     }
     return(df)
   }))
 
-
-  if (all(c("peptide","modif") %in% colnames(df))) {
+  if (all(c("peptide","modif") %in% colnames(ratios))) 
     ratios <- ratios[order(ratios$peptide,ratios$modif,ratios$r1,ratios$r2),]
-  }
+  else
     ratios <- ratios[order(ratios$ac,ratios$r1,ratios$r2),]
   
-  if (symmetry) {
-    ratios.inv <- ratios
-    ratios.inv[,'lratio'] <- -ratios.inv[,'lratio']
-    r1 <- ratios.inv[,'r1']
-    ratios.inv[,'r1'] <- ratios.inv[,'r2']
-    ratios.inv[,'r1'] <- r1
-    ratios <- rbind(ratios,ratios.inv)
-  }
   return(ratios)  
 }
 
@@ -1107,7 +1095,7 @@ proteinRatios <-
          " summarize=",ifelse(summarize,"TRUE","FALSE"))
   
   ratios <- combn.protein.tbl(ibspectra,noise.model,ratiodistr,proteins,combn,
-                              peptide=peptide,symmetry=symmetry,reverse=reverse,
+                              peptide=peptide,reverse=reverse,
                               variance.function=variance.function,combine=combine,...)
 
   if (summarize) {
@@ -1145,6 +1133,15 @@ proteinRatios <-
       ratios$is.significant <- ratios$is.significant & ratios$p.value.rat.adjusted < sign.level.rat
     }
   }
+  if (symmetry) {
+    ratios.inv <- ratios
+    ratios.inv[,'lratio'] <- -ratios.inv[,'lratio']
+    ratios.inv[,c('r1','r2')] <- ratios.inv[,c('r2','r1')]
+    if ('class1' %in% colnames(ratios))
+      ratios.inv[,c('class1','class2')] <- ratios.inv[,c('class2','class1')]
+    ratios <- rbind(ratios,ratios.inv)
+  }
+
   attributes(ratios) = c(attributes(ratios),list(
           classLabels=cl,combn.method=combn.method,symmetry=symmetry,summarize=summarize,
           sign.level.rat=sign.level.rat,sign.level.sample=sign.level.sample,
@@ -1242,8 +1239,8 @@ summarize.ratios <-
               p.value.sample <- getMultUnifPValues(product.p.vals,n=sum(ac.sel))
             }
 
-            min.detect.c <- ifelse(is.matrix(min.detect),min.detect[class1,class2],min.detect)
           }
+          min.detect.c <- ifelse(is.matrix(min.detect),min.detect[class1,class2],min.detect)
           ## significance
           is.significant <- (p.value.sample <= sign.level.sample) &&
             (p.value.rat <= sign.level.rat) &&
