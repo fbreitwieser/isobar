@@ -44,7 +44,7 @@ fitGumbel <- function(x) {
 }
 
 
-fitCauchy <- function(x,round.digits=NULL) {
+fitCauchy <- function(x) {
   cauchy.fit <- function(theta,x){
     -sum(dcauchy(x,location=theta[1],scale=theta[2],log=TRUE),na.rm=T)
   }
@@ -52,13 +52,10 @@ fitCauchy <- function(x,round.digits=NULL) {
   theta.start <- c(median(x[good]),IQR(x[good])/2)
   res <- nlminb(theta.start,cauchy.fit,x=x[good],
                 lower=c(-10,1e-20),upper=c(10,10)) 
-  if (!is.null(round.digits))
-    new("Cauchy",location=round(res$par[1],round.digits),scale=round(res$par[2],round.digits))
-  else
-    new("Cauchy",location=res$par[1],scale=res$par[2])
+  new("Cauchy",location=res$par[1],scale=res$par[2])
 }
 
-fitTd <- function(x) {
+fitTlsd <- function(x) {
   t.fit <- function(theta,x){
     #-sum(dtls(x,df=theta[3],location=theta[1],scale=theta[2],log=TRUE),na.rm=T)
     -sum(log(dtls(x,df=theta[3],location=theta[1],scale=theta[2])),na.rm=T)
