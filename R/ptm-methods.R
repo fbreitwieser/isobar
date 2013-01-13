@@ -2,11 +2,11 @@
 getPhosphoRSProbabilities <- function(
   id.file,mgf.file,massTolerance,activationType,simplify=FALSE,
   mapping.file=NULL,mapping=c(peaklist="even",id="odd"),pepmodif.sep="##.##",besthit.only=TRUE,
-  phosphors.cmd=paste("java -jar",system.file("phosphors","phosphoRS.jar",package="isobar",mustWork=TRUE))) {
-  
-  tmpfile <- tempfile("phosphors.")
-  infile <- paste0(tmpfile,".in.xml")
-  outfile <- paste0(tmpfile,".out.xml")
+  phosphors.cmd=paste("java -jar",system.file("phosphors","phosphoRS.jar",package="isobar",mustWork=TRUE)),
+  file.basename=tempfile("phosphors.")) {
+
+  infile <- paste0(file.basename,".in.xml")
+  outfile <- paste0(file.basename,".out.xml")
 
   writePhosphoRSInput(infile,
                       id.file,mgf.file,massTolerance,activationType,
