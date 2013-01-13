@@ -750,7 +750,7 @@ proteinNameAndDescription <- function(protein.group,protein.g=reporterProteins(p
 
 setGeneric("peptideNProtein",function(x) standardGeneric("peptideNProtein"))
 setGeneric("peptideSpecificity", function(x) standardGeneric("peptideSpecificity") )
-setGeneric("peptideSpecificity",function(x) standardGeneric("peptideSpecificity"))
+setGeneric("peptideInfo", function(x) standardGeneric("peptideInfo"))
 setGeneric("peptides",function(x,protein,...) standardGeneric("peptides"))
 setGeneric("indistinguishableProteins",
            function(x,protein,protein.g) standardGeneric("indistinguishableProteins"))
@@ -761,6 +761,7 @@ setGeneric("proteinInfo",function(x,protein.g,protein.ac,...) standardGeneric("p
 setGeneric("proteinInfo<-",function(x,value) standardGeneric("proteinInfo<-"))
 
 setMethod("peptideSpecificity", "ProteinGroup", function(x) x@peptideSpecificity)
+setMethod("peptideInfo", "ProteinGroup", function(x) x@peptideInfo)
 setMethod("peptideNProtein",   "ProteinGroup", function(x) x@peptideNProtein)
 setMethod("proteinGroupTable",      "ProteinGroup", function(x) x@proteinGroupTable )
 
@@ -803,6 +804,7 @@ setMethod("peptides",signature(x="ProteinGroup",protein="character"),
 
       pnp <- peptideNProtein(x)
       ps <- peptideSpecificity(x)
+      pi <- peptideInfo(x)
 
       if (groupspecific.if.same.ac) {
         group.proteins <- subset(proteinGroupTable(x),reporter.protein==protein,"protein.g",drop=TRUE)
@@ -817,19 +819,20 @@ setMethod("peptides",signature(x="ProteinGroup",protein="character"),
       peptides <- lapply(protein, function(p) pnp[pnp[,"protein.g"] == p,"peptide"])
       peptides <- Reduce(set,peptides)
 
-      sel <- ps$specificity %in% specificity 
-      sel <- sel & ps$peptide %in% peptides
-      if (!is.null(modif)) {
-        sel.has.modif <- sapply(strsplit(x@peptideInfo$modif,":"),function(m) any(m %in% modif))
-        sel <- sel & ps$peptide %in% x@peptideInfo$peptide[sel.has.modif]
-      }
+      sel <- pi$peptide %in% peptides                                          # is in protein?
+      sel <- sel & pi$peptide %in% ps$peptide[ps$specificity %in% specificity] # has specificity?
+      if (!is.null(modif)) sel <- sel & .has.modif(pi$modif,modif)             # has modification?
 
-      peptides <- ps[sel,columns,drop=drop]
+      peptides <- pi[sel,columns,drop=drop]
       if (length(peptides) == 0 && do.warn)
         warning("No peptide for protein ",protein," with specificity ",paste(specificity,collapse=","))
-      return(peptides)
+      return(unique(peptides))
     }
 )
+
+.has.modif <- function(modifstring,modif) {
+  sapply(strsplit(modifstring,":"),function(m) any(m %in% modif))
+}
 
 setMethod("reporterProteins","ProteinGroup",
     function(x,require.reporter.specific=FALSE) {

@@ -295,18 +295,11 @@ initialize.env <- function(env,report.type="protein",properties.env) {
     env$quant.tbl$ac <- env$quant.tbl$protein
 
   ## required for TeX
-  if (identical(report.type,"protein"))
+  if (properties.env$write.report && identical(report.type,"protein"))
     env$my.protein.infos <- .create.or.load.my.protein.infos(env,properties.env)
-  env$xls.quant.tbl <- .create.or.load.xls.quant.tbl(report.type,env,properties.env)
-  #if (report.type == "protein") {
-  #  env$my.protein.infos <- .create.or.load.my.protein.infos(env,properties.env)
-  #  env$xls.quant.tbl <- .create.or.load.xls.quant.tbl(env,properties.env)
-  #} else if (report.type == "peptide") {
-    ## compute peptide ratios
-  #  env$xls.peptide.tbl <- .create.or.load.xls.peptide.tbl(env,properties.env)
-  #} else {
-  #  stop("report type [",report.type,"] not known - choose protein or peptide")
-  #}
+
+  if (properties.env$write.xls.report)
+    env$xls.quant.tbl <- .create.or.load.xls.quant.tbl(report.type,env,properties.env)
 }
 
 #- property loading helper functions
@@ -546,40 +539,63 @@ initialize.env <- function(env,report.type="protein",properties.env) {
 .create.or.load.ratiodistr <- function(env,properties.env,level) {
   
   return(.create.or.load("ratiodistr",envir=properties.env,class="Distribution",
-                         msg.f="protein ratio distribution",f=function(){
+                         msg.f="biological variability ratio distribution",f=function(){
 
-    if (properties.env$summarize) {
-      method <- "intraclass"
-    } else {
-      message(" WARNING: ratiodistr will be computed based on global ratios!")
-      method <- "global"
-    }
- 
     cl <- classLabels(env$ibspectra)
     if (!is.null(properties.env$ratiodistr.class.labels))
       cl <- properties.env$ratiodistr.class.labels
 
-    message("  Using class labels ",paste(cl,collapse=", "))
+    ratios.for.distr.fitting <- .create.or.load.ratiodistr.ratios(env,properties.env,level,cl)
 
-    if (identical(level,"peptide"))
-      all.ratios <- peptideRatios(env$ibspectra,noise.model=env$noise.model,do.warn=FALSE,
-                                  peptide=peptides(proteinGroup(env$ibspectra)),
-                                  cl=cl,combn.method=method,symmetry=TRUE)
-    else
-      all.ratios <- proteinRatios(env$ibspectra,noise.model=env$noise.model,do.warn=FALSE,
-                                      proteins=reporterProteins(proteinGroup(env$ibspectra)),peptide=NULL,
-                                      cl=cl,combn.method=method,symmetry=TRUE)
+    if (!is.function(properties.env$ratiodistr.fitting.f))
+      stop("ratiodistr.fitting.f must be set to a function [e.g. fitCauchy or fitTd]")
 
-    if (all(is.nan(all.ratios$lratio)))
-      stop("Cannot compute protein ratio distribution - no ratios available.\n",
-           "Probably due to missing reporter intensities.")
-    ratiodistr <- fitCauchy(all.ratios[,'lratio'],round.digits=5)
-    attr(ratiodistr,"method") <- method
-    attr(ratiodistr,"cl") <- classLabels(env$ibspectra)
+    ratiodistr <- properties.env$ratiodistr.fitting.f(ratios.for.distr.fitting[,'lratio'])
+    ratiodistr <- .round.distr(ratiodistr,digits=5)
+    attr(ratiodistr,"combn.method") <- attr(ratios.for.distr.fitting,"combn.method")
+    attr(ratiodistr,"cl") <- attr(ratios.for.distr.fitting,"cl")
     attr(ratiodistr,"tagNames") <- reporterTagNames(env$ibspectra)
     ratiodistr
   }))
 }
+
+.round.distr <- function(distr,digits) {
+  for (s in slotNames(param(distr))) 
+    if (s != "name" && is.numeric(slot(param(distr),s))) 
+      slot(distr@param,s) <- round(slot(param(distr),s),digits)
+  distr
+}
+
+.create.or.load.ratiodistr.ratios <- function (env,properties.env,level,cl) {
+  .create.or.load("ratios.for.distr.fitting",envir=properties.env,class="data.frame",
+                  msg.f="ratios for biological variability distribution fitting",f=function() {
+
+    message("  Using class labels ",paste(cl,collapse=", "))
+    if (properties.env$summarize || any(table(cl)>=2)) {
+      method <- "intraclass"
+    } else {
+      message(" WARNING: ratiodistr will be computed based on global ratios")
+      method <- "global"
+    }
+
+    if (identical(level,"peptide"))
+      ratios.for.distr.fitting <- peptideRatios(env$ibspectra,noise.model=env$noise.model,do.warn=FALSE,
+                                  cl=cl,combn.method=method,symmetry=TRUE,summarize=method=="intraclass")
+    else
+      ratios.for.distr.fitting <- proteinRatios(env$ibspectra,noise.model=env$noise.model,do.warn=FALSE,
+                                      cl=cl,combn.method=method,symmetry=TRUE,summarize=method=="intraclass")
+
+    if (all(is.nan(ratios.for.distr.fitting$lratio)))
+      stop("Cannot compute protein ratio distribution - no ratios available.\n",
+           "Probably due to missing reporter intensities.")
+
+    attr(ratios.for.distr.fitting,"combn.method") <- method
+    attr(ratios.for.distr.fitting,"cl") <- cl
+
+    ratios.for.distr.fitting
+  })
+}
+
 
 .set <- function(x,name,list) {
   if (name %in% names(list)) {

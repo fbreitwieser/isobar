@@ -109,8 +109,21 @@ min.detect=NULL
 
 preselected=c()
 
+### Biological Variability Ratio Distribution options
+## ratiodistr can be set to a file or a 'Distribution object. '
+##  If NULL, or the specified file is not existent, the biological variability 
+##  of ratios is estimated on the sample at hand and written to 
+##  cachedir/ratiodistr.rda or the specified file.
 ratiodistr=NULL
+
+## Ideally, when the biological variability is estimated for the sample at hand, 
+## a biological replicate is present (/ie/ same class defined in class labels).
+## Classes can also be assigned just for estimation of the ratio distribution,
+## /eg/ to choose biologically very similar samples as pseudo replicates.
 ratiodistr.class.labels=NULL
+
+## Function for fitting. Available: fitCauchy, fitTd, (TOADD)
+ratiodistr.fitting.f=fitCauchy
 
 ###############################################################################
 ## PTM properties
