@@ -1114,6 +1114,45 @@ modifs <-
 }
 
 # tex helper functions
+draw.proteingroup.row <- function(name,protein.group,reporter.protein.g) {
+  gmp <- groupMemberPeptides(protein.group,reporter.protein.g,TRUE)
+  pgt <- proteinGroupTable(protein.group)
+
+  n.multirow <- length(unique(protein.ac(protein.group,pgt[pgt$reporter.protein==reporter.protein.g,"protein.g"])))
+  cat("\\multirow{",n.multirow ,"}{*}{",name,"} & \n",sep="")
+  n.row <- 1
+  show.pos <- FALSE
+  for (protein.i in seq_len(ncol(gmp$group.member.peptides))) {
+    x = colnames(gmp$group.member.peptides)[protein.i]
+
+    my.protein.info <- my.protein.info(protein.group,x)
+    for (ac in unique(my.protein.info$accession)) {
+      if (n.row > 1) cat(" & ") 
+      sel <- my.protein.info$accession == ac
+      var.string <- number.ranges(my.protein.info$splicevariant[sel])
+      #cat(protein.i,"&")
+      if (show.pos) cat(protein.i,"&")
+      cat(paste(sprintf("\\uniprotlink{%s}",sanitize(ac,dash=FALSE)),
+          ifelse(is.na(var.string),"",var.string),
+          sanitize(unique(my.protein.info$gene_name[sel])),
+          sanitize(unique(my.protein.info$protein_name[sel])),
+          sep=" & "))
+
+      if (n.row==1) {
+        # PEPTIDE GROUPING
+        cat(" & \\multirow{",n.multirow ,"}{*}{%\n",sep="")
+        tikz.proteingroup(protein.group,reporter.protein.g,show.pos,show.header=FALSE)
+        cat("} \\\\ \n")
+      } else {
+        cat(" & \\\\ \n")
+      }
+      n.row <- n.row + 1
+          
+    }
+    #human.protein.name <- human.protein.names(my.protein.info)
+  } 
+}
+
 
 draw.protein.group <- function(protein.group,reporter.protein.g) {
   gmp <- groupMemberPeptides(protein.group,reporter.protein.g,TRUE)
@@ -1147,13 +1186,13 @@ draw.protein.group <- function(protein.group,reporter.protein.g) {
           sep=" & "),"\\\\ \n")
           
     }
-    human.protein.name <- human.protein.names(my.protein.info)
+    #human.protein.name <- human.protein.names(my.protein.info)
   } 
   cat("\\end{tabular}\n")
 
 }
 
-tikz.proteingroup <- function(protein.group,reporter.protein.g,show.pos) {
+tikz.proteingroup <- function(protein.group,reporter.protein.g,show.pos,show.header=TRUE) {
 
   gmp <- groupMemberPeptides(protein.group,reporter.protein.g,TRUE)
   reporter.sp.sel <- gmp$peptide.info$specificity == "reporter-specific"
@@ -1190,9 +1229,10 @@ tikz.proteingroup <- function(protein.group,reporter.protein.g,show.pos) {
     tikz.x <- round(tikz.x*max.n.peptides/n.peptides,2)
     tikz.minnodesize <- round(tikz.minnodesize*max.n.peptides/n.peptides,2)
   }
- 
+  
   cat(sprintf("\\begin{tikzpicture}[x=%scm,y=%scm,every node/.style={minimum size=%scm}]\n",tikz.x,tikz.y,tikz.minnodesize))
-  cat("  \\node at (1,0)[anchor=west] {peptides};\n")
+  if (show.header)
+    cat("  \\node at (1,0)[anchor=west] {peptides};\n")
 
   n.groupmember <- ncol(gmp$group.member.peptides)
   protein.peptides.df <- data.frame(
@@ -1236,9 +1276,14 @@ tikz.proteingroup <- function(protein.group,reporter.protein.g,show.pos) {
        connect.nodes(-protein.i,which((reporter.sp.sel | group.sp.sel | unspecific.sel | quant.sel)&gmp$group.member.peptides[,protein.i]))
      }
   }
+  cat(sprintf("\\node{%s/%s/%s};\n",protein.peptides.df[protein.i,"rs"],
+      protein.peptides.df[protein.i,"gs"],
+      protein.peptides.df[protein.i,"us"]))
 
-  cat("  \\matrix[ampersand replacement=\\&,matrix anchor=us node.east,anchor=base] at (0,0) {\n",
-      "    \\node{}; \\& \\node {rs};  \\& \\node {gs}; \\& \\node (us node){us};  \\\\\n");
+
+  if (show.header) {
+  cat("  \\matrix[ampersand replacement=\\&,matrix anchor=us node.east,anchor=base] at (0,0) {\n")
+      cat("    \\node{}; \\& \\node {rs};  \\& \\node {gs}; \\& \\node (us node){us};  \\\\\n")
   for (protein.i in seq_len(n.groupmember)) {
      if (show.pos) cat(sprintf("    \\node[draw,gray]{%s};",protein.i))
      cat(sprintf("    \\& \\node{%s};\\& \\node{%s};\\& \\node{%s}; \\\\\n",
@@ -1247,6 +1292,7 @@ tikz.proteingroup <- function(protein.group,reporter.protein.g,show.pos) {
                  protein.peptides.df[protein.i,"us"]))
   }
   cat("  };\n")
+  }
   cat("\\end{tikzpicture}\n")
 
 }

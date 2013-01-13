@@ -138,13 +138,13 @@ if (!is.null(cl)) {
   cat("\\end{tabular}\n")
 }
 @
-
-\begin{tabular}{rp{8cm}}
+\quad
+\begin{tabular}{rp{7.5cm}}
 \multicolumn{2}{c}{Column Description} \bigstrut  \\
-\emph{protein} & Protein ID.  \\
-\emph{peptides} & Number of peptides protein was identified with. \\
-\emph{spectra} & Number of spectra protein was identified with. \\
-\emph{quant} & Number of spectra a quantitative information was available for \textit{ch2} versus \textit{ch1}. \\
+\emph{protein} & Protein Identification information.  \\
+\emph{peptides} & Number of peptides for protein. \\
+\emph{spectra} & Number of idenfitied spectra  for protein. \\
+\emph{quant} & Number of spectra with quantitative information for \textit{ch2} versus \textit{ch1}. \\
 \emph{ratio} & Ratio of protein in channel \textit{ch2} relative to \textit{ch1}. \\
 \emph{*} & Significance of protein ratio in sample. \\
 \end{tabular}
