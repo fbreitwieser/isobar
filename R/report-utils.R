@@ -88,7 +88,6 @@ write.xls.report <- function(report.type,properties.env,report.env,file="isobar-
       ## in principle, it works by defining the protein.group.ids attr, but does not here - 
       ## probably due to the environment it does not
       attr(proteinGroup(report.env$ibspectra),"protein.group.ids") <- .as.vect(unique(get.val('quant.tbl')[,c("ac","group")]))
-      #protein.id.df <- as(get('ibspectra',report.env),"data.frame.concise")
 
       protein.id.df <- ibSpectra.as.concise.data.frame(get('ibspectra',report.env))
       ## make columns w/ multiple groups gray
@@ -99,7 +98,6 @@ write.xls.report <- function(report.type,properties.env,report.env,file="isobar-
       #protein.id.df[!sel.1group | !protein.id.df$use.for.quant,1] <- paste("#color=gray#",protein.id.df[!sel.1group,1],sep="")
 
     } else {
-      #protein.id.df <- as(get('ibspectra',report.env),"data.frame.concise")
       protein.id.df <- ibSpectra.as.concise.data.frame(get('ibspectra',report.env))
       protein.group <- proteinGroup(get('ibspectra',report.env))
       if (!is.null(properties.env$phosphosite.dataset)) {
@@ -921,7 +919,7 @@ initialize.env <- function(env,report.type="protein",properties.env) {
                     
     protein.group <- proteinGroup(env$ibspectra)
     indist.proteins <- indistinguishableProteins(protein.group)
-    df.pg <- as(protein.group,"data.frame.concise")    
+    df.pg <- proteinGroup.as.concise.data.frame(protein.group)
 
     xls.peptide.tbl <- merge(df.pg,quant.tbl,by="peptide")
     xls.peptide.tbl$Channels <- paste(xls.peptide.tbl$r2,"/",xls.peptide.tbl$r1)
