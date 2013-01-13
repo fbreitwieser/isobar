@@ -1097,10 +1097,10 @@ setAs("IBSpectra","data.frame",
     }
 )
 
-.IBSpectraAsConciseDataFrame  <- function(from) {
+ibSpectra.as.concise.data.frame  <- function(from) {
 
       # prepare ProteinGroup data.frame
-      pg.df <- proteinGroup.as.concise.data.frame(from)
+      pg.df <- proteinGroup.as.concise.data.frame(proteinGroup(from))
       colnames(pg.df)[colnames(pg.df) == "proteins"] <- .PROTEIN.COLS['PROTEINAC_CONCISE']
       colnames(pg.df)[colnames(pg.df) == "peptide"] <- .SPECTRUM.COLS['PEPTIDE']
 

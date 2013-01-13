@@ -90,7 +90,7 @@ write.xls.report <- function(report.type,properties.env,report.env,file="isobar-
       attr(proteinGroup(report.env$ibspectra),"protein.group.ids") <- .as.vect(unique(get.val('quant.tbl')[,c("ac","group")]))
       #protein.id.df <- as(get('ibspectra',report.env),"data.frame.concise")
 
-      protein.id.df <- .IBSpectraAsConciseDataFrame(get('ibspectra',report.env))
+      protein.id.df <- ibSpectra.as.concise.data.frame(get('ibspectra',report.env))
       ## make columns w/ multiple groups gray
       sel.1group  <- protein.id.df$n.groups == 1
       #sel.1ac  <- protein.id.df$n.acs == 1
@@ -100,7 +100,7 @@ write.xls.report <- function(report.type,properties.env,report.env,file="isobar-
 
     } else {
       #protein.id.df <- as(get('ibspectra',report.env),"data.frame.concise")
-      protein.id.df <- .IBSpectraAsConciseDataFrame(get('ibspectra',report.env))
+      protein.id.df <- ibSpectra.as.concise.data.frame(get('ibspectra',report.env))
       protein.group <- proteinGroup(get('ibspectra',report.env))
       if (!is.null(properties.env$phosphosite.dataset)) {
         sites <- do.call(rbind,lapply(properties.env$phosphosite.dataset,
