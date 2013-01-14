@@ -47,8 +47,8 @@ setMethod("reporterMassPrecision",
                                binwidth=1/20*(max(melt.masses$mass,na.rm=TRUE)-min(melt.masses$mass,na.rm=TRUE))) + 
                   facet_wrap(~reporter,scales="fixed",nrow=1) + 
                   theme_bw(base_size=10) + xlab("mass difference theoretical vs observed reporter tag mass") +
-                    opts(legend.position="none",
-                         axis.text.x = theme_text(angle=330,hjust=0,vjust=1,colour="grey50",size=7))
+                    theme(legend.position="none",
+                         axis.text.x = element_text(angle=330,hjust=0,vjust=1,colour="grey50",size=7))
             }
 
             #return(summary(masses-matrix(reporterTagMasses(x),byrow=T,
@@ -83,11 +83,6 @@ setMethod("reporterIntensityPlot",
                              stringsAsFactors=FALSE))
             }
             
-       #     ggplot(melt.intensities,aes(x=intensity)) + 
-       #       geom_density(aes(fill=factor(normalized)),alph=0.5) + 
-       #       scale_x_log10() + facet_wrap(~tag,scales="fixed",nrow=1) + 
-       #           theme_bw() + opts(axis.text.x = theme_text(angle=330,hjust=0,colour="grey50"))
-                            
             ggplot(melt.intensities,aes(x=tag,y=intensity)) +
               geom_boxplot(aes(color=factor(normalized)),size=0.5,alpha=0.6,
                            outlier.size=0.5,position=position_dodge(width=0.25)) + 
