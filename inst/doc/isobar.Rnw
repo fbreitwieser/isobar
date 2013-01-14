@@ -1,4 +1,4 @@
-%\VignetteIndexEntry{Isobar Usage}
+%\VignetteIndexEntry{isobar package for iTRAQ and TMT protein quantification}
 %\VignetteDepends{}
 %\VignetteKeywords{Documentation}
 %\VignettePackage{isobar}
@@ -9,6 +9,7 @@
 <<init,echo=FALSE>>=
   require(distr)
   require(ggplot2)
+  dir.create(file.path("graphics"), showWarnings = FALSE)
 @ 
 
 \usepackage{times}

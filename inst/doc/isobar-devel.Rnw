@@ -1,4 +1,4 @@
-%\VignetteIndexEntry{Isobar for developers}
+%\VignetteIndexEntry{isobar for developers}
 %\VignetteDepends{}
 %\VignetteKeywords{Documentation}
 %\VignettePackage{isobar}

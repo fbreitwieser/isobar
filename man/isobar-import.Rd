@@ -133,7 +133,7 @@ data(ibspiked_set1)
 # get identifier for Ceruplasmin proteins
 ceru.acs <- protein.g(proteinGroup(ibspiked_set1),"CERU")
 # create a smaller ibspectra w/ only Ceruplasmins
-ib.ceru <- subsetIBSpectra(ibspiked_set1,protein=ceru.acs,"include")
+ib.ceru <- subsetIBSpectra(ibspiked_set1,protein=ceru.acs,direction="include")
 
 # write it to a file
 tf <- tempfile("isobar")

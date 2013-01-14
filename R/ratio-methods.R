@@ -899,8 +899,10 @@ combn.matrix <- function(x,method="global",cl=NULL,vs=NULL) {
                  length(cl),length(x)))
 
   # Filter NA channels
-  x <- x[!is.na(cl)]
-  cl <- cl[!is.na(cl)]
+  if (!is.null(cl)) {
+    x <- x[!is.na(cl)]
+    cl <- cl[!is.na(cl)]
+  }
 
   if (!is.null(vs) && !is.character(vs))
     vs <- as.character(vs)

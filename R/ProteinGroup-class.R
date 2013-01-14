@@ -1436,6 +1436,7 @@ observable.peptides <- function(seq,nmc=1,min.length=6,min.mass=600,max.mass=400
                                             mass=c(164.554862,278.61037,213.12392,150.953636)),...) {
   if (is.na(seq) || length(seq)==0 || nchar(seq) == 0)
     return(0)
+  require(OrgMassSpecR)
   pep <- Digest(seq,missed=nmc,custom=custom,...)
   min.length.ok <- nchar(pep[,"peptide"]) >= min.length
   mass.ok <- pep[,"mz1"] >= min.mass & pep[,"mz3"] <= max.mass

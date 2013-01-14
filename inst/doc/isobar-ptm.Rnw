@@ -1,4 +1,4 @@
-%\VignetteIndexEntry{Isobar's PTM Modules}
+%\VignetteIndexEntry{isobar for quantification of PTM datasets}
 %\VignetteDepends{}
 %\VignetteKeywords{Documentation}
 %\VignettePackage{isobar}
@@ -11,6 +11,7 @@
 \SweaveOpts{prefix.string=graphics/plot}
 <<init,echo=FALSE>>=
   require(ggplot2)
+  dir.create(file.path("graphics"), showWarnings = FALSE)
 @ 
 
 \usepackage[utf8]{inputenc}
