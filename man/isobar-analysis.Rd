@@ -5,12 +5,15 @@
 % estimateRatio methods
 \alias{estimateRatio}
 \alias{estimateRatio,IBSpectra,ANY,character,character,character,missing-method}
+\alias{estimateRatio,IBSpectra,ANY,missing,missing,missing,character-method}
 \alias{estimateRatio,IBSpectra,ANY,missing,missing,character,missing-method}
 \alias{estimateRatio,IBSpectra,ANY,character,character,missing,matrix-method}
 \alias{estimateRatio,IBSpectra,ANY,character,character,NULL,matrix-method}
 \alias{estimateRatio,IBSpectra,ANY,character,character,character,NULL-method}
 \alias{estimateRatio,IBSpectra,ANY,character,character,missing,character-method}
 \alias{estimateRatio,IBSpectra,ANY,character,character,NULL,character-method}
+\alias{estimateRatio,IBSpectra,ANY,character,character,NULL,data.frame-method}
+\alias{estimateRatio,IBSpectra,ANY,character,character,missing,data.frame-method}
 \alias{estimateRatioNumeric}
 \alias{estimateRatioNumeric,numeric,numeric,missing-method}
 \alias{estimateRatioNumeric,numeric,numeric,NULL-method}
@@ -35,7 +38,7 @@ estimateRatioForProtein(protein, ibspectra, noise.model, channel1, channel2, com
 \S4method{estimateRatioNumeric}{numeric,numeric,NoiseModel}(channel1,channel2,noise.model,ratiodistr=NULL,variance.function="maxi",
                                                             sign.level=0.05,sign.level.rat=sign.level,sign.level.sample=sign.level,
                                                             remove.outliers=TRUE,outliers.args=list(method = "iqr", outliers.coef = 1.5),
-                                                            n.sample=NULL,method="isobar",fc.threshold=1.3,
+                                                            method="isobar",fc.threshold=1.3,
                                                             channel1.raw=NULL,channel2.raw=NULL,use.na=FALSE,preweights=NULL, correct.ratio = NULL)
 
 \S4method{estimateRatio}{IBSpectra,ANY,character,character,character,missing}(ibspectra,noise.model,channel1,channel2,
@@ -78,7 +81,6 @@ estimateRatioForProtein(protein, ibspectra, noise.model, channel1, channel2, com
   \item{sign.level.sample}{Sample p-value significiance level. }
   \item{remove.outliers}{Should outliers be removed? }
   \item{outliers.args}{Arguments for outlier removal, see OUTLIERS function (TODO).}
-  \item{n.sample}{For testing purposes: Only take a subset (sample) of the data.}
   \item{method}{ method taken for ratio computation and selection: one of
     'isobar','libra','multiq','pep','ttest' and 'compare.all'. }
   \item{fc.threshold}{When method equals fc, takes this as fold change threshold. }

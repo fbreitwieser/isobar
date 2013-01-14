@@ -65,9 +65,11 @@
 \alias{spectrumSel,IBSpectra,matrix,missing-method}
 \alias{spectrumSel,IBSpectra,character,missing-method}
 \alias{spectrumSel,IBSpectra,missing,character-method}
+\alias{spectrumSel,IBSpectra,data.frame,missing-method}
 \alias{IBSpectraTypes}
 \alias{writeData}
 \alias{writeData,IBSpectra-method}
+\alias{ibSpectra.as.concise.data.frame}
 
 % show method:
 \alias{show,IBSpectra-method}
@@ -160,7 +162,7 @@
     \item{\code{as(x, "data.frame")}:}{ Creates a data.frame containing
       all identification and quantitation information. Peptide matching
       to multiple proteins produce multiple lines. }
-    \item{\code{as(x, "data.frame.concise")}:}{ Creates a data.frame
+    \item{\code{ibSpectra.as.concise.data.frame(x)}:}{ Creates a data.frame
       containing all identification and
       quantitation information. Proteins are concatenated - so the
       resulting \code{data.frame} has one line per spectrum.}

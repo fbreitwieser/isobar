@@ -1359,7 +1359,7 @@ calculate.dNSAF <- function(protein.group,use.mw=FALSE,normalize=TRUE,combine.f=
   })
 
   if (use.mw) {
-    mw <- calculate.mw(protein.group,protein.g,combine.f)
+    mw <- .calculate.mw(protein.group,protein.g,combine.f)
     dSAF <- dSAF*mw
   }
 
@@ -1443,7 +1443,7 @@ observable.peptides <- function(seq,nmc=1,min.length=6,min.mass=600,max.mass=400
   pep[min.length.ok & mass.ok,]
 }
 
-calculate.mw <- function(protein.group,protein.g,combine.f=mean) {
+.calculate.mw <- function(protein.group,protein.g,combine.f=mean) {
   require(OrgMassSpecR)
   sequences <- proteinInfo(protein.group)$sequence
   ip <- indistinguishableProteins(protein.group)
@@ -1487,7 +1487,7 @@ calculate.emPAI <- function(protein.group,protein.g=reporterProteins(protein.gro
                                   do.call(combine.f,lapply(get.to.acs(my.protein.g),
                                                            function(protein.ac) n.observable.peptides(sequences[protein.ac],nmc=nmc,...))))
   if (use.mw) 
-    mw <- calculate.mw(protein.group,protein.g,combine.f)
+    mw <- .calculate.mw(protein.group,protein.g,combine.f)
    else 
     mw <- 1
 

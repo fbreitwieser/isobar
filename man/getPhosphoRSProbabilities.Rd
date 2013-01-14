@@ -2,7 +2,7 @@
 \alias{getPhosphoRSProbabilities}
 \alias{readPhosphoRSOutput}
 \alias{writePhosphoRSInput}
-\alias{annotateSpectraPhosphoRS}
+\alias{filterSpectraPhosphoRS}
 
 \title{
   Generate input files for PhosphoRS, call it, and get modification site probabilities
@@ -18,7 +18,8 @@
   getPhosphoRSProbabilities(id.file, mgf.file, massTolerance, activationType, simplify = FALSE,
                             mapping.file = NULL, mapping = c(peaklist = "even", id = "odd"), 
                             pepmodif.sep = "##.##", besthit.only = TRUE,
-                            phosphors.cmd=paste("java -jar",system.file("phosphors","phosphoRS.jar",package="isobar",mustWork=TRUE)))
+                            phosphors.cmd = paste("java -jar",system.file("phosphors","phosphoRS.jar",package="isobar",mustWork=TRUE)),
+                            file.basename = tempfile("phosphors."))
 
   writePhosphoRSInput(phosphoRS.infile, id.file, mgf.file, massTolerance, activationType, 
                       mapping.file = NULL, mapping = c(peaklist = "even", id = "odd"),
@@ -34,7 +35,7 @@
 
   readPhosphoRSOutput(phosphoRS.outfile, simplify = FALSE, pepmodif.sep = "##.##", besthit.only = TRUE)
 
-  annotateSpectraPhosphoRS(id.file, mgf.file, min.prob = NULL, ...)
+  filterSpectraPhosphoRS(id.file, mgf.file, ..., min.prob = NULL, do.remove=FALSE)
 }
 \arguments{
   \item{id.file}{Database search results file in \code{ibspectra.csv} or
@@ -49,12 +50,14 @@
   \item{mapping}{Mapping columns. }
   \item{besthit.only}{Only show best hit, simplifies result to data.frame instead of list.}
   \item{phosphors.cmd}{PhosphoRS script.}
+  \item{file.basename}{Base name for creating phosphoRS input and output files.}
   \item{phosphoRS.infile}{PhosphoRS input XML file name.}
   \item{phosphoRS.outfile}{PhosphoRS output XML file name.}
   \item{pepmodif.sep}{separator of peptide and modification in XML id}
   \item{modif.masses}{masses and ID used for PhosphoRS}
   \item{min.prob}{Threshold for PhosphoRS peptide probability to consider it for quantification}
   \item{...}{Further arguments to getPhosphoRSProbabilities}
+  \item{do.remove}{If TRUE, spectra below the min.prob threshold are not just set as 'use.for.quant=FALSE' but removed.}
 }
 
 \details{

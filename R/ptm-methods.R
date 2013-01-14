@@ -117,20 +117,20 @@ writePhosphoRSInput <-
   close(con.out)
 }
 
-calc.delta.score <- function(a.delta) {
-  pep.n.prot <- unique(a.delta[,c("accession","peptide","start.pos")])
-  a.delta$accession <- NULL
-  a.delta$start.pos <- NULL
-  a.delta <- unique(a.delta)
-  if (!any(by(a.delta$score,a.delta$spectrum, length)>1)) {
+calc.delta.score <- function(data) {
+  pep.n.prot <- unique(data[,c("accession","peptide","start.pos")])
+  data$accession <- NULL
+  data$start.pos <- NULL
+  data <- unique(data)
+  if (!any(by(data$score,data$spectrum, length)>1)) {
     stop("Cannot calculate delta score: Only one hit per spectrum available")
   }
 
-  a.delta$delta.score <- a.delta$score
-  a.delta$n.pep <- 1
-  a.delta$n.loc <- 1
+  data$delta.score <- data$score
+  data$n.pep <- 1
+  data$n.loc <- 1
 
-  res <- ddply(a.delta,"spectrum",function(x) {
+  res <- ddply(data,"spectrum",function(x) {
     if (nrow(x) == 1) return(x);
     res <- x[which.max(x$score),,drop=FALSE]
     res$n.pep <- length(unique(x$peptide))
@@ -144,15 +144,22 @@ calc.delta.score <- function(a.delta) {
     return(res);
   })
 
-  a.delta <- merge(pep.n.prot,res,by="peptide",all.y=TRUE)
+  data <- merge(pep.n.prot,res,by="peptide",all.y=TRUE)
 
-  return(a.delta[order(a.delta[,"accession"],a.delta[,"peptide"]),])
+  return(data[order(data[,"accession"],data[,"peptide"]),])
 }
 
-filterSpectraDeltaScore <- function(data,...,min.delta.score=10) {
+filterSpectraDeltaScore <- function(data, min.delta.score=10, do.remove=FALSE) {
   if (!"delta.score" %in% colnames(data))
     data <- calc.delta.score(data)
-  return(data[data$delta.score >= min.delta.score,])
+  
+  if (!is.null(min.delta.score)) {
+    sel.mindeltascore <- data[,"delta.score"] >= min.delta.score
+    data[,"use.for.quant"] <- data[,"use.for.quant"] & sel.mindeltascore
+    if (isTRUE(do.remove))
+      data <- data[,sel.mindeltascore]
+  }
+  return(data)
 }
 
 
@@ -277,7 +284,7 @@ readPhosphoRSOutput <- function(phosphoRS.outfile,simplify=FALSE,pepmodif.sep="#
   res
 }
 
-filterSpectraPhosphoRS <- function(id.file,mgf.file,...,min.prob=NULL) {
+filterSpectraPhosphoRS <- function(id.file,mgf.file,...,min.prob=NULL, do.remove=FALSE) {
   if (is(id.file,"character"))
     id.file <- .read.idfile(id.file)
   probs <- getPhosphoRSProbabilities(id.file,mgf.file,...,simplify=TRUE)
@@ -287,8 +294,10 @@ filterSpectraPhosphoRS <- function(id.file,mgf.file,...,min.prob=NULL) {
   id.file <- merge(id.file,probs,by="spectrum")
   if (!is.null(min.prob)) {
     if (!'use.for.quant' %in% colnames(id.file)) id.file$use.for.quant <- TRUE
-    id.file[,"use.for.quant"] <-
-      id.file[,"use.for.quant"] & id.file[,"pepprob"] >= min.prob
+    sel.minprob <- id.file[,"pepprob"] >= min.prob
+    id.file[,"use.for.quant"] <- id.file[,"use.for.quant"] & sel.minprob
+    if (isTRUE(do.remove))
+      id.file <- id.file[,sel.minprob]
   }
   return(id.file)
 }

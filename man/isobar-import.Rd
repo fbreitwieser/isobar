@@ -7,6 +7,7 @@
 \alias{readIBSpectra,character,character,character-method}
 \alias{readIBSpectra,character,character,missing-method}
 \alias{readIBSpectra,character,data.frame,missing-method}
+\alias{readIBSpectra,character,data.frame,character-method}
 \alias{readIBSpectra,character,character-method}
 \alias{read.mzid}
 
@@ -22,14 +23,19 @@
       
 \usage{
 \S4method{readIBSpectra}{character,character}(type,id.file)
+
+# reads id file
 \S4method{readIBSpectra}{character,character,character}(
-              type, id.file,peaklist.file,
-              proteinGroupTemplate = NULL,
-              mapping.file = NULL, mapping = c(peaklist="even",id="odd"),
-              id.file.domap = NULL, annotate.spectra.f = NULL,
-              peaklist.format = NULL, id.format = NULL,
-              fragment.precision = NULL,fragment.outlier.prob = NULL,
-              decode.titles = TRUE, scan.lines = 0, ...)
+             type, id.file, peaklist.file, mapping.file = NULL,
+             mapping = c(peaklist = "even", id = "odd"),
+             id.file.domap = NULL, id.format = NULL, decode.titles = TRUE, ...)
+
+# reads peaklist file
+\S4method{readIBSpectra}{character,data.frame,character}(
+             type, id.file, peaklist.file, proteinGroupTemplate = NULL,
+             annotate.spectra.f = NULL, peaklist.format = NULL,
+             scan.lines = 0, fragment.precision = NULL,
+             fragment.outlier.prob = NULL, ...)
 }
 
 \arguments{

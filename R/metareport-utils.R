@@ -115,11 +115,11 @@ create.meta.reports <- function(report.type="protein",properties.file="meta-prop
   #m.median <- apply(ratio.matrix,2,median)
   #normalized.ratio.matrix <- ratio.matrix-matrix(m.median,nrow=nrow(ratio.matrix),ncol=ncol(ratio.matrix),byrow=T)
 
-  #plot.heatmaps(ratio.matrix,properties.env$name)
-  #plot.pairs(properties.env$name)
+  #.plot.heatmaps(ratio.matrix,properties.env$name)
+  #.plot.pairs(properties.env$name)
 }
 
-calc.zscore <- function(qq) {
+.calc.zscore <- function(qq) {
   s.median <- median(qq,na.rm=TRUE)
   s.mad <- mad(qq,na.rm=TRUE)
   (qq-s.median)/s.mad
@@ -132,7 +132,7 @@ calc.zscore <- function(qq) {
                            load(quant.tbls[idx])
                            q <- quant.tbl[,cols]
                            q <- ddply(q,c("class1","class2"),function(x) 
-                                 cbind(x,zscore=round(calc.zscore(x[,"lratio"]),4)))
+                                 cbind(x,zscore=round(.calc.zscore(x[,"lratio"]),4)))
                            q[,"lratio"] <- round(q[,"lratio"],4)
                            q[,"variance"] <- round(q[,"variance"],4)
                            if (format=="wide") {
@@ -157,11 +157,11 @@ calc.zscore <- function(qq) {
   return(merged.table)
 }
 
-get.names <- function(p,protein.group) 
+.get.names <- function(p,protein.group) 
   apply(my.protein.info(protein.group,p)[,c("name","gene_name","protein_name")],2,
         function(s) paste(unique(sort(gsub("'","",s))),collapse=", "))
 
-calc.col <- function(tbl.wide,tag,add.name=TRUE) {
+.calc.col <- function(tbl.wide,tag,add.name=TRUE) {
   idx.ratio <- grep("lratio",colnames(tbl.wide),fixed=TRUE)
   idx.var <- grep("var",colnames(tbl.wide),fixed=TRUE)
   x <- t(apply(tbl.wide,1,function(r) {
@@ -180,19 +180,19 @@ calc.col <- function(tbl.wide,tag,add.name=TRUE) {
   return(x)
 }
 
-write.t <- function(...,sep="\t",row.names=FALSE,quote=FALSE)
+.write.t <- function(...,sep="\t",row.names=FALSE,quote=FALSE)
   write.table(...,sep=sep,row.names=row.names,quote=quote)
 
-write.summarized.table <- function(tbl.wide,all.names,cols) {
+.write.summarized.table <- function(tbl.wide,all.names,cols) {
   summarized.table <- cbind(ac=rownames(tbl.wide),all.names)
   for (col in cols)
-    summarized.table <- cbind(summarized.table,calc.col(tbl.wide,col,add.name=length(cols)>1))
+    summarized.table <- cbind(summarized.table,.calc.col(tbl.wide,col,add.name=length(cols)>1))
   summarized.table <- cbind(summarized.table,tbl.wide)
-  write.t(summarized.table,file=paste(name,"_summarized_table.csv",sep=""))
+  .write.t(summarized.table,file=paste(name,"_summarized_table.csv",sep=""))
   return(summarized.table)
 }
 
-plot.heatmaps.gd <- function(ratio.matrix,name) {
+.plot.heatmaps.gd <- function(ratio.matrix,name) {
   require(gplots)
   breaks <- seq(from=-max(abs(ratio.matrix)),to=max(abs(ratio.matrix)),length.out=51)
   pdf(sprintf("heatmap_%s.pdf",name),width=15,height=30,title=name)
@@ -226,7 +226,7 @@ plot.heatmaps.gd <- function(ratio.matrix,name) {
 }
 
 
-plot.heatmaps <- function(ratio.matrix,name) {
+.plot.heatmaps <- function(ratio.matrix,name) {
   require(gplots)
   breaks <- seq(from=-max(abs(ratio.matrix)),to=max(abs(ratio.matrix)),length.out=51)
   pdf(sprintf("heatmap_%s.pdf",name),width=15,height=30,title=name)
@@ -267,7 +267,7 @@ plot.heatmaps <- function(ratio.matrix,name) {
 
 }
 
-plot.pairs <- function(name) {
+.plot.pairs <- function(name) {
   require(RColorBrewer)
   weights <- apply(1/variance.matrix,1,median)
   weights <- weights/sum(weights)
@@ -277,14 +277,14 @@ plot.pairs <- function(name) {
   png(sprintf("pairwise_correlation_%s.png",name),title="Pairwise Correlation plot",
       width=1000,height=1000,pointsize=14)
   pairs(ratio.matrix,xlim=c(-lim,lim),ylim=c(-lim,lim),
-        text.panel=panel.txt,
-        upper.panel=panel.smooth,weights=weights,
-        lower.panel=function(...) panel.cor(...,cex.cor=1.2),pch=1,cex=0.5)
+        text.panel=.panel.txt,
+        upper.panel=.panel.smooth,weights=weights,
+        lower.panel=function(...) .panel.cor(...,cex.cor=1.2),pch=1,cex=0.5)
   dev.off()
 
 }
 
-panel.cor <- function(x, y, digits=2, prefix="", cex.cor, weights, ...)  {
+.panel.cor <- function(x, y, digits=2, prefix="", cex.cor, weights, ...)  {
   usr <- par("usr"); on.exit(par(usr))
   par(usr = c(0, 1, 0, 1))
   r <- abs(corr(matrix(c(x,y),ncol=2),w=weights))
@@ -295,12 +295,12 @@ panel.cor <- function(x, y, digits=2, prefix="", cex.cor, weights, ...)  {
   text(0.5, 0.5, txt, cex = cex.cor * sqrt(r) * 2)
 }
 
-panel.smooth <- function(x, y, digits=2, prefix="", cex=1, weights, ...) {
+.panel.smooth <- function(x, y, digits=2, prefix="", cex=1, weights, ...) {
   abline(c(0,0),1,col="red")
   points(x,y,cex=weights/max(weights)/2,...)
 }
 
-panel.txt <- function(x,y,labels,cex,font,...) {
+.panel.txt <- function(x,y,labels,cex,font,...) {
   ##abc<-c("1"="rep 1","2"="rep 2");
   
   s <- strsplit(labels,".",fixed=TRUE)[[1]]

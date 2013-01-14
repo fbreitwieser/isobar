@@ -42,10 +42,11 @@ setMethod("reporterMassPrecision",
                        labels=sprintf("%s: m/z %.2f",
                          reporterTagNames(x),reporterTagMasses(x)))
              
-             if (compareVersion(packageDescription("ggplot2")$Version,"0.9") >= 0)
+             if (compareVersion(packageDescription("ggplot2")$Version,"0.9") >= 0) {
               opts.f <- theme; text.f <- theme_text;
-             else 
+             } else {
               opts.f <- opts; text.f <- element_text;
+             }
 
               ggplot(melt.masses,aes(x=mass)) + geom_vline(xintercept=0,alpha=0.8) +
                 geom_histogram(fill="white",aes(colour=factor(reporter)),alpha=0.8,
