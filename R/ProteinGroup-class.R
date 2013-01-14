@@ -474,16 +474,17 @@ getPtmInfoFromPhosphoSitePlus <- function(protein.group,file.name=NULL,modif="PH
 }
 
 getPtmInfoFromNextprot <- function(protein.group,
-                                   nextprot.url="http://www.nextprot.org/rest/entry/NX_XXX/ptm?format=json") {
+                                   nextprot.url="http://www.nextprot.org/rest/entry/NX_XXX/ptm?format=json",
+                                   url.wildcard="XXX") {
   protein.acs <- unique(protein.group@isoformToGeneProduct$proteinac.wo.splicevariant)
   require(RJSONIO)
   pb <- txtProgressBar(max=length(protein.acs),style=3)
   nextprot.ptmInfo <- lapply(seq_along(protein.acs),function(ac_i) {
                              setTxtProgressBar(pb,ac_i)
 			     tryCatch(
-	                             fromJSON(sub("XXX",protein.acs[ac_i],nextprot.url)),
+	                             fromJSON(sub(url.wildcard,protein.acs[ac_i],nextprot.url)),
 				     error=function(e) {
-					     warning("Could not fetch from ",sub("XXX",protein.acs[ac_i],nextprot.url),":",
+					     warning("Could not fetch from ",sub(url.wildcard,protein.acs[ac_i],nextprot.url),":",
 						  e$message)
 					     return()
 				     })
@@ -804,7 +805,7 @@ setMethod("peptides",signature(x="ProteinGroup",protein="character"),
 
       pnp <- peptideNProtein(x)
       ps <- peptideSpecificity(x)
-      pi <- peptideInfo(x)
+      pi <- merge(peptideInfo(x),peptideSpecificity(x),by="peptide")
 
       if (groupspecific.if.same.ac) {
         group.proteins <- subset(proteinGroupTable(x),reporter.protein==protein,"protein.g",drop=TRUE)
