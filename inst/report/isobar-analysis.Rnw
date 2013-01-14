@@ -95,6 +95,8 @@ bnd <- round(log10(bndt),1)
 cat(sprintf("\\newcommand{\\bnd}{%s}",bnd),"\n")
 cat(sprintf("\\newcommand{\\bndt}{%s}\n",bndt),"\n")
 
+if (!"r1" %in% colnames(quant.tbl)) quant.tbl$r1 <- quant.tbl$class1
+if (!"r2" %in% colnames(quant.tbl)) quant.tbl$r2 <- quant.tbl$class2
 cmbn <- t(unique(quant.tbl[,c("r1","r2")]))
 cmbn.class <- t(unique(quant.tbl[,c("class1","class2")]))
 is.single.comparision <- ncol(cmbn) ==1
