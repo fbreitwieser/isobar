@@ -272,7 +272,7 @@ noise model using \Rfunction{NoiseModel}. See figure
 ~\ref{fig:maplots}.
 
 <<calc-noisemodel>>=
-ib.background <- subsetIBSpectra(ibspiked_set1,protein=ceru.proteins,"exclude")
+ib.background <- subsetIBSpectra(ibspiked_set1,protein=ceru.proteins,direction="exclude")
 noise.model <- NoiseModel(ib.background)
 @ 
 
@@ -287,7 +287,7 @@ al. Supporting Information, submitted, for a real example.
 
 <<ceru-noisemodel>>=
 ib.ceru <- subsetIBSpectra(ibspiked_set1,protein=ceru.proteins,
-                            direction="exclude others",
+                            direction="include",
                             specificity="reporter-specific")
 nm.ceru <- NoiseModel(ib.ceru,one.to.one=FALSE,pool=TRUE)
 @ 

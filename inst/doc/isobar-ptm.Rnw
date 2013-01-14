@@ -241,7 +241,7 @@ the calculated ratio's variance (assuming independence).
 \section{Harvesting public PTM databases}
 neXtProt \cite{Lane_Bairoch2012-NAR} and PhosphoSitePlus
 \cite{Hornbeck_Sullivan2012-NAR} provide information on experimentally
-determines post-translational modifications. neXtProt focuses on man,
+determined post-translational modifications. neXtProt focuses on man,
 and PhosphoSitePlus on man and mouse. Both are manually curated and
 annotate thousands of residues of post-translationally modified
 proteins. 
@@ -262,6 +262,15 @@ For reports, the function can be selected via the property \texttt{ptm.info.f} i
 \begin{verbatim}
 protein.info.f = getPtmInfoFromNextprot
 \end{verbatim}
+
+For PhosphoSitePlus, define the modification to get the correct dataset:
+\begin{verbatim}
+ptm.info.f <- function(...) getPtmInfoFromPhosphoSitePlus(...,modification="PHOS")
+\end{verbatim}
+
+PhosphoSitePlus datasets will be downloaded from their website to 'Phosphorylation\_site\_dataset.gz' or
+'Acetylation\_site\_dataset.gz', etc (see mapping property of getPtmInfoFromPhosphoSitePlus) unless a file
+with that name exists.
 
 \bibliographystyle{abbrv}
 \bibliography{isobar_lib}

@@ -17,7 +17,8 @@
                                             SUMO = "Sumoylation_site_dataset.gz", 
                                             UBI = "Ubiquitination_site_dataset.gz"))
 
-  getPtmInfoFromNextprot(protein.group, nextprot.url = "http://www.nextprot.org/rest/entry/NX_XXX/ptm?format=json")
+  getPtmInfoFromNextprot(protein.group, nextprot.url = "http://www.nextprot.org/rest/entry/NX_XXX/ptm?format=json",
+                         url.wildcard = "XXX")
 }
 \arguments{
   \item{protein.group}{ProteinGroup object.}
@@ -25,10 +26,12 @@
   \item{modif}{Selects dataset to download (see mapping).}
   \item{psp.url}{PhosphoSitePlus main URL for datasets.}
   \item{mapping}{Names of PhosphoSitePlus modification datasets, mapped by modif name.}
-  \item{nextprot.url}{URL for fetching Nextprot results. 'XXX' will be replaced by the Uniprot Protein AC.}
+  \item{nextprot.url}{URL for fetching Nextprot results. \code{url.wildcard} will be replaced by the Uniprot Protein AC.}
+  \item{url.wildcard}{wildcard to replace with Uniprot protein AC in \code{nextprot.url}.}
 }
-%\details{
-%}
+\details{PhosphoSitePlus datasets are downloaded and written to the working directory with its original name (see mapping) 
+  unless a file with that name exists, which is then parsed into a data.frame of suitable format.
+}
 \value{
   data.frame with (at least) the columns:
     isoform_ac, description, evidence, position
