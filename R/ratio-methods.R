@@ -161,7 +161,7 @@ setMethod("estimateRatioNumeric",signature(channel1="numeric",channel2="numeric"
              sign.level=0.05,sign.level.rat=sign.level,sign.level.sample=sign.level,
              remove.outliers=TRUE,outliers.args=list(method="iqr",outliers.coef=1.5),
              method="isobar",fc.threshold=1.3,channel1.raw=NULL,channel2.raw=NULL,
-             use.na=FALSE,preweights=NULL,correct.ratio=NULL) {
+             use.na=FALSE,preweights=NULL,correct.ratio=NULL,correct.ratio.correlation=0) {
       
       if (length(channel1) != length(channel2))
         stop("length of channel 1 does not equal length of channel 2")
@@ -290,7 +290,8 @@ setMethod("estimateRatioNumeric",signature(channel1="numeric",channel2="numeric"
         if (!is.null(correct.ratio) && !is.na(correct.ratio[1])) {
           weighted.ratio <- weighted.ratio - correct.ratio[1]
           if (length(correct.ratio) == 2)
-            calc.variance <- calc.variance + as.numeric(correct.ratio[2])
+            calc.variance <- calc.variance + as.numeric(correct.ratio[2]) + 
+                               correct.ratio.correlation * (sqrt(calc.variance)*sqrt(as.numeric(correct.ratio[2])))
         }
  
 
