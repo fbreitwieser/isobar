@@ -10,11 +10,12 @@ suppressPackageStartupMessages(library(isobar))
 options(encoding="UTF-8")  
 
 if (!exists("properties.env")) {
-  stop("No properties.env??")
-  #properties.env <- load.properties()
+  warning("No properties.env - loading properties")
+  properties.env <- load.properties()
 }
 needed.objects <- c('ibspectra','noise.model','quant.tbl','ratiodistr')
 if (!all(needed.objects %in% objects())) {
+  warning("Not all necessary objects present - calling initialize.env")
   initialize.env(.GlobalEnv,"protein",properties.env)
 }
 
@@ -238,9 +239,9 @@ proteins <- proteins.n.group[order(proteins.n.group$group),"ac"]
 
 <<proteintbl,echo=FALSE,results=tex>>=
 n.quant <- ddply(quant.tbl,c("class1","class2"),function(x) sum(!is.na(x$lratio)))
-cat("\\secsubtitle{Number of quantified proteins: ",paste(sprintf("%s/%s: %s",n.quant$class2,n.quant$class1,n.quant$V1),collapse="; "),"}")
+cat("\\secsubtitle{Number of quantified proteins: ",paste(sprintf("%s/%s: %s",n.quant$class2,n.quant$class1,n.quant$V1),collapse="; "),"}\n")
+cat("\\small\n\n")
 
-cat("\\small")
 print_longtablehdr("protein",coldef,!is.single.comparision,ncol.p,TRUE)
 
 proteins.notquantified <- c()
@@ -393,26 +394,30 @@ message("Writing protein group details ...")
 
 colors <- c("blue","red","green","cyan","magenta","yellow")
 prot_i <- 1
+cat("\\small")
+cat("\\begin{longtable}{ll@{}llp{5cm}l}\n")
 for (reporter.protein.g in proteins) {
 #  protein.name.i <- unique(quant.tbl$latex.protein.name.2[quant.tbl$protein==protein])
-  group.section.name <- my.protein.infos[[reporter.protein.g]]$gene.name
-  gene.name <- my.protein.infos[[reporter.protein.g]]$gene.name
-  if (length(gene.name) == 0 || is.null(gene.name) || 
-      is.na(gene.name) || nchar(gene.name)==0) {
-    group.section.name <- paste(my.protein.infos[[reporter.protein.g]]$collapsed.gene_name$ac_nolink,collapse=",")
-    gene.name <- group.section.name
-  }
+  #group.section.name <- my.protein.infos[[reporter.protein.g]]$gene.name
+  #gene.name <- my.protein.infos[[reporter.protein.g]]$gene.name
+  #if (length(gene.name) == 0 || is.null(gene.name) || 
+  #    is.na(gene.name) || nchar(gene.name)==0) {
+  #  group.section.name <- paste(my.protein.infos[[reporter.protein.g]]$collapsed.gene_name$ac_nolink,collapse=",")
+  #  gene.name <- group.section.name
+  #}
 
-  cat(sprintf("\\paragraph[%s]{%s}\n",
-              sanitize(ifelse(nchar(gene.name)>40,
-                       paste(substring(gene.name,1,36),"..."),
-                       gene.name),dash=F),
-              sanitize(group.section.name,dash=F)))
-  cat(sprintf("\\label{protein.%s}\n",prot_i))
-  draw.protein.group(protein.group,reporter.protein.g)
+  #cat(sprintf("\\paragraph[%s]{%s}\n",
+  #            sanitize(ifelse(nchar(gene.name)>40,
+  #                     paste(substring(gene.name,1,36),"..."),
+  #                     gene.name),dash=F),
+  #            sanitize(group.section.name,dash=F)))
+  #cat(sprintf("\\label{protein.%s}\n",prot_i))
+  draw.proteingroup.row(sprintf("\\label{protein.%s} %s",prot_i,prot_i),protein.group,reporter.protein.g)
   prot_i <- prot_i + 1
   
 }
+cat("\\end{longtable}\n")
+cat("\\normalsize")
 }
 @
 
