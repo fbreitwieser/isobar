@@ -10,6 +10,16 @@ if(!isGeneric("as.data.frame")) setGeneric("as.data.frame", useAsDefault=as.data
   return(a >= b[1] & a <=b[2])
 }
 
+cn <- function(x,y) {
+  x[ , y ]
+}
+
+.check.isfunction <- function(f) {
+  if (!is.function(f))
+    stop(paste(deparse(substitute(f)),"must be a function!"))
+  TRUE
+}
+
 .paste_unique <- function(x,...,na.rm=TRUE) {
   x <- unique(x)
   x <- x[!is.na(x)]

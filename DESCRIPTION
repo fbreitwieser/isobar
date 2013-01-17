@@ -23,6 +23,8 @@ Collate: utils.R
    Tlsd-class.R
 	 ratio-methods.R
    sharedpep-methods.R
+   report-utils-xls.R
+   report-utils-tex.R
    report-utils.R
    metareport-utils.R
    ptm-methods.R

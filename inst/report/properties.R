@@ -94,7 +94,7 @@ combn.method="interclass"
 ##  and less space is used in the rows
 # class.labels=c("Treatment"="T","Treatment"="T","Control"="C","Control"="C")
 class.labels=NULL
-combn=NULL
+cmbn=NULL
 vs.class=NULL
 
 ## Arguments given to 'proteinRatios' function. See ?proteinRatios
@@ -146,10 +146,16 @@ ptm.info <- NULL
 # ptm.info.f <- function(...) getPtmInfoFromPhosphoSitePlus(...,modification=ptm)
 ptm.info.f <- getPtmInfoFromNextprot
 
-## data.frame with the columns protein AC (named 'protein.g'), log10 ratio (named 'correct.ratio'), and eventually variance (named 'variance') of the ratio.
-##  The ratio and variance are used to correct the calculated ratios
-## Typically a proteome quantification table
-correct.ratios.with <- NULL
+## A protein quantification data.frame (generated with 'proteinRatios')
+##  The ratio and variance are used to correct the observed modified peptide ratios
+##  Needs to have the experimental setup as the modified peptide experiment
+correct.peptide.ratios.with <- NULL
+
+## The correlation between peptide and protein ratios defines the covariance
+##  Var(ratio m) = Var(ratio mp) + Var(ratio p) + 2 * Cov(ratio mp, ratio p),
+##  Cov(ratio mp, ratio p) = 2 * correlation * Sd(ratio mp) * Sd(ratio p),
+##  with m = modifcation, mp = modified peptide, p = protein
+peptide.protein.correlation <- 0
 
 ## quantification table whose columns are attached to the XLS quantification table
 compare.to.quant <- NULL
@@ -162,7 +168,7 @@ write.report=TRUE
 write.xls.report=TRUE
 
 ## Use name for report, ie NAME.quant.xlsx instead of isobar-analysis.xlsx
-use.name.for.report=FALSE
+use.name.for.report=TRUE
 
 ## PDF Analysis report sections: Significant proteins and protein details
 show.significant.proteins=FALSE
@@ -174,8 +180,8 @@ qc.maplot.pairs=TRUE # plot MA plot of each tag versus each tag
 
 ### XLS REPORT OPTIONS ###
 ## Spreadsheet format: Either 'xlsx' or 'xls'
-# spreadsheet.format="xls"
-spreadsheet.format="xls"
+# spreadsheet.format="xlsx"
+spreadsheet.format="xlsx"
 
 ## XLS report format 'wide' or 'long
 ## 'wide' format outputs ratios in separate columns of the same record (i.e. one line per protein)

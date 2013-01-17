@@ -61,7 +61,10 @@ ptm.info.f <- getPtmInfoFromNextprot
 spreadsheet.format="xlsx"
 \end{verbatim}
 
-Reports will be generated calling \texttt{path\_to\_isobar/report/create\_reports.R --peptide} from the directory containing the peaklists, identifications and \texttt{properties.R}.
+Reports will be generated calling
+\texttt{path\_to\_isobar/report/create\_reports.R --peptide} from the
+directory containing the peaklists, identifications and
+\texttt{properties.R}.
 
 \section{Modification Site Localization}
 \isobar{} supports PhosphoRS \cite{Taus_Mechtler2011-JPR} and Delta
@@ -84,7 +87,9 @@ writePhosphoRSInput("phosphors.in.xml",
                        massTolerance=0.5,activationType="CID")
 @
 
-After calling PhosphoRS (\texttt{java -jar phosphoRS.jar phosphors.in.xml phosphors.out.xml}), the resulting \textsc{xml} file can be read:
+After calling PhosphoRS (\texttt{java -jar phosphoRS.jar
+  phosphors.in.xml phosphors.out.xml}), the resulting \textsc{xml}
+file can be read:
 
 <<eval=FALSE>>=
 # Read PhosphoRS XML output file
@@ -104,7 +109,10 @@ getPhosphoRSProbabilities("identifications.id.csv","peaklist.mgf",
 
 \paragraph{Delta Score calculation}
 The Mascot Delta Score can be calculated directly by the parser
-\texttt{mascotParser2.pl} and thresholded (\emph{e. g.} \texttt{--minDeltaScore=10}). For CSV identification files which contain all hits for each spectrum (not just the best one), the function \texttt{calc.delta.score} within the R package is provided.
+\texttt{mascotParser2.pl} and thresholded (\emph{e. g.}
+\texttt{--minDeltaScore=10}). For CSV identification files which
+contain all hits for each spectrum (not just the best one), the
+function \texttt{calc.delta.score} within the R package is provided.
 
 \paragraph{Using PhosphoRS and Delta Score in Report Generation.}
 When generating an IBSpectra object from peaklist and identifications,
@@ -200,8 +208,11 @@ regulation \cite{Wu_Gygi2011-MCP}:
 
 In many cases, it thus can be advisable to conduct separate MS
 quantification runs of the peptides enriched for the modification of
-interest, and the global proteome. In the report generation, data from 
-other experiments can be integrated using the property \texttt{compare.to.quant} in \texttt{properties.R}:
+interest, AND the global proteome quantification. 
+
+In the report
+generation, data from other experiments can be integrated using the
+property \texttt{compare.to.quant} in \texttt{properties.R}:
 
 %\fcolorbox{gray}{gray}%
 % {\color{white} 
