@@ -232,7 +232,7 @@ setMethod("estimateRatioNumeric",signature(channel1="numeric",channel2="numeric"
       }
 
       ## weighted linear regression estimation
-      if (is.a.method("weighted lm") {
+      if (is.a.method("weighted lm")) {
         res.wlm <- .calc.weighted.lm(channel1,channel2,var.i,sign.level.sample,sign.level.rat,ratiodistr) 
         if (is.method("weighted lm")) return (res.wlm)
       }      
@@ -321,7 +321,7 @@ setMethod("estimateRatioNumeric",signature(channel1="numeric",channel2="numeric"
                is.sign.wlm       = add.res('res.wlm','is.significant'),
                is.sign.rat       = add.res('res.isobar','p.value.rat')<sign.level,
                is.sign.sample    = add.res('res.isobar','p.value.sample')<sign.level,
-               is.sign.ttest     = add.res('res.ttest,''is.significant'),
+               is.sign.ttest     = add.res('res.ttest','is.significant'),
                is.sign.fc        = add.res('res.fc','is.significant'),
                is.sign.fc.nw     = add.res('res.fc.nw','is.significant'))
                 

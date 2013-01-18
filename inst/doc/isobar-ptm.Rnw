@@ -182,7 +182,7 @@ A ratio distribution can be calculated based on peptide ratios:
 suppressPackageStartupMessages(library(distr))
 suppressPackageStartupMessages(library(ggplot2))
 peptide.ratios <- peptideRatios(ib_phospho,noise.model=noise.model.hcd,
-                                  combn=matrix(c("114","116"),ncol=1))
+                                  cmbn=matrix(c("114","116"),ncol=1))
 
 lim <- max(abs(peptide.ratios$lratio),na.rm=TRUE)
 peptide.distr.cauchy <- fitCauchy(peptide.ratios$lratio)
