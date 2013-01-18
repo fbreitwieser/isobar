@@ -264,9 +264,9 @@ setMethod("estimateRatioNumeric",signature(channel1="numeric",channel2="numeric"
 #        if (method != "compare.all") return(res.wttest)
 #      }
       if (method == "fc" || method == "compare.all") {
-        res.fc <- c(lratio=lratio.n.var['lratio'],variance=NA,
+        res.fc <- c(lratio=as.numeric(lratio.n.var['lratio']),variance=NA,
                     n.spectra=length(log.ratios),
-                    is.significant=abs(lratio.n.var['lratio'])>log10(fc.threshold))
+                    is.significant=abs(as.numeric(lratio.n.var['lratio']))>log10(fc.threshold))
         ratio.nw <- mean(log.ratios,na.rm=TRUE)
         res.fc.nw <- c(lratio=ratio.nw,variance=NA,n.spectra=length(log.ratios),
             is.significant=abs(ratio.nw)>log10(fc.threshold))
@@ -298,9 +298,9 @@ setMethod("estimateRatioNumeric",signature(channel1="numeric",channel2="numeric"
         if (method=="compare.all") 
           res.isobar['is.significant.ev'] <- 
             (res.isobar['p.value.sample'] <= sign.level.sample) &&
-            pnorm(weighted.ratio,mean=distr::q(ratiodistr)(0.5),
-                  sd=as.numeric(sqrt(lratio.n.var['estimator.variance'])),
-                  lower.tail=weighted.ratio<distr::q(ratiodistr)(0.5)) <= sign.level.rat
+            calculate.ratio.pvalue(weighted.ratio,
+                                   lratio.n.var['estimator.variance'],
+                                   ratiodistr) <= sign.level.rat
 
         res.isobar['is.significant'] <- 
           (res.isobar['p.value.sample'] <= sign.level.sample) && 
@@ -318,11 +318,11 @@ setMethod("estimateRatioNumeric",signature(channel1="numeric",channel2="numeric"
                  var.lm=as.numeric(res.lm['stderr']**2),
                  var.lm.w=as.numeric(res.wlm['stderr']**2),
                  n.spectra=length(log.ratios),
-                 unweighted.ratio=mean(log.ratios,na.rm=TRUE),
+                 unweighted.ratio  = mean(log.ratios,na.rm=TRUE),
                  is.sign.isobar    = as.numeric(res.isobar['is.significant']),
                  is.sign.isobar.ev = as.numeric(res.isobar['is.significant.ev']),
                  is.sign.lm        = as.numeric(res.lm['is.significant']),
-                 is.sign.wlm        = as.numeric(res.wlm['is.significant']),
+                 is.sign.wlm       = as.numeric(res.wlm['is.significant']),
                  is.sign.rat       = as.numeric(res.isobar['p.value.rat']<sign.level),
                  is.sign.sample    = as.numeric(res.isobar['p.value.sample']<sign.level),
                  is.sign.ttest     = as.numeric(res.ttest['is.significant']),
