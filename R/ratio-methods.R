@@ -168,40 +168,32 @@ setMethod("estimateRatioNumeric",signature(channel1="numeric",channel2="numeric"
       if (!is.null(channel1.raw) && length(channel1) != length(channel1.raw) ||
           !is.null(channel2.raw) && length(channel2) != length(channel2.raw)) 
         stop("length of orig channels [",length(channel1.raw),"] is not the same as channels [",length(channel1),"]")
+
+      is.method <- function(m) identical(method,m)
+      is.a.method <- function(m) m %in% method || is.method("compare.all")
       
       if (length(channel1)==0) {
-        if (method == "isobar")
+        if (is.method("isobar"))
           return(c(lratio=NA,variance=NA,n.spectra=NA,n.na1=NA,n.na2=NA,
                    p.value.rat=NA,p.value.sample=NA,is.significant=NA))
-        else if (method=="libra" | method == "pep")
+        else if (is.method("libra") || is.method("pep"))
           return(c(ch1=NA,ch2=NA))
-        else if (method=="multiq")
+        else if (is.method("multiq"))
           return(c(lratio=NA,variance=NA,n.spectra=0,isum=NA))
-        else if (method=="test"|method=="compare.all")
-          return(c(lratio=NA, variance=NA,
-                   n.spectra=NA,
-                   unweighted.ratio=NA,
-                   is.sign.isobar    = NA,
-                   is.sign.isobar.ev = NA,
-                   is.sign.rat       = NA,
-                   is.sign.sample    = NA,
-                   is.sign.ttest     = NA,
-                   ## is.significant.wttest    = res.isobar$is.significant,
-                   is.sign.fc        = NA,
-                   is.sign.fc.nw     = NA
-                   ))
+        else if (is.method("test") || is.method("compare.all") || length(method) > 1)
+          return(NULL)
         else warning("no spectra, unknown method")
       }
       
       sel <- !is.na(channel1) & !is.na(channel2) & channel1 > 0 & channel2 > 0
       sel.notna <- !is.na(channel1) & !is.na(channel2) & channel1 > 0 & channel2 > 0
       ## Implementation of multiq and libra methods
-      if (method=="multiq") {
+      if (is.method("multiq")) {
         lratio <- log10(sum(channel1[sel])/sum(channel2[sel]))
         return(c(lratio, variance=NA,n.spectra=length(lratio),
                  isum=sum(channel1[sel]+channel2[sel])))
       }
-      if (method=="libra" | method=="pep") {
+      if (is.method("libra") || is.method("pep")) {
         return(c(ch1=sum(channel1[sel]),ch2=sum(channel2[sel])))
       }
 
@@ -234,27 +226,27 @@ setMethod("estimateRatioNumeric",signature(channel1="numeric",channel2="numeric"
       var.i <- var.i[sel]
     
       ## linear regression estimation
-      if (method=="lm" || method=="compare.all") {
+      if (is.a.method("lm")) {
         res.lm <- .calc.lm(channel1,channel2,sign.level.sample,sign.level.rat,ratiodistr) 
-        if (method == "lm") return (res.lm)
-      }      
+        if (is.method("lm")) return (res.lm)
+      }
 
       ## weighted linear regression estimation
-      if (method=="weighted lm" || method=="compare.all") {
+      if (is.a.method("weighted lm") {
         res.wlm <- .calc.weighted.lm(channel1,channel2,var.i,sign.level.sample,sign.level.rat,ratiodistr) 
-        if (method == "weighted lm") return (res.wlm)
+        if (is.method("weighted lm")) return (res.wlm)
       }      
        
       # First, compute ratios on spectra with intensities for both reporter ions
       lratio.n.var <-
         .calc.weighted.ratio(log.ratios,var.i,variance.function,preweights[sel])
       
-      if (method == "ttest" || method == "compare.all") {
+      if (is.a.method("ttest")) {
         if (length(log.ratios) < 2) p.value <- 1  else p.value <- t.test(log.ratios)$p.value
         res.ttest <- c(
                        lratio=lratio.n.var['lratio'],variance=NA,n.spectra=length(log.ratios),
             p.value=p.value,is.significant=p.value<sign.level)
-        if (method != "compare.all") return(res.ttest)
+        if (is.method("ttest")) return(res.ttest)
       }
 #if (method == "wttest" || method == "compare.all") {
 #        p.value <- (length(log.ratios) < 2)? 1 : weighted.t.test(log.ratios,w=weights,weighted.ratio)$p.value
@@ -263,17 +255,19 @@ setMethod("estimateRatioNumeric",signature(channel1="numeric",channel2="numeric"
 #            p.value=p.value,is.significant=p.value<sign.level)
 #        if (method != "compare.all") return(res.wttest)
 #      }
-      if (method == "fc" || method == "compare.all") {
+      if (is.a.method("fc")) {
         res.fc <- c(lratio=as.numeric(lratio.n.var['lratio']),variance=NA,
                     n.spectra=length(log.ratios),
                     is.significant=abs(as.numeric(lratio.n.var['lratio']))>log10(fc.threshold))
         ratio.nw <- mean(log.ratios,na.rm=TRUE)
         res.fc.nw <- c(lratio=ratio.nw,variance=NA,n.spectra=length(log.ratios),
             is.significant=abs(ratio.nw)>log10(fc.threshold))
-        if (method != "compare.all") return(res.fc)
+        if (is.method("fc")) return(res.fc)
       }
  
-      if (method == "isobar" || method == "compare.all") {
+      weighted.ratio <- as.numeric(lratio.n.var['lratio'])
+      calc.variance <- as.numeric(lratio.n.var['calc.variance'])
+      if (is.a.method("isobar")) {
         # Check for channels where one is NA
         sel.ch1na <- is.na(channel1) & !is.na(channel2)
         sel.ch2na <- is.na(channel2) & !is.na(channel1)
@@ -283,10 +277,6 @@ setMethod("estimateRatioNumeric",signature(channel1="numeric",channel2="numeric"
           .calc.w.na()
         } # use.na
 
-        weighted.ratio <- as.numeric(lratio.n.var['lratio'])
-        calc.variance <- as.numeric(lratio.n.var['calc.variance'])
-
-
         res.isobar <- 
           c(lratio=weighted.ratio, variance=calc.variance,
             n.spectra=length(log.ratios),
@@ -295,41 +285,46 @@ setMethod("estimateRatioNumeric",signature(channel1="numeric",channel2="numeric"
             p.value.sample=calculate.sample.pvalue(weighted.ratio, ratiodistr),
             is.significant=NA)
         
-        if (method=="compare.all") 
+        if (!is.method("isobar"))
           res.isobar['is.significant.ev'] <- 
             (res.isobar['p.value.sample'] <= sign.level.sample) &&
-            calculate.ratio.pvalue(weighted.ratio,
-                                   lratio.n.var['estimator.variance'],
+            calculate.ratio.pvalue(weighted.ratio,lratio.n.var['estimator.variance'],
                                    ratiodistr) <= sign.level.rat
 
         res.isobar['is.significant'] <- 
           (res.isobar['p.value.sample'] <= sign.level.sample) && 
           (res.isobar['p.value.rat'] <= sign.level.rat)
 
-        if (method != "compare.all") return(res.isobar)
+        if (is.method("isobar")) return(res.isobar)
       }
-      if (method != "compare.all") stop(paste("method",method,"not available"))
-        return(c(lratio=weighted.ratio,
-                 lratio.lm=as.numeric(res.lm['lratio']),
-                 lratio.wlm=as.numeric(res.wlm['lratio']),
-                 variance=calc.variance,
-                 var.ev=as.numeric(lratio.n.var['estimator.variance']),
-                 var.sv=as.numeric(lratio.n.var['sample.variance']),
-                 var.lm=as.numeric(res.lm['stderr']**2),
-                 var.lm.w=as.numeric(res.wlm['stderr']**2),
-                 n.spectra=length(log.ratios),
-                 unweighted.ratio  = mean(log.ratios,na.rm=TRUE),
-                 is.sign.isobar    = as.numeric(res.isobar['is.significant']),
-                 is.sign.isobar.ev = as.numeric(res.isobar['is.significant.ev']),
-                 is.sign.lm        = as.numeric(res.lm['is.significant']),
-                 is.sign.wlm       = as.numeric(res.wlm['is.significant']),
-                 is.sign.rat       = as.numeric(res.isobar['p.value.rat']<sign.level),
-                 is.sign.sample    = as.numeric(res.isobar['p.value.sample']<sign.level),
-                 is.sign.ttest     = as.numeric(res.ttest['is.significant']),
-                 ## is.significant.wttest    = res.isobar$is.significant,
-                 is.sign.fc        = as.numeric(res.fc['is.significant']),
-                 is.sign.fc.nw     = as.numeric(res.fc.nw['is.significant'])
-                 ))
+      if (length(method) == 1 && !is.method("compare.all")) stop(paste("method",method,"not available"))
+
+      add.res <- function(x,name) {
+        if (!exists(x)) return(NULL)
+        o <- get(x)
+        as.numeric(o[name])
+      }
+
+      res <- c(lratio=weighted.ratio,
+               lratio.lm=add.res("res.lm",'lratio'),
+               lratio.wlm=add.res('res.wlm','lratio'),
+               unweighted.ratio  = mean(log.ratios,na.rm=TRUE),
+               n.spectra=length(log.ratios),
+               variance=calc.variance,
+               var.ev=as.numeric(lratio.n.var['estimator.variance']),
+               var.sv=as.numeric(lratio.n.var['sample.variance']),
+               var.lm=add.res('res.lm','stderr')**2,
+               var.lm.w=add.res('res.wlm','stderr')**2,
+               is.sign.isobar    = add.res('res.isobar','is.significant'),
+               is.sign.isobar.ev = add.res('res.isobar','is.significant.ev'),
+               is.sign.lm        = add.res('res.lm','is.significant'),
+               is.sign.wlm       = add.res('res.wlm','is.significant'),
+               is.sign.rat       = add.res('res.isobar','p.value.rat')<sign.level,
+               is.sign.sample    = add.res('res.isobar','p.value.sample')<sign.level,
+               is.sign.ttest     = add.res('res.ttest,''is.significant'),
+               is.sign.fc        = add.res('res.fc','is.significant'),
+               is.sign.fc.nw     = add.res('res.fc.nw','is.significant'))
+                
     }
 )
 
