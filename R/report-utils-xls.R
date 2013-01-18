@@ -348,7 +348,7 @@ write.xls.report <- function(report.type,properties.env,report.env,file="isobar-
 
   if (proteinInfo.ok && "length" %in% colnames(proteinInfo(protein.group))) {
     tbl <- cbind(tbl, "@comment=Coverage of the protein sequence with observed peptides@Sequence Coverage" = 
-                        round(sequence.coverage(protein.group,input.tbl[,'ac'],do.warn=FALSE),round.digits))
+                        round(sequence.coverage(protein.group,input.tbl[,'ac'],do.warn=FALSE),digits=4))
   }
   return(list(tbl,input.tbl))
 }
