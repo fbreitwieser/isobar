@@ -538,13 +538,14 @@ property <- function(x, envir, null.ok=TRUE,class=NULL) {
                        use.na=property('use.na',properties.env),
                        do.warn=FALSE))
 
-    quant.tbl <- do.call("proteinRatios",ratios.opts)
-
     if (!is.null(property('correct.peptide.ratios.with',properties.env))) {
       protein.quant.tbl <- .get.or.load("correct.peptide.ratios.with",properties.env)
-      quant.tbl <- correct.peptide.ratios(quant.tbl, protein.quant.tbl, proteinGroup(env$ibspectra),
-                                          correlation = property('peptide.protein.correlation',properties.env))
-    }   
+      ratios.opts$before.summarize.f <- function(...)
+        correct.peptide.ratios(..., protein.quant.tbl=protein.quant.tbl,
+                               correlation = property('peptide.protein.correlation',properties.env))
+    }
+
+    quant.tbl <- do.call("proteinRatios",ratios.opts)
 
     quant.tbl[,"sd"] <- sqrt(quant.tbl[,"variance"])
     

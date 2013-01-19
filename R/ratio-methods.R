@@ -360,11 +360,12 @@ adjust.ratio.pvalue <- function(quant.tbl,p.adjust,sign.level.rat) {
   quant.tbl
 }
 
-correct.peptide.ratios <- function(peptide.quant.tbl, protein.quant.tbl, protein.group, 
+correct.peptide.ratios <- function(ibspectra, peptide.quant.tbl, protein.quant.tbl,  
                                    adjust.variance=TRUE, correlation=0, recalculate.pvalue = TRUE) {
 
-  if (isTRUE(attr(peptide.quant.tbl,'summarize')))
-    stop("Ratio correction shoul be done before summarization! Use proteinRatio with argument before.summarize.f!")
+  protein.group <- proteinGroup(ibspectra)
+  if (isTRUE(attr(peptide.quant.tbl,'summarize')) || isTRUE(attr(protein.quant.tbl,'summarize')))
+    stop("Ratio correction should be done before summarization! Use proteinRatio with argument before.summarize.f!")
 
   # map from peptides to protein group identifier
   pnp <- peptideNProtein(protein.group)
@@ -1137,10 +1138,17 @@ proteinRatios <-
                               protein=proteins,peptide=peptide,
                               variance.function=variance.function,combine=combine,...)
 
+  attributes(ratios) = c(attributes(ratios),list(
+                         classLabels=cl,combn.method=combn.method,symmetry=symmetry,summarize=FALSE,
+                         sign.level.rat=sign.level.rat,sign.level.sample=sign.level.sample,
+                         ratiodistr=ratiodistr,variance.function=variance.function,
+                          combine=combine,p.adjust=p.adjust,reverse=reverse))
+
   if (!is.null(before.summarize.f)) {
     .check.is.function(before.summarize.f)
-    ratios <- before.summarize.f(ratios)
+    ratios <- before.summarize.f(ibspectra,ratios)
   }
+
 
   if (summarize) {
     if (combn.method=="global")
@@ -1184,14 +1192,8 @@ proteinRatios <-
     ratios <- rbind(ratios,ratios.inv)
   }
 
-  attributes(ratios) = c(attributes(ratios),list(
-          classLabels=cl,combn.method=combn.method,symmetry=symmetry,summarize=summarize,
-          sign.level.rat=sign.level.rat,sign.level.sample=sign.level.sample,
-          ratiodistr=ratiodistr,variance.function=variance.function,
-          combine=combine,p.adjust=p.adjust,reverse=reverse))
-
   return(ratios)
-}
+} # end proteinRatios
 
 summarize.ratios <-
   function(ratios,by.column="ac",summarize.method="mult.pval",min.detect=NULL,n.combination=NULL,
@@ -1288,7 +1290,10 @@ summarize.ratios <-
       if (is.null(result)) stop("Error summarizing.")
 
       attributes(result) = c(attributes(result),
-                             list(by.column=by.column,min.detect=min.detect,orient.div=orient.div))
+                             list(summarize=TRUE,
+                                  by.column=by.column,
+                                  min.detect=min.detect,
+                                  orient.div=orient.div))
 
       return(result)
       
