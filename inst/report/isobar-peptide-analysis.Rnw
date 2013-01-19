@@ -82,7 +82,7 @@ report.env$quant.tbl$sd <- sqrt(report.env$quant.tbl$variance)
 print_longtablehdr_peptide(coldef,!is.single.comparision,ncol.p,TRUE)
 
 protein.group <- proteinGroup(report.env$ibspectra)
-df.pg <- unique(.proteinGroup.as.concise.data.frame(protein.group)[,c("peptide","proteins")])
+df.pg <- unique(proteinGroup.as.concise.data.frame(protein.group)[,c("peptide","proteins")])
 report.env$quant.tbl <- merge(df.pg,report.env$quant.tbl,by="peptide",all.y=TRUE)
 #all.peps <- unique(report.env$quant.tbl[,c("peptide","modif","proteins")])
 all.peps <- ddply(report.env$quant.tbl,c("peptide","modif","proteins"),
