@@ -363,6 +363,7 @@ adjust.ratio.pvalue <- function(quant.tbl,p.adjust,sign.level.rat) {
 correct.peptide.ratios <- function(ibspectra, peptide.quant.tbl, protein.quant.tbl,  
                                    adjust.variance=TRUE, correlation=0, recalculate.pvalue = TRUE) {
 
+  attrs <- attributes(peptide.quant.tbl)
   protein.group <- proteinGroup(ibspectra)
   if (isTRUE(attr(peptide.quant.tbl,'summarize')) || isTRUE(attr(protein.quant.tbl,'summarize')))
     stop("Ratio correction should be done before summarization! Use proteinRatio with argument before.summarize.f!")
@@ -374,16 +375,19 @@ correct.peptide.ratios <- function(ibspectra, peptide.quant.tbl, protein.quant.t
   peptide.quant.tbl[,'ac'] <- pnp[peptide.quant.tbl$peptide]
 
   # merged peptide and protein quant table
-  tbl <- merge(peptide.quant.tbl,protein.quant.tbl[,c("ac","r1","r2","lratio","variance")],
+  tbl <- merge(peptide.quant.tbl,protein.quant.tbl[,c("ac","r1","r2","lratio","variance","is.significant")],
                by = c("ac","r1","r2"), all.x = TRUE, suffixes=c(".modpep",".prot"))
 
   tbl[,'lratio'] <- cn(tbl,'lratio.modpep') - cn(tbl,'lratio.prot')
 
+  attrs$adjust.variance <- adjust.variance
   if (adjust.variance) {
+    attrs$adjust.variance.corralation <- correlation
     cov <- correlation * sqrt(cn(tbl,'variance.modpep')) * sqrt(cn(tbl,'variance.prot'))
     tbl[,'variance'] <- cn(tbl,'variance.modpep') + cn(tbl,'variance.prot') * 2 * cov
   }
 
+  attrs$recalculate.pvalue <- recalculate.pvalue
   if (recalculate.pvalue) {
     ratiodistr <- attr(peptide.quant.tbl,'ratiodistr')
     tbl[,'p.value.rat'] <- calculate.ratio.pvalue(tbl[,'lratio'], tbl[,'variance'], ratiodistr)
@@ -391,6 +395,9 @@ correct.peptide.ratios <- function(ibspectra, peptide.quant.tbl, protein.quant.t
     tbl[,'is.significant'] <- tbl[,'p.value.rat'] <= attr(peptide.quant.tbl,'sign.level.rat') &
                               tbl[,'p.value.sample'] <= attr(peptide.quant.tbl,'sign.level.sample') 
   }
+  attrs$names <- colnames(tbl)
+  attrs$row.names <- rownames(tbl)
+  attributes(tbl) <- attrs
 
   return(tbl)
 }
