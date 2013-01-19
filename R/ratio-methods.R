@@ -1145,7 +1145,7 @@ proteinRatios <-
                           combine=combine,p.adjust=p.adjust,reverse=reverse))
 
   if (!is.null(before.summarize.f)) {
-    .check.is.function(before.summarize.f)
+    .check.isfunction(before.summarize.f)
     ratios <- before.summarize.f(ibspectra,ratios)
   }
 
