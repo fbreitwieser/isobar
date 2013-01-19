@@ -42,10 +42,10 @@ setMethod("reporterMassPrecision",
                        labels=sprintf("%s: m/z %.2f",
                          reporterTagNames(x),reporterTagMasses(x)))
              
-             if (compareVersion(packageDescription("ggplot2")$Version,"0.9.2") >= 0) {
-              opts.f <- theme; text.f <- element_text;
-             } else {
+             if (compareVersion(packageDescription("ggplot2")$Version,"0.9.1") <= 0) {
               opts.f <- opts; text.f <- theme_text;
+             } else {
+              opts.f <- theme; text.f <- element_text;
              }
 
 
