@@ -754,7 +754,7 @@ read.mzid <- function(f) {
 
 
 ## TODO: log is not returned
-.read.idfile <- function(id.file,id.format=NULL,decode.titles=TRUE,log=NULL) {
+.read.idfile <- function(id.file,id.format=NULL,decode.titles=TRUE,log=NULL,...) {
   data <- unique(do.call("rbind",lapply(id.file,function(f) {
     
     if (is.null(id.format)) {
@@ -776,15 +776,15 @@ read.mzid <- function(f) {
     }
     
     if (id.format.f == "ibspectra.csv") {
-      data <- read.table(f,header=T,stringsAsFactors=F,sep="\t")
+      data <- read.table(f,header=T,stringsAsFactors=F,sep="\t",...)
       log <- rbind(log,c("identification file [id.csv]",f))
     } else if (id.format.f == "mzid") {
       data <- read.mzid(f)
       log <- rbind(log,c("identification file [mzid]",f))
     } else if (id.format.f == "rockerbox") {
-      data <- .read.rockerbox(f)
+      data <- .read.rockerbox(f,...)
     } else if (id.format.f == "msgfp tsv") {
-      data <- .read.msgfp.tsv(f)
+      data <- .read.msgfp.tsv(f,...)
     } else {
       stop(paste0("cannot parse file ",f," - format [",id.format.f,"] not known."))
     }
@@ -1003,6 +1003,7 @@ read.mzid <- function(f) {
 }
 
 .merge.identifications <- function(identifications) {
+  SC <- .SPECTRUM.COLS[.SPECTRUM.COLS %in% colnames(identifications)]
 
   ## Merge results of different search engines / on different spectra
   if ('SEARCHENGINE' %in% names(SC) &&                                          ## search engine column is present
@@ -1084,27 +1085,30 @@ read.mzid <- function(f) {
 }
 
 
-.read.msgfp.tsv <- function(filename) {
+## read MSGF+ tab-separated identification files
+.read.msgfp.tsv <- function(filename,filter.rev.hits=TRUE) {
   data <- read.delim(filename, sep="\t", stringsAsFactors=FALSE)
   ib.df <- data.frame(spectrum=data[,'Title'],.convert.msgfp.pepmodif(data[,'Peptide']),
-		      scans.from=data[,'ScanNum'],dissoc.method=data[,'FragMethod'],
+		      scan.from=data[,'ScanNum'],dissoc.method=tolower(data[,'FragMethod']),
 		      precursor.error=data[,'PrecursorError.ppm.'],charge=data[,'Charge'],
 		      search.engine="MSGF+",score=data[,'MSGFScore'],stringsAsFactors=FALSE)
-  ib.protnpep <-  .convert.msgfp.protein(data[,'Protein'],ib.df[,'peptide'])
+  ib.protnpep <-  .convert.msgfp.protein(data[,'Protein'],ib.df[,'peptide'],filter.rev.hits=filter.rev.hits)
   merge(ib.df,ib.protnpep,by='peptide',all=TRUE)
 }
 
 .convert.msgfp.pepmodif <- function(peptide,modif.masses=
                                       c(iTRAQ4plex=144.102,Cys_CAM=57.021,Oxidation=15.995,
-                                        ACET=42.011,METH=14.016,BIMETH=28.031,TRIMETH=42.047,
-                                        iTRAQ4_ACET="144.102+42.011")) {
+                                        iTRAQ4_ACET="144.102+42.011",ACET=42.011,
+                                        METH=14.016,BIMETH=28.031,TRIMETH=42.047
+                                        )) {
+  modif.masses.r <- setNames(c(names(modif.masses)),c(paste0("+",modif.masses)))
   modifs <- strsplit(paste0(peptide,"+"),"[A-Z]")
   #sort(table(unlist(modifs)))
-  #modifs[1:5]
-  modif.masses.r <- setNames(c(names(modif.masses)),c(paste0("+",modif.masses)))
-  modif.p <- sapply(modifs,function(x) { x[length(x)] <- sub(".$","",x[length(x)]); 
-                                         x[x!=""] <- modif.masses.r[x[x!=""]];x})
-  
+  modif.p <- sapply(modifs,function(x) { 
+                                         x[length(x)] <- sub(".$","",x[length(x)]);
+                                         x[x!=""] <- modif.masses.r[x[x!=""]];
+                                         x
+                                      })
   if (any(is.na(unlist(modif.p))))
     stop("NA in modifications - did not map")
   #sel <- sapply(modif.p,function(x) any(is.na(x)))
@@ -1121,13 +1125,33 @@ read.mzid <- function(f) {
     modif[sel.m] <- paste0(modif[sel.m],"_",pep[sel.m])
     paste(modif,collapse=":")
   } ,strsplit(pep.seq,""),modif.p)
-  return(data.frame(peptide=pep.seq,modif=modif.i,stringsAsFactors=FALSE))
+
+  
+  
+  return(data.frame(peptide=pep.seq,modif=paste0(modif.i,":"),stringsAsFactors=FALSE))
 }
 
 
-.convert.msgfp.protein <- function(protein,peptide) {
-  #lapply(strsplit(df$Protein,";"),function(x) { sapply(strsplit(x,split="|",fixed=TRUE),function(y)y[2]) })
-  protein.acs <- lapply(strsplit(protein,"[;|]"),function(y) { y[seq(from=2,to=length(y),by=3)] })
+.convert.msgfp.protein <- function(protein,peptide,filter.rev.hits=TRUE) {
+  # layout: sp|Q60848-1|HELLS_MOUSE(pre=R,post=K);sp|Q60848-2|HELLS_MOUSE(pre=R,post=K)
+  # reverse hits: XXX_sp|...
+  # TODO: extract pre and post AAs
+
+  protein.acs <- lapply(strsplit(protein,"[;|]"),
+                        function(y) { 
+                          acs <- y[seq(from=2,to=length(y),by=3)] 
+                          if (filter.rev.hits) {
+                            is.rev <- grepl("^XXX_",y[seq(from=1,to=length(y),by=3)])
+                            acs[!is.rev]
+                          } else
+                            acs
+                        })
+  if (filter.rev.hits) {
+    fwd.prots <- sapply(protein.acs,length) > 0
+    protein.acs <- protein.acs[fwd.prots]
+    peptide <- peptide[fwd.prots]
+  }
+
   as.data.frame(do.call(rbind,lapply(seq_along(peptide),
           function(i) cbind(peptide=peptide[i],accession=protein.acs[[i]]) )),stringsAsFactors=FALSE)
 }
