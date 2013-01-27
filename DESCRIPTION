@@ -18,6 +18,7 @@ URL: http://bioinformatics.cemm.oeaw.ac.at
 Collate: utils.R
 	 ProteinGroup-class.R
 	 IBSpectra-class.R
+         isobar-import.R
 	 IBSpectra-plots.R
 	 NoiseModel-class.R
    Tlsd-class.R
