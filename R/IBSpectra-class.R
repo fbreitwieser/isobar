@@ -124,7 +124,7 @@ setValidity("IBSpectra",.valid.IBSpectra)
                    SAMPLE="sample",FILE="file",NOTES="notes")
 
 .PEPTIDE.COLS <- c(PROTEINAC="accession",STARTPOS="start.pos",
-                  REALPEPTIDE="real.peptide")
+                  REALPEPTIDE="real.peptide",AA.BEFORE="aa.before",AA.AFTER="aa.after")
 
 .PROTEIN.COLS <- c(PROTEINAC="accession",PROTEINAC_CONCISE="accessions",
                    NAME="name",PROTEIN_NAME="protein_name",
