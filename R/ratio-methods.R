@@ -662,14 +662,14 @@ estimateRatioForPeptide <- function(peptide,ibspectra,noise.model,channel1,chann
         if (is.data.frame(peptide))
           peptide <- as.matrix(peptide)
         if (is.matrix(peptide)) {
-          r <- t(sapply(seq_len(nrow(peptide)),function(p_i) 
+          r <- ldply(seq_len(nrow(peptide)),function(p_i) 
                   .call.estimateRatio(peptide[p_i,,drop=FALSE],"peptide",ibspectra,noise.model,
-                                      channel1,channel2,...)))
+                                      channel1,channel2,...))
         
         } else {
-          r <- t(sapply(peptide,function(individual.peptide) 
+          r <- ldply(peptide,function(individual.peptide) 
                         .call.estimateRatio(individual.peptide,"peptide",ibspectra,noise.model,
-                                            channel1,channel2,...)))
+                                            channel1,channel2,...))
         }
       }
       attr(r,"input") <- peptide
