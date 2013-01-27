@@ -202,7 +202,7 @@ setMethod("initialize","IBSpectra",
   identifications[,SC['PEPTIDE']] <- gsub("I","L",identifications[,SC['PEPTIDE']])
 
   ## Separate protein columns (focus on peptide-spectrum matches)
-  PC <- c(.PROTEIN.COLS['PROTEINAC'],.PEPTIDE.COLS['STARTPOS'],.PEPTIDE.COLS['REALPEPTIDE'])
+  PC <- setdiff(.PEPTIDE.COLS, SC['PEPTIDE'])
   protein.colnames <- which(colnames(identifications) %in% c(SC['PEPTIDE'],PC))
   pept.n.prot <- unique(identifications[,protein.colnames])
   identifications <- unique(identifications[,-which(colnames(identifications) %in% PC)])
@@ -261,12 +261,12 @@ setMethod("readIBSpectra",
                      df[,.SPECTRUM.COLS['SAMPLE']]  <- names(id.file)[i]
                    df
             })
-      new(type,data=do.call(rbind,ll),...)
+      new(type,identifications=do.call(rbind,ll),...)
     }
 )
 setMethod("readIBSpectra",
           signature(type="character",id.file="data.frame",peaklist.file="missing"),
-    function(type,id.file,...) new(type,data=id.file,...)
+    function(type,id.file,...) new(type,identifications=id.file,...)
 )
 
 setMethod("readIBSpectra",
@@ -386,7 +386,7 @@ setMethod("readIBSpectra",
       ## TODO: check that all identified spectra are present in intensities
 
       
-      new(type,data=data,data.mass=data.mass,data.ions=data.ions,...)
+      new(type,identifications=data,data.mass=data.mass,data.ions=data.ions,...)
     }
 )
 
