@@ -271,4 +271,6 @@ setMethod("weightedMean",
   return(combined.p)
 }
 
-
+.sanitize.sh <- function(str) {
+  gsub("[^a-zA-Z\\.0-9_\\-]","", str)
+}
