@@ -41,20 +41,35 @@ setMethod("reporterMassPrecision",
                        #labels=sprintf("tag %s: m/z %.2f",
                        labels=sprintf("%s: m/z %.2f",
                          reporterTagNames(x),reporterTagMasses(x)))
-              
+             
+             if (compareVersion(packageDescription("ggplot2")$Version,"0.9.1") <= 0) {
+              opts.f <- opts; text.f <- theme_text;
+             } else {
+              opts.f <- theme; text.f <- element_text;
+             }
+
+
               ggplot(melt.masses,aes(x=mass)) + geom_vline(xintercept=0,alpha=0.8) +
                 geom_histogram(fill="white",aes(colour=factor(reporter)),alpha=0.8,
                                binwidth=1/20*(max(melt.masses$mass,na.rm=TRUE)-min(melt.masses$mass,na.rm=TRUE))) + 
                   facet_wrap(~reporter,scales="fixed",nrow=1) + 
                   theme_bw(base_size=10) + xlab("mass difference theoretical vs observed reporter tag mass") +
-                    opts(legend.position="none",
-                         axis.text.x = theme_text(angle=330,hjust=0,vjust=1,colour="grey50",size=7))
+                    opts.f(legend.position="none",
+                         axis.text.x = text.f(angle=330,hjust=0,vjust=1,colour="grey50",size=7))
             }
 
             #return(summary(masses-matrix(reporterTagMasses(x),byrow=T,
             #       nrow=nrow(masses),ncol=ncol(masses))))
           }
 )
+
+.reshapeLong <- function(x,key="key",value="value") {
+  res <- data.frame(key=rep(colnames(x),each=nrow(x)),
+                    value=as.numeric(x),
+                    stringsAsFactors=FALSE)
+  colnames(res) <- c(key,value)
+  res
+}
 
 setMethod("reporterIntensityPlot",
           signature=c(x="IBSpectra"),function(x) {
@@ -75,11 +90,6 @@ setMethod("reporterIntensityPlot",
                              stringsAsFactors=FALSE))
             }
             
-       #     ggplot(melt.intensities,aes(x=intensity)) + 
-       #       geom_density(aes(fill=factor(normalized)),alph=0.5) + 
-       #       scale_x_log10() + facet_wrap(~tag,scales="fixed",nrow=1) + 
-       #           theme_bw() + opts(axis.text.x = theme_text(angle=330,hjust=0,colour="grey50"))
-                            
             ggplot(melt.intensities,aes(x=tag,y=intensity)) +
               geom_boxplot(aes(color=factor(normalized)),size=0.5,alpha=0.6,
                            outlier.size=0.5,position=position_dodge(width=0.25)) + 

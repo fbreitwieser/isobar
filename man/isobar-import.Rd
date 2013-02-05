@@ -6,6 +6,8 @@
 \alias{readIBSpectra}
 \alias{readIBSpectra,character,character,character-method}
 \alias{readIBSpectra,character,character,missing-method}
+\alias{readIBSpectra,character,data.frame,missing-method}
+\alias{readIBSpectra,character,data.frame,character-method}
 \alias{readIBSpectra,character,character-method}
 \alias{read.mzid}
 
@@ -21,14 +23,19 @@
       
 \usage{
 \S4method{readIBSpectra}{character,character}(type,id.file)
+
+# reads id file
 \S4method{readIBSpectra}{character,character,character}(
-              type, id.file,peaklist.file,
-              proteinGroupTemplate = NULL,
-              mapping.file = NULL, mapping = c(peaklist="even",id="odd"),
-              id.file.domap = NULL, annotate.spectra.f = NULL,
-              peaklist.format = NULL, id.format = NULL,
-              fragment.precision = NULL,fragment.outlier.prob = NULL,
-              decode.titles = TRUE, scan.lines = 0, ...)
+             type, id.file, peaklist.file, mapping.file = NULL,
+             mapping = c(peaklist = "even", id = "odd"),
+             id.file.domap = NULL, id.format = NULL, decode.titles = TRUE, ...)
+
+# reads peaklist file
+\S4method{readIBSpectra}{character,data.frame,character}(
+             type, id.file, peaklist.file, proteinGroupTemplate = NULL,
+             annotate.spectra.f = NULL, peaklist.format = NULL,
+             scan.lines = 0, fragment.precision = NULL,
+             fragment.outlier.prob = NULL, ...)
 }
 
 \arguments{
@@ -75,8 +82,11 @@
     mapping the identification results.
   }
   \item{annotate.spectra.f}{
-    Function which has the chance to annotate the spectra feature data
-    before it is written to IBpectra object.
+    Function which changes or annotates the spectra feature data
+    before it is written to IBpectra object. This can be used to calculate 
+    and threshold additional scores, for example localization scores of post-
+    translational modifications such as Delta Score (filterSpectraDeltaScore) or
+    PhosphoRS site localization probabilities (annotateSpectraPhosphoRS).
   }
   \item{peaklist.format}{
     "mgf" (Mascot Generic format) or "mcn" (iTracker Machine Readable
@@ -129,7 +139,7 @@ data(ibspiked_set1)
 # get identifier for Ceruplasmin proteins
 ceru.acs <- protein.g(proteinGroup(ibspiked_set1),"CERU")
 # create a smaller ibspectra w/ only Ceruplasmins
-ib.ceru <- subsetIBSpectra(ibspiked_set1,protein=ceru.acs,"include")
+ib.ceru <- subsetIBSpectra(ibspiked_set1,protein=ceru.acs,direction="include")
 
 # write it to a file
 tf <- tempfile("isobar")

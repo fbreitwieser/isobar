@@ -1,6 +1,6 @@
 \name{fit distributions}
 \alias{fitCauchy}
-\alias{fitTd}
+\alias{fitTlsd}
 \alias{fitGumbel}
 \alias{fitNorm}
 \alias{fitWeightedNorm}
@@ -18,7 +18,7 @@ fitWeightedNorm(x, weights)
 fitNormalCauchyMixture(x)
 fitGaussianMixture(x, n = 500)
 fitGumbel(x)
-fitTd(x)
+fitTlsd(x)
 }
 \arguments{
   \item{x}{Ratios}

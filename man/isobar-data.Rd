@@ -2,6 +2,7 @@
 \alias{ibspiked_set1}
 \alias{ibspiked_set2}
 \alias{noise.model.hcd}
+\alias{ib_phospho}
 \docType{data}
 \title{
   Isobar Data packages
@@ -14,6 +15,8 @@
 }
 \usage{
   data(ibspiked_set1)
+  data(ibspiked_set2)
+  data(ib_phospho)
 }
 \format{
   iTRAQ4plexSpectra objects.

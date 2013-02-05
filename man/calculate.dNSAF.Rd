@@ -12,11 +12,15 @@
   (2010).
 }
 \usage{
-calculate.dNSAF(protein.group)
+calculate.dNSAF(protein.group, use.mw = FALSE, normalize = TRUE,
+                combine.f = mean)
 }
 \arguments{
   \item{protein.group}{ProteinGroup object. Its \code{@proteinInfo}
     slot \code{data.frame} must contain a \code{length} column.}
+  \item{use.mw}{Use MW to account for protein size}
+  \item{normalize}{Normalize dSAF to dNSAF?}
+  \item{combine.f}{How to handle proteins seen only with shared peptides?}
 }
 \value{
   Named numeric vector of dNSAF values.

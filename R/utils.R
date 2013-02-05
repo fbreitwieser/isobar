@@ -10,6 +10,16 @@ if(!isGeneric("as.data.frame")) setGeneric("as.data.frame", useAsDefault=as.data
   return(a >= b[1] & a <=b[2])
 }
 
+cn <- function(x,y) {
+  x[ , y ]
+}
+
+.check.isfunction <- function(f) {
+  if (!is.function(f))
+    stop(paste(deparse(substitute(f)),"must be a function!"))
+  TRUE
+}
+
 .paste_unique <- function(x,...,na.rm=TRUE) {
   x <- unique(x)
   x <- x[!is.na(x)]
@@ -84,6 +94,17 @@ number.ranges <- function(numbers) {
        numb_string = c(numb_string,paste(min(numb),max(numb),sep="-"))
   }
   return(paste(numb_string,collapse=","))
+}
+
+.return.equal.or.na <- function(df) {
+  apply(df, 1, function(x) {
+
+    if (all(is.na(x))) return(NA)
+
+    y <- x[!is.na(x)]
+    if (!all(y == y[1])) return(NA)
+    return(y[1])
+  })
 }
 
 .all.duplicate.rows <- function(df,column,n=2) {

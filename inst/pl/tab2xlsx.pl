@@ -94,7 +94,7 @@ for (my $file_i=0; $file_i <= $#ARGV; ++$file_i) {
   while(my $line=<F>)    {
     if (!defined $row || $row == $row_limit) {
       $n_worksheets += 1;
-      $worksheet = $workbook->add_worksheet($name.($n_worksheets > 1? " $n_worksheets" : ""));
+      $worksheet = $workbook->add_worksheet(substr($name,0,25).($n_worksheets > 1? " $n_worksheets" : ""));
       $worksheet->add_write_handler(qr[\w], \&store_string_widths);
       my $fg_color = ($file_i <= $#colors)? "white" : "black";
       my $bg_color = ($file_i <= $#colors)? $colors[$file_i] : "white";
