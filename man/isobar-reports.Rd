@@ -15,6 +15,7 @@
 \alias{write.xls.report}
 \alias{print_longtablehdr_peptide}
 \alias{transform_pepmodif}
+\alias{property}
 
 \title{Isobar reports}
 
@@ -28,7 +29,9 @@
 }
 
 \usage{
-create.reports(properties.file = "properties.R", args = NULL,
+create.reports(properties.file = "properties.R", 
+               global.properties.file = system.file("report","properties.R", package = "isobar"),
+               args = NULL,
                report.type = "protein",
                compile = FALSE, zip = FALSE,
                warn = 1)

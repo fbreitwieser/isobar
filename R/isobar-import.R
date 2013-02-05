@@ -838,9 +838,9 @@ read.mzid <- function(f) {
   COLS.TO.CONSOLIDATE <- list('peptide'=.consolidate.peptide.ids,
 			      'modif'=.consolidate.modification.pos,
 			      'charge'=.consolidate.charge,  ## sometimes, charge state 0 is reported when too high
-			      'theo.mass'=mean.na.rm,        ## can differ esp. between Mascot and Phenyx
-			      'retention.time'=mean.na.rm,
-			      'parent.intens'=mean.na.rm)
+			      'theo.mass'=.mean.na.rm,        ## can differ esp. between Mascot and Phenyx
+			      'retention.time'=.mean.na.rm,
+			      'parent.intens'=.mean.na.rm)
 
   COLS.TO.CONSOLIDATE <- COLS.TO.CONSOLIDATE[names(COLS.TO.CONSOLIDATE) %in% colnames(identifications)]
 
@@ -895,9 +895,8 @@ read.mzid <- function(f) {
   return(ids.merged)
 }
 
-na.rm <- function(x) x[!is.na(x)]
-
-mean.na.rm <- function(x) mean(x,na.rm=TRUE)
+.na.rm <- function(x) x[!is.na(x)]
+.mean.na.rm <- function(x) mean(x,na.rm=TRUE)
 
 # Remove differing peptide ids
 .consolidate.peptide.ids <- function(x) NA
@@ -909,7 +908,7 @@ mean.na.rm <- function(x) mean(x,na.rm=TRUE)
 }
 
 # Take 'first' modification
-.consolidate.modification.pos <- function(x) na.rm(x)[1]
+.consolidate.modification.pos <- function(x) .na.rm(x)[1]
 
 .resolve.conflicts <- function(ids, resolve.f, colname, resolve.colnames, keep.cols = false) {
 
@@ -961,8 +960,6 @@ mean.na.rm <- function(x) mean(x,na.rm=TRUE)
 
 .resolve.modifications <- function(df,colname, modif.cols, standard.modif) {
   message("Resolving modifications")
-  max.uniq <- function(tt) sum(tt==max(tt)) == 1
-  take.max <- function(tt) names(tt)[which.max(tt)]
   if (is.character(modif.cols))
     modif.cols <- which(colnames(df) %in% modif.cols)
 
@@ -990,8 +987,8 @@ mean.na.rm <- function(x) mean(x,na.rm=TRUE)
 
     ## any modification position is more often present?
     tt <- table(modifs)
-    if (max.uniq(tt)) {
-      note <- paste0(note,". Taking ", take.max(tt) )
+    if (.max.uniq(tt)) {
+      note <- paste0(note,". Taking ", .take.max(tt) )
       stop("TODO: Implement")
     }
 
@@ -1002,11 +999,10 @@ mean.na.rm <- function(x) mean(x,na.rm=TRUE)
   })  
 }
 
-max.uniq <- function(tt) sum(tt==max(tt)) == 1
+.max.uniq <- function(tt) sum(tt==max(tt)) == 1
+.take.max <- function(tt) names(tt)[which.max(tt)]
 
 .resolve.differing.identifications <- function(identifications,score.cols) {
-  max.uniq <- function(tt) sum(tt==max(tt)) == 1
-  take.max <- function(tt) names(tt)[which.max(tt)]
   allequal <- function(x) all(x == x[1])
   by.y <- function(x,ind,fun=sum) sapply(by(x,ind,fun),function(x) return(x) )
   skipna <- function(x) unlist(x[!is.na(x)])
@@ -1016,7 +1012,7 @@ max.uniq <- function(tt) sum(tt==max(tt)) == 1
 
   resolved.identifications <- ddply(identifications,'spectrum', function(x) {
 	n.ids <- rowSums(!is.na(x[,score.cols]),na.rm=TRUE)    ## number of identifications for each psm
-	if (max.uniq(n.ids)) {
+	if (.max.uniq(n.ids)) {
 	  n.max.ids <<- n.max.ids + 1
 	  return(x[which.max(n.ids),,drop=FALSE])
 	}
@@ -1024,8 +1020,8 @@ max.uniq <- function(tt) sum(tt==max(tt)) == 1
 	## resolve peptide differnces
         if (!allequal(x[,'peptide'])) {                ## different peptides identified
 	  pep.ids <- by.y(n.ids,x[,'peptide'],sum)
-	  if (max.uniq(pep.ids)) {                     ##   any peptide has been seen more often than others?
-	    x <- x[x[,'peptide'] == take.max(pep.ids),,drop=FALSE]
+	  if (.max.uniq(pep.ids)) {                     ##   any peptide has been seen more often than others?
+	    x <- x[x[,'peptide'] == .take.max(pep.ids),,drop=FALSE]
 	  }  else {
 	    n.skipped <<- n.skipped + 1
 	    return(NULL)
@@ -1045,12 +1041,12 @@ max.uniq <- function(tt) sum(tt==max(tt)) == 1
 
 	  modifs <- gsub("Oxidation_M","")
 
-	  if (!max.uniq(modif.ids))
+	  if (!.max.uniq(modif.ids))
 	    n.modif.pos.dif <<- n.modif.pos.dif + 1
 
 	  print(x)
 	  modif <- paste(x[,.SPECTRUM.COLS['SEARCHENGINE']],x[,'modif'],sep=": ",collapse=' & ')
-	  x <- x[x[,'modif'] == take.max(modif.ids)[1],,drop=FALSE]
+	  x <- x[x[,'modif'] == .take.max(modif.ids)[1],,drop=FALSE]
 	  x[,'modif'] <- modif
 	} else if (!allequal(x[,'charge'])) {         ## different charge
           x[1,score.cols] <- as.numeric(sapply(x[,score.cols],skipna))

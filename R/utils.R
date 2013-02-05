@@ -10,7 +10,7 @@ if(!isGeneric("as.data.frame")) setGeneric("as.data.frame", useAsDefault=as.data
   return(a >= b[1] & a <=b[2])
 }
 
-cn <- function(x,y) {
+.cn <- function(x,y) {
   x[ , y ]
 }
 
