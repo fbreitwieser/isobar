@@ -159,7 +159,7 @@
   return(VARMETADATA[nn,,drop=FALSE])
 }
 
-.merge.identifications.full <- function(identifications) {
+.merge.identifications.full <- function(identifications, ...) {
   SC <- .SPECTRUM.COLS[.SPECTRUM.COLS %in% colnames(identifications)]
   ## Substitute Isoleucins with Leucins (indistinguishable by Masspec)
   identifications[,.PEPTIDE.COLS['REALPEPTIDE']] <- identifications[,SC['PEPTIDE']]
@@ -173,7 +173,7 @@
 
   ## Merge identifications
   if (max(table(identifications[,SC['SPECTRUM']])) > 1)
-    identifications <- .merge.identifications(identifications)
+    identifications <- .merge.identifications(identifications, ...)
   if (anyDuplicated(identifications[,SC['SPECTRUM']])) 
     stop('No divergent spectra identifications should be left.')
   
@@ -831,22 +831,23 @@ read.mzid <- function(f) {
   return(identifications)
 }
 
-.merge.search.engine.identifications <- function(identifications) {
+.merge.search.engine.identifications <- function(identifications,...) {
 
-  cols.for.merging <- intersect(colnames(identifications),setdiff(.SPECTRUM.COLS,.ID.COLS))
+  ## Columns to consolidate after merging
+  ##   functions are used to resolve or remove the psm state
+  COLS.TO.CONSOLIDATE <- list('peptide'=.consolidate.peptide.ids,
+			      'modif'=.consolidate.modification.pos,
+			      'charge'=.consolidate.charge,  ## sometimes, charge state 0 is reported when too high
+			      'theo.mass'=mean.na.rm,        ## can differ esp. between Mascot and Phenyx
+			      'retention.time'=mean.na.rm,
+			      'parent.intens'=mean.na.rm)
 
-  ## Rounding is necessary. Mascot and Phenyx theoretical masses can differ a lot.
-  if ('theo.mass' %in% colnames(identifications))
-    identifications[,'theo.mass'] <- round(identifications[,'theo.mass'],0)
-  if ('retention.time' %in% colnames(identifications))
-    identifications[,'retention.time'] <- round(identifications[,'retention.time'],4)
-  if ('parent.intens' %in% colnames(identifications))
-    identifications[,'parent.intens'] <- round(identifications[,'parent.intens'],4)
-  #for (cc in intersect(c('theo.mass','retention.time','parent.intens'),cols.for.merging)) {
-  #  if (is.numeric(identifications[,cc]))
-  #    identifications[,cc] <- round(identifications[,cc],0)
-  #}
+  COLS.TO.CONSOLIDATE <- COLS.TO.CONSOLIDATE[names(COLS.TO.CONSOLIDATE) %in% colnames(identifications)]
 
+  ## Columns used for merging. Typically 'spectrum' and columns which are the same regardless of search engine
+  COLS.FOR.MERGING <- intersect(colnames(identifications),setdiff(.SPECTRUM.COLS,c(.ID.COLS,names(COLS.TO.CONSOLIDATE))))
+
+  ## Split identifications by search engine
   cn.search.engine <- which(colnames(identifications) == .SPECTRUM.COLS['SEARCHENGINE'])
   ids.split <- lapply(split(identifications,identifications[,cn.search.engine]),
 		      function(x) x[,-cn.search.engine])
@@ -859,31 +860,149 @@ read.mzid <- function(f) {
 
   for (ii in seq_along(ids.split)) { # fix colnames which are duplicate
     cn <- colnames(ids.split[[ii]])
-    cn[!cn %in% cols.for.merging] <- paste(cn[!cn %in% cols.for.merging],clean.names[ii],sep=".")
+    cn[!cn %in% COLS.FOR.MERGING] <- paste(cn[!cn %in% COLS.FOR.MERGING],clean.names[ii],sep=".")
     colnames(ids.split[[ii]]) <- cn
   }
 
   ## Merge identification data frames
-  ids.merged <- merge(ids.split[[1]],ids.split[[2]],by=cols.for.merging,all=TRUE)
+  ids.merged <- merge(ids.split[[1]],ids.split[[2]],by=COLS.FOR.MERGING,all=TRUE)
   if (length(ids.split) > 2) {
     for (ii in seq(from=3,to=length(ids.split))) {
-      ids.merged <- merge(ids.merged,ids.split[[ii]],by=cols.for.merging,all=TRUE)
+      ids.merged <- merge(ids.merged,ids.split[[ii]],by=COLS.FOR.MERGING,all=TRUE)
     }
   }
 
-  ## Handle spectra with different identifications with different search engines
-  tt <- table(ids.merged[,'spectrum'])
-  spectra.ok <- ids.merged[,'spectrum'] %in% names(tt)[tt==1]
-  resolved.ids <- .resolve.differing.identifications(ids.merged[!spectra.ok,],score.cols)
+  if (!.SPECTRUM.COLS['NOTES'] %in% colnames(ids.merged))
+    ids.merged[,.SPECTRUM.COLS['NOTES']] <- ''
 
-  identifications <- rbind(ids.merged[spectra.ok,],resolved.ids)
-  if (any(table(identifications[,'spectrum'])>1))
+  ## Consolidate spectra with different identifications with different search engines
+  for (colname in names(COLS.TO.CONSOLIDATE)) {
+    message("Consolidating ",colname, " [",date(),"]")
+    ids.merged <- .resolve.conflicts(ids=ids.merged,resolve.f=COLS.TO.CONSOLIDATE[[colname]],
+  	         		     colname=colname,resolve.colnames=paste0(colname,".",clean.names),...)
+  }
+
+  tt <- table(ids.merged[,'spectrum'])
+  #spectra.ok <- ids.merged[,'spectrum'] %in% names(tt)[tt==1]
+  #resolved.ids <- .resolve.differing.identifications(ids.merged[!spectra.ok,],score.cols)
+
+  #identifications <- rbind(ids.merged[spectra.ok,],resolved.ids)
+  if (any(table(ids.merged[,'spectrum'])>1))
     stop("Merging not successful, duplicated psms!")
 
-  identifications[,.SPECTRUM.COLS['SEARCHENGINE']] <- 
-	  apply(identifications[,score.cols],1,function(x) { paste(names(ids.split)[!is.na(x)],collapse="&") })
-  return(identifications)
+  ids.merged[,.SPECTRUM.COLS['SEARCHENGINE']] <- 
+	  apply(ids.merged[,score.cols],1,function(x) { paste(names(ids.split)[!is.na(x)],collapse="&") })
+  return(ids.merged)
 }
+
+na.rm <- function(x) x[!is.na(x)]
+
+mean.na.rm <- function(x) mean(x,na.rm=TRUE)
+
+# Remove differing peptide ids
+.consolidate.peptide.ids <- function(x) NA
+
+# Take a non-zero charge
+.consolidate.charge <- function(x) {
+	x <- !is.na(x)
+	ifelse(any(x > 0),x[x>0][1],0)
+}
+
+# Take 'first' modification
+.consolidate.modification.pos <- function(x) na.rm(x)[1]
+
+.resolve.conflicts <- function(ids, resolve.f, colname, resolve.colnames, keep.cols = false) {
+
+  if (is.character(resolve.colnames))
+    resolve.colnames <- which(colnames(ids) %in% resolve.colnames)
+
+  # set result column
+  ids[,colname] <- .return.equal.or.na(ids[,resolve.colnames])
+
+  # return resolved conflicting and non-conflicting data
+  good.spectra <- !is.na(ids[,colname])
+  if (!any(good.spectra))
+    stop("No good spectra which don't ave to be resolved - something went wrong")
+  if (!all(good.spectra)) {
+    print(isobar:::.sum.bool(good.spectra))
+    ids <- rbind(ids[good.spectra,],
+		 .do.resolve.conflicts(ids[!good.spectra,],colname,resolve.colnames, resolve.f))
+  }
+
+  if (keep.cols)
+    ids
+  else
+    ids[-resolve.colnames,]
+}
+
+.do.resolve.conflicts <- function(ids, colname, resolve.colnames, resolve.f) {
+  if (length(ids) == 0)
+    return(NULL) 
+  if (length(ids) == 1)
+    return(ids)
+
+  ids[,colname] <- apply(ids[,resolve.colnames],1,resolve.f)
+  if (any(is.na(ids[,colname])))
+    message("removing ",sum(is.na(ids[,colname]))) 
+  ids <- ids[!is.na(ids[,colname]),]
+  if (nrow(ids) == 0)
+	  return(NULL)
+
+  ids[,.SPECTRUM.COLS['NOTES']] <- ifelse(ids[,.SPECTRUM.COLS['NOTES']] == '','',
+					  paste0(ids[,.SPECTRUM.COLS['NOTES']],"\n"))
+
+  ids[,.SPECTRUM.COLS['NOTES']] <- paste0(ids[,.SPECTRUM.COLS['NOTES']],
+					  apply(ids[,resolve.colnames],1,function(x) {
+					    x <- x[!is.na(x)]
+					    paste(colname,"differing:\n\t",
+                                                   paste(names(x),x,sep=": ",collapse="\n\t"))}))
+  return(ids)
+}
+
+.resolve.modifications <- function(df,colname, modif.cols, standard.modif) {
+  message("Resolving modifications")
+  max.uniq <- function(tt) sum(tt==max(tt)) == 1
+  take.max <- function(tt) names(tt)[which.max(tt)]
+  if (is.character(modif.cols))
+    modif.cols <- which(colnames(df) %in% modif.cols)
+
+  adply(df, 1, function(x) {
+
+    x <- as.data.frame(x)
+    modifs <- unlist(x[,modif.cols])
+    modifs <- modifs[!is.na(modifs)]
+    if (length(modifs) == 0) {
+	    print(x)
+	    stop ("all modifs are NA!")
+    }
+
+    ## coherent modifications
+    x$note <- ""
+    if (length(modifs) == 1 || all(modifs == modifs[1])) {
+      stop("Should be handled before")
+      x[,colname] <- modifs[1]
+      return(x[,-modif.cols])
+    }
+
+    ## resolve incoherent modifs
+    note <- paste0("differing modification positions: \n\t",
+		   paste(names(modifs),modifs,sep=": ",collapse="\n\t"))
+
+    ## any modification position is more often present?
+    tt <- table(modifs)
+    if (max.uniq(tt)) {
+      note <- paste0(note,". Taking ", take.max(tt) )
+      stop("TODO: Implement")
+    }
+
+    ## take 'first' modification position
+    x[,colname] <- modifs[1]
+    x[,'note'] <- note
+    return(x)
+  })  
+}
+
+max.uniq <- function(tt) sum(tt==max(tt)) == 1
 
 .resolve.differing.identifications <- function(identifications,score.cols) {
   max.uniq <- function(tt) sum(tt==max(tt)) == 1
@@ -923,9 +1042,16 @@ read.mzid <- function(f) {
 	## resolve modification differences
         if (!allequal(x[,'modif'])) {                ## different modifs identified
 	  modif.ids <- by.y(n.ids,x[,'modif'],sum)
+
+	  modifs <- gsub("Oxidation_M","")
+
 	  if (!max.uniq(modif.ids))
 	    n.modif.pos.dif <<- n.modif.pos.dif + 1
+
+	  print(x)
+	  modif <- paste(x[,.SPECTRUM.COLS['SEARCHENGINE']],x[,'modif'],sep=": ",collapse=' & ')
 	  x <- x[x[,'modif'] == take.max(modif.ids)[1],,drop=FALSE]
+	  x[,'modif'] <- modif
 	} else if (!allequal(x[,'charge'])) {         ## different charge
           x[1,score.cols] <- as.numeric(sapply(x[,score.cols],skipna))
 	  x[1,'charge'] <- max(x[,'charge'])
@@ -976,7 +1102,7 @@ read.mzid <- function(f) {
 
 }
 
-.merge.identifications <- function(identifications) {
+.merge.identifications <- function(identifications,...) {
   SC <- .SPECTRUM.COLS[.SPECTRUM.COLS %in% colnames(identifications)]
 
   ## Merge results of different search engines / on different spectra
@@ -987,7 +1113,7 @@ read.mzid <- function(f) {
     if (any(grepl("|",identifications[,SC['SEARCHENGINE']],fixed=TRUE))) {
       identifications <- .dissect.search.engines(identifications)               ## dissect merged id columns
     } else {
-      identifications <- .merge.search.engine.identifications(identifications)  ## merge identifications
+      identifications <- .merge.search.engine.identifications(identifications,...)  ## merge identifications
     }
   }
 
@@ -1023,7 +1149,7 @@ read.mzid <- function(f) {
                                   identifications.quant=NULL,decode.titles=TRUE,identifications.format=NULL) {
 
   ## load identifications (is either character or data.frame
-  if (!is.data.frame(identifications))
+  if (is.character(identifications) && all(sapply(identifications,file.exists)))
     identifications <- .read.idfile(identifications,identifications.format,decode.titles)
 
   ## load mapping (either character or data.frame)
