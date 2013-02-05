@@ -46,7 +46,6 @@
 }
 \arguments{
   \item{x}{ProteinGroup object}
-  \item{protein.group}{ProteinGroup object}
   \item{protein.g}{Protein group identifier. If supplied, only information for 
     these proteins is returned.}
   \item{protein.ac}{Protein ACs. If supplied, only information for 
