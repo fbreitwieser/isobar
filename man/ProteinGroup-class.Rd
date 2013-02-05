@@ -17,6 +17,7 @@
 \alias{coerce,data.frame,ProteinGroup-method}
 \alias{as.data.frame,ProteinGroup-method}
 \alias{as.data.frame.ProteinGroup}
+\alias{proteinGroup.as.concise.data.frame}
 
 % Accessor-like methods:
 \alias{peptideSpecificity}
@@ -27,11 +28,16 @@
 \alias{proteinGroupTable,ProteinGroup-method}
 \alias{peptideSpecificity}
 \alias{peptideSpecificity,ProteinGroup-method}
+\alias{peptideInfo}
+\alias{peptideInfo-methods}
+\alias{peptideInfo,ProteinGroup-method}
+
 \alias{indistinguishableProteins}
 \alias{indistinguishableProteins,ProteinGroup-method}
 \alias{indistinguishableProteins,ProteinGroup,ANY,ANY-method}
 \alias{indistinguishableProteins,ProteinGroup,character,missing-method}
 \alias{indistinguishableProteins,ProteinGroup,missing,character-method}
+\alias{indistinguishableProteins,ProteinGroup,missing,missing-method}
 \alias{spectrumToPeptide}
 \alias{spectrumToPeptide,ProteinGroup-method}
 \alias{get.pep.group}
@@ -131,15 +137,19 @@ protein.g(x, pattern, variables=c("AC","name"), ...)
     }
     \item{\code{as.data.frame(x, row.names = NULL, optional = FALSE)}:}{
       Creates a data.frame with columns \code{protein} (character),
-      \code{peptide} (character), \code{spectrum}}.
+      \code{peptide} (character), \code{spectrum}.}
+    \item{\code{as.concise.data.frame(from)}:}{
+      Creates a 'concise' data.frame with one spectrum per row, and protein ACs combined
     }
   }
+}
 
 \section{Accessors}{
   In the following code snippets, \code{x} is a ProteinGroup object.
 
   \describe{
     \item{\code{spectrumToPeptide(x)}:}{ Gets spectrum to peptide assignment.}
+    \item{\code{peptideInfo(x)}:}{ Peptide information such as protein start position.}
     \item{\code{peptideSpecificity(x)}:}{ Gets a 'data.frame'
     containing the peptide specificity: they can be reporter-specific,
     group-specific, or non-specific.}

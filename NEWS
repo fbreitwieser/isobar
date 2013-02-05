@@ -1,5 +1,34 @@
-CHANGES IN VERSION 1.3.1
+CHANGES IN VERSION 1.5.2
 ------------------------
+ - added MSGF+ tsv import [one-line-per-psm format]
+ - refactored various parts of the code (proteinRatios, report-utils, isobar-import)
+ - PTM XLS report: report significance for protein ratio, and peptide ratio
+
+CHANGES IN VERSION 1.5.1
+------------------------
+ - added molecular weight correction to emPAI and dNSAF
+ - added property 'ratiodistr.class.labels': biological variability can be 
+   calculated in the report with other labels
+ - improved PDF analysis report: added number of proteins in each section
+ - added location scale family T distribution as biological variability
+   distribution (distr class) and fitTlsd.
+ - better protein PDF analysis report layout.
+
+CHANGES IN VERSION 1.5
+------------------------
+ - Added modules for PTM validation and quantification
+   - Validation
+     - PhosphoRS XML import writers and outpout readers
+     - DeltaScore calculation when the data is provided
+   - Quantification
+     - All quantifications can be done now either on the protein level,
+       peptide level, or modified peptide level. For modified peptide level,
+       supply a matrix with a 'peptide' and 'modif' column to the 
+       appropriate functions.
+     - Correction of peptide ratios with protein ratios is possible. Also
+       the variance can be adjusted (assuming no or full correlation)
+   - Report generation
+     - Import PhosphoSitePlus or neXtProt information on modification sites
 
 CHANGES IN VERSION 1.3.0
 ------------------------

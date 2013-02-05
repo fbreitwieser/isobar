@@ -1,6 +1,6 @@
 \name{fit distributions}
 \alias{fitCauchy}
-\alias{fitTd}
+\alias{fitTlsd}
 \alias{fitGumbel}
 \alias{fitNorm}
 \alias{fitWeightedNorm}
@@ -12,17 +12,16 @@
     on ratio distribution.
 }
 \usage{
-fitCauchy(x,round.digits=NULL)
+fitCauchy(x)
 fitNorm(x, portion = 0.75)
 fitWeightedNorm(x, weights)
 fitNormalCauchyMixture(x)
 fitGaussianMixture(x, n = 500)
 fitGumbel(x)
-fitTd(x)
+fitTlsd(x)
 }
 \arguments{
   \item{x}{Ratios}
-  \item{round.digits}{If not null, round fitted parameters to given precision.}
   \item{weights}{Weights}
   \item{portion}{Central portion of data to take for computation}
   \item{n}{number of sampling steps}

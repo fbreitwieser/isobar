@@ -6,6 +6,7 @@
 \alias{create.meta.reports}
 \alias{draw.boxplot}
 \alias{draw.protein.group}
+\alias{draw.proteingroup.row}
 \alias{initialize.env}
 \alias{load.properties}
 \alias{modifs}

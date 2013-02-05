@@ -34,11 +34,19 @@ get.arg <- function(name) {
     return(FALSE)
   }
 }
-properties.file <- "properties.R"
+
+meta.report <- get.arg("--meta")
+
+if (meta.report) 
+  properties.file <- "meta-properties.R"
+else 
+  properties.file <- "properties.R"
+
 if (length(args) > 0 && file.exists(args[length(args)])) {
   properties.file <- args[length(args)]
   args[length(args)] <- NULL
 }
+
 do.compile <- get.arg("--compile")
 do.zip <- get.arg("--zip")
 protein.report <- get.arg("--protein")
@@ -49,6 +57,7 @@ xlsx.report <- get.arg("--xlsx")
 qc.report <- get.arg("--qc")
 pdf.report <- get.arg("--pdf")
 
+
 ## TODO: parse further arguments
 
 message("started at ",date())
@@ -57,7 +66,7 @@ suppressPackageStartupMessages(library(isobar))
 
 if (!exists("properties.env",inherits=FALSE)) {
   properties.env <- load.properties(properties.file,
-                                    system.file("report","properties.R",package="isobar"),
+                                    system.file("report",properties.file,package="isobar"),
                                     args=args)
 }
 
@@ -74,7 +83,10 @@ if (xls.report || xlsx.report || qc.report || pdf.report) {
 }
 
 
-tryCatch({create.reports(report.type=ifelse(peptide.report,"peptide","protein"),
+tryCatch({
+  if (meta.report) create.reports.f <- create.meta.reports
+  else create.reports.f <- create.reports
+  create.reports.f(report.type=ifelse(peptide.report,"peptide","protein"),
                          compile=do.compile,zip=do.zip)},
          error=function(e) {
            save.image(file="isobar.fail.rda")

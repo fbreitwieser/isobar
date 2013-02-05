@@ -19,14 +19,27 @@
   variability within and over cases.
 }
 \usage{
-proteinRatios(ibspectra, noise.model, reporterTagNames = NULL, proteins = reporterProteins(proteinGroup(ibspectra)), peptide = NULL, cl = classLabels(ibspectra), combn.method = "global", symmetry = FALSE, summarize = FALSE, summarize.method = "mult.pval", min.detect = NULL, strict.sample.pval = TRUE, strict.ratio.pval = TRUE, orient.div = 0, sign.level = 0.05, sign.level.rat = sign.level, sign.level.sample = sign.level, ratiodistr = NULL, variance.function = "maxi", combine=FALSE,
-p.adjust = NULL, reverse=FALSE, combn=NULL, ...)
+proteinRatios(ibspectra, noise.model, reporterTagNames = NULL, 
+              proteins = reporterProteins(proteinGroup(ibspectra)), peptide = NULL, 
+              cl = classLabels(ibspectra), combn.method = "global", symmetry = FALSE, 
+              summarize = FALSE, summarize.method = "mult.pval", min.detect = NULL, 
+              strict.sample.pval = TRUE, strict.ratio.pval = TRUE, orient.div = 0, 
+              sign.level = 0.05, sign.level.rat = sign.level, sign.level.sample = sign.level, 
+              ratiodistr = NULL, variance.function = "maxi", combine=FALSE,
+              p.adjust = NULL, reverse=FALSE, combn=NULL, ...)
 
 combn.matrix(x, method = "global", cl = NULL, vs = NULL)
 
-combn.protein.tbl(ibspectra, noise.model, ratiodistr, proteins = NULL, cmbn, peptide = NULL, modif = NULL, symmetry = FALSE, reverse = FALSE, variance.function = "maxi", ...)
+combn.protein.tbl(ibspectra, noise.model, ratiodistr, proteins = NULL, cmbn, 
+                  peptide = NULL, modif = NULL, reverse = FALSE, variance.function = "maxi", ...)
 
-summarize.ratios(ratios, summarize.method, min.detect, n.combination, strict.sample.pval = TRUE, strict.ratio.pval = TRUE, orient.div = 0, sign.level = 0.05, sign.level.rat = sign.level, sign.level.sample = sign.level, variance.function = "maxi", ratiodistr, p.adjust = NULL)
+summarize.ratios(ratios, by.column = "ac", summarize.method =                                                                                                                  
+                 "mult.pval", min.detect = NULL, n.combination = NULL,                                                                                                         
+                 strict.sample.pval = TRUE, strict.ratio.pval = TRUE,                                                                                                          
+                 orient.div = 0, sign.level = 0.05, sign.level.rat =                                                                                                           
+                 sign.level, sign.level.sample = sign.level,                                                                                                                   
+                 variance.function = "maxi", ratiodistr = NULL,                                                                                                                
+                 p.adjust = NULL)
 
 }
 %- maybe also 'usage' for other objects documented here.
@@ -34,6 +47,7 @@ summarize.ratios(ratios, summarize.method, min.detect, n.combination, strict.sam
   \item{ibspectra}{IBSpectra object}
   \item{x}{for combn.matrix: reporter names. See reporterTagNames. argument of proteinRatios.}
   \item{ratios}{result of combn.protein.tbl}
+  \item{by.column}{Column(s) which are the identifiers. Usually 'ac', 'peptide' or c('peptide','modif') }
   \item{cmbn}{result of combn.matrix}
   \item{combn}{result of combn.matrix}
   \item{noise.model}{NoiseModel for spectra variances}

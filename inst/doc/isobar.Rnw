@@ -1,12 +1,15 @@
-%\VignetteIndexEntry{Isobar Usage}
+%\VignetteIndexEntry{isobar package for iTRAQ and TMT protein quantification}
 %\VignetteDepends{}
 %\VignetteKeywords{Documentation}
 %\VignettePackage{isobar}
 \documentclass[11pt]{article}
 
+\SweaveOpts{keep.source=TRUE}
+\SweaveOpts{prefix.string=graphics/plot}
 <<init,echo=FALSE>>=
-  library(distr)
+  require(distr)
   require(ggplot2)
+  dir.create(file.path("graphics"), showWarnings = FALSE)
 @ 
 
 \usepackage{times}
@@ -22,23 +25,16 @@
 \evensidemargin=.1in
 \headheight=-.3in
 
-\newcommand{\scscst}{\scriptscriptstyle}
-\newcommand{\scst}{\scriptstyle}
-
 \newcommand{\Rfunction}[1]{{\texttt{#1}}}
 \newcommand{\Robject}[1]{{\texttt{#1}}}
 \newcommand{\Rpackage}[1]{{\texttt{#1}}}
 \newcommand{\isobar}{\Rpackage{isobar}}
 
-\SweaveOpts{keep.source=TRUE}
-
+\title{\emph{isobar} package for iTRAQ and TMT protein quantification}
 \author{Florian P.\ Breitwieser, Jacques Colinge}
-
-\bibliographystyle{plainnat}
 
 \begin{document}
 
-\title{Isobar Vignette - iTRAQ and TMT Analysis}
 \maketitle
 \tableofcontents
 
@@ -211,11 +207,13 @@ apply(mass,2,function(x) sprintf("%.4f",quantile(x,na.rm=TRUE,probs=c(0.025,0.97
 
 \Rfunction{reporterMassPrecision} provides a plot of the distribution.
 
-\begin{center}
-\begin{figure}[htp]
-<<print-reporterMasses,fig=TRUE,width=6.6,height=3>>=
+<<print-reporterMasses,fig=TRUE,width=6.6,height=3,include=FALSE>>=
   print(reporterMassPrecision(ibspiked_set1))
 @ 
+
+\begin{center}
+\begin{figure}[htp]
+\includegraphics{graphics/plot-print-reporterMasses}
 \caption{Reporter mass precision plot.}
 \label{fig:reporterMassPrecision}
 \end{figure}
@@ -240,11 +238,8 @@ ibspiked_set1 <- correctIsotopeImpurities(ibspiked_set1)
 ibspiked_set1 <- normalize(ibspiked_set1)
 @ 
 
-
-\begin{center}
-\begin{figure}[htp]
 <<fig-maplot-normalize1,echo=FALSE>>=
-png("fig_maplot_normalize.png",width=6.6,height=3,units="in",res=300,pointsize=8)
+png("graphics/fig_maplot_normalize.png",width=6.6,height=3,units="in",res=300,pointsize=8)
 @
 <<fig-maplot-normalize2>>=
 par(mfrow=c(1,2))
@@ -258,7 +253,10 @@ abline(h=1,col="red",lwd=2)
 <<fig-maplot-normalize3,echo=FALSE,results=hide>>= 
 dev.off()
 @
-\includegraphics{fig_maplot_normalize}
+
+\begin{center}
+\begin{figure}[htp]
+\includegraphics{graphics/fig_maplot_normalize}
 \caption{Ratio versus intensity plots ('MA plots') before and after applying normalization.}
 \label{fig:normalization}
 \end{figure}
@@ -275,7 +273,7 @@ noise model using \Rfunction{NoiseModel}. See figure
 ~\ref{fig:maplots}.
 
 <<calc-noisemodel>>=
-ib.background <- subsetIBSpectra(ibspiked_set1,protein=ceru.proteins,"exclude")
+ib.background <- subsetIBSpectra(ibspiked_set1,protein=ceru.proteins,direction="exclude")
 noise.model <- NoiseModel(ib.background)
 @ 
 
@@ -290,15 +288,13 @@ al. Supporting Information, submitted, for a real example.
 
 <<ceru-noisemodel>>=
 ib.ceru <- subsetIBSpectra(ibspiked_set1,protein=ceru.proteins,
-                            direction="exclude others",
+                            direction="include",
                             specificity="reporter-specific")
 nm.ceru <- NoiseModel(ib.ceru,one.to.one=FALSE,pool=TRUE)
 @ 
 
-\begin{center}
-\begin{figure}[htp]
 <<maplot-noisemodel1,echo=FALSE>>=
-png("fig_maplot_noisemodel.png",width=3.3,height=3,units="in",res=300,pointsize=8)
+png("graphics/fig_maplot_noisemodel.png",width=3.3,height=3,units="in",res=300,pointsize=8)
 @
 <<maplot-noisemodel2,echo=TRUE>>=
 maplot(ib.background,noise.model=c(noise.model,nm.ceru),
@@ -308,7 +304,10 @@ maplot(ib.background,noise.model=c(noise.model,nm.ceru),
 <<maplot-noisemodel3,echo=FALSE,results=hide>>=
 dev.off()
 @ 
-\includegraphics{fig_maplot_noisemodel}
+
+\begin{center}
+\begin{figure}[htp]
+\includegraphics{graphics/fig_maplot_noisemodel}
 
 \caption{Red lines denote the 95 \% confidence interval as estimated
   by the noise model on background proteins. The blue line is
@@ -646,3 +645,4 @@ The version number of R and packages loaded for generating the vignette were:
 
 \end{document}
 
+\bibliographystyle{plainnat}

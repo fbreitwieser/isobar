@@ -1,0 +1,290 @@
+%\VignetteIndexEntry{isobar for quantification of PTM datasets}
+%\VignetteDepends{}
+%\VignetteKeywords{Documentation}
+%\VignettePackage{isobar}
+\documentclass[11pt]{article}
+
+\usepackage{hyperref}
+\usepackage{tikz}
+
+\SweaveOpts{keep.source=TRUE}
+\SweaveOpts{prefix.string=graphics/plot}
+<<init,echo=FALSE>>=
+  require(ggplot2)
+  dir.create(file.path("graphics"), showWarnings = FALSE)
+@ 
+
+\usepackage[utf8]{inputenc}
+\textwidth=6.2in
+\textheight=8.5in
+%\parskip=.3cm
+\oddsidemargin=.05in
+\evensidemargin=.05in
+\headheight=-.3in
+\newcommand{\isobar}{\texttt{isobar}}
+\newcommand{\isobarPtm}{\texttt{isobar}$^{\sc ptm}$}
+
+\title{\emph{isobar} for quantification of PTM datasets}
+\author{Florian P.\ Breitwieser, Jacques Colinge}
+
+\begin{document}
+
+\maketitle
+\tableofcontents
+
+\section{Introduction}
+\isobar{} \cite{Breitwieser_Colinge2011-JPR} version $2$ includes
+modules to facilitate PTM quantification. This vignette describes its
+parts, and how to use it to generate quantification reports.
+
+<<load-isobar,results=hide>>=
+  library(isobar) ## load the isobar package
+@
+
+Using \isobar{}, automatic report generation is straight-forward
+given proper input files using the script \texttt{report/create\_reports.R}.
+When called, it parses the globabl properties file \texttt{report/properties.R}
+and then the \texttt{properties.R} in the current directory. Below is a small 
+example \texttt{properties.R} for creating a PDF Quality Control and XLSX 
+analysis report:
+
+\begin{verbatim}
+type="iTRAQ4plexSpectra"
+## peaklist files for quantitation, by default all mgf file in directory
+peaklist=list.files(pattern="*\\.mgf$")
+
+## id files, by default all id.csv files in directory
+identifications=list.files(pattern="*\\.id.csv$")
+
+modif="PHOS" # modification to track (eg PHOS, ACET, MET)
+ptm.info.f <- getPtmInfoFromNextprot
+spreadsheet.format="xlsx"
+\end{verbatim}
+
+Reports will be generated calling
+\texttt{path\_to\_isobar/report/create\_reports.R --peptide} from the
+directory containing the peaklists, identifications and
+\texttt{properties.R}.
+
+\section{Modification Site Localization}
+\isobar{} supports PhosphoRS \cite{Taus_Mechtler2011-JPR} and Delta
+Score \cite{Savitski_Kuster2011-MCP} for modification site localization.
+
+\paragraph{PhosphoRS integration}
+The standalone Java version of PhosphoRS can be downloaded from
+\url{http://cores.imp.ac.at/uploads/media/PhosphoRS.zip}. It features
+a command line interface to a script which rescores localizations of
+the modification for each peptide-spectrum match. It uses \textsc{xml}
+files for input and output, which can be generated and parsed by
+\isobar{}. 
+
+<<eval=FALSE>>=
+# Generate PhosphoRS XML input file based on MGF and identification file
+#  massTolerance: fragment ion mass tolerance (in Da)
+#  activationType: CID, HCD, or ETD
+writePhosphoRSInput("phosphors.in.xml",
+                      "identifications.id.csv","peaklist.mgf",
+                       massTolerance=0.5,activationType="CID")
+@
+
+After calling PhosphoRS (\texttt{java -jar phosphoRS.jar
+  phosphors.in.xml phosphors.out.xml}), the resulting \textsc{xml}
+file can be read:
+
+<<eval=FALSE>>=
+# Read PhosphoRS XML output file
+#   simplify: if TRUE, a data.frame is returned, else a list
+#   besthit.only: if TRUE, only the best localization per spectrum is returned
+readPhosphoRSOutput("phosphors.out.xml",simplify=TRUE,besthit.only=TRUE)
+@
+
+\texttt{getPhosphoRSProbabilities} is a convenience function calling 
+the writer, the script, and the reader in succession. 
+
+<<eval=FALSE>>=
+getPhosphoRSProbabilities("identifications.id.csv","peaklist.mgf",
+                            massTolerance=0.5,activationType="CID",
+                            phosphors.cmd="java -jar phosphoRS.jar")
+@ 
+
+\paragraph{Delta Score calculation}
+The Mascot Delta Score can be calculated directly by the parser
+\texttt{mascotParser2.pl} and thresholded (\emph{e. g.}
+\texttt{--minDeltaScore=10}). For CSV identification files which
+contain all hits for each spectrum (not just the best one), the
+function \texttt{calc.delta.score} within the R package is provided.
+
+\paragraph{Using PhosphoRS and Delta Score in Report Generation.}
+When generating an IBSpectra object from peaklist and identifications,
+via \texttt{readIBSpectra}'s argument \texttt{annotate.spectra.f} a
+function can be plugged in to extend or modify the identification
+information. This can be used to calculate scores and filter
+localization scores with \texttt{filterSpectraDeltaScore}) or
+\texttt{annotateSpectraPhosphoRS}.
+
+<<eval=FALSE>>=
+# filterSpectraDeltaScore calls calc.delta.score 
+#   if no column named delta.score is present in the data frame
+# identifications below a min.delta.score are REMOVED
+ib <- readIBSpectra("identifications.id.csv","peaklist.mgf",
+                      annotate.spectra.f=function(...) 
+                        filterSpectraDeltaScore(...,min.delta.score=10))
+
+
+# filterSpectraPhosphoRS calls PhosphoRS to caluclate PhosphoRS probabilities
+# identifications below a min.prob (PhosphoRS peptide isoform probability) 
+# are marked to be NOT QUANTIFIED (use.for.quant=FALSE), but not removed
+ib <- readIBSpectra("identifications.id.csv","peaklist.mgf",
+                      annotate.spectra.f=
+                        function(...) filterSpectraPhosphoRS(...,min.prob=0.9,
+                           phosphors.cmd="java -jar PhosphoRS.jar"))
+@
+
+This can be used in report generation, too, where the
+\texttt{readIBSpectra.args} can be set accordingly in the report
+properties file \texttt{properties.R}:
+
+\begin{verbatim}
+readIBSpectra.args = list(annotate.spectra.f=filterSpectraDeltaScore)
+\end{verbatim}
+or
+\begin{verbatim}
+readIBSpectra.args = list(annotate.spectra.f=filterSpectraPhosphoRS)
+\end{verbatim}
+
+\section{Peptide Ratio Calculation}
+
+All functions which are available to calculate ratios on protein level
+can also be used for peptides. The same noise model is appropriate for
+both.
+
+<<>>=
+data(ib_phospho)
+data(noise.model.hcd)
+head(proteinGroup(ib_phospho)@peptideInfo)
+10^estimateRatio(ib_phospho,noise.model.hcd,peptide="SPLSPTETFSWPDVR")
+@ 
+
+By giving a matrix to \texttt{estimateRatio}, we can calculate ratios for peptides with specific modifications:
+
+<<>>=
+pep.n.modif <- unique(apply(fData(ib_phospho)[,c("peptide","modif")],2,cbind))
+print(head(pep.n.modif))
+estimateRatio(ib_phospho,noise.model.hcd,channel1="114",channel2="115",
+                peptide=head(pep.n.modif),combine=FALSE)[,c("lratio","variance",
+                                                            "n.spectra","p.value.rat")]
+
+@ 
+
+A ratio distribution can be calculated based on peptide ratios:
+
+<<ratiodistr,fig=TRUE>>=
+suppressPackageStartupMessages(library(distr))
+suppressPackageStartupMessages(library(ggplot2))
+peptide.ratios <- peptideRatios(ib_phospho,noise.model=noise.model.hcd,
+                                  cmbn=matrix(c("114","116"),ncol=1))
+
+lim <- max(abs(peptide.ratios$lratio),na.rm=TRUE)
+peptide.distr.cauchy <- fitCauchy(peptide.ratios$lratio)
+
+pseq <- seq(from=-lim,to=lim,length.out=1000)
+ggplot() + 
+  geom_histogram(aes(x=lratio,y=..density..),data=peptide.ratios,binwidth=0.05,
+                 color="darkgreen",fill="white") +
+  geom_line(aes(x=x,y=y),color="black",
+            data=data.frame(x=pseq,y=d(peptide.distr.cauchy)(pseq)))
+@ 
+
+
+\paragraph{Correction with protein ratios.}
+The observed change in concentration of modified peptides in one
+condition versus another is integrating two separate modes of
+regulation \cite{Wu_Gygi2011-MCP}:
+
+\begin{enumerate}
+  \item Protein expression change
+  \item Modification state change
+\end{enumerate}
+
+In many cases, it thus can be advisable to conduct separate MS
+quantification runs of the peptides enriched for the modification of
+interest, AND the global proteome quantification. 
+
+In the report
+generation, data from other experiments can be integrated using the
+property \texttt{compare.to.quant} in \texttt{properties.R}:
+
+%\fcolorbox{gray}{gray}%
+% {\color{white} 
+\begin{verbatim}
+load("../proteome/quant.tbl.rda")         # load proteome quantification table
+compare.to.quant=list(proteome=quant.tbl) # set property
+rm(quant.tbl)
+\end{verbatim}
+% }
+
+Peptide ratios can also be corrected with proteome ratios of a
+separate experiment, when giving as \texttt{peptide} argument a
+\texttt{matrix} or \texttt{data.frame} with columns for 'peptide',
+'modif', and 'correct.ratio'. 'correct.ratio' is a $log_{10}$ ratio
+which will be used to adjust the one calculated for the specific
+modified peptide.
+
+<<>>=
+peptides <- pep.n.modif[1:5,]
+
+orig.ratio <- estimateRatio(ib_phospho,noise.model.hcd,channel1="114",channel2="115",
+                              peptide=peptides,combine=FALSE)[,c("lratio","variance")]
+
+peptides.c <- cbind(peptides,correct.ratio=c(0,-1,1,2,-2))
+corr.ratio <- estimateRatio(ib_phospho,noise.model.hcd,channel1="114",channel2="115",
+                              peptide=peptides.c,combine=FALSE)[,c("lratio","variance")]
+
+data.frame(peptides.c,orig.ratio,corr.ratio)
+@
+
+As appearent, the variance stays the same also for corrected
+ratios. If a fourth column \texttt{variance} of the \texttt{peptide}
+argument reports the variance of the correction ratio, it is added to
+the calculated ratio's variance (assuming independence).
+
+% Todo: add part for report generation
+
+\section{Harvesting public PTM databases}
+neXtProt \cite{Lane_Bairoch2012-NAR} and PhosphoSitePlus
+\cite{Hornbeck_Sullivan2012-NAR} provide information on experimentally
+determined post-translational modifications. neXtProt focuses on man,
+and PhosphoSitePlus on man and mouse. Both are manually curated and
+annotate thousands of residues of post-translationally modified
+proteins. 
+
+\isobar{} provides functions to gather their information on identified
+proteins.
+
+<<eval=FALSE>>=
+ptm.info <- getPtmInfoFromPhosphoSitePlus(proteinGroup(ib_phospho),modif="PHOS")
+ptm.info <- getPtmInfoFromNextprot(proteinGroup(ib_phospho))
+@ 
+<<>>=
+head(ptm.info)
+@ 
+
+For reports, the function can be selected via the property \texttt{ptm.info.f} in \texttt{properties.R}:
+
+\begin{verbatim}
+protein.info.f = getPtmInfoFromNextprot
+\end{verbatim}
+
+For PhosphoSitePlus, define the modification to get the correct dataset:
+\begin{verbatim}
+ptm.info.f <- function(...) getPtmInfoFromPhosphoSitePlus(...,modification="PHOS")
+\end{verbatim}
+
+PhosphoSitePlus datasets will be downloaded from their website to 'Phosphorylation\_site\_dataset.gz' or
+'Acetylation\_site\_dataset.gz', etc (see mapping property of getPtmInfoFromPhosphoSitePlus) unless a file
+with that name exists.
+
+\bibliographystyle{abbrv}
+\bibliography{isobar_lib}
+
+\end{document}

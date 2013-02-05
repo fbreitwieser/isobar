@@ -12,10 +12,13 @@
   Ishihama Y, et al., Proteomics (2005).
 }
 \usage{
-calculate.emPAI(protein.group, protein.g = reporterProteins(protein.group), ...)
+calculate.emPAI(protein.group, protein.g = reporterProteins(protein.group), normalize = FALSE,
+                observed.pep = c("pep", "mod.charge.pep"), use.mw = FALSE, combine.f = mean, 
+                ..., nmc = 0, report.all = FALSE)
 n.observable.peptides(...)
 observable.peptides(seq, nmc = 1, min.length = 6, min.mass = 600, max.mass = 4000, 
-                    custom = list(code = "U", mass = 150.953636), ...)
+                    custom = list(code = c("B", "Z", "J", "U"),
+                                  mass = c(164.554862, 278.61037, 213.12392, 150.953636)), ...)
 }
 \arguments{
   \item{protein.group}{ProteinGroup object. Its \code{@proteinInfo}
@@ -23,6 +26,11 @@ observable.peptides(seq, nmc = 1, min.length = 6, min.mass = 600, max.mass = 400
     calculate the number of observable peptides per protein.
   }
   \item{protein.g}{Protein group identifiers.}
+  \item{normalize}{Normalize to sum = 1?.}
+  \item{observed.pep}{What counts as observed peptide?}
+  \item{report.all}{TOADD}
+  \item{use.mw}{Use MW to normalize for protein size}
+  \item{combine.f}{How to handle proteins seen only with shared peptides?}
   \item{seq}{Protein sequence.}
   \item{nmc}{Number of missed cleavages.}
   \item{min.length}{Minimum length of peptide.}
