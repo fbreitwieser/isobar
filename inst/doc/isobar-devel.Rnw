@@ -1,4 +1,4 @@
-%\VignetteIndexEntry{Isobar for developers}
+%\VignetteIndexEntry{isobar for developers}
 %\VignetteDepends{}
 %\VignetteKeywords{Documentation}
 %\VignettePackage{isobar}
@@ -26,7 +26,7 @@
 
 \begin{document}
 
-\title{Isobar for developers}
+\title{\emph{isobar} for developers}
 \maketitle
 \tableofcontents
 

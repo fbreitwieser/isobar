@@ -90,7 +90,7 @@ setAs("IBSpectra","MSnSet",function(from) {
                ms.level="NA",
                charge="charge",
                collision.energy="NA")
-  df <- as(from,"data.frame.concise")
+  df <- ibSpectra.as.concise.data.frame(from)
   df[,"NA"] <- NA
   
   fd <- df[,mapping]

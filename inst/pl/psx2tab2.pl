@@ -1,6 +1,6 @@
 #!/usr/bin/perl
 # Creation date : 2011-03-28
-# Last modified : Mon 08 Oct 2012 10:41:45 AM CEST
+# Last modified : Wed Nov 21 11:41:49 2012
 
 # Module        : psx2tab2.pl
 # Purpose       : 
@@ -85,9 +85,9 @@ eval{
                     $theo_mass, $exp_mass, $parent_intens, 
                     $start_pos, $rtime, 
                     join("|",@search_engine), join("|",@score), 
-                    join("|",@pValue),
-                    ($use_deltaScore? join("|",@deltaScore) : ""), 
-                    $spectrum)."\n";
+                    join("|",@pValue));
+        print $OUT "\t".join("|",@deltaScore) if $use_deltaScore;
+        print $OUT "\t".$spectrum."\n";
     
         undef $peptide;
         undef $modif;
