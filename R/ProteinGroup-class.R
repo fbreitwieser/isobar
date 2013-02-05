@@ -1194,41 +1194,6 @@ peptide.count <- function(protein.group,protein.g=reporterProteins(protein.group
   sapply(protein.g,
          function(p) length(peptides(protein.group,p,specificity=specificity,...)))
 }
-spectra.count2 <- function(ibspectra,value=reporterProteins(protein.group),type="protein.g",
-                          specificity=c("reporter-specific","group-specific","unspecific"),
-                          modif=NULL,combine=FALSE,subset=NULL,require.quant=NULL,...) {
-  protein.group <- proteinGroup(ibspectra)
-  if (!isTRUE(combine)) {
-    spectra.count <- sapply(value, function(p) 
-                            spectra.count2(ibspectra,p,type,specificity,modif,combine=TRUE,
-                                           subset=subset,require.quant=require.quant,...))
-    names(spectra.count) <- value
-    return(spectra.count)
-  }
-
-  pep <- switch(type,
-                protein.g=peptides(protein.group,protein=value,specificity=specificity,...),
-                peptide=value)
-
-  ## Calculate unique spectrum counts for all proteins
-  if (!is.null(subset)) {
-    fd <- subset(fData(ibspectra),eval(subset) & peptide %in% pep)
-  } else {
-    fd <- subset(fData(ibspectra),peptide %in% pep)
-  }
-
-  if (!is.null(require.quant)) {
-    spectra <- rownames(reporterIntensities(ibspectra,na.rm=TRUE,na.rm.f=require.quant))
-    fd <- fd[fd$spectrum %in% spectra,]
-  }
-
-  if (is.null(modif)) {
-    peptide.spectra.count <- table(fd$peptide)
-    sum(peptide.spectra.count)
-  } else {
-    has.modif <- sapply(strsplit(fd$modif,":"),function(x) any(x %in% modif))
-    sum(has.modif)
-  }
 
 spectra.count2 <- function(ibspectra,value=reporterProteins(protein.group),type="protein.g",
                           specificity=c("reporter-specific","group-specific","unspecific"),
