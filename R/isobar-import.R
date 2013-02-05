@@ -58,7 +58,7 @@
   }
 }
 
-.get.quant.elems <- function(assayDataElements,data.ions,data.mass,spectra.ids,fragment.precision) {
+.get.quant.elems <- function(assayDataElements,data.ions,data.mass,spectra.ids,fragment.precision,reporterTagMasses) {
   if (is.null(assayDataElements))
     assayDataElements <- list()
 
@@ -93,9 +93,9 @@
 
   # filter based on fragment precision
   if (!is.null(fragment.precision)) {
-    reporterMasses <- reporterTagMasses(.Object)
-    min.masses <- reporterMasses - fragment.precision/2
-    max.masses <- reporterMasses + fragment.precision/2
+    
+    min.masses <- reporterTagMasses - fragment.precision/2
+    max.masses <- reporterTagMasses + fragment.precision/2
     for (i in seq_len(nrow(assayDataElements$mass))) {
       bad.mass <- assayDataElements$mass[i,]<min.masses |  assayDataElements$mass[i,] > max.masses
       if (any(bad.mass,na.rm=TRUE)) {
@@ -223,7 +223,7 @@ setMethod("initialize","IBSpectra",
   if (is.null(data.mass))
     data.mass <- .get.quant(identifications,.PEAKS.COLS['MASSFIELD'],reporterTagNames)
 
-  assayDataElements <- .get.quant.elems(assayDataElements,data.ions,data.mass,identifications[,SC['SPECTRUM']],fragment.precision)
+  assayDataElements <- .get.quant.elems(assayDataElements,data.ions,data.mass,identifications[,SC['SPECTRUM']],fragment.precision,reporterTagMasses(.Object))
 
   if (!.SPECTRUM.COLS['USEFORQUANT'] %in% colnames(identifications)) {
     # not perfect - better: set spectra of peptides shared between groups to FALSE
@@ -390,33 +390,6 @@ setMethod("readIBSpectra",
     }
 )
 
-## TODO: return log
-#.read.mapping <- function(mapping.file,readopts,mapping) {
-#  ## STUB
-#  if (is.null(mapping.file)) return(NULL)
-
-#  if (!all(c("peaklist","id") %in% names(mapping))) {
-#    stop("readIBSpectra/mapping must be a named vector with the",
-#         " names peaklist and id.")
-#  }
-  ## read mapping file(s)
-#  mapping.quant2id <- do.call(rbind,lapply(mapping.file,function(f) {
-#                                           readopts$file <- f
-#                                           do.call(read.table,readopts)
-#                }))
-
-#  cn <-  colnames(mapping.quant2id)
-#  colnames(mapping.quant2id)[c(mapping['id'],mapping['peaklist'])] <- c('id','peaklist')
-#  colnames(mapping.quant2id)[cn == mapping['peaklist']] <- 'peaklist'
-#  log <- rbind(log,data.frame(rep("mapping file",length(mapping.file)),mapping.file,stringsAsFactors=FALSE))
-#  if (!is.null(id.file.domap)) {
-#    data.m <- .read.idfile(id.file.domap,id.format,decode.titles=decode.titles,log)
-#    map.spectrum <- mapping.quant2id[,"id"]
-#    names(map.spectrum) <- mapping.quant2id[,"peaklist"]
-#    data.m[,"spectrum"] <- map.spectrum[data.m[,"spectrum"]]
-#    data <- rbind(data,data.m)
-#  }
-#}
 
 .do.map <- function(spectrumtitles,mapping.quant2id) {
   #mapped.spectra.pl <-
@@ -754,8 +727,8 @@ read.mzid <- function(f) {
 
 
 ## TODO: log is not returned
-.read.idfile <- function(id.file,id.format=NULL,decode.titles=TRUE,log=NULL,...) {
-  data <- unique(do.call("rbind",lapply(id.file,function(f) {
+.read.idfile <- function(id.file,id.format=NULL,decode.titles=TRUE,trim.titles=FALSE,log=NULL,...) {
+  data <- do.call("rbind",lapply(id.file,function(f) {
     
     if (is.null(id.format)) {
       if (grepl(".mzid$",f,ignore.case=TRUE)) 
@@ -789,12 +762,13 @@ read.mzid <- function(f) {
       stop(paste0("cannot parse file ",f," - format [",id.format.f,"] not known."))
     }
     return(data)
-  })
-  ))
-  if (decode.titles) {
-    data[,.SPECTRUM.COLS['SPECTRUM']] <- unlist(lapply(data[,.SPECTRUM.COLS['SPECTRUM']],URLdecode))
   }
-  data[,.SPECTRUM.COLS['SPECTRUM']] <- .trim(data[,.SPECTRUM.COLS['SPECTRUM']])
+  ))
+  if (decode.titles)
+    data[,.SPECTRUM.COLS['SPECTRUM']] <- unlist(lapply(data[,.SPECTRUM.COLS['SPECTRUM']],URLdecode))
+
+  if (trim.titles)
+    data[,.SPECTRUM.COLS['SPECTRUM']] <- .trim(data[,.SPECTRUM.COLS['SPECTRUM']])
   return(data)
 }
 
@@ -1177,7 +1151,6 @@ max.uniq <- function(tt) sum(tt==max(tt)) == 1
   ## load identifications (is either character or data.frame
   if (is.character(identifications) && all(sapply(identifications,file.exists)))
     identifications <- .read.idfile(identifications,identifications.format,decode.titles)
-  if (!is.data.frame(identifications)) stop("identifications must be a data.frame or valid file name")
 
   ## load mapping (either character or data.frame)
   if (!is.null(mapping)) {
