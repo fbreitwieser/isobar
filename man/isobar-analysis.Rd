@@ -39,7 +39,7 @@ estimateRatioForProtein(protein, ibspectra, noise.model, channel1, channel2, com
                                                             sign.level=0.05,sign.level.rat=sign.level,sign.level.sample=sign.level,
                                                             remove.outliers=TRUE,outliers.args=list(method = "iqr", outliers.coef = 1.5),
                                                             method="isobar",fc.threshold=1.3,
-                                                            channel1.raw=NULL,channel2.raw=NULL,use.na=FALSE,preweights=NULL, correct.ratio = NULL)
+                                                            channel1.raw=NULL,channel2.raw=NULL,use.na=FALSE,preweights=NULL)
 
 \S4method{estimateRatio}{IBSpectra,ANY,character,character,character,missing}(ibspectra,noise.model,channel1,channel2,
                                                                               protein,peptide,...)
@@ -91,7 +91,7 @@ estimateRatioForProtein(protein, ibspectra, noise.model, channel1, channel2, com
   \item{channel2.raw}{See channel1.raw. }
   \item{use.na}{Use NA values to calculate ratio. Experimental feature - use with caution. }
   \item{preweights}{Specifies weigths for each spectrum. Experimental feature - use with caution. }
-  \item{correct.ratio}{Can be used to scale ratio - should be in log 10. }
+%  \item{correct.ratio}{Can be used to scale ratio - should be in log 10. }
   \item{\dots}{Passed down to \code{estimateRatioNumeric} methods.}
 }
 \value{

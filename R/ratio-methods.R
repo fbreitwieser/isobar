@@ -330,22 +330,26 @@ setMethod("estimateRatioNumeric",signature(channel1="numeric",channel2="numeric"
 
 calculate.ratio.pvalue <- function(lratio, variance, ratiodistr = NULL) {
   center.val <-  ifelse(is.null(ratiodistr), 0 , distr::q(ratiodistr)(0.5))
-  pnorm(lratio,mean=center.val,sd=sqrt(variance),lower.tail=lratio<center.val)
+  sapply(seq_along(lratio),function(r.i) 
+    pnorm(lratio[r.i],mean=center.val,sd=sqrt(variance[r.i]),lower.tail=lratio[r.i]<center.val)
+  )
 }
 
 calculate.sample.pvalue <- function(lratio,ratiodistr) {
-  if (is.null(ratiodistr))
-    return(NA)
-  p(ratiodistr)(lratio,lower.tail=lratio<distr::q(ratiodistr)(0.5))
+  sapply(lratio,function(r) {
+    if (is.null(ratiodistr))
+      return(NA)
+    p(ratiodistr)(r,lower.tail=r<distr::q(ratiodistr)(0.5))
+  })
 }
 
 
-calculate.mult.sample.pvalue <- function(lratios,ratiodistr,strict.pval,lower.tail,
+calculate.mult.sample.pvalue <- function(lratio,ratiodistr,strict.pval,lower.tail,
                                          n.possible.val, n.observed.val) {
   if (is.null(ratiodistr)) 
     return(NA)
 
-  product.p.vals <- prod(distr::p(ratiodistr)(lratios,lower.tail=lower.tail))
+  product.p.vals <- prod(distr::p(ratiodistr)(lratio,lower.tail=lower.tail))
   if (strict.pval)
     pval <- getMultUnifPValues(product.p.vals*0.5^(n.possible.val-n.observed.val),n=n.possible.val)
   else
@@ -371,20 +375,20 @@ correct.peptide.ratios <- function(ibspectra, peptide.quant.tbl, protein.quant.t
   # map from peptides to protein group identifier
   pnp <- peptideNProtein(protein.group)
   pnp <- pnp[pnp[,'protein.g'] %in% reporterProteins(protein.group),]
-  pnp <- unlist(tapply(cn(pnp,"protein.g"),cn(pnp,"peptide"),paste,collapse=";",simplify=FALSE))
+  pnp <- unlist(tapply(.cn(pnp,"protein.g"),.cn(pnp,"peptide"),paste,collapse=";",simplify=FALSE))
   peptide.quant.tbl[,'ac'] <- pnp[peptide.quant.tbl$peptide]
 
   # merged peptide and protein quant table
   tbl <- merge(peptide.quant.tbl,protein.quant.tbl[,c("ac","r1","r2","lratio","variance","is.significant")],
                by = c("ac","r1","r2"), all.x = TRUE, suffixes=c(".modpep",".prot"))
 
-  tbl[,'lratio'] <- cn(tbl,'lratio.modpep') - cn(tbl,'lratio.prot')
+  tbl[,'lratio'] <- .cn(tbl,'lratio.modpep') - .cn(tbl,'lratio.prot')
 
   attrs$adjust.variance <- adjust.variance
   if (adjust.variance) {
     attrs$adjust.variance.corralation <- correlation
-    cov <- correlation * sqrt(cn(tbl,'variance.modpep')) * sqrt(cn(tbl,'variance.prot'))
-    tbl[,'variance'] <- cn(tbl,'variance.modpep') + cn(tbl,'variance.prot') * 2 * cov
+    cov <- correlation * sqrt(.cn(tbl,'variance.modpep')) * sqrt(.cn(tbl,'variance.prot'))
+    tbl[,'variance'] <- .cn(tbl,'variance.modpep') + .cn(tbl,'variance.prot') * 2 * cov
   }
 
   attrs$recalculate.pvalue <- recalculate.pvalue

@@ -1,4 +1,4 @@
-\name{ratiosummarization}
+\name{ratio-summ}
 \alias{proteinRatios}
 \alias{peptideRatios}
 \alias{combn.matrix}
@@ -10,7 +10,7 @@
 \alias{weightedVariance,numeric,numeric,numeric-method}
 \alias{weightedMean,numeric,numeric-method}
 
-\title{protein and peptide ratios}
+\title{Calculating and Summarizing Protein and Peptide Ratios}
 \description{
   A set of functions to create ratios within groups and summarize them. 
   \code{proteinRatios} serves as hub and calls \code{combn.matrix}, 
@@ -26,20 +26,18 @@ proteinRatios(ibspectra, noise.model, reporterTagNames = NULL,
               strict.sample.pval = TRUE, strict.ratio.pval = TRUE, orient.div = 0, 
               sign.level = 0.05, sign.level.rat = sign.level, sign.level.sample = sign.level, 
               ratiodistr = NULL, variance.function = "maxi", combine=FALSE,
-              p.adjust = NULL, reverse=FALSE, combn=NULL, ...)
+              p.adjust = NULL, reverse=FALSE, cmbn=NULL, before.summarize.f = NULL, ...)
 
 combn.matrix(x, method = "global", cl = NULL, vs = NULL)
 
-combn.protein.tbl(ibspectra, noise.model, ratiodistr, proteins = NULL, cmbn, 
-                  peptide = NULL, modif = NULL, reverse = FALSE, variance.function = "maxi", ...)
+combn.protein.tbl(cmbn, reverse = FALSE, ...)
 
-summarize.ratios(ratios, by.column = "ac", summarize.method =                                                                                                                  
-                 "mult.pval", min.detect = NULL, n.combination = NULL,                                                                                                         
-                 strict.sample.pval = TRUE, strict.ratio.pval = TRUE,                                                                                                          
-                 orient.div = 0, sign.level = 0.05, sign.level.rat =                                                                                                           
-                 sign.level, sign.level.sample = sign.level,                                                                                                                   
-                 variance.function = "maxi", ratiodistr = NULL,                                                                                                                
-                 p.adjust = NULL)
+summarize.ratios(ratios, by.column = "ac", summarize.method = "mult.pval",
+                 min.detect = NULL, n.combination = NULL, 
+                 strict.sample.pval = TRUE, strict.ratio.pval = TRUE, 
+                 orient.div = 0, sign.level = 0.05, sign.level.rat = 
+                 sign.level, sign.level.sample = sign.level, 
+                 variance.function = "maxi", ratiodistr = NULL)
 
 }
 %- maybe also 'usage' for other objects documented here.
@@ -49,13 +47,12 @@ summarize.ratios(ratios, by.column = "ac", summarize.method =
   \item{ratios}{result of combn.protein.tbl}
   \item{by.column}{Column(s) which are the identifiers. Usually 'ac', 'peptide' or c('peptide','modif') }
   \item{cmbn}{result of combn.matrix}
-  \item{combn}{result of combn.matrix}
+  \item{before.summarize.f}{Function which is called after calculating ratios before summarizing them.}
   \item{noise.model}{NoiseModel for spectra variances}
   \item{reporterTagNames}{Reporter tags to use. By default all reporterTagNames of ibspectra object.}
   \item{proteins}{proteins for which ratios are calculated - defaults to all 
      proteins with peptides specific to them.}
   \item{peptide}{peptides for which ratios are calculated.}
-  \item{modif}{Modification.}
   \item{cl}{Class labels. See also ?classLabels. }
   \item{vs}{Class label or reporter tag name. When \code{combn.method} is "versus.class", 
             all combinations against class \code{vs} are computed, 
