@@ -96,6 +96,17 @@ number.ranges <- function(numbers) {
   return(paste(numb_string,collapse=","))
 }
 
+.return.equal.or.na <- function(df) {
+  apply(df, 1, function(x) {
+
+    if (all(is.na(x))) return(NA)
+
+    y <- x[!is.na(x)]
+    if (!all(y == y[1])) return(NA)
+    return(y[1])
+  })
+}
+
 .all.duplicate.rows <- function(df,column,n=2) {
   t <- table(df[,column])
   res <- df[df[,column] %in% names(t)[t>=n],]
