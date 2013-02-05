@@ -727,8 +727,8 @@ read.mzid <- function(f) {
 
 
 ## TODO: log is not returned
-.read.idfile <- function(id.file,id.format=NULL,decode.titles=TRUE,log=NULL,...) {
-  data <- unique(do.call("rbind",lapply(id.file,function(f) {
+.read.idfile <- function(id.file,id.format=NULL,decode.titles=TRUE,trim.titles=FALSE,log=NULL,...) {
+  data <- do.call("rbind",lapply(id.file,function(f) {
     
     if (is.null(id.format)) {
       if (grepl(".mzid$",f,ignore.case=TRUE)) 
@@ -762,12 +762,13 @@ read.mzid <- function(f) {
       stop(paste0("cannot parse file ",f," - format [",id.format.f,"] not known."))
     }
     return(data)
-  })
-  ))
-  if (decode.titles) {
-    data[,.SPECTRUM.COLS['SPECTRUM']] <- unlist(lapply(data[,.SPECTRUM.COLS['SPECTRUM']],URLdecode))
   }
-  data[,.SPECTRUM.COLS['SPECTRUM']] <- .trim(data[,.SPECTRUM.COLS['SPECTRUM']])
+  ))
+  if (decode.titles)
+    data[,.SPECTRUM.COLS['SPECTRUM']] <- unlist(lapply(data[,.SPECTRUM.COLS['SPECTRUM']],URLdecode))
+
+  if (trim.titles)
+    data[,.SPECTRUM.COLS['SPECTRUM']] <- .trim(data[,.SPECTRUM.COLS['SPECTRUM']])
   return(data)
 }
 
@@ -1022,9 +1023,8 @@ read.mzid <- function(f) {
                                   identifications.quant=NULL,decode.titles=TRUE,identifications.format=NULL) {
 
   ## load identifications (is either character or data.frame
-  if (is.character(identifications) && file.exists(identifications))
+  if (!is.data.frame(identifications))
     identifications <- .read.idfile(identifications,identifications.format,decode.titles)
-  if (!is.data.frame(identifications)) stop("identifications must be a data.frame or valid file name")
 
   ## load mapping (either character or data.frame)
   if (!is.null(mapping)) {
