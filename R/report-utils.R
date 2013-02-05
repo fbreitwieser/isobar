@@ -1,11 +1,13 @@
 
-create.reports <- function(properties.file="properties.R",args=NULL,
+create.reports <- function(properties.file="properties.R",
+                           global.properties.file=system.file("report","properties.R",package="isobar"),
+                           args=NULL,
                            report.type="protein",compile=FALSE,zip=FALSE,warn=1) {
   ow <- options("warn")
   options(warn=warn)
   if (!exists("properties.env")) {
     properties.env <- load.properties(properties.file,
-                                      system.file("report","properties.R",package="isobar"),
+                                      global.properties.file,
                                       args=args)
     assign("properties.env",properties.env,envir=.GlobalEnv)
   }
@@ -30,7 +32,7 @@ create.reports <- function(properties.file="properties.R",args=NULL,
     message("Weaving isobar-qc report")
     Sweave(system.file("report","isobar-qc.Rnw",package="isobar"))
     if (property('use.name.for.report',properties.env)) {
-      qc.name <- sprintf("%s.qc",property('name',properties.env))
+      qc.name <- .sanitize.sh(sprintf("%s.qc",property('name',properties.env)))
     	file.rename("isobar-qc.tex",sprintf("%s.tex",qc.name))
     } else {
         qc.name <- "isobar-qc"
@@ -52,7 +54,7 @@ create.reports <- function(properties.file="properties.R",args=NULL,
 
     if (property('use.name.for.report',properties.env)) {
     	tex.name <- sprintf("%s.tex",name)
-      name <- sprintf("%s.quant",property('name',properties.env))
+      name <- .sanitize.sh(sprintf("%s.quant",property('name',properties.env)))
     	file.rename(tex.name,sprintf("%s.tex",name))
     } else {
     }
@@ -365,7 +367,7 @@ property <- function(x, envir, null.ok=TRUE,class=NULL) {
                 na.rm=property('normalize.na.rm',properties.env))
   }
 
-  class.labels <- as.character(c(1,rep(0,length(reporterTagNames(ibspectra))-1)))
+  class.labels <- LETTERS[1:length(reporterTagNames(ibspectra))]
   if (.exists.property('class.labels',properties.env,null.ok=FALSE))
     class.labels <- get.property('class.labels')
   if (!any(table(class.labels)>1) && property('summarize',properties.env)) {
@@ -426,6 +428,9 @@ property <- function(x, envir, null.ok=TRUE,class=NULL) {
       cl <- property('ratiodistr.class.labels',properties.env)
 
     ratios.for.distr.fitting <- .create.or.load.ratiodistr.ratios(env,properties.env,level,cl)
+
+    if (all(is.na(ratios.for.distr.fitting[,'lratio']))) 
+      stop("All ratios for distr fitting are NA - are the correct class labels used?")
 
     if (!is.function(property('ratiodistr.fitting.f',properties.env)))
       stop("ratiodistr.fitting.f must be set to a function [e.g. fitCauchy or fitTd]")
