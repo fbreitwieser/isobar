@@ -251,16 +251,8 @@ setGeneric("readIBSpectra", function(type,id.file,peaklist.file,...)
 
 setMethod("readIBSpectra",
           signature(type="character",id.file="character",peaklist.file="missing"),
-    function(type,id.file,...) {
-      ll <- lapply(seq_along(id.file),function(i) {
-                   message("\treading ",id.file[i])
-                   df <- read.table(id.file[i],header=T,sep="\t")
-                   df[,.SPECTRUM.COLS['FILE']]  <- id.file[i]
-                   if (!is.null(names(id.file)))
-                     df[,.SPECTRUM.COLS['SAMPLE']]  <- names(id.file)[i]
-                   df
-            })
-      new(type,identifications=do.call(rbind,ll),...)
+    function(type,id.file,header=TRUE,sep="\t",stringsAsFactors=FALSE,...) {
+      new(type,identifications=.read.idfile(id.file,header=header,sep=sep,stringsAsFactors=stringsAsFactors),...)
     }
 )
 setMethod("readIBSpectra",
@@ -270,13 +262,14 @@ setMethod("readIBSpectra",
 
 setMethod("readIBSpectra",
           signature(type="character",id.file="character",peaklist.file="character"),
-    function(type,id.file,peaklist.file,
+    function(type,id.file,peaklist.file,header=TRUE,sep="\t",stringsAsFactors=FALSE,
              mapping.file=NULL,mapping=c(peaklist="even",id="odd"),
              id.file.domap=NULL,id.format=NULL,decode.titles=TRUE,...) {
       
-      id.data <- .read.identifications(id.file,mapping=mapping.file,mapping.names=mapping,
-                                    identifications.quant=id.file.domap,
-                                    identifications.format=id.format,decode.titles=decode.titles)
+      id.data <- .read.identifications(id.file,header=header,sep=sep,stringsAsFactors=stringsAsFactors,
+                                       mapping=mapping.file,mapping.names=mapping,
+                                       identifications.quant=id.file.domap,
+                                       identifications.format=id.format,decode.titles=decode.titles)
 
       readIBSpectra(type,id.data,peaklist.file,...)
 })
@@ -729,21 +722,19 @@ read.mzid <- function(f) {
 
 
 ## TODO: log is not returned
-.read.idfile <- function(id.file,id.format=NULL,decode.titles=TRUE,trim.titles=FALSE,log=NULL,...) {
+.read.idfile <- function(id.file,id.format=NULL,header=TRUE,stringsAsFactors=FALSE,sep="\t",
+                         decode.titles=TRUE,trim.titles=FALSE,log=NULL,...) {
   id.data <- do.call("rbind",lapply(id.file,function(f) {
     
     if (is.null(id.format)) {
       if (grepl(".mzid$",f,ignore.case=TRUE)) 
         id.format.f <- "mzid"
-      else if (grepl(".ibspectra.csv$",f,ignore.case=TRUE) ||
-               grepl(".id.csv$",f,ignore.case=TRUE) || 
-               grepl(".mascot.csv$",f,ignore.case=TRUE) || 
-               grepl(".phenyx.csv$",f,ignore.case=TRUE))
-        id.format.f <- "ibspectra.csv"
       else if (grepl(".peptides.csv$",f) || grepl(".peptides.txt$",f)) 
         id.format.f <- "rockerbox"
       else if (grepl(".msgfp.csv$",f) || grepl(".tsv$",f)) 
         id.format.f <- "msgfp tsv"
+      else if (grepl(".csv$",f,ignore.case=TRUE))
+        id.format.f <- "ibspectra.csv"
       else
         stop(paste("cannot parse file ",f," - cannot deduce format based on extenstion (it is not ibspectra.csv, id.csv, peptides.txt or mzid). Please provide id.format to readIBSpectra",sep=""))
     } else {
@@ -751,7 +742,7 @@ read.mzid <- function(f) {
     }
     
     if (id.format.f == "ibspectra.csv") {
-      id.data <- read.table(f,header=T,stringsAsFactors=F,sep="\t",...)
+      id.data <- read.table(f,header=header,stringsAsFactors=stringsAsFactors,sep=sep,...)
       log <- rbind(log,c("identification file [id.csv]",f))
     } else if (id.format.f == "mzid") {
       id.data <- read.mzid(f)
