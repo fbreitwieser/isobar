@@ -324,6 +324,10 @@ setMethod("readIBSpectra",
       # all identified spectrum titles
       id.spectra <- unique(id.data[,.SPECTRUM.COLS['SPECTRUM']])
 
+      .Object <- new(type)
+      reporterMasses <- .Object@reporterTagMasses
+      reporterTagNames <- .Object@reporterTagNames
+
       data.ions=c()
       data.mass=c()
       data.titles=c()
@@ -340,9 +344,6 @@ setMethod("readIBSpectra",
         }
 
         if (tolower(peaklist.format.f) == "mgf") {
-          .Object <- new(type)
-          reporterMasses <- .Object@reporterTagMasses
-          reporterTagNames <- .Object@reporterTagNames
 
           intensities.f <- .read.mgf(peaklist.f,reporterMasses,reporterTagNames,
                                      fragment.precision=fragment.precision,
@@ -384,6 +385,8 @@ setMethod("readIBSpectra",
       rownames(data.mass)  <- data.titles
       ## TODO: check that all identified spectra are present in intensities
 
+      colnames(data.ions) <- reporterTagNames
+      colnames(data.mass) <- reporterTagNames
       
       new(type,identifications=id.data,data.mass=data.mass,data.ions=data.ions,...)
     }
@@ -805,6 +808,9 @@ read.mzid <- function(f) {
 
 
 .dissect.search.engines <- function(identifications) {
+
+  SC <- .SPECTRUM.COLS[.SPECTRUM.COLS %in% colnames(identifications)]
+
   ## scores are merged together
   if (.SPECTRUM.COLS['SCORE'] %in% colnames(identifications)) {
     engines <- strsplit(identifications[,SC['SEARCHENGINE']],"|",fixed=TRUE)
@@ -819,14 +825,30 @@ read.mzid <- function(f) {
       scores <- lapply(engine.n.score,function(x) as.numeric(x[seq(from=2,to=length(x),by=2)]))
     }
   }
+  score.columns <- paste0('score.',tolower(unique(unlist(engines))))
   for (engine in unique(unlist(engines))) {
     name <- paste0('score.',tolower(engine))
     e.scores <- mapply(function(e,s) if(any(e==engine)) s[e==engine] else NA,engines,scores)
     identifications[,name] <- as.numeric(e.scores)
   }
+
   identifications[,SC['SEARCHENGINE']] <- sapply(engines,paste,collapse="&")
+  tt = table(identifications[,SC['SPECTRUM']])
+  if (max(tt) > 1) {
+    message("Resolving duplicated ids")
+    id.good <- identifications[identifications$spectrum %in% names(tt)[tt==1],]
+    id.bad <- identifications[identifications$spectrum %in% names(tt)[tt>1],]
+    id.bad$n.se <- rowSums(!is.na(id.bad[,score.columns]))
+    id.res <- ddply(id.bad,'spectrum',function(x) {
+      x[which.max(x$n.se),]
+    })
+    id.res$n.se <- NULL
+    identifications <- rbind(id.good,id.res)
+  }
+
   if ('SCORE' %in% names(SC))
     identifications[,SC['SCORE']] <- NULL
+
   return(identifications)
 }
 
