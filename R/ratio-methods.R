@@ -337,7 +337,7 @@ calculate.ratio.pvalue <- function(lratio, variance, ratiodistr = NULL) {
 
 calculate.sample.pvalue <- function(lratio,ratiodistr) {
   sapply(lratio,function(r) {
-    if (is.null(ratiodistr))
+    if (is.null(ratiodistr) || is.na(lratio))
       return(NA)
     p(ratiodistr)(r,lower.tail=r<distr::q(ratiodistr)(0.5))
   })
@@ -1053,6 +1053,8 @@ combn.protein.tbl <- function(cmbn, reverse=FALSE, ...) {
     return(df)
   }))
 
+  attr(ratios,"arguments") <- list(...)
+
   attr(ratios,"cmbn") <- cmbn
   attr(ratios,"reverse") <- reverse
 
@@ -1146,7 +1148,10 @@ proteinRatios <-
   
   ratios <- combn.protein.tbl(cmbn,reverse=reverse,
                               ibspectra=ibspectra,noise.model=noise.model,
+                              ratiodistr=ratiodistr,
                               protein=proteins,peptide=peptide,
+                              sign.level=sign.level,sign.level.rat=sign.level.rat,
+                              sign.level.sample=sign.level.sample,
                               variance.function=variance.function,combine=combine,...)
 
   attributes(ratios) = c(attributes(ratios),list(
