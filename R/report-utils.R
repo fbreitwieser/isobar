@@ -249,6 +249,7 @@ property <- function(x, envir, null.ok=TRUE,class=NULL) {
     def <- paste("\n  Corresponding line in ",envir$properties.file,":\n\t",
                  paste(def,collapse="\n\t"),"\n\n",sep="")
 
+  p <- .get.property(x,envir=envir)
   does.not.exist <- !exists(x,envir=envir,inherits=inherits,...)
   is.null.p <- does.not.exist || is.null(.get.property(x,envir=envir))
   length.0 <- does.not.exist || length(.get.property(x,envir=envir))==0
@@ -261,14 +262,12 @@ property <- function(x, envir, null.ok=TRUE,class=NULL) {
     stop("  property '",x,"' should be assigned to a file, but it is not:",def)
 
   if (!is.null(valid)) {
-    p <- .get.property(x,envir=envir)
     isnt.valid <- !p %in% valid
     if (isnt.valid) stop(" property '",x,"' must be one of \n\t",paste(valid,collapse="\n\t"),",\n\n",
                          "  but it is ",p )
   }
   if (print) {
-    message(paste("  property '",x,"' defined: ",
-                  paste(.get.property(x,envir=envir),collapse=","),sep=""))
+    message("  property '",x,"' defined",ifelse(is.character(p),paste0(": ",paste(p,collapse="; ")),"."))
   }
 }
 
@@ -310,8 +309,11 @@ property <- function(x, envir, null.ok=TRUE,class=NULL) {
   readIBSpectra.args$fragment.outlier.prob=get.property('fragment.outlier.prob')
   readIBSpectra.args$proteinGroupTemplate=.get.or.load('protein.group.template',properties.env,"ProteinGroup",null.ok=TRUE)
 
-  if (all(file.exists(get.property('ibspectra')))) {
-    if (grepl(".csv",get.property('ibspectra'))) {
+  if (is.data.frame(get.property('ibspectra')) || all(file.exists(get.property('ibspectra')))) {
+    if (is.data.frame(get.property('ibspectra'))) {
+      readIBSpectra.args$id.file <- get.property('ibspectra')
+      ibspectra <- do.call(readIBSpectra,readIBSpectra.args)
+    } else if (grepl(".csv",get.property('ibspectra'))) {
         message("ibspectra ends on .csv:\n",
                 sprintf('ibspectra <- readIBSpectra("%s",%s) ...',
                         get.property('type'),
@@ -391,13 +393,15 @@ property <- function(x, envir, null.ok=TRUE,class=NULL) {
 
 .create.or.load.noise.model <- function(env,properties.env) {
   noise.model.channels <- .get.property("noise.model.channels",properties.env)
+  if (is.null(noise.model.channels)) 
+    noise.model.channels <- reporterTagNames(env$ibspectra)[!is.na(classLabels(env$ibspectra))]
 
   noise.model <- .get.property("noise.model",properties.env)
   if (!is(noise.model,"NoiseModel")) {
     noise.model.f <- .get.property("noise.model",properties.env)
     if (!file.exists(noise.model.f)) {
       message("estimating noise model as non one-to-one ...")
-      noise.model <- new("ExponentialNoiseModel",env,one.to.one=F,
+      noise.model <- new("ExponentialNoiseModel",env$ibspectra,one.to.one=F,
                          reporterTagNames=noise.model.channels,
                          min.spectra=property('noise.model.minspectra',properties.env))
       save(noise.model,file=noise.model.f,compress=TRUE)
