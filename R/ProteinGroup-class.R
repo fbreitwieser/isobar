@@ -363,15 +363,16 @@ getProteinInfoFromBiomart <- function(x,database="Uniprot") {
 }
 
 
-getProteinInfoFromUniprot <- function(x,splice.by=200) {
-  fields <- c(accession="id",name="entry%20name",protein_name="protein%20names",
-              gene_name="genes",organism="organism",
-              length="length",sequence="sequence")
+getProteinInfoFromUniprot <- function(x,splice.by=200, 
+                                      fields = c(accession="id",name="entry%20name",protein_name="protein%20names",
+                                                 gene_name="genes",organism="organism", length="length",sequence="sequence")) {
    
   protein.acs <- x@isoformToGeneProduct[names(indistinguishableProteins(x)),"proteinac.wo.splicevariant"]
+  protein.acs <- gsub("%","",protein.acs)
   protein.info <- c()
   i <- 1
   while (i < length(protein.acs)) {
+    cat(".")
     uniprot.url <- paste0("http://www.uniprot.org/uniprot/?query=",
                  paste0("accession:",protein.acs[seq(from=i,to=min(length(protein.acs),i+splice.by-1))],collapse="+OR+"),
                  "&format=tab&compress=no&columns=",
