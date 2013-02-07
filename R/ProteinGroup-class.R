@@ -443,6 +443,9 @@ getPtmInfoFromPhosphoSitePlus <- function(protein.group,file.name=NULL,modif="PH
                                                     METH="Methylation_site_dataset.gz",
                                                     SUMO="Sumoylation_site_dataset.gz",
                                                     UBI="Ubiquitination_site_dataset.gz")) {
+  if (length(modif) > 1) {
+    return(do.call(rbind,lapply(modif,function(m) getPtmInfoFromPhosphoSitePlus(protein.group,file.name,m,psp.url,mapping))))
+  }
 
   if (is.null(file.name)) file.name <- mapping[modif]
 
