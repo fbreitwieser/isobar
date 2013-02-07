@@ -722,11 +722,11 @@ read.mzid <- function(f) {
 
 
 ## TODO: log is not returned
-.read.idfile <- function(id.file,id.format=NULL,header=TRUE,stringsAsFactors=FALSE,sep="\t",
+.read.idfile <- function(id.file,identifications.format=NULL,header=TRUE,stringsAsFactors=FALSE,sep="\t",
                          decode.titles=TRUE,trim.titles=FALSE,log=NULL,...) {
-  id.data <- do.call("rbind",lapply(id.file,function(f) {
+  id.data <- lapply(id.file,function(f) {
     
-    if (is.null(id.format)) {
+    if (is.null(identifications.format)) {
       if (grepl(".mzid$",f,ignore.case=TRUE)) 
         id.format.f <- "mzid"
       else if (grepl(".peptides.csv$",f) || grepl(".peptides.txt$",f)) 
@@ -755,8 +755,22 @@ read.mzid <- function(f) {
       stop(paste0("cannot parse file ",f," - format [",id.format.f,"] not known."))
     }
     return(id.data)
+  })
+
+  id.colnames <- lapply(seq_along(id.data),function(s.i) colnames(id.data[[s.i]]))
+  colnames.equal <- all(sapply(id.colnames,function(cn) identical(cn,id.colnames[[1]])))
+  if (!colnames.equal) {
+    message(" id file colnames are not equal:")
+    message(paste(sapply(seq_along(id.file),function(s.i) paste0(id.file[s.i],": ",paste(id.colnames[[s.i]],collapse="; "))),collapse="\n"))
+    intersect.colnames <- id.colnames[[1]]
+    for (s.i in seq(from=2,to=length(id.colnames))) {
+      intersect.colnames <- intersect(intersect.colnames,id.colnames[[s.i]])
+    }
+    message(" taking intersection: ",paste(intersect.colnames,collapse="; "))
+    id.data <- lapply(id.data,function(i.d) i.d[,intersect.colnames])
   }
-  ))
+  id.data <- do.call(rbind,id.data)
+
   if (decode.titles)
     id.data[,.SPECTRUM.COLS['SPECTRUM']] <- unlist(lapply(id.data[,.SPECTRUM.COLS['SPECTRUM']],URLdecode))
 
@@ -824,7 +838,7 @@ read.mzid <- function(f) {
   }
 
   identifications[,SC['SEARCHENGINE']] <- sapply(engines,paste,collapse="&")
-  tt = table(identifications[,SC['SPECTRUM']])
+  tt <- table(identifications[,SC['SPECTRUM']])
   if (max(tt) > 1) {
     message("Resolving duplicated ids")
     id.good <- identifications[identifications$spectrum %in% names(tt)[tt==1],]
@@ -894,13 +908,16 @@ read.mzid <- function(f) {
   	         		     colname=colname,resolve.colnames=paste0(colname,".",clean.names),...)
   }
 
-  tt <- table(ids.merged[,'spectrum'])
+  ids.merged <- unique(ids.merged)
+  tt <- table(ids.merged[,.SPECTRUM.COLS['SPECTRUM']])
   #spectra.ok <- ids.merged[,'spectrum'] %in% names(tt)[tt==1]
   #resolved.ids <- .resolve.differing.identifications(ids.merged[!spectra.ok,],score.cols)
 
   #identifications <- rbind(ids.merged[spectra.ok,],resolved.ids)
-  if (any(table(ids.merged[,'spectrum'])>1))
-    stop("Merging not successful, duplicated psms!")
+  if (any(tt>1)) {
+    warning("Merging not successful, ",sum(tt>1)," duplicated psms, removing them!")
+    ids.merged <- ids.merged[!ids.merged[,.SPECTRUM.COLS['SPECTRUM']] %in% names(tt)[tt>1],]
+  }
 
   ids.merged[,.SPECTRUM.COLS['SEARCHENGINE']] <- 
 	  apply(ids.merged[,score.cols],1,function(x) { paste(names(ids.split)[!is.na(x)],collapse="&") })
@@ -922,7 +939,7 @@ read.mzid <- function(f) {
 # Take 'first' modification
 .consolidate.modification.pos <- function(x) .na.rm(x)[1]
 
-.resolve.conflicts <- function(ids, resolve.f, colname, resolve.colnames, keep.cols = false) {
+.resolve.conflicts <- function(ids, resolve.f, colname, resolve.colnames, keep.cols = FALSE) {
 
   if (is.character(resolve.colnames))
     resolve.colnames <- which(colnames(ids) %in% resolve.colnames)
@@ -1154,13 +1171,13 @@ read.mzid <- function(f) {
 ###############################################################################
 
 
-.read.identifications <- function(identifications,
+.read.identifications <- function(identifications,...,
                                   mapping=NULL,mapping.names=c(quantification.spectrum="hcd",identification.spectrum="cid"),
-                                  identifications.quant=NULL,decode.titles=TRUE,identifications.format=NULL) {
+                                  identifications.quant=NULL) {
 
   ## load identifications (is either character or data.frame
   if (is.character(identifications) && all(sapply(identifications,file.exists)))
-    identifications <- .read.idfile(identifications,identifications.format,decode.titles)
+    identifications <- .read.idfile(identifications,...)
 
   ## load mapping (either character or data.frame)
   if (!is.null(mapping)) {
@@ -1181,8 +1198,8 @@ read.mzid <- function(f) {
 
     if (!is.null(identifications.quant)) {
       ## load identifications.quant (either character or data.frame)
-      if (is.character(identifications.quant) && file.exists(identifications.quant)) 
-        identifications.quant <- .read.idfile(identifications.quant,identifications.format,decode.titles)
+      if (is.character(identifications.quant) && all(sapply(identifications.quant,file.exists)))
+        identifications.quant <- .read.idfile(identifications.quant,...)
       if (!is.data.frame(identifications.quant)) stop("identifications.quant must be a data.frame or valid file name")
       identifications.quant[,.SPECTRUM.COLS['SPECTRUM.QUANT']] <- identifications.quant[,.SPECTRUM.COLS['SPECTRUM']]
       identifications.quant[,.SPECTRUM.COLS['DISSOCMETHOD']] <- "hcd"
