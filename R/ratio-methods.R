@@ -336,10 +336,13 @@ calculate.ratio.pvalue <- function(lratio, variance, ratiodistr = NULL) {
 }
 
 calculate.sample.pvalue <- function(lratio,ratiodistr) {
+  if (!is.null(ratiodistr))
+    center.val <- distr::q(ratiodistr)(0.5)
+
   sapply(lratio,function(r) {
     if (is.null(ratiodistr) || is.na(lratio))
       return(NA)
-    p(ratiodistr)(r,lower.tail=r<distr::q(ratiodistr)(0.5))
+    p(ratiodistr)(r,lower.tail=r<center.val)
   })
 }
 
@@ -643,15 +646,15 @@ estimateRatioForProtein <- function(protein,ibspectra,noise.model,channel1,chann
           stop("method ",method," not known")
         }
       } else {
-        res <- do.call(rbind,lapply(protein,function(individual.protein) {
+        res <- ldply(protein,function(individual.protein) {
              if (individual.protein %in% quant.w.grouppeptides) 
                specificity <- c(GROUPSPECIFIC,specificity)
 
              .call.estimateRatio(individual.protein,"protein",ibspectra,
                                 noise.model,channel1,channel2,method=method,...,
                                 specificity=specificity)
-            }
-        ))
+            },.parallel=isTRUE(options('isobar.parallel'))
+        )
         rownames(res) <- protein
         res
         #res[apply(res,2,!function(r) all(is.na(r))),]
@@ -668,12 +671,12 @@ estimateRatioForPeptide <- function(peptide,ibspectra,noise.model,channel1,chann
         if (is.matrix(peptide)) {
           r <- ldply(seq_len(nrow(peptide)),function(p_i) 
                   .call.estimateRatio(peptide[p_i,,drop=FALSE],"peptide",ibspectra,noise.model,
-                                      channel1,channel2,...))
+                                      channel1,channel2,...),.parallel=isTRUE(options('isobar.parallel')))
         
         } else {
           r <- ldply(peptide,function(individual.peptide) 
                         .call.estimateRatio(individual.peptide,"peptide",ibspectra,noise.model,
-                                            channel1,channel2,...))
+                                            channel1,channel2,...),.parallel=isTRUE(options('isobar.parallel')))
         }
       }
       attr(r,"input") <- peptide
@@ -1301,7 +1304,7 @@ summarize.ratios <-
                             is.significant=is.significant,r1=class1,r2=class2,
                             class1=class1,class2=class2,stringsAsFactors=FALSE))
         })
-      })
+      },.parallel=isTRUE(options('isobar.parallel')))
       
       if (is.null(result)) stop("Error summarizing.")
 
