@@ -602,6 +602,7 @@ correct.peptide.ratios <- function(ibspectra, peptide.quant.tbl, protein.quant.t
 
 estimateRatioForProtein <- function(protein,ibspectra,noise.model,channel1,channel2,
         combine=TRUE,method="isobar",specificity=REPORTERSPECIFIC,quant.w.grouppeptides=NULL,...) {
+      message("parallel processing: ",isTRUE(getOption('isobar.parallel')))
       if (combine) {
         if (method == "multiq" || method == "libra" || method=="pep") {
           ## first compute peptide ratios, summarize then
@@ -653,7 +654,7 @@ estimateRatioForProtein <- function(protein,ibspectra,noise.model,channel1,chann
              .call.estimateRatio(individual.protein,"protein",ibspectra,
                                 noise.model,channel1,channel2,method=method,...,
                                 specificity=specificity)
-            },.parallel=isTRUE(options('isobar.parallel'))
+            },.parallel=isTRUE(getOption('isobar.parallel'))
         )
         rownames(res) <- protein
         res
@@ -671,12 +672,12 @@ estimateRatioForPeptide <- function(peptide,ibspectra,noise.model,channel1,chann
         if (is.matrix(peptide)) {
           r <- ldply(seq_len(nrow(peptide)),function(p_i) 
                   .call.estimateRatio(peptide[p_i,,drop=FALSE],"peptide",ibspectra,noise.model,
-                                      channel1,channel2,...),.parallel=isTRUE(options('isobar.parallel')))
+                                      channel1,channel2,...),.parallel=isTRUE(getOption('isobar.parallel')))
         
         } else {
           r <- ldply(peptide,function(individual.peptide) 
                         .call.estimateRatio(individual.peptide,"peptide",ibspectra,noise.model,
-                                            channel1,channel2,...),.parallel=isTRUE(options('isobar.parallel')))
+                                            channel1,channel2,...),.parallel=isTRUE(getOption('isobar.parallel')))
         }
       }
       attr(r,"input") <- peptide
@@ -1304,7 +1305,7 @@ summarize.ratios <-
                             is.significant=is.significant,r1=class1,r2=class2,
                             class1=class1,class2=class2,stringsAsFactors=FALSE))
         })
-      },.parallel=isTRUE(options('isobar.parallel')))
+      },.parallel=isTRUE(getOption('isobar.parallel')))
       
       if (is.null(result)) stop("Error summarizing.")
 
