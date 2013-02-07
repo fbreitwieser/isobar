@@ -81,12 +81,17 @@ setClass("TMT6plexSpectra",
     n <- length(object@reporterTagNames)
     if (length(object@reporterTagMasses) != n) 
         stop("[IBSpectra: validation] Slot reportMasses [",length(object@reporterTagMasses),"]",
-             " has different length then reporterTagNames [",n,"]!")
+             " has not the same length as reporterTagNames [",n,"]!")
+
     if (!all(dim(object@isotopeImpurities) == n))
         stop("[IBSpectra: validation] isotopeImpurities has dimensions ",
              paste(dim(object@isotopeImpurities),collapse="x"),"!",
-             " Expected is ",n,"x",n,".")
-    
+             " Expected is ",n,"x",n,". Set it to diag(",n,") when no known.")
+
+       if (length(classLabels(object)) > 0 && length(classLabels(object)) != n) 
+        stop("[IBSpectra: validation] Slot classLabels [",length(classLabels(object)),"]",
+             " has not the same length as reporterTagNames [",n,"]!")
+
     return(TRUE)
 }
 
@@ -429,12 +434,19 @@ setMethod("classLabels",signature(x="IBSpectra"),
 )
 setReplaceMethod("classLabels","IBSpectra",
     function(x,value) {
+      
+      if (length(value) != length(reporterTagNames(x)))
+        stop("Class labels [",length(value),"] need to habe the same length as reporterTagNames [",length(reporterTagNames(x)),"]")
+
       if (is.null(names(value))) {
         phenoData(x)[["class.labels",labelDescription="class labels"]] <- value
       } else {
         phenoData(x)[["class.labels",labelDescription="class labels"]] <- as.character(value)
         phenoData(x)[["class.label.description",labelDescription="class label descriptions"]] <- names(value)
       }
+
+      validObject(x)
+
       x
     }
 )
