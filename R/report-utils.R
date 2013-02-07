@@ -462,13 +462,15 @@ property <- function(x, envir, null.ok=TRUE,class=NULL) {
       message(" WARNING: ratiodistr will be computed based on global ratios")
       method <- "global"
     }
+    #do.summarize <- method=="intraclass"
+    do.summarize <- FALSE
 
     if (identical(level,"peptide"))
       ratios.for.distr.fitting <- peptideRatios(env$ibspectra,noise.model=env$noise.model,do.warn=FALSE,
-                                  cl=cl,combn.method=method,symmetry=TRUE,summarize=method=="intraclass")
+                                  cl=cl,combn.method=method,symmetry=TRUE,summarize=do.summarize)
     else
       ratios.for.distr.fitting <- proteinRatios(env$ibspectra,noise.model=env$noise.model,do.warn=FALSE,
-                                      cl=cl,combn.method=method,symmetry=TRUE,summarize=method=="intraclass")
+                                      cl=cl,combn.method=method,symmetry=TRUE,summarize=do.summarize)
 
     if (all(is.nan(ratios.for.distr.fitting$lratio)))
       stop("Cannot compute protein ratio distribution - no ratios available.\n",
