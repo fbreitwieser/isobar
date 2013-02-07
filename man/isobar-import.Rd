@@ -28,7 +28,7 @@
 \S4method{readIBSpectra}{character,character,character}(
              type, id.file, peaklist.file, mapping.file = NULL,
              mapping = c(peaklist = "even", id = "odd"),
-             id.file.domap = NULL, id.format = NULL, decode.titles = TRUE, ...)
+             id.file.domap = NULL, identifications.format = NULL, decode.titles = TRUE, ...)
 
 # reads peaklist file
 \S4method{readIBSpectra}{character,data.frame,character}(
@@ -46,7 +46,7 @@
   }
   \item{id.file}{
     Database search results file in \code{ibspectra.csv} or
-   \code{mzIdentML} format. See \code{id.format}. See the vignette for
+   \code{mzIdentML} format. See \code{identifications.format}. See the vignette for
    information on converting Mascot dat and Phenyx pidres files into
    ibspectra format.
   }
@@ -92,7 +92,7 @@
     "mgf" (Mascot Generic format) or "mcn" (iTracker Machine Readable
     output). When NULL, it detects the format on file name extension.
   }
-  \item{id.format}{
+  \item{identifications.format}{
     "ibspectra.csv" or "mzid"  (PSI MzIdentML format). When NULL, file
     format is guessed based on extension.
   }
@@ -146,7 +146,7 @@ tf <- tempfile("isobar")
 write.table(as.data.frame(ib.ceru),sep="\t",file=tf)
 
 # read it again into an IBSpectra object
-ib.ceru2 <- readIBSpectra("iTRAQ4plexSpectra",tf,id.format="ibspectra.csv")
+ib.ceru2 <- readIBSpectra("iTRAQ4plexSpectra",tf,identifications.format="ibspectra.csv")
 ib.ceru2
 
 unlink(tf)

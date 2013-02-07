@@ -122,7 +122,7 @@ ratiodistr=NULL
 ## /eg/ to choose biologically very similar samples as pseudo replicates.
 ratiodistr.class.labels=NULL
 
-## Function for fitting. Available: fitCauchy, fitTd, (TOADD)
+## Function for fitting. Available: fitCauchy, fitTlsd
 ratiodistr.fitting.f=fitCauchy
 
 ###############################################################################
