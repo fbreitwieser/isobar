@@ -1,6 +1,6 @@
 #!/usr/bin/perl
 # Creation date : 2010-09-29
-# Last modified : Mon 23 Jul 2012 02:04:30 PM CEST
+# Last modified : Thu 07 Feb 2013 12:51:03 AM CET
 
 # Module        : tab2xls.pl
 # Purpose       : converts csv files to XLS format
@@ -80,7 +80,8 @@ for (my $file_i=0; $file_i <= $#ARGV; ++$file_i) {
   print STDERR "$file\n";
 
   my $name = $props->{'name'};
-  if (!defined $name) { ($name) = getname(fileparse($file,".csv")); }
+  #if (!defined $name) { ($name) = getname(fileparse($file,".csv")); }
+  if (!defined $name) { ($name) = fileparse($file,".csv"); }
 
   open(F,"<",$file) or die "Could not open $file: $!";
     
@@ -124,7 +125,10 @@ for (my $file_i=0; $file_i <= $#ARGV; ++$file_i) {
       @data = (@data,@data2);
     }
     if (scalar @data != scalar @header) {
-      die "Bad CSV in row $row: $#data /vs/ $#header";
+      print STDERR "Bad CSV in row $row: $#data /vs/ $#header:\n";
+      print "###### HEADER: ######\n",join("\n",@header),"\n\n";
+      print "###### LINE $row #####\n",join("\n",@data),"\n";
+      die();
     }
     chomp($data[$#data]);
 
