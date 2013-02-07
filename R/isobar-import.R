@@ -771,6 +771,9 @@ read.mzid <- function(f) {
   }
   id.data <- do.call(rbind,id.data)
 
+  if (!is.character(id.data[,.SPECTRUM.COLS['SPECTRUM']]))
+    id.data[,.SPECTRUM.COLS['SPECTRUM']] <- as.character(id.data[,.SPECTRUM.COLS['SPECTRUM']])
+
   if (decode.titles)
     id.data[,.SPECTRUM.COLS['SPECTRUM']] <- unlist(lapply(id.data[,.SPECTRUM.COLS['SPECTRUM']],URLdecode))
 
