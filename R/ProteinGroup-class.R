@@ -1257,6 +1257,26 @@ spectra.count <- function(protein.group,protein.g=reporterProteins(protein.group
   return(spectra.count)
 }
 
+calc.startpos <- function(peptide.info,protein.info) {
+  for (p.i in seq_len(nrow(peptide.info))) {
+    seqq <- protein.info[protein.info[,'accession']==peptide.info[p.i,'protein'],'sequence']
+    pep <- peptide.info[p.i,'peptide']
+    if (length(seqq) > 0 && !is.na(seqq) && nchar(seqq) > 0 &&length(pep)>0 && !is.na(pep)) {
+      seqq <- gsub("I","L",seqq) ## to be confomant with converted peptides
+      str.pos <- regexpr(pep,seqq,fixed=TRUE) 
+      peptide.info[p.i,'start.pos'] <- str.pos[1] # take only first position
+      #peptide.info[p.i,'end.pos'] <- str.pos[1] + nchar(peptide.info[p.i,'peptide']) -1
+    }
+  }
+  if (any(peptide.info[,'start.pos'] == -1,na.rm=TRUE)) {
+    sel.bad <- !is.na(peptide.info[,'start.pos']) & peptide.info[,'start.pos'] == -1
+    warning("Could not assess start position of ",length(unique(peptide.info[sel.bad,'peptide'])),
+            " peptides in ",length(unique(peptide.info[sel.bad,'protein']))," proteins")
+    peptide.info[sel.bad,'start.pos'] <- NA
+  }
+  peptide.info
+}
+
 # TOFIX: proteinInfo does not contain splice information. With splice sequence, an accurate seqcov could be calculated
 sequence.coverage <- function(protein.group,protein.g=reporterProteins(protein.group),
                               specificity=c("reporter-specific","group-specific","unspecific"),
