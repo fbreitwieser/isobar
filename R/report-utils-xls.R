@@ -99,7 +99,8 @@ write.xls.report <- function(report.type,properties.env,report.env,file="isobar-
       #xls.quant.tbl <- xls.quant.tbl[, c(col_idx, (1:ncol(df))[-col_idx])]
 
     }
-    protein.id.df$notes <- gsub("[\t\n]"," ",protein.id.df$notes)
+    if ('notes' %in% colnames(protein.id.df)) 
+      protein.id.df[,'notes'] <- gsub("[\t\n]"," ",protein.id.df[,'notes'])
     write.t(xls.quant.tbl,file=protein.quant.f)
     write.t(protein.id.df,file=protein.id.f)  
     write.t(ii,file=analysis.properties.f,col.names=FALSE)
