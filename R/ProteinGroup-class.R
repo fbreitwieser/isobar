@@ -932,6 +932,10 @@ setMethod("proteinInfo",signature(x="ProteinGroup",protein.g="character",protein
 setReplaceMethod("proteinInfo","ProteinGroup",
                  function(x,value) {
                    x@proteinInfo <- value
+                   if ('sequence' %in% colnames(value) && all(is.na(x@peptideInfo[,'start.pos']))) {
+                     message("Recaculating peptide start position based on sequence")
+                     x@peptideInfo <- calc.startpos(x@peptideInfo,value)
+                   }
                    x
                  })
 
