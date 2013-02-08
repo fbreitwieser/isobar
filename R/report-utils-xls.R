@@ -295,9 +295,10 @@ write.xls.report <- function(report.type,properties.env,report.env,file="isobar-
   if ("METH" %in% ptm) my.ptm="Methylation"
 
   input.tbl[,'ac']  <- NULL
-  t <- table(pnp$peptide)
-  pnp <- pnp[pnp$peptide %in% names(t)[t==1],]
-  colnames(pnp)  <- c("peptide","ac")
+  #t <- table(pnp$peptide)
+  #pnp <- pnp[pnp$peptide %in% names(t)[t==1],]
+  #colnames(pnp)  <- c("peptide","ac")
+  pnp <- ddply(pnp,'peptide',function(x) c(peptide=x[1,1],ac=paste(x[,2],collapse=";")))
 
   input.tbl <- merge(pnp,input.tbl,by="peptide")
   input.tbl$i  <- seq_len(nrow(input.tbl))
