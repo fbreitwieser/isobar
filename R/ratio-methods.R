@@ -1035,6 +1035,7 @@ combn.protein.tbl <- function(cmbn, reverse=FALSE, ...) {
       else
         x <- rev(x)
 
+    message("ratios ",x[2]," vs ",x[1])
     r <- estimateRatio(channel1=x[1],channel2=x[2],...)
     if (class(r)=="numeric") {
       r <- t(r)
