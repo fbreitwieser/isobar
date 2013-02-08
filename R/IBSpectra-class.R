@@ -520,6 +520,8 @@ normalize <- function(x,f=median,target="intensity",exclude.protein=NULL,
   if (!is.null(exclude.protein) & !is.null(use.protein))
     stop("Provide either exclude.protein or use.protein, not both.")
 
+  if (is.null(channels) && length(classLabels(x)) > 0)
+    channels <- reporterTagNames(x)[!is.na(classLabels(x))]
 
   if (!is.null(channels) ) {
     if (is.list(channels)) {
