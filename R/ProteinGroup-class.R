@@ -1281,34 +1281,22 @@ calc.startpos <- function(peptide.info,protein.info) {
 sequence.coverage <- function(protein.group,protein.g=reporterProteins(protein.group),
                               specificity=c("reporter-specific","group-specific","unspecific"),
                               simplify=TRUE,...) {
+
   if (!proteinInfoIsOnSpliceVariants(proteinInfo(protein.group)))
     warning("Protein information is not on splice variants - sequence coverage will be approximate only.")
 
+
   if ("length" %in% colnames(proteinInfo(protein.group)) && 
       "start.pos" %in% colnames(protein.group@peptideInfo)) {
+
+    if (all(is.na(protein.group@peptideInfo[,'start.pos']))) {
+      protein.group@peptideInfo <- calc.startpos(protein.group@peptideInfo,proteinInfo(protein.group))
+    }
     lengths <- proteinInfo(protein.group,protein.g=protein.g,select="length",simplify=FALSE)
     peptides <- peptides(protein.group,protein=protein.g,specificity=specificity,...)
     peptide.info <- subset(unique(protein.group@peptideInfo[,c("protein","peptide","start.pos")]),
                            peptide %in% peptides)
     protein.ac.wo.splice <- isobar:::.as.vect(protein.group@isoformToGeneProduct)
-
-    .calc.seqcov <- function(l,peptide.info) {
-      if (is.na(l))
-        return(NA)
-      seqq <- rep(FALSE,l)
-      peptide.info$peplength <- nchar(peptide.info$peptide)
-      peptide.info$end.pos <- peptide.info$start.pos+peptide.info$peplength-1
-      for (i_r in seq_len(nrow(peptide.info)))
-        seqq[seq(from=peptide.info[i_r,"start.pos"],to=peptide.info[i_r,"end.pos"])]  <- TRUE
-      return(sum(seqq)/length(seqq))
-    }
-
-    .simplify.seqcov <- function(seqcov) {
-      if (length(seqcov) > 1)
-        mean(seqcov,na.rm=TRUE)
-      else
-        seqcov
-    }
 
     res <- sapply(protein.g,function(p) {
              seqcov <- sapply(indistinguishableProteins(protein.group,protein.g=p),function(pp) {
@@ -1331,6 +1319,24 @@ sequence.coverage <- function(protein.group,protein.g=reporterProteins(protein.g
   }
 }
 
+.calc.seqcov <- function(length,peptide.info) {
+      if (is.na(length) || all(is.na(peptide.info$start.pos)))
+        return(NA)
+      seqq <- rep(FALSE,length)
+      peptide.info <- peptide.info[!is.na(peptide.info$start.pos),]
+      peptide.info$peplength <- nchar(peptide.info$peptide)
+      peptide.info$end.pos <- peptide.info$start.pos+peptide.info$peplength-1
+      for (i_r in seq_len(nrow(peptide.info)))
+        seqq[seq(from=peptide.info[i_r,"start.pos"],to=peptide.info[i_r,"end.pos"])]  <- TRUE
+      return(sum(seqq)/length(seqq))
+}
+
+.simplify.seqcov <- function(seqcov) {
+      if (length(seqcov) > 1)
+        mean(seqcov,na.rm=TRUE)
+      else
+        seqcov
+}
 
 
 calculate.dNSAF <- function(protein.group,use.mw=FALSE,normalize=TRUE,combine.f=mean) {
