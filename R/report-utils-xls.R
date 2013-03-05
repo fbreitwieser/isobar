@@ -120,7 +120,7 @@ write.xls.report <- function(report.type,properties.env,report.env,file="isobar-
     perl.cl <- paste(tab2spreadsheet.cmd," ",
                      ifelse(properties.env$use.name.for.report,sprintf("%s.quant",properties.env$name),"isobar-analysis"),
                      ".",properties.env$spreadsheet.format,
-                     " ':autofilter,freeze_col=3,name=Quantifications:",protein.quant.f,"'",
+                     " ':autofilter,freeze_col=9,name=Quantifications:",protein.quant.f,"'",
                      ifelse(identical(report.type,"peptide") && !is.null(modificationSites),
                             paste(" ':autofilter,freeze_col=3,name=Modification Sites:",modifsites.f,"'",sep=""),""),
                      " ':autofilter,freeze_col=3,name=Identifications:",protein.id.f,"'",
@@ -245,8 +245,8 @@ write.xls.report <- function(report.type,properties.env,report.env,file="isobar-
     for (cc in properties.env$xls.report.columns) {
       message("    adding column ",cc)
       res <- switch(cc,
-            log10.ratio =    .round.n.appendend.xls.tbl("lratio","log10.ratio"),
-            log2.ratio =     .round.n.appendend.xls.tbl("lratio","log2.ratio",f=function(x) x/log10(2)),
+            log10.ratio =    .round.n.appendend.xls.tbl("lratio","@conditional_formatting=3_color_scale@log10.ratio"),
+            log2.ratio =     .round.n.appendend.xls.tbl("lratio","@conditional_formatting=3_color_scale@log2.ratio",f=function(x) x/log10(2)),
             log10.variance = .append.xls.tbl("variance","log10.var"),
             log2.variance =  .append.xls.tbl("variance","log2.var",f=function(x) (sqrt(x)/log10(2)^2)),
             is.significant = .append.xls.tbl("is.significant"),
@@ -309,6 +309,7 @@ write.xls.report <- function(report.type,properties.env,report.env,file="isobar-
   tbl <- merge(pg.df,input.tbl[,c("peptide","modif","i","Spectra")],by=c("peptide","modif"),all.y=TRUE)
   tbl$peptide <- .convertPeptideModif(tbl[,"peptide"],tbl[,"modif"])
   colnames(tbl)[colnames(tbl)=="peptide"] <- "Sequence"
+  
   colnames(tbl)[colnames(tbl)=="proteins"] <- "ACs"
   colnames(tbl)[colnames(tbl)=="modif.pos"] <- 
     paste0("@comment=Absolute modification position in protein. Modifications in ",
