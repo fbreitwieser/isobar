@@ -11,7 +11,7 @@ create.reports <- function(properties.file="properties.R",
                                       args=args)
     assign("properties.env",properties.env,envir=.GlobalEnv)
   }
-  
+
   if (!exists("report.env")) {
     report.env <- .GlobalEnv
     initialize.env(report.env,report.type,properties.env)
@@ -468,7 +468,7 @@ property <- function(x, envir, null.ok=TRUE,class=NULL) {
       method <- "global"
     }
     #do.summarize <- method=="intraclass"
-    do.summarize <- FALSE
+    do.summarize <- properties.env$summarize
 
     if (identical(level,"peptide"))
       ratios.for.distr.fitting <- peptideRatios(env$ibspectra,noise.model=env$noise.model,do.warn=FALSE,
