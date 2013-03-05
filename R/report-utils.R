@@ -366,7 +366,8 @@ property <- function(x, envir, null.ok=TRUE,class=NULL) {
                 exclude.protein=property('normalize.exclude.protein',properties.env),
                 f=property('normalize.function',properties.env),
                 channels=property('normalize.channels',properties.env),
-                na.rm=property('normalize.na.rm',properties.env))
+                na.rm=property('normalize.na.rm',properties.env),
+                normalize.factors=property('normalize.factors',properties.env))
   }
 
   class.labels <- LETTERS[1:length(reporterTagNames(ibspectra))]

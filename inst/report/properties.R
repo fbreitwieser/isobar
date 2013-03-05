@@ -61,6 +61,7 @@ readIBSpectra.args = list(
 ## Quantification properties
 
 normalize=TRUE
+normalize.factors=NULL # if defined, normalize.factors will be used for normalization
 normalize.channels=NULL
 normalize.use.protein=NULL
 normalize.exclude.protein=NULL

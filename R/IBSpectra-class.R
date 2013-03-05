@@ -495,7 +495,8 @@ setMethod("correctIsotopeImpurities",signature(x="IBSpectra"),
 
 normalize <- function(x,f=median,target="intensity",exclude.protein=NULL,
                       use.protein=NULL,f.doapply=TRUE,log=TRUE,
-                      channels=NULL,na.rm=FALSE,per.file=TRUE,...){
+                      channels=NULL,na.rm=FALSE,per.file=TRUE,
+                      normalize.factors=NULL,...){
   
   ## NOTE: median normalizes might normalize too much when a lot of NA
   ##         values are present - mean or colSums better?
@@ -503,6 +504,23 @@ normalize <- function(x,f=median,target="intensity",exclude.protein=NULL,
   if (!is.logged(x,"isotopeImpurities.corrected")) 
     warning("Isotope impurity correction has not been logged",
             " - data might be uncorrected. See ?correctIsotopeImpurities.")
+
+  x <- do.log(x,"is.normalized",TRUE)
+  ## save original reporter intensities for noise estimation
+  if (is.null(assayDataElement(x,"ions_not_normalized")))
+    assayDataElement(x,"ions_not_normalized") <- reporterIntensities(x)
+
+
+  if (!is.null(normalize.factors)) {
+    reporterIntensities(x) <- reporterIntensities(x)/
+      rep(normalize.factors,each=nrow(reporterIntensities(x)))
+    for (i in seq_along(normalize.factors)) {
+      x <- do.log(x,paste("normalization.multiplicative.factor channel",
+                          colnames(reporterIntensities(x))[i]),
+                  round(normalize.factors[i],4))
+    }
+    return(x)
+  }
 
   if (per.file) {
     if (!.SPECTRUM.COLS['FILE'] %in% colnames(fData(x))) {
@@ -555,34 +573,29 @@ normalize <- function(x,f=median,target="intensity",exclude.protein=NULL,
   
   ## TODO: warning when ri is empty
 
-  x <- do.log(x,"is.normalized",TRUE)
-  ## save original reporter intensities for noise estimation
-  if (is.null(assayDataElement(x,"ions_not_normalized")))
-    assayDataElement(x,"ions_not_normalized") <- reporterIntensities(x)
-
   if (per.file && .SPECTRUM.COLS['FILE'] %in% colnames(fData(x))) {
     fd <- fData(x)
     for (n.file in sort(unique(fd[,.SPECTRUM.COLS['FILE']]))) {
       sel <- sel.na & fd[,.SPECTRUM.COLS['FILE']] == n.file
       message("\tnormalizing ",n.file," [",sum(sel)," spectra]")
       ri.sel <- ri[sel,,drop=FALSE]
-      factor <- .get.normalization.factors(ri.sel,f,target,f.doapply,...)
+      normalize.factors <- .get.normalization.factors(ri.sel,f,target,f.doapply,...)
       reporterIntensities(x)[sel,colnames(ri)] <- 
-        reporterIntensities(x)[sel,colnames(ri)]*rep(factor,each=sum(sel))
-      for (i in seq_along(factor)) {
+        reporterIntensities(x)[sel,colnames(ri)]/rep(normalize.factors,each=sum(sel))
+      for (i in seq_along(normalize.factors)) {
         x <- do.log(x,paste("normalization.multiplicative.factor file",n.file,"channel",colnames(ri)[i]),
-                    round(factor[i],4))
+                    round(normalize.factors[i],4))
       } 
     }
   } else {
-    factor <- .get.normalization.factors(ri[sel.na,,drop=FALSE],f,target,f.doapply,...)
+    normalize.factors <- .get.normalization.factors(ri[sel.na,,drop=FALSE],f,target,f.doapply,...)
     reporterIntensities(x)[,colnames(ri)] <- 
-      reporterIntensities(x)[,colnames(ri)]*
-      rep(factor,each=nrow(reporterIntensities(x)))
-    for (i in seq_along(factor)) {
+      reporterIntensities(x)[,colnames(ri)]/
+      rep(normalize.factors,each=nrow(reporterIntensities(x)))
+    for (i in seq_along(normalize.factors)) {
       x <- do.log(x,paste("normalization.multiplicative.factor channel",
                           colnames(ri)[i]),
-                  round(factor[i],4))
+                  round(normalize.factors[i],4))
     }
   }
   ## FIXME: logging a function for f does not work
@@ -611,7 +624,7 @@ normalize <- function(x,f=median,target="intensity",exclude.protein=NULL,
   else
     res <- apply(ri,2,f,na.rm=TRUE,...)
 
-  return(max(res,na.rm=T)/res)
+  return(res/max(res,na.rm=T))
  
 }
 
