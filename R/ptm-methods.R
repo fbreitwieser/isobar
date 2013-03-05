@@ -404,3 +404,40 @@ observedKnownSites <- function(protein.group,protein.g,ptm.info,modif,modificati
 }
 
 
+getPeptideModifContext <- function(protein.group,modif,n.aa.up=5,n.aa.down=5) {
+  
+  peptide.info <- unique(peptideInfo(protein.group)[,c('modif','protein','peptide')])
+  protein.sequences <- paste0(paste0(rep("_",n.aa.down),collapse=""),gsub("I","L",proteinInfo(protein.group)[,'sequence']),paste0(rep("_",n.aa.up),collapse="")) # enlarge sequence in case peptide starts in the beginning / end
+  names(protein.sequences) <- proteinInfo(protein.group)[,'accession']
+  
+  mapply(function(pepmodifs,protein.ac,pep) {
+    my.seq <- protein.sequences[protein.ac]
+    if (is.na(my.seq)) {
+      warning("No sequence for ",protein.ac)
+      return(NA)
+    }
+    
+    peptide.startpos <- gregexpr(pep,my.seq)[[1]]
+    if (peptide.startpos[1] == -1) {
+      warning("Peptide [",pep,"] could not be matched to ",protein.ac)
+      return(NA)    
+    }
+
+    pepmodifs[length(pepmodifs)] <- sub(" $","",pepmodifs[length(pepmodifs)])
+    modification.positions <- which(pepmodifs%in%modif)-1
+    if (length(modification.positions) == 0) 
+      return(NA)
+    
+    paste(sapply(peptide.startpos,function(pep.pos) {
+      modification.positions.in.protein <- pep.pos + modification.positions - 1
+      res <- paste(sapply(modification.positions.in.protein,function(pos) 
+                          substr(my.seq,pos-n.aa.down,pos+n.aa.up)),collapse=";")
+    
+      if (nchar(res) < n.aa.up+n.aa.down+1) 
+        stop("extracted pattern does not have the length it should have")
+      res
+    }),collapse=";")
+  },strsplit(paste0(peptide.info[,'modif']," "),":"),
+    peptide.info[,'protein'], 
+    peptide.info[,'peptide'])
+}
