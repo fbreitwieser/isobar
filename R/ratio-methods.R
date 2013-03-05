@@ -377,9 +377,28 @@ correct.peptide.ratios <- function(ibspectra, peptide.quant.tbl, protein.quant.t
 
   # map from peptides to protein group identifier
   pnp <- peptideNProtein(protein.group)
-  pnp <- pnp[pnp[,'protein.g'] %in% reporterProteins(protein.group),]
-  pnp <- unlist(tapply(.cn(pnp,"protein.g"),.cn(pnp,"peptide"),paste,collapse=";",simplify=FALSE))
-  peptide.quant.tbl[,'ac'] <- pnp[peptide.quant.tbl$peptide]
+  pi <- protein.group@peptideInfo
+  #pnp <- pnp[pnp[,'protein.g'] %in% reporterProteins(protein.group) & ,]
+  all.q.prots <- unique(protein.quant.tbl$ac)
+  n.quant <- table(protein.quant.tbl[!is.na(protein.quant.tbl[,'lratio']),'ac'])
+  q.protein.acs <- strsplit(all.q.prots,",")
+  pep.to.ac <- sapply(unique(peptide.quant.tbl$peptide),function(pep) {
+                              pep.prots <- pi[pi[,'peptide'] == pep,'protein']
+                              prots.ok <- sapply(q.protein.acs,function(q.prots) any(pep.prots %in% q.prots))
+                              if (sum(prots.ok) == 0) {
+                                message("could not map peptide ",pep,"!")
+                                ac <- "NA"
+                              } else if (sum(prots.ok) > 1) {
+                                n.quant.acs <- n.quant[all.q.prots[prots.ok]]
+                                ac <- names(n.quant.acs)[which.max(n.quant.acs)]
+                                message(pep," matches to multiple ACs: ", paste(all.q.prots[prots.ok],collapse=" & ")," [Using ",ac," with ",n.quant.acs[ac],"quantifications]")
+                              } else {
+                                ac <- all.q.prots[prots.ok]
+                              }
+                              return(ac)
+
+  })
+  peptide.quant.tbl[,'ac'] <- pep.to.ac[peptide.quant.tbl[,'peptide']]
 
   # merged peptide and protein quant table
   tbl <- merge(peptide.quant.tbl,protein.quant.tbl[,c("ac","r1","r2","lratio","variance","is.significant")],
@@ -1104,12 +1123,14 @@ ratiosReshapeWide <- function(quant.tbl,grouped.cols=TRUE,vs.class=NULL,sep=".",
     }
   }
   quant.tbl  <- quant.tbl[,-(c(which(colnames(quant.tbl) %in% c("r1","r2","class1","class2"))))]
-  v.names <- c("lratio","variance","n.spectra","p.value.rat","p.value.rat.adjusted","p.value.sample","is.significant","sd","n.na1","n.na2")
+  v.names <- c("lratio","lratio.modpep","lratio.prot","variance","variance.modpep","variance.prot","n.spectra",
+               "p.value.rat","p.value.rat.adjusted","p.value.sample",
+               "is.significant","is.significant.modpep","is.significant.prot","sd","n.na1","n.na2","n.pos","n.neg") # 
   v.names <- v.names[v.names %in% colnames(quant.tbl)]
-  if ("n.pos" %in% colnames(quant.tbl)) v.names <- c(v.names,"n.pos")
-  if ("n.neg" %in% colnames(quant.tbl)) v.names <- c(v.names,"n.neg")
   timevar <- "comp"
   idvar <- colnames(quant.tbl)[!colnames(quant.tbl) %in% c(timevar,v.names)]
+  if ("ac" %in% colnames(quant.tbl))
+    quant.tbl[is.na(quant.tbl[,"ac"]),"ac"] <- "NA"
 
   res <- reshape(quant.tbl,v.names=v.names,idvar=idvar,timevar=timevar,direction="wide",sep=sep)
   if (grouped.cols) {
