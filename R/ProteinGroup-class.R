@@ -644,7 +644,7 @@ proteinGroup.as.concise.data.frame <-
             # for each modified peptide, get one record summarizing its information
             merged.pepmodifs <- ddply(x,c("peptide","modif"),.summarize.pepmodif,modif.pos=modif.pos,ptm.info=ptm.info,from=from)
             data.frame(proteinn=paste(merged.splicevariants$ac,collapse=","),link=merged.splicevariants$link[1],merged.pepmodifs,stringsAsFactors=FALSE)
-        })
+        },.parallel=isTRUE(getOption('isobar.parallel')))
 
         #res <- ddply(merge(ip.df,in.df),c("peptide","modif"),
         res <- ddply(merge(ip.df,in.df),c("peptide","modif"),
@@ -678,7 +678,7 @@ proteinGroup.as.concise.data.frame <-
                                        res,stringsAsFactors=FALSE)
                        res
 
-                     })
+                     },.parallel=isTRUE(getOption('isobar.parallel')))
         #res$peptide <- .convertModifToPos(res$peptide,res$modif)
         return(unique(res))
 }

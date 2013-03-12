@@ -652,7 +652,7 @@ read.mzid <- function(f) {
     all.spectra <- split(all.spectra,col(all.spectra))
   
   ## extract information from each spectrum
-  result <- do.call(rbind,lapply(all.spectra,function(x) {
+  result <- ldply(all.spectra,function(x) {
     header <- .strsplit_vector(x[grep("^[A-Z]",x)],"=")
     numbers <- do.call(rbind,strsplit(x[grep("^1..\\.",x)],"\\s"))
     mzi.mass <- as.numeric(numbers[,1])
@@ -677,7 +677,7 @@ read.mzid <- function(f) {
       rr <- c(rr,rep(NA,nReporter*2))
     }
     return(rr)
-  }))
+  },.parallel=isTRUE(getOption('isobar.parallel')))
   rm(all.spectra)
   if (length(result) == 0 || nrow(result) == 0) {
     stop("error reading MGF file - could not parse masses and intensities.\n",
