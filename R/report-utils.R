@@ -627,7 +627,13 @@ property <- function(x, envir, null.ok=TRUE,class=NULL) {
     protein.group.table <- proteinGroupTable(protein.group)
     protein.groupnames <-unique(env$quant.tbl[,"ac"])
     ## if (is.null(protein.info)) { stop("protein info is null!")}                
-    my.protein.infos <- lapply(protein.groupnames, function(x) {
+    my.protein.infos <- llply(protein.groupnames, .do.create.protein.info,.parallel=isTRUE(getOption('isobar.parallel')),.progress='text')
+    names(my.protein.infos) <- protein.groupnames
+    return(my.protein.infos)
+  })
+}
+  
+.do.create.protein.info <- function(x) {
       allgroupmember <- indistinguishableProteins(protein.group, protein.g =
                                                   protein.group.table$protein.g[protein.group.table$reporter.protein%in%x])
      
@@ -660,12 +666,7 @@ property <- function(x, envir, null.ok=TRUE,class=NULL) {
            table.protein.name = tbl.protein.name,
            gene.name = paste(sort(unique(reporter.protein.info$gene_name)),collapse=", ")
            )
-    })
-    names(my.protein.infos) <- protein.groupnames
-    return(my.protein.infos)
-  })
-}
-  
+    }
 
 ## copys objects from env into parentenv.
 ## Those objects MUST exist in parentenv before.
