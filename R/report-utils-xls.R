@@ -305,6 +305,10 @@ write.xls.report <- function(report.type,properties.env,report.env,file="isobar-
   input.tbl$Spectra <- apply(input.tbl, 1, 
                              function(x) nrow(subset(fData(ibspectra),peptide==x['peptide'] & modif==x['modif'])))
   pg.df <- .proteinGroupAsConciseDataFrame(protein.group,modif.pos=ptm,ptm.info=ptm.info)
+  #if (isTRUE(properties.env$show.motifs)) {
+    pep.modif.context <- getPeptideModifContext(protein.group,modif=ptm)
+    pg.df <- merge(pg.df,pep.modif.context,by=c("peptide","modif"),all=TRUE)
+  #}
   
   tbl <- merge(pg.df,input.tbl[,c("peptide","modif","i","Spectra")],by=c("peptide","modif"),all.y=TRUE)
   tbl$peptide <- .convertPeptideModif(tbl[,"peptide"],tbl[,"modif"])
@@ -317,6 +321,7 @@ write.xls.report <- function(report.type,properties.env,report.env,file="isobar-
            "Stars denote positions which are annotated as phosphorylated in NextProt.@",
            my.ptm," Position")
 
+  tbl$start.pos <- NULL
   tbl$modif <- NULL
   tbl$pos <- NULL
   tbl$n.groups <- NULL
