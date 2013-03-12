@@ -480,6 +480,6 @@ getPeptideModifContext <- function(protein.group,modif,n.aa.up=5,n.aa.down=5) {
   print(head(context.df))
   ddply(context.df,
         c("peptide","modif"),
-        function(x) data.frame(peptide=x[1,'peptide'],modif=x[1,'modif'],context=paste(x[,'context'],collapse=";"),stringsAsFactors=FALSE)
+        function(x) data.frame(peptide=x[1,'peptide'],modif=x[1,'modif'],context=paste(x[,'context'],collapse=";"),stringsAsFactors=FALSE))
 
 }
