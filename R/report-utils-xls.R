@@ -158,7 +158,8 @@ write.xls.report <- function(report.type,properties.env,report.env,file="isobar-
     else
       res.tbl <- .create.xls.peptide.quant.tbl(tbl.input,env$ibspectra,
                                            properties.env$ptm,env$ptm.info)
-    
+ 
+    message(" adding quantification columns")   
     tbl <- .add.quant.to.xls.tbl(env,properties.env,res.tbl[[1]],res.tbl[[2]],compare.to.quant)
     
     #order.c <- if(isTRUE(properties.env$xls.report.format=="long"),"Channels",NULL)
@@ -179,8 +180,8 @@ write.xls.report <- function(report.type,properties.env,report.env,file="isobar-
   if (!is.null(cc.new)) colnames(data.cc) <- gsub(cc,cc.new,colnames(data.cc))
   data.cc
 }
-.add.quant.to.xls.tbl <- function(env,properties.env,tbl,input.tbl,compare.to.quant=NULL) {
 
+.add.quant.to.xls.tbl <- function(env,properties.env,tbl,input.tbl,compare.to.quant=NULL) {
   # Add quantification columns from compare.to.quant
   if (!is.null(compare.to.quant)){
     if (!"ac" %in% colnames(input.tbl)) {
@@ -222,7 +223,7 @@ write.xls.report <- function(report.type,properties.env,report.env,file="isobar-
     if ("zscore" %in% properties.env$xls.report.columns) {
       ## TODO: zscore is calculated across all classes - 
       ##       it is probably more appropriate to calculate it individual for each class
-      input.tbl$zscore <- .calc.zscore(input.tbl$lratio)
+      input.tbl[,'zscore'] <- .calc.zscore(input.tbl[,'lratio'])
     }
     round.digits <- 4;
 
@@ -326,6 +327,7 @@ write.xls.report <- function(report.type,properties.env,report.env,file="isobar-
 
 .create.xls.protein.quant.tbl <- function(input.tbl,protein.group,
                                           specificity=c(GROUPSPECIFIC,REPORTERSPECIFIC)) {
+
   indist.proteins <- indistinguishableProteins(protein.group)
   input.tbl$i  <- seq_len(nrow(input.tbl))
 
@@ -333,7 +335,7 @@ write.xls.report <- function(report.type,properties.env,report.env,file="isobar-
                       length(proteinInfo(protein.group)) > 0
 
   .getProteinInfo <- function(name) 
-    proteinInfo(protein.group,input.tbl[,"ac"],select=name,do.warn=FALSE)
+    proteinInfo(protein.group,protein.g=input.tbl[,"ac"],select=name,do.warn=FALSE)
 
   ## creating xls protein table
   tbl <- data.frame(i=input.tbl$i, group=input.tbl[,"group"],
