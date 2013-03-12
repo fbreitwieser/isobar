@@ -464,7 +464,7 @@ getPtmInfoFromPhosphoSitePlus <- function(protein.group,file.name=NULL,modif="PH
 
   sites <- read.delim(file.name,
                       sep="\t",header=TRUE,skip=3,stringsAsFactors=FALSE)
-  sites <- sites[sites$ACC. %in% names(indistinguishableProteins(protein.group)),]
+  sites <- sites[gsub("-.*","",sites$ACC.) %in% gsub("-.*","",names(indistinguishableProteins(protein.group))),]
 
   sites$PUBMED_LTP[!is.na(sites$PUBMED_LTP)] <- paste("n.publ ltp:",sites$PUBMED_LTP[!is.na(sites$PUBMED_LTP)])
   sites$PUBMED_MS2[!is.na(sites$PUBMED_MS2)] <- paste("n.publ htp:",sites$PUBMED_MS2[!is.na(sites$PUBMED_MS2)])
