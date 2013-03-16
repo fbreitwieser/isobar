@@ -8,6 +8,8 @@ import("distr")
 
 # EXPORT
 exportClasses(IBSpectra,ProteinGroup)
+S3method(as.data.frame, IBSpectra)
+S3method(as.data.frame, ProteinGroup)
 exportMethods("as.data.frame")
 
 export(IBSpectraTypes)

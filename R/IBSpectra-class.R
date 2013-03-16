@@ -235,9 +235,14 @@ ibSpectra.as.concise.data.frame  <- function(from) {
   res.nice[order(res$AC,res$Sequence,res$modif),]
 }
 
-setMethod("as.data.frame",signature(x="IBSpectra"), 
-		function(x, row.names=NULL, optional=FALSE, ...) as(x,"data.frame"))
+as.data.frame.IBSpectra <-
+    function(x, row.names=NULL, optional=FALSE, ...)
+{
+    as(x, "data.frame")
+}
 
+setMethod("as.data.frame",signature(x="IBSpectra"),
+          as.data.frame.IBSpectra)
 
 ### - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 ### Accessor-like methods.

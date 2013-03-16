@@ -511,8 +511,15 @@ getPtmInfoFromNextprot <- function(protein.group,
 ###
 
 setAs("data.frame","ProteinGroup",function(from) ProteinGroup(from))
+
+as.data.frame.ProteinGroup <-
+    function(x, row.names=NULL, optional=FALSE, ...)
+{
+    as(x, "data.frame")
+}
+
 setMethod("as.data.frame",signature(x="ProteinGroup"),
-          function(x, row.names=NULL, optional=FALSE, ...) as(x,"data.frame"))
+          as.data.frame.ProteinGroup)
 
 setAs("ProteinGroup","data.frame",function(from) {
   sp.df <- from@spectrumId
