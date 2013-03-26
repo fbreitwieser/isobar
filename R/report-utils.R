@@ -467,8 +467,10 @@ property <- function(x, envir, null.ok=TRUE,class=NULL) {
       message(" WARNING: ratiodistr will be computed based on global ratios")
       method <- "global"
     }
-    if (!any(table(class.labels)>2))
+    if (any(table(properties.env$class.labels)>2))
       do.summarize <- properties.env$summarize
+    else
+      do.summarize <- FALSE
 
     if (identical(level,"peptide"))
       ratios.for.distr.fitting <- peptideRatios(env$ibspectra,noise.model=env$noise.model,do.warn=FALSE,
