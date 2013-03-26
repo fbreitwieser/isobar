@@ -624,18 +624,19 @@ property <- function(x, envir, null.ok=TRUE,class=NULL) {
                   f=function() {
 
     protein.group <- proteinGroup(env$ibspectra)
-    protein.group.table <- proteinGroupTable(protein.group)
     protein.groupnames <-unique(env$quant.tbl[,"ac"])
     ## if (is.null(protein.info)) { stop("protein info is null!")}                
-    my.protein.infos <- llply(protein.groupnames, .do.create.protein.info,.parallel=isTRUE(getOption('isobar.parallel')),.progress='text')
+    my.protein.infos <- llply(protein.groupnames, .do.create.protein.info, protein.group=protein.group, .parallel=isTRUE(getOption('isobar.parallel')))
+    #my.protein.infos <- lapply(protein.groupnames, .do.create.protein.info, protein.group=protein.group)
     names(my.protein.infos) <- protein.groupnames
     return(my.protein.infos)
   })
 }
   
-.do.create.protein.info <- function(x) {
+.do.create.protein.info <- function(x,protein.group) {
+    protein.group.table <- proteinGroupTable(protein.group)
       allgroupmember <- indistinguishableProteins(protein.group, protein.g =
-                                                  protein.group.table$protein.g[protein.group.table$reporter.protein%in%x])
+                                                  protein.group.table[protein.group.table[,'reporter.protein'] %in% x,"protein.g"])
      
       reporter.protein.info <- my.protein.info(protein.group,x)
       collapsed.gene_name <- human.protein.names(reporter.protein.info)
@@ -646,8 +647,8 @@ property <- function(x, envir, null.ok=TRUE,class=NULL) {
                               specificity=REPORTERSPECIFIC,do.warn=FALSE)
       n.spectra <- length(names(spectrumToPeptide(protein.group))[spectrumToPeptide(protein.group)%in%peptides])
       
-      tbl.protein.name <- sort(collapsed.gene_name$protein_name)[1];
-      if (length(unique(collapsed.gene_name$protein_name)) > 1)
+      tbl.protein.name <- sort(collapsed.gene_name[,'protein_name'])[1];
+      if (length(unique(collapsed.gene_name[,'protein_name'])) > 1)
         tbl.protein.name <- paste(tbl.protein.name,", ...",sep="")
       
       list(n.reporter = nrow(reporter.protein.info),
@@ -657,14 +658,14 @@ property <- function(x, envir, null.ok=TRUE,class=NULL) {
            n.spectra=n.spectra,
            collapsed.gene_name = collapsed.gene_name,
            table.name = ifelse(
-             length(collapsed.gene_name$ac_link)>3,
-             paste(paste(collapsed.gene_name$ac_link[1:3],collapse=", "),
+             length(collapsed.gene_name[,'ac_link'])>3,
+             paste(paste(collapsed.gene_name[1:3,'ac_link'],collapse=", "),
                    ", \\dots",sep=""),
-             paste(collapsed.gene_name$ac_link,collapse=", ")),
-           section.name = sanitize(paste(collapsed.gene_name$name_nolink,
+             paste(collapsed.gene_name[,'ac_link'],collapse=", ")),
+           section.name = sanitize(paste(collapsed.gene_name[,'name_nolink'],
              collapse=", ")),
            table.protein.name = tbl.protein.name,
-           gene.name = paste(sort(unique(reporter.protein.info$gene_name)),collapse=", ")
+           gene.name = paste(sort(unique(reporter.protein.info[,'gene_name'])),collapse=", ")
            )
     }
 
