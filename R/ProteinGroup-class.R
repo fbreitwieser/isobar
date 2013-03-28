@@ -1176,13 +1176,15 @@ groupMemberPeptides <- function(x,reporter.protein.g,
 
 
 human.protein.names <- function(my.protein.info) {
-  df <- my.protein.info[,c("accession","splicevariant","gene_name","protein_name")]
-  df$gene_name <- sanitize(df$gene_name)
-  collapsed.splicevariant <- ddply(df,"accession",function(x) {
+  my.df <- my.protein.info[,c("accession","splicevariant","gene_name","protein_name")]
+  my.df$gene_name <- sanitize(my.df$gene_name)
+  collapsed.splicevariant <- ddply(my.df,"accession",function(x) {
         only_one <- nrow(x) == 1
         x$splicevariant <- number.ranges(x$splicevariant)
         x <- unique(x)
-        if (nrow(x) > 1) stop("something went wrong: ",x)
+        if (nrow(x) > 1) 
+          x <- as.data.frame(lapply(x,function(y) paste(y[!is.na(y)],collapse=",")),stringsAsFactors=FALSE)
+        
         if (is.na(x$splicevariant)) {
           x$ac_link <- sprintf("\\uniprotlink{%s}",sanitize(x$accession,dash=FALSE))
           x$ac_nolink <-  x$accession
@@ -1607,14 +1609,14 @@ calculate.emPAI <- function(protein.group,protein.g=reporterProteins(protein.gro
   sapply(proteins,function(prots) {
          ## consider ACs with -[0-9]*$ as splice variants (ACs w/ more than one dash are not considered)
          pos.splice <- grepl("^[^-]*-[0-9]*$",prots)
-         df <- data.frame(protein=prots,accession=prots,splice=0,stringsAsFactors=FALSE)
+         my.df <- data.frame(protein=prots,accession=prots,splice=0,stringsAsFactors=FALSE)
 
          if (any(pos.splice))
-           df[pos.splice,c("accession","splice")] <- 
+           my.df[pos.splice,c("accession","splice")] <- 
              do.call(rbind,strsplit(prots[pos.splice],"-"))
 
          res <- 
-           ddply(df,"accession",function(y) {
+           ddply(my.df,"accession",function(y) {
                  if(sum(y$splice>0) <= 1)
                    return(data.frame(protein=unique(y$protein)))
                  else 
