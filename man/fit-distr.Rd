@@ -37,6 +37,7 @@ fitTlsd(x)
   \link{proteinRatios}
 }
 \examples{
+set.seed(123)
 library(distr)
 data(ibspiked_set1)
 data(noise.model.hcd)
