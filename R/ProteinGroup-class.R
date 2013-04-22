@@ -861,6 +861,9 @@ setMethod("peptides",signature(x="ProteinGroup",protein="character"),
              groupspecific.if.same.ac=FALSE,do.warn=TRUE,
              modif=NULL) {
 
+      if (!all(specificity %in% c(UNSPECIFIC,GROUPSPECIFIC,REPORTERSPECIFIC)))
+        stop("specificity should be one or more of ['",REPORTERSPECIFIC,"','",GROUPSPECIFIC,"','",REPORTERSPECIFIC,"']")
+
       pnp <- peptideNProtein(x)
       ps <- peptideSpecificity(x)
       pi <- merge(peptideInfo(x),peptideSpecificity(x),by="peptide")
@@ -1392,6 +1395,10 @@ sequence.coverage <- function(protein.group,protein.g=reporterProteins(protein.g
       peptide.info <- peptide.info[!is.na(peptide.info$start.pos),]
       peptide.info$peplength <- nchar(peptide.info$peptide)
       peptide.info$end.pos <- peptide.info$start.pos+peptide.info$peplength-1
+      if (any(peptide.info[,'end.pos']>length)) {
+        warning(".calc.seqcov: peptides present which span over the protein length, removing them")
+        peptide.info <- peptide.info[peptide.info[,'end.pos'] <= length,]
+      }
       for (i_r in seq_len(nrow(peptide.info)))
         seqq[seq(from=peptide.info[i_r,"start.pos"],to=peptide.info[i_r,"end.pos"])]  <- TRUE
       return(sum(seqq)/length(seqq))
