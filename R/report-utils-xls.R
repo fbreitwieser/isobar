@@ -223,7 +223,7 @@ write.xls.report <- function(report.type,properties.env,report.env,file="isobar-
     if ("zscore" %in% properties.env$xls.report.columns) {
       ## TODO: zscore is calculated across all classes - 
       ##       it is probably more appropriate to calculate it individual for each class
-      input.tbl[,'zscore'] <- .calc.zscore(input.tbl[,'lratio'])
+      #input.tbl[,'zscore'] <- .calc.zscore(input.tbl[,'lratio'])
     }
     round.digits <- 4;
 

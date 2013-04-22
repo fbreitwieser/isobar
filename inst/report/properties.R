@@ -110,6 +110,7 @@ min.detect=NULL
 
 preselected=c()
 
+
 ### Biological Variability Ratio Distribution options
 ## ratiodistr can be set to a file or a 'Distribution object. '
 ##  If NULL, or the specified file is not existent, the biological variability 
@@ -125,6 +126,10 @@ ratiodistr.class.labels=NULL
 
 ## Function for fitting. Available: fitCauchy, fitTlsd
 ratiodistr.fitting.f=fitCauchy
+
+## If defined, use z-score instead of ratio distribution
+# zscore.threshold=2.5
+zscore.threshold=NULL
 
 ###############################################################################
 ## PTM properties

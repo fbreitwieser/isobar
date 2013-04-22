@@ -550,6 +550,7 @@ property <- function(x, envir, null.ok=TRUE,class=NULL) {
                        summarize=property('summarize',properties.env),
                        cmbn=property('cmbn',properties.env),
                        use.na=property('use.na',properties.env),
+                       zscore.threshold=properties.env$zscore.threshold,
                        do.warn=FALSE))
 
     if (!is.null(property('correct.peptide.ratios.with',properties.env))) {

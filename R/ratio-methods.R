@@ -1150,7 +1150,7 @@ proteinRatios <-
            summarize=FALSE,summarize.method="mult.pval",
            min.detect=NULL,strict.sample.pval=TRUE,strict.ratio.pval=TRUE,orient.div=0,
            sign.level=0.05,sign.level.rat=sign.level,sign.level.sample=sign.level,
-           ratiodistr=NULL,variance.function="maxi",
+           ratiodistr=NULL,zscore.threshold=NULL,variance.function="maxi",
            combine=FALSE,p.adjust=NULL,reverse=FALSE,
            cmbn=NULL,before.summarize.f=NULL,...) {
 
@@ -1221,6 +1221,11 @@ proteinRatios <-
                            variance.function=variance.function,
                            ratiodistr=ratiodistr)
   }
+
+  ratios[,'zscore'] <- .calc.zscore(ratios[,'lratio'])
+  if (!is.null(zscore.threshold))
+    ratios[,'is.significant'] <- ratios[,'p.value.rat'] < sign.level.rat & abs(ratios[,'zscore']) > zscore.threshold
+
 
   if (!is.null(p.adjust)) 
     ratios <- adjust.ratio.pvalue(ratios,p.adjust,sign.level.rat)
