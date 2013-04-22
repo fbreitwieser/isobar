@@ -621,7 +621,7 @@ correct.peptide.ratios <- function(ibspectra, peptide.quant.tbl, protein.quant.t
 
 estimateRatioForProtein <- function(protein,ibspectra,noise.model,channel1,channel2,
         combine=TRUE,method="isobar",specificity=REPORTERSPECIFIC,quant.w.grouppeptides=NULL,...) {
-      message("parallel processing: ",isTRUE(getOption('isobar.parallel')))
+      #message("parallel processing: ",isTRUE(getOption('isobar.parallel')))
       if (combine) {
         if (method == "multiq" || method == "libra" || method=="pep") {
           ## first compute peptide ratios, summarize then
