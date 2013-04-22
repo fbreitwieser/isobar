@@ -68,6 +68,8 @@ normalize.exclude.protein=NULL
 normalize.function=median
 normalize.na.rm=FALSE
 
+peptide.specificity=REPORTERSPECIFIC
+
 use.na=FALSE
 
 ## the parameter noise.model can be either a NoiseModel object or a file name

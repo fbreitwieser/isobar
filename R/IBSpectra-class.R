@@ -493,8 +493,9 @@ setMethod("correctIsotopeImpurities",signature(x="IBSpectra"),
     }
 )
 
-normalize <- function(x,f=median,target="intensity",exclude.protein=NULL,
-                      use.protein=NULL,f.doapply=TRUE,log=TRUE,
+normalize <- function(x,f=median,target="intensity",
+                      exclude.protein=NULL, use.protein=NULL, peptide.specificity=NULL,
+                      f.doapply=TRUE,log=TRUE,
                       channels=NULL,na.rm=FALSE,per.file=TRUE,
                       normalize.factors=NULL,...){
   
@@ -545,7 +546,8 @@ normalize <- function(x,f=median,target="intensity",exclude.protein=NULL,
     if (is.list(channels)) {
       for (channels.set in channels)
         x <- normalize(x,f=f,target=target,exclude.protein=exclude.protein,
-                       use.protein=use.protein,f.doapply=f.doapply,
+                       use.protein=use.protein,peptide.specificity=peptide.specificity,
+                       f.doapply=f.doapply,
                        log=log,channels=channels.set,na.rm=na.rm,...)
       return(x)
     } else {
@@ -561,10 +563,11 @@ normalize <- function(x,f=median,target="intensity",exclude.protein=NULL,
   
   if (!is.null(exclude.protein))
     ri <- ri[!spectrumSel(x,protein=exclude.protein,
-                          specificity=c(REPORTERSPECIFIC,GROUPSPECIFIC,UNSPECIFIC)),]
+                          specificity=if(is.null(peptide.specificity)) c(REPORTERSPECIFIC,GROUPSPECIFIC,UNSPECIFIC) else peptide.specificity),]
   
-  if (!is.null(use.protein))
-    ri <- ri[spectrumSel(x,protein=use.protein,specificity=REPORTERSPECIFIC),]
+  if (!is.null(use.protein)) {
+    ri <- ri[spectrumSel(x,protein=use.protein,
+                         specificity=if(is.null(peptide.specificity)) REPORTERSPECIFIC else peptide.specificity),]
 
   if (na.rm) 
     sel.na <- apply(!is.na(ri),1,all)
