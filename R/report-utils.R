@@ -364,6 +364,7 @@ property <- function(x, envir, null.ok=TRUE,class=NULL) {
       normalize(ibspectra,
                 use.protein=property('normalize.use.protein',properties.env),
                 exclude.protein=property('normalize.exclude.protein',properties.env),
+                peptide.specificity=property('peptide.specificity',properties.env),
                 f=property('normalize.function',properties.env),
                 channels=property('normalize.channels',properties.env),
                 na.rm=property('normalize.na.rm',properties.env),
@@ -626,10 +627,10 @@ property <- function(x, envir, null.ok=TRUE,class=NULL) {
   .create.or.load("my.protein.infos",envir=properties.env,
                   f=function() {
 
-    protein.group <- proteinGroup(env$ibspectra)
     protein.groupnames <-unique(env$quant.tbl[,"ac"])
     ## if (is.null(protein.info)) { stop("protein info is null!")}                
-    my.protein.infos <- llply(protein.groupnames, .do.create.protein.info, protein.group=protein.group, .parallel=isTRUE(getOption('isobar.parallel')))
+    my.protein.infos <- llply(protein.groupnames, .do.create.protein.info, protein.group=proteinGroup(env$ibspectra), 
+                              .parallel=isTRUE(getOption('isobar.parallel')))
     #my.protein.infos <- lapply(protein.groupnames, .do.create.protein.info, protein.group=protein.group)
     names(my.protein.infos) <- protein.groupnames
     return(my.protein.infos)
