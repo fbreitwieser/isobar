@@ -565,7 +565,7 @@ normalize <- function(x,f=median,target="intensity",
     ri <- ri[!spectrumSel(x,protein=exclude.protein,
                           specificity=if(is.null(peptide.specificity)) c(REPORTERSPECIFIC,GROUPSPECIFIC,UNSPECIFIC) else peptide.specificity),]
   
-  if (!is.null(use.protein)) {
+  if (!is.null(use.protein)) 
     ri <- ri[spectrumSel(x,protein=use.protein,
                          specificity=if(is.null(peptide.specificity)) REPORTERSPECIFIC else peptide.specificity),]
 
