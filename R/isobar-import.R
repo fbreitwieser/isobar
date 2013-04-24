@@ -251,8 +251,11 @@ setGeneric("readIBSpectra", function(type,id.file,peaklist.file,...)
 
 setMethod("readIBSpectra",
           signature(type="character",id.file="character",peaklist.file="missing"),
-    function(type,id.file,header=TRUE,sep="\t",stringsAsFactors=FALSE,...) {
-      new(type,identifications=.read.idfile(id.file,header=header,sep=sep,stringsAsFactors=stringsAsFactors),...)
+    function(type,id.file,stringsAsFactors=FALSE,
+             identifications.format=NULL,header=TRUE,sep="\t",decode.titles=TRUE,trim.titles=FALSE,...) {
+      new(type,identifications=.read.idfile(id.file,stringsAsFactors=stringsAsFactors,
+                                            identifications.format=identifications.format,header=header,sep=sep,
+                                            decode.titles=decode.titles,trim.titles=trim.titles),...)
     }
 )
 setMethod("readIBSpectra",
@@ -263,13 +266,13 @@ setMethod("readIBSpectra",
 setMethod("readIBSpectra",
           signature(type="character",id.file="character",peaklist.file="character"),
     function(type,id.file,peaklist.file,header=TRUE,sep="\t",stringsAsFactors=FALSE,
-             mapping.file=NULL,mapping=c(peaklist="even",id="odd"),
-             id.file.domap=NULL,id.format=NULL,decode.titles=TRUE,...) {
+             mapping.file=NULL,mapping=c(quantification.spectrum = "hcd",identification.spectrum = "cid"),
+             id.file.domap=NULL,identifications.format=NULL,decode.titles=TRUE,...) {
       
       id.data <- .read.identifications(id.file,header=header,sep=sep,stringsAsFactors=stringsAsFactors,
                                        mapping=mapping.file,mapping.names=mapping,
                                        identifications.quant=id.file.domap,
-                                       identifications.format=id.format,decode.titles=decode.titles)
+                                       identifications.format=identifications.format,decode.titles=decode.titles)
 
       readIBSpectra(type,id.data,peaklist.file,...)
 })
@@ -297,7 +300,7 @@ setMethod("readIBSpectra",
 ##' 'peaklist' and 'id' spectra.
 ##' @param mapping.file.readopts 
 ##' @param peaklist.format 
-##' @param id.format 
+##' @param identifications.format 
 ##' @return IBSpectra object of type 
 ##' @author Florian P Breitwieser
 setMethod("readIBSpectra",
@@ -738,7 +741,7 @@ read.mzid <- function(f) {
       else
         stop(paste("cannot parse file ",f," - cannot deduce format based on extenstion (it is not ibspectra.csv, id.csv, peptides.txt or mzid). Please provide id.format to readIBSpectra",sep=""))
     } else {
-      id.format.f <- id.format
+      id.format.f <- identifications.format
     }
     
     if (id.format.f == "ibspectra.csv") {

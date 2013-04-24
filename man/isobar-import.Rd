@@ -26,9 +26,11 @@
 
 # reads id file
 \S4method{readIBSpectra}{character,character,character}(
-             type, id.file, peaklist.file, mapping.file = NULL,
-             mapping = c(peaklist = "even", id = "odd"),
-             id.file.domap = NULL, identifications.format = NULL, decode.titles = TRUE, ...)
+                type, id.file, peaklist.file, header = TRUE, sep =
+                 "\t", stringsAsFactors = FALSE, mapping.file = NULL,
+                 mapping = c(quantification.spectrum="hcd",identification.spectrum="cid"),
+                 id.file.domap = NULL, identifications.format = NULL,
+                 decode.titles = TRUE, ...)
 
 # reads peaklist file
 \S4method{readIBSpectra}{character,data.frame,character}(
@@ -117,6 +119,9 @@
     Read files sequentially scan.lines lines at a time. Can help in
     case of memory issues, set to 10000 or higher, for example.
   }
+  \item{header}{header argument of read.table}
+  \item{stringsAsFactors}{stringsAsFactors argument of read.table}
+  \item{sep}{sep argument of read.table}
   \item{\dots}{
     Further arguments handed down to \code{initialize}.
   }
