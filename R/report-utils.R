@@ -666,7 +666,7 @@ property <- function(x, envir, null.ok=TRUE,class=NULL) {
              paste(paste(collapsed.gene_name[1:3,'ac_link'],collapse=", "),
                    ", \\dots",sep=""),
              paste(collapsed.gene_name[,'ac_link'],collapse=", ")),
-           section.name = sanitize(paste(collapsed.gene_name[,'name_nolink'],
+           section.name = sanitize(paste(unique(collapsed.gene_name[,'name_nolink']),
              collapse=", ")),
            table.protein.name = tbl.protein.name,
            gene.name = paste(sort(unique(reporter.protein.info[,'gene_name'])),collapse=", ")

@@ -1183,6 +1183,9 @@ human.protein.names <- function(my.protein.info) {
   my.df$gene_name <- sanitize(my.df$gene_name)
   collapsed.splicevariant <- ddply(my.df,"accession",function(x) {
         only_one <- nrow(x) == 1
+        if (!all(is.na(x$splicevariant)) & any(!is.na(x$splicevariant)))
+          x$splicevariant[is.na(x$splicevariant)] <- 1
+
         x$splicevariant <- number.ranges(x$splicevariant)
         x <- unique(x)
         if (nrow(x) > 1) 
@@ -1205,13 +1208,13 @@ human.protein.names <- function(my.protein.info) {
     collapsed.gene_name <- ddply(
           unique(collapsed.splicevariant[,c("gene_name","ac_link","ac_nolink","protein_name")]),
           "gene_name",function(x) {
-        if (is.na(x$gene_name) || x$gene_name == "") {
+        if (is.na(x$gene_name[1]) || x$gene_name[1] == "") {
           x$name_nolink <- x$ac_nolink
         } else {
           x$ac_link_bold <- sprintf("\\textbf{%s}: %s",unique(x$gene_name),x$ac_link)
           x$ac_link <- sprintf("%s: %s",unique(x$gene_name),x$ac_link)
           x$ac_nolink <- sprintf("%s: %s",unique(x$gene_name),x$ac_nolink)
-          x$name_nolink <- sprintf("%s: %s",unique(x$gene_name),unique(x$protein_name))
+          x$name_nolink <- sprintf("%s: %s",x$gene_name,x$protein_name)
         }
         return(unique(x))
     })
