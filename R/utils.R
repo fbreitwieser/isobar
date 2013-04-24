@@ -42,6 +42,15 @@ if(!isGeneric("as.data.frame")) setGeneric("as.data.frame", useAsDefault=as.data
   df
 }
 
+.names.as.vector <- function(x) {
+  if (!is.null(names(x)))
+    vec <- names(x)
+  else 
+    vec <- x
+  names(vec) <- x
+  vec
+}
+
 # from Gavin Simpson [http://stackoverflow.com/questions/9788026/change-the-order-of-columns]
 .moveToFirstCol <- function(df, colname) {
   cnams <- colnames(df)

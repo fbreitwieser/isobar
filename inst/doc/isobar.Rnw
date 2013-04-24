@@ -438,7 +438,7 @@ rat.list <-
   estimateRatio(ibspiked_set1,noise.model=noise.model,channel1="114",channel2="115",
                 protein=reporterProteins(proteinGroup(ibspiked_set1)),combine=F,
                 ratiodistr=protein.ratiodistr.cauchy)
-rat.list[na.omit(rat.list[,"is.significant"]==1),]
+rat.list[rat.list[,"is.significant"]==1,]
 @
 
 \subsection{Detection of proteins with no specific peptides}

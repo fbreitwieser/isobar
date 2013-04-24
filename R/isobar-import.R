@@ -23,7 +23,8 @@
   # handle missing columns
   if (length(missing.cols) > 0) {
       msg <- paste("not all required columns in identifications, the following are missing: \n\t",
-               paste(missing.cols,collapse="\n\t"))
+               paste(missing.cols,collapse="\n\t"),
+               "\nData:\n",paste(capture.output(print(head(identifications))),collapse="\n"))
       if (allow.missing.columns) {
           warning(msg)
           identifications[,missing.cols] <- NA
@@ -68,9 +69,7 @@
   if (!identical(spectra.ids,rownames(data.ions))) {
     id.n.quant <- intersect(spectra.ids,rownames(data.mass))
     id.not.quant <- setdiff(spectra.ids,rownames(data.mass))
-    quant.not.id <- setdiff(rownames(data.mass),rownames(data))
-    print(head(data.ions))
-    print(head(spectra.ids))
+    quant.not.id <- setdiff(rownames(data.mass),spectra.ids)
 
     if (length(id.n.quant)==0) stop("No spectra could be matched between identification and quantifications")
     
@@ -252,16 +251,11 @@ setGeneric("readIBSpectra", function(type,id.file,peaklist.file,...)
 
 setMethod("readIBSpectra",
           signature(type="character",id.file="character",peaklist.file="missing"),
-    function(type,id.file,...) {
-      ll <- lapply(seq_along(id.file),function(i) {
-                   message("\treading ",id.file[i])
-                   df <- read.table(id.file[i],header=T,sep="\t")
-                   df[,.SPECTRUM.COLS['FILE']]  <- id.file[i]
-                   if (!is.null(names(id.file)))
-                     df[,.SPECTRUM.COLS['SAMPLE']]  <- names(id.file)[i]
-                   df
-            })
-      new(type,identifications=do.call(rbind,ll),...)
+    function(type,id.file,stringsAsFactors=FALSE,
+             identifications.format=NULL,header=TRUE,sep="\t",decode.titles=TRUE,trim.titles=FALSE,...) {
+      new(type,identifications=.read.idfile(id.file,stringsAsFactors=stringsAsFactors,
+                                            identifications.format=identifications.format,header=header,sep=sep,
+                                            decode.titles=decode.titles,trim.titles=trim.titles),...)
     }
 )
 setMethod("readIBSpectra",
@@ -271,15 +265,16 @@ setMethod("readIBSpectra",
 
 setMethod("readIBSpectra",
           signature(type="character",id.file="character",peaklist.file="character"),
-    function(type,id.file,peaklist.file,
-             mapping.file=NULL,mapping=c(peaklist="even",id="odd"),
-             id.file.domap=NULL,id.format=NULL,decode.titles=TRUE,...) {
+    function(type,id.file,peaklist.file,header=TRUE,sep="\t",stringsAsFactors=FALSE,
+             mapping.file=NULL,mapping=c(quantification.spectrum = "hcd",identification.spectrum = "cid"),
+             id.file.domap=NULL,identifications.format=NULL,decode.titles=TRUE,...) {
       
-      data <- .read.identifications(id.file,mapping=mapping.file,mapping.names=mapping,
-                                    identifications.quant=id.file.domap,
-                                    identifications.format=id.format,decode.titles=decode.titles)
+      id.data <- .read.identifications(id.file,header=header,sep=sep,stringsAsFactors=stringsAsFactors,
+                                       mapping=mapping.file,mapping.names=mapping,
+                                       identifications.quant=id.file.domap,
+                                       identifications.format=identifications.format,decode.titles=decode.titles)
 
-      readIBSpectra(type,data,peaklist.file,...)
+      readIBSpectra(type,id.data,peaklist.file,...)
 })
 
 
@@ -305,7 +300,7 @@ setMethod("readIBSpectra",
 ##' 'peaklist' and 'id' spectra.
 ##' @param mapping.file.readopts 
 ##' @param peaklist.format 
-##' @param id.format 
+##' @param identifications.format 
 ##' @return IBSpectra object of type 
 ##' @author Florian P Breitwieser
 setMethod("readIBSpectra",
@@ -317,13 +312,17 @@ setMethod("readIBSpectra",
       
       log <- data.frame(key=c(),message=c())
 
-      data <- id.file
+      id.data <- id.file
       if (is.function(annotate.spectra.f)) {
-        data <- annotate.spectra.f(data,peaklist.file)
+        id.data <- annotate.spectra.f(id.data,peaklist.file)
       }
 
       # all identified spectrum titles
-      id.spectra <- unique(data[,.SPECTRUM.COLS['SPECTRUM']])
+      id.spectra <- unique(id.data[,.SPECTRUM.COLS['SPECTRUM']])
+
+      .Object <- new(type)
+      reporterMasses <- .Object@reporterTagMasses
+      reporterTagNames <- .Object@reporterTagNames
 
       data.ions=c()
       data.mass=c()
@@ -341,9 +340,6 @@ setMethod("readIBSpectra",
         }
 
         if (tolower(peaklist.format.f) == "mgf") {
-          .Object <- new(type)
-          reporterMasses <- .Object@reporterTagMasses
-          reporterTagNames <- .Object@reporterTagNames
 
           intensities.f <- .read.mgf(peaklist.f,reporterMasses,reporterTagNames,
                                      fragment.precision=fragment.precision,
@@ -379,14 +375,16 @@ setMethod("readIBSpectra",
 
         }
       }
-      if (.SPECTRUM.COLS['SPECTRUM.QUANT'] %in% colnames(data))
-        data.titles <- .do.map(data.titles,unique(data[,.SPECTRUM.COLS[c('SPECTRUM','SPECTRUM.QUANT')]]))
+      if (.SPECTRUM.COLS['SPECTRUM.QUANT'] %in% colnames(id.data))
+        data.titles <- .do.map(data.titles,unique(id.data[,.SPECTRUM.COLS[c('SPECTRUM','SPECTRUM.QUANT')]]))
       rownames(data.ions)  <- data.titles
       rownames(data.mass)  <- data.titles
       ## TODO: check that all identified spectra are present in intensities
 
+      colnames(data.ions) <- reporterTagNames
+      colnames(data.mass) <- reporterTagNames
       
-      new(type,identifications=data,data.mass=data.mass,data.ions=data.ions,...)
+      new(type,identifications=id.data,data.mass=data.mass,data.ions=data.ions,...)
     }
 )
 
@@ -657,7 +655,7 @@ read.mzid <- function(f) {
     all.spectra <- split(all.spectra,col(all.spectra))
   
   ## extract information from each spectrum
-  result <- do.call(rbind,lapply(all.spectra,function(x) {
+  result <- ldply(all.spectra,function(x) {
     header <- .strsplit_vector(x[grep("^[A-Z]",x)],"=")
     numbers <- do.call(rbind,strsplit(x[grep("^1..\\.",x)],"\\s"))
     mzi.mass <- as.numeric(numbers[,1])
@@ -682,7 +680,7 @@ read.mzid <- function(f) {
       rr <- c(rr,rep(NA,nReporter*2))
     }
     return(rr)
-  }))
+  },.parallel=isTRUE(getOption('isobar.parallel')))
   rm(all.spectra)
   if (length(result) == 0 || nrow(result) == 0) {
     stop("error reading MGF file - could not parse masses and intensities.\n",
@@ -727,49 +725,64 @@ read.mzid <- function(f) {
 
 
 ## TODO: log is not returned
-.read.idfile <- function(id.file,id.format=NULL,decode.titles=TRUE,trim.titles=FALSE,log=NULL,...) {
-  data <- do.call("rbind",lapply(id.file,function(f) {
+.read.idfile <- function(id.file,identifications.format=NULL,header=TRUE,stringsAsFactors=FALSE,sep="\t",
+                         decode.titles=TRUE,trim.titles=FALSE,log=NULL,...) {
+  id.data <- lapply(id.file,function(f) {
     
-    if (is.null(id.format)) {
+    if (is.null(identifications.format)) {
       if (grepl(".mzid$",f,ignore.case=TRUE)) 
         id.format.f <- "mzid"
-      else if (grepl(".ibspectra.csv$",f,ignore.case=TRUE) ||
-               grepl(".id.csv$",f,ignore.case=TRUE) || 
-               grepl(".mascot.csv$",f,ignore.case=TRUE) || 
-               grepl(".phenyx.csv$",f,ignore.case=TRUE))
-        id.format.f <- "ibspectra.csv"
       else if (grepl(".peptides.csv$",f) || grepl(".peptides.txt$",f)) 
         id.format.f <- "rockerbox"
       else if (grepl(".msgfp.csv$",f) || grepl(".tsv$",f)) 
         id.format.f <- "msgfp tsv"
+      else if (grepl(".csv$",f,ignore.case=TRUE))
+        id.format.f <- "ibspectra.csv"
       else
         stop(paste("cannot parse file ",f," - cannot deduce format based on extenstion (it is not ibspectra.csv, id.csv, peptides.txt or mzid). Please provide id.format to readIBSpectra",sep=""))
     } else {
-      id.format.f <- id.format
+      id.format.f <- identifications.format
     }
     
     if (id.format.f == "ibspectra.csv") {
-      data <- read.table(f,header=T,stringsAsFactors=F,sep="\t",...)
+      id.data <- read.table(f,header=header,stringsAsFactors=stringsAsFactors,sep=sep,...)
       log <- rbind(log,c("identification file [id.csv]",f))
     } else if (id.format.f == "mzid") {
-      data <- read.mzid(f)
+      id.data <- read.mzid(f)
       log <- rbind(log,c("identification file [mzid]",f))
     } else if (id.format.f == "rockerbox") {
-      data <- .read.rockerbox(f,...)
+      id.data <- .read.rockerbox(f,...)
     } else if (id.format.f == "msgfp tsv") {
-      data <- .read.msgfp.tsv(f,...)
+      id.data <- .read.msgfp.tsv(f,...)
     } else {
       stop(paste0("cannot parse file ",f," - format [",id.format.f,"] not known."))
     }
-    return(data)
+    return(id.data)
+  })
+
+  id.colnames <- lapply(seq_along(id.data),function(s.i) colnames(id.data[[s.i]]))
+  colnames.equal <- all(sapply(id.colnames,function(cn) identical(cn,id.colnames[[1]])))
+  if (!colnames.equal) {
+    message(" id file colnames are not equal:")
+    message(paste(sapply(seq_along(id.file),function(s.i) paste0(id.file[s.i],": ",paste(id.colnames[[s.i]],collapse="; "))),collapse="\n"))
+    intersect.colnames <- id.colnames[[1]]
+    for (s.i in seq(from=2,to=length(id.colnames))) {
+      intersect.colnames <- intersect(intersect.colnames,id.colnames[[s.i]])
+    }
+    message(" taking intersection: ",paste(intersect.colnames,collapse="; "))
+    id.data <- lapply(id.data,function(i.d) i.d[,intersect.colnames])
   }
-  ))
+  id.data <- do.call(rbind,id.data)
+
+  if (!is.character(id.data[,.SPECTRUM.COLS['SPECTRUM']]))
+    id.data[,.SPECTRUM.COLS['SPECTRUM']] <- as.character(id.data[,.SPECTRUM.COLS['SPECTRUM']])
+
   if (decode.titles)
-    data[,.SPECTRUM.COLS['SPECTRUM']] <- unlist(lapply(data[,.SPECTRUM.COLS['SPECTRUM']],URLdecode))
+    id.data[,.SPECTRUM.COLS['SPECTRUM']] <- unlist(lapply(id.data[,.SPECTRUM.COLS['SPECTRUM']],URLdecode))
 
   if (trim.titles)
-    data[,.SPECTRUM.COLS['SPECTRUM']] <- .trim(data[,.SPECTRUM.COLS['SPECTRUM']])
-  return(data)
+    id.data[,.SPECTRUM.COLS['SPECTRUM']] <- .trim(id.data[,.SPECTRUM.COLS['SPECTRUM']])
+  return(id.data)
 }
 
 .read.rockerbox <- function(f) {
@@ -796,9 +809,9 @@ read.mzid <- function(f) {
   ## end transform
 
   sel <- names(.ROCKERBOX.COLS) %in% names(c(.SPECTRUM.COLS,.PEPTIDE.COLS))
-  data <- data.r[,.ROCKERBOX.COLS[sel]]
-  colnames(data) <- c(.SPECTRUM.COLS,.PEPTIDE.COLS)[names(.ROCKERBOX.COLS)[sel]]
-  return(data)
+  data.r <- data.r[,.ROCKERBOX.COLS[sel]]
+  colnames(data.r) <- c(.SPECTRUM.COLS,.PEPTIDE.COLS)[names(.ROCKERBOX.COLS)[sel]]
+  return(data.r)
 }
 
 ###############################################################################
@@ -806,6 +819,9 @@ read.mzid <- function(f) {
 
 
 .dissect.search.engines <- function(identifications) {
+
+  SC <- .SPECTRUM.COLS[.SPECTRUM.COLS %in% colnames(identifications)]
+
   ## scores are merged together
   if (.SPECTRUM.COLS['SCORE'] %in% colnames(identifications)) {
     engines <- strsplit(identifications[,SC['SEARCHENGINE']],"|",fixed=TRUE)
@@ -820,14 +836,30 @@ read.mzid <- function(f) {
       scores <- lapply(engine.n.score,function(x) as.numeric(x[seq(from=2,to=length(x),by=2)]))
     }
   }
+  score.columns <- paste0('score.',tolower(unique(unlist(engines))))
   for (engine in unique(unlist(engines))) {
     name <- paste0('score.',tolower(engine))
     e.scores <- mapply(function(e,s) if(any(e==engine)) s[e==engine] else NA,engines,scores)
     identifications[,name] <- as.numeric(e.scores)
   }
+
   identifications[,SC['SEARCHENGINE']] <- sapply(engines,paste,collapse="&")
+  tt <- table(identifications[,SC['SPECTRUM']])
+  if (max(tt) > 1) {
+    message("Resolving duplicated ids")
+    id.good <- identifications[identifications$spectrum %in% names(tt)[tt==1],]
+    id.bad <- identifications[identifications$spectrum %in% names(tt)[tt>1],]
+    id.bad$n.se <- rowSums(!is.na(id.bad[,score.columns]))
+    id.res <- ddply(id.bad,'spectrum',function(x) {
+      x[which.max(x$n.se),]
+    })
+    id.res$n.se <- NULL
+    identifications <- rbind(id.good,id.res)
+  }
+
   if ('SCORE' %in% names(SC))
     identifications[,SC['SCORE']] <- NULL
+
   return(identifications)
 }
 
@@ -882,13 +914,16 @@ read.mzid <- function(f) {
   	         		     colname=colname,resolve.colnames=paste0(colname,".",clean.names),...)
   }
 
-  tt <- table(ids.merged[,'spectrum'])
+  ids.merged <- unique(ids.merged)
+  tt <- table(ids.merged[,.SPECTRUM.COLS['SPECTRUM']])
   #spectra.ok <- ids.merged[,'spectrum'] %in% names(tt)[tt==1]
   #resolved.ids <- .resolve.differing.identifications(ids.merged[!spectra.ok,],score.cols)
 
   #identifications <- rbind(ids.merged[spectra.ok,],resolved.ids)
-  if (any(table(ids.merged[,'spectrum'])>1))
-    stop("Merging not successful, duplicated psms!")
+  if (any(tt>1)) {
+    warning("Merging not successful, ",sum(tt>1)," duplicated psms, removing them!")
+    ids.merged <- ids.merged[!ids.merged[,.SPECTRUM.COLS['SPECTRUM']] %in% names(tt)[tt>1],]
+  }
 
   ids.merged[,.SPECTRUM.COLS['SEARCHENGINE']] <- 
 	  apply(ids.merged[,score.cols],1,function(x) { paste(names(ids.split)[!is.na(x)],collapse="&") })
@@ -910,7 +945,7 @@ read.mzid <- function(f) {
 # Take 'first' modification
 .consolidate.modification.pos <- function(x) .na.rm(x)[1]
 
-.resolve.conflicts <- function(ids, resolve.f, colname, resolve.colnames, keep.cols = false) {
+.resolve.conflicts <- function(ids, resolve.f, colname, resolve.colnames, keep.cols = FALSE) {
 
   if (is.character(resolve.colnames))
     resolve.colnames <- which(colnames(ids) %in% resolve.colnames)
@@ -1124,8 +1159,10 @@ read.mzid <- function(f) {
     }
   }
 
-  if (max(table(identifications[,SC['SPECTRUM']])) > 1)
+  if (max(table(identifications[,SC['SPECTRUM']])) > 1) {
+    print(head(identifications))
     stop("Identifications still have duplicate spectra!")
+  }
 
   if ('SEARCHENGINE' %in% names(SC)) {
     message("Identification details:")
@@ -1140,13 +1177,13 @@ read.mzid <- function(f) {
 ###############################################################################
 
 
-.read.identifications <- function(identifications,
+.read.identifications <- function(identifications,...,
                                   mapping=NULL,mapping.names=c(quantification.spectrum="hcd",identification.spectrum="cid"),
-                                  identifications.quant=NULL,decode.titles=TRUE,identifications.format=NULL) {
+                                  identifications.quant=NULL) {
 
   ## load identifications (is either character or data.frame
   if (is.character(identifications) && all(sapply(identifications,file.exists)))
-    identifications <- .read.idfile(identifications,identifications.format,decode.titles)
+    identifications <- .read.idfile(identifications,...)
 
   ## load mapping (either character or data.frame)
   if (!is.null(mapping)) {
@@ -1167,8 +1204,8 @@ read.mzid <- function(f) {
 
     if (!is.null(identifications.quant)) {
       ## load identifications.quant (either character or data.frame)
-      if (is.character(identifications.quant) && file.exists(identifications.quant)) 
-        identifications.quant <- .read.idfile(identifications.quant,identifications.format,decode.titles)
+      if (is.character(identifications.quant) && all(sapply(identifications.quant,file.exists)))
+        identifications.quant <- .read.idfile(identifications.quant,...)
       if (!is.data.frame(identifications.quant)) stop("identifications.quant must be a data.frame or valid file name")
       identifications.quant[,.SPECTRUM.COLS['SPECTRUM.QUANT']] <- identifications.quant[,.SPECTRUM.COLS['SPECTRUM']]
       identifications.quant[,.SPECTRUM.COLS['DISSOCMETHOD']] <- "hcd"
@@ -1182,12 +1219,12 @@ read.mzid <- function(f) {
 
 ## read MSGF+ tab-separated identification files
 .read.msgfp.tsv <- function(filename,filter.rev.hits=TRUE) {
-  data <- read.delim(filename, sep="\t", stringsAsFactors=FALSE)
-  ib.df <- data.frame(spectrum=data[,'Title'],.convert.msgfp.pepmodif(data[,'Peptide']),
-		      scan.from=data[,'ScanNum'],dissoc.method=tolower(data[,'FragMethod']),
-		      precursor.error=data[,'PrecursorError.ppm.'],charge=data[,'Charge'],
-		      search.engine="MSGF+",score=data[,'MSGFScore'],stringsAsFactors=FALSE)
-  ib.protnpep <-  .convert.msgfp.protein(data[,'Protein'],ib.df[,'peptide'],filter.rev.hits=filter.rev.hits)
+  id.data <- read.delim(filename, sep="\t", stringsAsFactors=FALSE)
+  ib.df <- data.frame(spectrum=id.data[,'Title'],.convert.msgfp.pepmodif(id.data[,'Peptide']),
+		      scan.from=id.data[,'ScanNum'],dissoc.method=tolower(id.data[,'FragMethod']),
+		      precursor.error=id.data[,'PrecursorError.ppm.'],charge=id.data[,'Charge'],
+		      search.engine="MSGF+",score=id.data[,'MSGFScore'],stringsAsFactors=FALSE)
+  ib.protnpep <-  .convert.msgfp.protein(id.data[,'Protein'],ib.df[,'peptide'],filter.rev.hits=filter.rev.hits)
   merge(ib.df,ib.protnpep,by='peptide',all=TRUE)
 }
 

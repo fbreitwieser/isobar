@@ -35,7 +35,10 @@
 
   proteinInfoIsOnSpliceVariants(protein.info)
 
-  getProteinInfoFromUniprot(x, splice.by = 200)
+#  getProteinInfoFromUniprot(x, splice.by = 200, fields = c(accession = "id", name
+#                 = "entry%20name", protein_name = "protein%20names",
+#                 gene_name = "genes", organism = "organism", length =
+#                 "length", sequence = "sequence"))
 
   getProteinInfoFromNextProt(x)
 
@@ -59,6 +62,7 @@
   \item{splice.by}{Chunk size for query of Uniprot database.}
   \item{database}{database from which the ACs stem from. Only Uniprot is supported for now.}
   \item{con}{database connection}
+  \item{fields}{mapping of CSV field names to proteinInfo field names}
   \item{...}{arguments to build database connection.}
   \item{protein.info}{protein info data.frame}
 }

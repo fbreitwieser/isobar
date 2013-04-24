@@ -25,7 +25,6 @@
 % Coercion methods:
 \alias{coerce,IBSpectra,data.frame-method}
 \alias{as.data.frame,IBSpectra-method}
-\alias{as.data.frame.IBSpectra}
 
 % Accessor-like methods:
 \alias{proteinGroup}

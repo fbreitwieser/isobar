@@ -1,3 +1,10 @@
+CHANGES IN VERSION 1.5.3
+------------------------
+ - parallelization support! Set options(isobar.parallel=TRUE) and 
+   register a cluster using registerDoMC or registerDoSNOW.
+   Used when creating ratio tables.
+
+
 CHANGES IN VERSION 1.5.2
 ------------------------
  - added MSGF+ tsv import [one-line-per-psm format]
