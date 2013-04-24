@@ -19,15 +19,19 @@
   variability within and over cases.
 }
 \usage{
-proteinRatios(ibspectra, noise.model, reporterTagNames = NULL, 
-              proteins = reporterProteins(proteinGroup(ibspectra)), peptide = NULL, 
-              cl = classLabels(ibspectra), combn.method = "global", symmetry = FALSE, 
-              summarize = FALSE, summarize.method = "mult.pval", min.detect = NULL, 
-              strict.sample.pval = TRUE, strict.ratio.pval = TRUE, orient.div = 0, 
-              sign.level = 0.05, sign.level.rat = sign.level, sign.level.sample = sign.level, 
-              ratiodistr = NULL, variance.function = "maxi", combine=FALSE,
-              p.adjust = NULL, reverse=FALSE, cmbn=NULL, before.summarize.f = NULL, ...)
-
+proteinRatios(ibspectra, noise.model, reporterTagNames = NULL,
+                 proteins = reporterProteins(proteinGroup(ibspectra)),
+                 peptide = NULL, cl = classLabels(ibspectra),
+                 combn.method = "global", symmetry = FALSE, summarize =
+                 FALSE, summarize.method = "mult.pval", min.detect =
+                 NULL, strict.sample.pval = TRUE, strict.ratio.pval =
+                 TRUE, orient.div = 0, sign.level = 0.05,
+                 sign.level.rat = sign.level, sign.level.sample =
+                 sign.level, ratiodistr = NULL, zscore.threshold =
+                 NULL, variance.function = "maxi", combine = FALSE,
+                 p.adjust = NULL, reverse = FALSE, cmbn = NULL,
+                 before.summarize.f = NULL, ...)
+              
 combn.matrix(x, method = "global", cl = NULL, vs = NULL)
 
 combn.protein.tbl(cmbn, reverse = FALSE, ...)
@@ -78,6 +82,7 @@ summarize.ratios(ratios, by.column = "ac", summarize.method = "mult.pval",
   \item{sign.level.sample}{Significance level on sample p-value}
   \item{ratiodistr}{Protein ratio distribution}
   \item{variance.function}{Variance function}
+  \item{zscore.threshold}{z-score threshold to apply}
   \item{\dots}{Passed to estimateRatio()}
   \item{combine}{If true, a single ratio for all proteins and peptides, resp., is calculated. See \code{\link{estimateRatio}}.}
   \item{p.adjust}{Set to one of p.adjust.methods to adjust ratio p-values for multiple comparisions. See \code{\link{p.adjust}}.}

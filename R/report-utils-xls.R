@@ -99,6 +99,8 @@ write.xls.report <- function(report.type,properties.env,report.env,file="isobar-
       #xls.quant.tbl <- xls.quant.tbl[, c(col_idx, (1:ncol(df))[-col_idx])]
 
     }
+    if ('notes' %in% colnames(protein.id.df)) 
+      protein.id.df[,'notes'] <- gsub("[\t\n]"," ",protein.id.df[,'notes'])
     write.t(xls.quant.tbl,file=protein.quant.f)
     write.t(protein.id.df,file=protein.id.f)  
     write.t(ii,file=analysis.properties.f,col.names=FALSE)
@@ -111,14 +113,14 @@ write.xls.report <- function(report.type,properties.env,report.env,file="isobar-
 
     ## generate perl command line:
     tab2spreadsheet.cmd <- switch(properties.env$spreadsheet.format,
-                                  xlsx=system.file("pl","tab2xlsx.pl",package="isobar"),
-                                  xls=system.file("pl","tab2xls.pl",package="isobar"),
+                                  xlsx=system.file("pl","tab2xlsx.pl",package="isobar",mustWork=TRUE),
+                                  xls=system.file("pl","tab2xls.pl",package="isobar",mustWork=TRUE),
                                   stop("spreadsheet.format property must be either 'xlsx' or 'xls'."))
 
     perl.cl <- paste(tab2spreadsheet.cmd," ",
                      ifelse(properties.env$use.name.for.report,sprintf("%s.quant",properties.env$name),"isobar-analysis"),
                      ".",properties.env$spreadsheet.format,
-                     " ':autofilter,freeze_col=3,name=Quantifications:",protein.quant.f,"'",
+                     " ':autofilter,freeze_col=9,name=Quantifications:",protein.quant.f,"'",
                      ifelse(identical(report.type,"peptide") && !is.null(modificationSites),
                             paste(" ':autofilter,freeze_col=3,name=Modification Sites:",modifsites.f,"'",sep=""),""),
                      " ':autofilter,freeze_col=3,name=Identifications:",protein.id.f,"'",
@@ -156,7 +158,8 @@ write.xls.report <- function(report.type,properties.env,report.env,file="isobar-
     else
       res.tbl <- .create.xls.peptide.quant.tbl(tbl.input,env$ibspectra,
                                            properties.env$ptm,env$ptm.info)
-    
+ 
+    message(" adding quantification columns")   
     tbl <- .add.quant.to.xls.tbl(env,properties.env,res.tbl[[1]],res.tbl[[2]],compare.to.quant)
     
     #order.c <- if(isTRUE(properties.env$xls.report.format=="long"),"Channels",NULL)
@@ -177,8 +180,8 @@ write.xls.report <- function(report.type,properties.env,report.env,file="isobar-
   if (!is.null(cc.new)) colnames(data.cc) <- gsub(cc,cc.new,colnames(data.cc))
   data.cc
 }
-.add.quant.to.xls.tbl <- function(env,properties.env,tbl,input.tbl,compare.to.quant=NULL) {
 
+.add.quant.to.xls.tbl <- function(env,properties.env,tbl,input.tbl,compare.to.quant=NULL) {
   # Add quantification columns from compare.to.quant
   if (!is.null(compare.to.quant)){
     if (!"ac" %in% colnames(input.tbl)) {
@@ -220,7 +223,7 @@ write.xls.report <- function(report.type,properties.env,report.env,file="isobar-
     if ("zscore" %in% properties.env$xls.report.columns) {
       ## TODO: zscore is calculated across all classes - 
       ##       it is probably more appropriate to calculate it individual for each class
-      input.tbl$zscore <- .calc.zscore(input.tbl$lratio)
+      #input.tbl[,'zscore'] <- .calc.zscore(input.tbl[,'lratio'])
     }
     round.digits <- 4;
 
@@ -243,8 +246,8 @@ write.xls.report <- function(report.type,properties.env,report.env,file="isobar-
     for (cc in properties.env$xls.report.columns) {
       message("    adding column ",cc)
       res <- switch(cc,
-            log10.ratio =    .round.n.appendend.xls.tbl("lratio","log10.ratio"),
-            log2.ratio =     .round.n.appendend.xls.tbl("lratio","log2.ratio",f=function(x) x/log10(2)),
+            log10.ratio =    .round.n.appendend.xls.tbl("lratio","@conditional_formatting=3_color_scale@log10.ratio"),
+            log2.ratio =     .round.n.appendend.xls.tbl("lratio","@conditional_formatting=3_color_scale@log2.ratio",f=function(x) x/log10(2)),
             log10.variance = .append.xls.tbl("variance","log10.var"),
             log2.variance =  .append.xls.tbl("variance","log2.var",f=function(x) (sqrt(x)/log10(2)^2)),
             is.significant = .append.xls.tbl("is.significant"),
@@ -293,19 +296,25 @@ write.xls.report <- function(report.type,properties.env,report.env,file="isobar-
   if ("METH" %in% ptm) my.ptm="Methylation"
 
   input.tbl[,'ac']  <- NULL
-  t <- table(pnp$peptide)
-  pnp <- pnp[pnp$peptide %in% names(t)[t==1],]
-  colnames(pnp)  <- c("peptide","ac")
+  #t <- table(pnp$peptide)
+  #pnp <- pnp[pnp$peptide %in% names(t)[t==1],]
+  #colnames(pnp)  <- c("peptide","ac")
+  pnp <- ddply(pnp,'peptide',function(x) c(peptide=x[1,1],ac=paste(x[,2],collapse=";")))
 
   input.tbl <- merge(pnp,input.tbl,by="peptide")
   input.tbl$i  <- seq_len(nrow(input.tbl))
   input.tbl$Spectra <- apply(input.tbl, 1, 
                              function(x) nrow(subset(fData(ibspectra),peptide==x['peptide'] & modif==x['modif'])))
   pg.df <- .proteinGroupAsConciseDataFrame(protein.group,modif.pos=ptm,ptm.info=ptm.info)
+  #if (isTRUE(properties.env$show.motifs)) {
+    pep.modif.context <- getPeptideModifContext(protein.group,modif=ptm)
+    pg.df <- merge(pg.df,pep.modif.context,by=c("peptide","modif"),all=TRUE)
+  #}
   
   tbl <- merge(pg.df,input.tbl[,c("peptide","modif","i","Spectra")],by=c("peptide","modif"),all.y=TRUE)
   tbl$peptide <- .convertPeptideModif(tbl[,"peptide"],tbl[,"modif"])
   colnames(tbl)[colnames(tbl)=="peptide"] <- "Sequence"
+  
   colnames(tbl)[colnames(tbl)=="proteins"] <- "ACs"
   colnames(tbl)[colnames(tbl)=="modif.pos"] <- 
     paste0("@comment=Absolute modification position in protein. Modifications in ",
@@ -313,6 +322,7 @@ write.xls.report <- function(report.type,properties.env,report.env,file="isobar-
            "Stars denote positions which are annotated as phosphorylated in NextProt.@",
            my.ptm," Position")
 
+  tbl$start.pos <- NULL
   tbl$modif <- NULL
   tbl$pos <- NULL
   tbl$n.groups <- NULL
@@ -322,6 +332,7 @@ write.xls.report <- function(report.type,properties.env,report.env,file="isobar-
 
 .create.xls.protein.quant.tbl <- function(input.tbl,protein.group,
                                           specificity=c(GROUPSPECIFIC,REPORTERSPECIFIC)) {
+
   indist.proteins <- indistinguishableProteins(protein.group)
   input.tbl$i  <- seq_len(nrow(input.tbl))
 
@@ -329,7 +340,7 @@ write.xls.report <- function(report.type,properties.env,report.env,file="isobar-
                       length(proteinInfo(protein.group)) > 0
 
   .getProteinInfo <- function(name) 
-    proteinInfo(protein.group,input.tbl[,"ac"],select=name,do.warn=FALSE)
+    proteinInfo(protein.group,protein.g=input.tbl[,"ac"],select=name,do.warn=FALSE)
 
   ## creating xls protein table
   tbl <- data.frame(i=input.tbl$i, group=input.tbl[,"group"],

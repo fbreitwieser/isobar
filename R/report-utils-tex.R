@@ -126,9 +126,9 @@ draw.proteingroup.row <- function(name,protein.group,reporter.protein.g) {
       #cat(protein.i,"&")
       if (show.pos) cat(protein.i,"&")
       cat(paste(sprintf("\\uniprotlink{%s}",sanitize(ac,dash=FALSE)),
-          ifelse(is.na(var.string),"",var.string),
-          sanitize(unique(my.protein.info$gene_name[sel])),
-          sanitize(unique(my.protein.info$protein_name[sel])),
+          ifelse(is.na(var.string),"",var.string)[1],
+          sanitize(unique(my.protein.info$gene_name[sel]))[1],
+          sanitize(unique(my.protein.info$protein_name[sel]))[1],
           sep=" & "))
 
       if (n.row==1) {

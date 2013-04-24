@@ -1,6 +1,6 @@
 #!/usr/bin/perl
 # Creation date : 2010-09-29
-# Last modified : Mon 23 Jul 2012 02:04:30 PM CEST
+# Last modified : Fri 08 Feb 2013 03:58:24 PM CET
 
 # Module        : tab2xls.pl
 # Purpose       : converts csv files to XLS format
@@ -16,6 +16,7 @@ use Excel::Writer::XLSX;
 use File::Basename;
 
 my $delim="\t";
+my %conditional_formats;
 
 # Check for valid number of arguments
 if (($#ARGV < 0)) {
@@ -80,7 +81,8 @@ for (my $file_i=0; $file_i <= $#ARGV; ++$file_i) {
   print STDERR "$file\n";
 
   my $name = $props->{'name'};
-  if (!defined $name) { ($name) = getname(fileparse($file,".csv")); }
+  #if (!defined $name) { ($name) = getname(fileparse($file,".csv")); }
+  if (!defined $name) { ($name) = fileparse($file,".csv"); }
 
   open(F,"<",$file) or die "Could not open $file: $!";
     
@@ -88,6 +90,7 @@ for (my $file_i=0; $file_i <= $#ARGV; ++$file_i) {
   my @header = split("\t",$header);
   chomp(@header);
   my %header = map { $_ => 1 } @header;
+  %conditional_formats = ();
   my ($worksheet,$row);
   my $n_worksheets = 0;
    
@@ -124,7 +127,10 @@ for (my $file_i=0; $file_i <= $#ARGV; ++$file_i) {
       @data = (@data,@data2);
     }
     if (scalar @data != scalar @header) {
-      die "Bad CSV in row $row: $#data /vs/ $#header";
+      print STDERR "Bad CSV in row $row: $#data /vs/ $#header:\n";
+      print "###### HEADER: ######\n",join("\n",@header),"\n\n";
+      print "###### LINE $row #####\n",join("\n",@data),"\n";
+      die();
     }
     chomp($data[$#data]);
 
@@ -148,10 +154,21 @@ for (my $file_i=0; $file_i <= $#ARGV; ++$file_i) {
     
   # Run the autofit after you have finished writing strings to the workbook.
   autofit_columns($worksheet);
+  set_conditional_formatting($worksheet,$row,\%conditional_formats);
     
 }
 
 $workbook->close;
+
+sub set_conditional_formatting {
+  my ($worksheet,$nrow,$cond_formats) = @_;
+
+  while (my ($col,$format) = each %$cond_formats) {
+    $worksheet->conditional_formatting(1,$col,$nrow,$col,
+      {type=>$format,
+      mid_color=>'#FFFFFF'})
+  }
+}
 
 sub write_header {
   my ($worksheet,$row,$format_ref,@data) = @_;
@@ -238,6 +255,14 @@ sub write_col {
     return if $props->{'comment'} =~ /^ *$/;
     #print STDERR "comment: [".$props->{'comment'}."]\n";
     $worksheet->write_comment($row,$col,$props->{'comment'},visible=>0);
+  }
+
+  if (defined $props->{'conditional_formatting'}) {
+    if ($row == 0) {
+      $conditional_formats{$col} = $props->{'conditional_formatting'};
+    } else {
+      $worksheet->conditional_formatting($row,$col,{type=>$props->{'conditional_formatting'}});
+    }
   }
   return(0);
 }

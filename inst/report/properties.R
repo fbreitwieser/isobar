@@ -61,11 +61,14 @@ readIBSpectra.args = list(
 ## Quantification properties
 
 normalize=TRUE
+normalize.factors=NULL # if defined, normalize.factors will be used for normalization
 normalize.channels=NULL
 normalize.use.protein=NULL
 normalize.exclude.protein=NULL
 normalize.function=median
 normalize.na.rm=FALSE
+
+peptide.specificity=REPORTERSPECIFIC
 
 use.na=FALSE
 
@@ -109,6 +112,7 @@ min.detect=NULL
 
 preselected=c()
 
+
 ### Biological Variability Ratio Distribution options
 ## ratiodistr can be set to a file or a 'Distribution object. '
 ##  If NULL, or the specified file is not existent, the biological variability 
@@ -122,8 +126,12 @@ ratiodistr=NULL
 ## /eg/ to choose biologically very similar samples as pseudo replicates.
 ratiodistr.class.labels=NULL
 
-## Function for fitting. Available: fitCauchy, fitTd, (TOADD)
+## Function for fitting. Available: fitCauchy, fitTlsd
 ratiodistr.fitting.f=fitCauchy
+
+## If defined, use z-score instead of ratio distribution
+# zscore.threshold=2.5
+zscore.threshold=NULL
 
 ###############################################################################
 ## PTM properties

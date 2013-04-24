@@ -336,10 +336,13 @@ calculate.ratio.pvalue <- function(lratio, variance, ratiodistr = NULL) {
 }
 
 calculate.sample.pvalue <- function(lratio,ratiodistr) {
+  if (!is.null(ratiodistr))
+    center.val <- distr::q(ratiodistr)(0.5)
+
   sapply(lratio,function(r) {
-    if (is.null(ratiodistr))
+    if (is.null(ratiodistr) || is.na(lratio))
       return(NA)
-    p(ratiodistr)(r,lower.tail=r<distr::q(ratiodistr)(0.5))
+    p(ratiodistr)(r,lower.tail=r<center.val)
   })
 }
 
@@ -374,9 +377,28 @@ correct.peptide.ratios <- function(ibspectra, peptide.quant.tbl, protein.quant.t
 
   # map from peptides to protein group identifier
   pnp <- peptideNProtein(protein.group)
-  pnp <- pnp[pnp[,'protein.g'] %in% reporterProteins(protein.group),]
-  pnp <- unlist(tapply(.cn(pnp,"protein.g"),.cn(pnp,"peptide"),paste,collapse=";",simplify=FALSE))
-  peptide.quant.tbl[,'ac'] <- pnp[peptide.quant.tbl$peptide]
+  pi <- protein.group@peptideInfo
+  #pnp <- pnp[pnp[,'protein.g'] %in% reporterProteins(protein.group) & ,]
+  all.q.prots <- unique(protein.quant.tbl$ac)
+  n.quant <- table(protein.quant.tbl[!is.na(protein.quant.tbl[,'lratio']),'ac'])
+  q.protein.acs <- strsplit(all.q.prots,",")
+  pep.to.ac <- sapply(unique(peptide.quant.tbl$peptide),function(pep) {
+                              pep.prots <- pi[pi[,'peptide'] == pep,'protein']
+                              prots.ok <- sapply(q.protein.acs,function(q.prots) any(pep.prots %in% q.prots))
+                              if (sum(prots.ok) == 0) {
+                                message("could not map peptide ",pep,"!")
+                                ac <- "NA"
+                              } else if (sum(prots.ok) > 1) {
+                                n.quant.acs <- n.quant[all.q.prots[prots.ok]]
+                                ac <- names(n.quant.acs)[which.max(n.quant.acs)]
+                                message(pep," matches to multiple ACs: ", paste(all.q.prots[prots.ok],collapse=" & ")," [Using ",ac," with ",n.quant.acs[ac],"quantifications]")
+                              } else {
+                                ac <- all.q.prots[prots.ok]
+                              }
+                              return(ac)
+
+  })
+  peptide.quant.tbl[,'ac'] <- pep.to.ac[peptide.quant.tbl[,'peptide']]
 
   # merged peptide and protein quant table
   tbl <- merge(peptide.quant.tbl,protein.quant.tbl[,c("ac","r1","r2","lratio","variance","is.significant")],
@@ -599,6 +621,7 @@ correct.peptide.ratios <- function(ibspectra, peptide.quant.tbl, protein.quant.t
 
 estimateRatioForProtein <- function(protein,ibspectra,noise.model,channel1,channel2,
         combine=TRUE,method="isobar",specificity=REPORTERSPECIFIC,quant.w.grouppeptides=NULL,...) {
+      #message("parallel processing: ",isTRUE(getOption('isobar.parallel')))
       if (combine) {
         if (method == "multiq" || method == "libra" || method=="pep") {
           ## first compute peptide ratios, summarize then
@@ -643,15 +666,15 @@ estimateRatioForProtein <- function(protein,ibspectra,noise.model,channel1,chann
           stop("method ",method," not known")
         }
       } else {
-        res <- do.call(rbind,lapply(protein,function(individual.protein) {
+        res <- ldply(protein,function(individual.protein) {
              if (individual.protein %in% quant.w.grouppeptides) 
                specificity <- c(GROUPSPECIFIC,specificity)
 
              .call.estimateRatio(individual.protein,"protein",ibspectra,
                                 noise.model,channel1,channel2,method=method,...,
                                 specificity=specificity)
-            }
-        ))
+            },.parallel=isTRUE(getOption('isobar.parallel'))
+        )
         rownames(res) <- protein
         res
         #res[apply(res,2,!function(r) all(is.na(r))),]
@@ -668,12 +691,12 @@ estimateRatioForPeptide <- function(peptide,ibspectra,noise.model,channel1,chann
         if (is.matrix(peptide)) {
           r <- ldply(seq_len(nrow(peptide)),function(p_i) 
                   .call.estimateRatio(peptide[p_i,,drop=FALSE],"peptide",ibspectra,noise.model,
-                                      channel1,channel2,...))
+                                      channel1,channel2,...),.parallel=isTRUE(getOption('isobar.parallel')))
         
         } else {
           r <- ldply(peptide,function(individual.peptide) 
                         .call.estimateRatio(individual.peptide,"peptide",ibspectra,noise.model,
-                                            channel1,channel2,...))
+                                            channel1,channel2,...),.parallel=isTRUE(getOption('isobar.parallel')))
         }
       }
       attr(r,"input") <- peptide
@@ -1031,6 +1054,7 @@ combn.protein.tbl <- function(cmbn, reverse=FALSE, ...) {
       else
         x <- rev(x)
 
+    message("ratios ",x[2]," vs ",x[1])
     r <- estimateRatio(channel1=x[1],channel2=x[2],...)
     if (class(r)=="numeric") {
       r <- t(r)
@@ -1052,6 +1076,8 @@ combn.protein.tbl <- function(cmbn, reverse=FALSE, ...) {
     }
     return(df)
   }))
+
+  attr(ratios,"arguments") <- list(...)
 
   attr(ratios,"cmbn") <- cmbn
   attr(ratios,"reverse") <- reverse
@@ -1097,12 +1123,14 @@ ratiosReshapeWide <- function(quant.tbl,grouped.cols=TRUE,vs.class=NULL,sep=".",
     }
   }
   quant.tbl  <- quant.tbl[,-(c(which(colnames(quant.tbl) %in% c("r1","r2","class1","class2"))))]
-  v.names <- c("lratio","variance","n.spectra","p.value.rat","p.value.rat.adjusted","p.value.sample","is.significant","sd","n.na1","n.na2")
+  v.names <- c("lratio","lratio.modpep","lratio.prot","variance","variance.modpep","variance.prot","n.spectra",
+               "p.value.rat","p.value.rat.adjusted","p.value.sample",
+               "is.significant","is.significant.modpep","is.significant.prot","sd","n.na1","n.na2","n.pos","n.neg") # 
   v.names <- v.names[v.names %in% colnames(quant.tbl)]
-  if ("n.pos" %in% colnames(quant.tbl)) v.names <- c(v.names,"n.pos")
-  if ("n.neg" %in% colnames(quant.tbl)) v.names <- c(v.names,"n.neg")
   timevar <- "comp"
   idvar <- colnames(quant.tbl)[!colnames(quant.tbl) %in% c(timevar,v.names)]
+  if ("ac" %in% colnames(quant.tbl))
+    quant.tbl[is.na(quant.tbl[,"ac"]),"ac"] <- "NA"
 
   res <- reshape(quant.tbl,v.names=v.names,idvar=idvar,timevar=timevar,direction="wide",sep=sep)
   if (grouped.cols) {
@@ -1122,7 +1150,7 @@ proteinRatios <-
            summarize=FALSE,summarize.method="mult.pval",
            min.detect=NULL,strict.sample.pval=TRUE,strict.ratio.pval=TRUE,orient.div=0,
            sign.level=0.05,sign.level.rat=sign.level,sign.level.sample=sign.level,
-           ratiodistr=NULL,variance.function="maxi",
+           ratiodistr=NULL,zscore.threshold=NULL,variance.function="maxi",
            combine=FALSE,p.adjust=NULL,reverse=FALSE,
            cmbn=NULL,before.summarize.f=NULL,...) {
 
@@ -1146,7 +1174,10 @@ proteinRatios <-
   
   ratios <- combn.protein.tbl(cmbn,reverse=reverse,
                               ibspectra=ibspectra,noise.model=noise.model,
+                              ratiodistr=ratiodistr,
                               protein=proteins,peptide=peptide,
+                              sign.level=sign.level,sign.level.rat=sign.level.rat,
+                              sign.level.sample=sign.level.sample,
                               variance.function=variance.function,combine=combine,...)
 
   attributes(ratios) = c(attributes(ratios),list(
@@ -1190,6 +1221,11 @@ proteinRatios <-
                            variance.function=variance.function,
                            ratiodistr=ratiodistr)
   }
+
+  ratios[,'zscore'] <- .calc.zscore(ratios[,'lratio'])
+  if (!is.null(zscore.threshold))
+    ratios[,'is.significant'] <- ratios[,'p.value.rat'] < sign.level.rat & abs(ratios[,'zscore']) > zscore.threshold
+
 
   if (!is.null(p.adjust)) 
     ratios <- adjust.ratio.pvalue(ratios,p.adjust,sign.level.rat)
@@ -1296,7 +1332,7 @@ summarize.ratios <-
                             is.significant=is.significant,r1=class1,r2=class2,
                             class1=class1,class2=class2,stringsAsFactors=FALSE))
         })
-      })
+      },.parallel=isTRUE(getOption('isobar.parallel')))
       
       if (is.null(result)) stop("Error summarizing.")
 

@@ -174,15 +174,44 @@ filterSpectraDeltaScore <- function(data, min.delta.score=10, do.remove=FALSE) {
     paste(y,collapse="") })
 }
 
-.convertModifToPos <- function(modifstring,modif="PHOS",collapse="&",simplify=TRUE) {
-  sapply(strsplit(paste0(modifstring," "),":"),function(x) {
+## TODO:
+#.convertModifToPosAndName <- function(modifstring,modif=c(p="PHOS",o="Oxidation_M",c="Cys_CAM",
+#                                          me="METH_KR",me="METH_K",me="METH_R",
+#                                          me2="BIMETH_KR",me2="BIMETH_K",me2="BIMETH_R",
+#                                          me3="TRIMETH_K",
+#                                          ac="ACET_K"),collapse="&",simplify=TRUE) {
+#  sapply(strsplit(paste0(modifstring," "),":"),function(x) {
+#    x[length(x)] <- sub(" $","",x[length(x)])
+#    res <- sapply(seq_along(x),function(x.i) {
+#      which(modif==indiv.modif)
+#    })
+#    if (!is.null(collapse))
+#      paste(which(x%in%modif)-1,collapse=collapse)
+#    else
+#      which(x%in%modif)-1
+#  },simplify=simplify)
+#}
+#
+.convertModifToPos <- function(modifstring,modif="PHOS",collapse="&",simplify=TRUE,and.name=FALSE) {
+  split.modif <- strsplit(paste0(modifstring," "),":")
+  if (and.name) {
+    name.modif <- .names.as.vector(modif)
+  }
+  sapply(split.modif,function(x) {
     x[length(x)] <- sub(" $","",x[length(x)])
+    modification.pos <- which(x%in%modif)-1 
     if (!is.null(collapse))
-      paste(which(x%in%modif)-1,collapse=collapse)
-    else
-      which(x%in%modif)-1
+      paste(modification.pos,collapse=collapse)
+    else {
+      if (and.name) 
+        data.frame(modif.pos=modification.pos,modif=name.modif[x[modification.pos+1]],stringsAsFactors=FALSE)
+      else
+        modification.pos
+    }
   },simplify=simplify)
 }
+
+
 
 .convertPhosphoRSPepProb <- function(peptide,pepprob) {
   mapply(function(pep,pprob) {
@@ -356,12 +385,12 @@ observedKnownSites <- function(protein.group,protein.g,ptm.info,modif,modificati
   if (length(proteinInfo(protein.group)) == 0)
     stop("no protein info attached to protein.group: see ?getProteinInfoFromUniprot on how to get it.")
 
-  protein.length <- as.numeric(proteinInfo(protein.group,protein.g=isoform.ac,select="length") )
+  protein.length <- as.numeric(proteinInfo(protein.group,protein.ac=isoform.ac,select="length") )
   if(all(is.na(protein.length))) 
     stop("no protein info for ",isoform.ac,"; need protein length an sequence")
 
  
-  obs.peptides <- observable.peptides(proteinInfo(protein.group,protein.g=isoform.ac,select="sequence"),nmc=2)
+  obs.peptides <- observable.peptides(proteinInfo(protein.group,protein.ac=isoform.ac,select="sequence"),nmc=2)
   possible.sites <- t(sapply(seq_len(protein.length),function(p) c(possible.nmc1=any(p>=obs.peptides$start & p<=obs.peptides$stop & obs.peptides$mc <=1),
                                                                    possible.nmc2=any(p>=obs.peptides$start & p<=obs.peptides$stop & obs.peptides$mc <=2))))
   my.ptm.info <- ptm.info[ptm.info$isoform_ac==ifelse(grepl("-[0-9]$",isoform.ac),
@@ -379,21 +408,26 @@ observedKnownSites <- function(protein.group,protein.g,ptm.info,modif,modificati
   sel.has.modif <- sapply(strsplit(pi[,"modif"],":"),function(x) any(x %in% modif))
   pi <- pi[pi[,"protein"]==isoform.ac & sel.has.modif,]
 
-  pep.pos <- .convertModifToPos(pi[,"modif"],modif,simplify=FALSE,collapse=NULL) 
-  modif.pos <- unlist(mapply(function(start.pos,pep.posi) start.pos + pep.posi -1,
-                             pi[,"start.pos"],pep.pos))
+  pep.pos <- .convertModifToPos(pi[,"modif"],modif,simplify=FALSE,collapse=NULL)
+
+  if (nrow(pi) > 0)
+    modif.pos <- unlist(mapply(function(start.pos,pep.posi) start.pos + pep.posi -1,
+                               pi[,"start.pos"],pep.pos))
+  else
+    modif.pos <- NULL
 
   seen.sites <- rep(FALSE,protein.length)
   seen.sites[modif.pos] <- TRUE
 
   if (simplify) {
   return(
-         c(observed.site.pos=paste(which(seen.sites),collapse=","),
+         data.frame(observed.site.pos=paste(which(seen.sites),collapse=","),
            observed.sites=sum(seen.sites),
            known.sites=sum(known.sites),
            oberserved.known.sites=sum(known.sites&seen.sites),
            observable.known.sites.1mc=sum(known.sites&possible.sites[,"possible.nmc1"]),
-           observable.known.sites.2mc=sum(known.sites&possible.sites[,"possible.nmc2"]))
+           observable.known.sites.2mc=sum(known.sites&possible.sites[,"possible.nmc2"]),
+           stringsAsFactors=FALSE)
          )
   } else {
   return(list(peptideInfo=pi,modif.pos=modif.pos,
@@ -404,3 +438,48 @@ observedKnownSites <- function(protein.group,protein.g,ptm.info,modif,modificati
 }
 
 
+getPeptideModifContext <- function(protein.group,modif,n.aa.up=5,n.aa.down=5) {
+  
+  peptide.info <- unique(peptideInfo(protein.group)[,c('modif','protein','peptide')])
+  protein.sequences <- paste0(paste0(rep("_",n.aa.down),collapse=""),gsub("I","L",proteinInfo(protein.group)[,'sequence']),paste0(rep("_",n.aa.up),collapse="")) # enlarge sequence in case peptide starts in the beginning / end
+  names(protein.sequences) <- proteinInfo(protein.group)[,'accession']
+  
+  pep.modif.context <- mapply(function(pepmodifs,protein.ac,pep) {
+    my.seq <- protein.sequences[protein.ac]
+    if (is.na(my.seq)) {
+      warning("No sequence for ",protein.ac)
+      return(NA)
+    }
+    
+    peptide.startpos <- gregexpr(pep,my.seq)[[1]]
+    if (peptide.startpos[1] == -1) {
+      warning("Peptide [",pep,"] could not be matched to ",protein.ac)
+      return(NA)    
+    }
+
+    pepmodifs[length(pepmodifs)] <- sub(" $","",pepmodifs[length(pepmodifs)])
+    modification.positions <- which(pepmodifs%in%modif)-1
+    if (length(modification.positions) == 0) 
+      return(NA)
+    
+    paste(sapply(peptide.startpos,function(pep.pos) {
+      modification.positions.in.protein <- pep.pos + modification.positions - 1
+      res <- paste(sapply(modification.positions.in.protein,function(pos) 
+                          substr(my.seq,pos-n.aa.down,pos+n.aa.up)),collapse=",")
+    
+      if (nchar(res) < n.aa.up+n.aa.down+1) 
+        stop("extracted pattern does not have the length it should have")
+      res
+    }),collapse=",")
+  },strsplit(paste0(peptide.info[,'modif']," "),":"),
+    peptide.info[,'protein'], 
+    peptide.info[,'peptide'])
+
+  # get pep-modif context
+  context.df <- unique(data.frame(peptide=peptide.info[,'peptide'],modif=peptide.info[,'modif'],context=pep.modif.context,stringsAsFactors=FALSE))
+  print(head(context.df))
+  ddply(context.df,
+        c("peptide","modif"),
+        function(x) data.frame(peptide=x[1,'peptide'],modif=x[1,'modif'],context=paste(x[,'context'],collapse=";"),stringsAsFactors=FALSE))
+
+}
