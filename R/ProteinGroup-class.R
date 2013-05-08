@@ -522,6 +522,8 @@ getPtmInfoFromNextprot <- function(protein.group,
 ### Coercion.
 ###
 
+as.data.frame.ProteinGroup <- function(x,...) as(x,"data.frame")
+
 setAs("data.frame","ProteinGroup",function(from) ProteinGroup(from))
 setMethod("as.data.frame",signature(x="ProteinGroup"),
           function(x, row.names=NULL, optional=FALSE, ...) as(x,"data.frame"))
