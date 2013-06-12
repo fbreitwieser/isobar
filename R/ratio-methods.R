@@ -64,8 +64,8 @@ fitTlsd <- function(x) {
             1/scale * dt((x - location)/scale, df, log = log)
 
   good <- !is.na(x) & !is.nan(x)
-  theta.start <- c(median(x[good]),sd(x[good]),1) # TODO: find good starting value
-  res <- nlminb(theta.start,t.fit,x=x[good],lower=c(-1,0,0),upper=c(1,10,100))
+  theta.start <- c(median(x[good]),sd(x[good]),2) # TODO: find good starting value
+  res <- nlminb(theta.start,t.fit,x=x[good],lower=c(-1,10^(-6),2),upper=c(1,10,100))
   new("Tlsd",df=res$par[3],location=res$par[1],scale=res$par[2])
 }
 
