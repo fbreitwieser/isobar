@@ -1,3 +1,11 @@
+CHANGES IN VERSION 1.7.1
+------------------------
+ - fixed import of MzIdentML files from Mascot and ProteomeDiscoverer
+
+CHANGES IN VERSION 1.6.0
+------------------------
+ - added modules and functions for PTM quantification
+
 CHANGES IN VERSION 1.5.3
 ------------------------
  - parallelization support! Set options(isobar.parallel=TRUE) and 
