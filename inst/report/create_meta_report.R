@@ -3,7 +3,6 @@ suppressPackageStartupMessages(library(gplots))
 suppressPackageStartupMessages(library(boot))
 suppressPackageStartupMessages(library(RColorBrewer))
 suppressPackageStartupMessages(library(isobar))
-suppressPackageStartupMessages(library(seqinr))
 
 source("meta-properties.R")
 load("protein.group.rda")

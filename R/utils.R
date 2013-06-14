@@ -283,7 +283,7 @@ setMethod("weightedMean",
     stop("unequal number of '^lratio.' and '^p.value.rat' columns")
 
   combined.p <- rep(1,nrow(df))
-  signs.equal <- apply(sign(df[,lr.cols]),1,function(x) all(x==x[1]))
+  signs.equal <- apply(sign(df[,lr.cols]),1,function(x) { y=x[!is.na(x)]; all(y==y[1])})
   ks <- apply(!is.na(df[,p.cols]),1,sum)
   logsums <- rowSums(log(df[,p.cols]),na.rm=TRUE)
   sel <-  ks > 1 & signs.equal

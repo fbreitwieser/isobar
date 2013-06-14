@@ -7,9 +7,9 @@ create.meta.reports <- function(report.type="protein",properties.file="meta-prop
   }
 
   protein.group <- .get.or.load("protein.group",properties.env,"protein group object","ProteinGroup")
-  if (file.exists("pg.df.rda")) 
+  if (file.exists("pg.df.rda")) {
     load("pg.df.rda")
-  else {
+  } else {
     message("Creating protein group data frame ... ")
     if (report.type=="peptide") {
       pg.df <- isobar:::.proteinGroupAsConciseDataFrame(protein.group,
@@ -57,7 +57,7 @@ create.meta.reports <- function(report.type="protein",properties.file="meta-prop
   merged.table$comp <- paste(merged.table[,merge.cols[2]],sep="/",merged.table[,merge.cols[1]])
 
   
-  ggplot(merged.table,aes(x=lratio,y=-log10(p.value.rat))) + 
+  g <- ggplot(merged.table,aes(x=lratio,y=-log10(p.value.rat))) + 
     geom_point(aes(color=factor(comp)),alpha=0.8) + 
     facet_wrap(~comp,ncol=2) + 
     geom_rug(alpha=0.5) + 
@@ -66,6 +66,7 @@ create.meta.reports <- function(report.type="protein",properties.file="meta-prop
                          function(x) c(x=Inf,y=-log10(0.05),isobar:::.sum.bool.na(x$p.value.rat < 0.05))),
               aes(x=x,y=y,label=`TRUE`),vjust=-0.5,hjust=1)
 
+  ggsave("lratio-pval.pdf",g)
   tbl.wide <- reshape(merged.table,idvar=ac.vars,timevar="comp",direction="wide",drop=merge.cols)
 
   #rownames(pg.df) <- do.call(paste,pg.df[,ac.vars,drop=FALSE])
@@ -82,8 +83,10 @@ create.meta.reports <- function(report.type="protein",properties.file="meta-prop
                          rowSums(tbl.pg[,grep("lratio",colnames(tbl.pg))]),
                          decreasing=TRUE),]
 
-  tbl.pg$peptide <- isobar:::.convertPeptideModif(tbl.pg$peptide,tbl.pg$modif)
-  tbl.pg$modif <- NULL
+  if ("peptide" %in% colnames(tbl.pg)) {
+    tbl.pg$peptide <- isobar:::.convertPeptideModif(tbl.pg$peptide,tbl.pg$modif)
+    tbl.pg$modif <- NULL
+  }
   tbl.pg$ac <- NULL
 
   csvname <- paste0(properties.env$name,"-combined_report.csv")
