@@ -47,8 +47,7 @@ if(!isGeneric("as.data.frame")) setGeneric("as.data.frame", useAsDefault=as.data
     vec <- names(x)
   else 
     vec <- x
-  names(vec) <- x
-  vec
+  setNames(vec,x)
 }
 
 # from Gavin Simpson [http://stackoverflow.com/questions/9788026/change-the-order-of-columns]
@@ -132,10 +131,8 @@ number.ranges <- function(numbers) {
   mat
 }
 
-.as.vect <- function(matrix,col.data=2,col.names=1) {
-  vect <- matrix[,col.data]
-  names(vect) <- matrix[,col.names]
-  vect
+.as.vect <- function(my.matrix,col.data=2,col.names=1) {
+  setNames(my.matrix[,col.data],my.matrix[,col.names])
 }
 
 .stopifnot <- function(cond,...) if (!cond) stop(...)

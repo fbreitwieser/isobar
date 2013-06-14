@@ -111,7 +111,8 @@ setValidity("IBSpectra",.valid.IBSpectra)
 
 .PEAKS.COLS <- c(MASSFIELD="X%s_mass",IONSFIELD="X%s_ions")
 
-.ID.COLS <- c(SEARCHENGINE="search.engine",SCORE="score",SCORE.MASCOT="score.mascot",SCORE.PHENYX="score.phenyx",SCORE.MSGF="score.msgf")
+.ID.COLS <- c(SEARCHENGINE="search.engine",SCORE="score",SCORE.MASCOT="score.mascot",SCORE.PHENYX="score.phenyx",SCORE.MSGF="score.msgf",
+              SCAFFOLD.PEPPROB="scaffold.pepprob",SEQUEST.XCORR="sequest.xcorr",SEQUEST.DELTACN="sequest.deltacn")
 
 .PTM.COLS <- c(SCORE.PHOSPHORS='pepscore',PROB.PHOSPHORS='pepprob',SEQPOS='seqpos',SITEPROBS='site.probs',PHOSPHO.SITES='phospho.sites')
 
@@ -128,7 +129,7 @@ setValidity("IBSpectra",.valid.IBSpectra)
                    MASSDELTA.ABS="massdelta.abs",MASSDELTA.PPM="massdelta.ppm",
                    SAMPLE="sample",FILE="file",NOTES="notes")
 
-.PEPTIDE.COLS <- c(PROTEINAC="accession",STARTPOS="start.pos",
+.PEPTIDE.COLS <- c(PROTEINAC="accession",STARTPOS="start.pos",ENDPOS="end.pos",
                   REALPEPTIDE="real.peptide",AA.BEFORE="aa.before",AA.AFTER="aa.after")
 
 .PROTEIN.COLS <- c(PROTEINAC="accession",PROTEINAC_CONCISE="accessions",
@@ -242,6 +243,8 @@ ibSpectra.as.concise.data.frame  <- function(from) {
 
 setMethod("as.data.frame",signature(x="IBSpectra"), 
 		function(x, row.names=NULL, optional=FALSE, ...) as(x,"data.frame"))
+
+as.data.frame.IBSpectra <- function(x,...) as(x,"data.frame")
 
 
 ### - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
