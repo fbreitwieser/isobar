@@ -803,6 +803,23 @@ read.mzid <- function(f) {
   if (!is.character(id.data[,.SPECTRUM.COLS['SPECTRUM']]))
     id.data[,.SPECTRUM.COLS['SPECTRUM']] <- as.character(id.data[,.SPECTRUM.COLS['SPECTRUM']])
 
+  uniprot.pattern.ac <- "[A-Z][0-9][A-Z0-9][A-Z0-9][A-Z0-9][0-9]-?[0-9]*"
+  uniprot.pattern.id <- "[A-Z0-9]{2,5}_[A-Z9][A-Z0-9]{2,5}"
+  entrez.pattern.id <- "gi\\|[0-9]{5,15}"
+
+  if (all(grepl(sprintf("%s\\|%s",uniprot.pattern.ac,uniprot.pattern.id),id.data[,.PROTEIN.COLS['PROTEINAC']]))) {
+    split.ac <- strsplit(id.data[,.PROTEIN.COLS['PROTEINAC']],"|",fixed=TRUE)
+    id.data[,.PROTEIN.COLS['PROTEINAC']] <- sapply(split.ac,function(x) x[1]) 
+    id.data[,.PROTEIN.COLS['NAME']] <- sapply(split.ac,function(x) ifelse(length(x) == 2, x[2], NA))
+  }
+  if (all(grepl(uniprot.pattern.ac,id.data[,.PROTEIN.COLS['PROTEINAC']])))
+    id.data[,.PROTEIN.COLS['DATABASE']] <- 'UniprotKB'
+
+  if (all(grepl(entrez.pattern.id,id.data[,.PROTEIN.COLS['PROTEINAC']]))) {
+    id.data[,.PROTEIN.COLS['PROTEINAC']] <- sapply(strsplit(id.data[,.PROTEIN.COLS['PROTEINAC']],"|",fixed=TRUE),function(x) x[2]) 
+    id.data[,.PROTEIN.COLS['DATABASE']] <- 'Entrez Protein'
+  }
+
   if (decode.titles)
     id.data[,.SPECTRUM.COLS['SPECTRUM']] <- unlist(lapply(id.data[,.SPECTRUM.COLS['SPECTRUM']],URLdecode))
 
