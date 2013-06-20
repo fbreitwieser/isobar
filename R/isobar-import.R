@@ -422,27 +422,36 @@ setMethod("readIBSpectra",
   return(unique(dupl[,col]))
 }
 
-
 ### READ MzID
 read.mzid <- function(f) {
   library(XML)
   doc <- xmlInternalTreeParse(f)
-  ns=c(x="http://psidev.info/psi/pi/mzIdentML/1.0")
+  ns <- c(x=xmlNamespace(xmlRoot(doc))[[1]])
+
+  root <- ifelse (isTRUE(ns == "http://psidev.info/psi/pi/mzIdentML/1.0"), "/x:mzIdentML", "/x:MzIdentML")
+  peptidesequence.name <- ifelse (isTRUE(ns == "http://psidev.info/psi/pi/mzIdentML/1.0"), "peptideSequence", "PeptideSequence")
+  dbsequenceref.attrname <- ifelse (isTRUE(ns == "http://psidev.info/psi/pi/mzIdentML/1.0"), "DBSequence_ref", "dBSequence_ref")
+  peptideevref.attrname <- ifelse (isTRUE(ns == "http://psidev.info/psi/pi/mzIdentML/1.0"), "PeptideEvidence_ref", "peptideEvidence_ref")
+  peptideref.attrname <- ifelse (isTRUE(ns == "http://psidev.info/psi/pi/mzIdentML/1.0"), "Peptide_ref", "peptide_ref")
 
   searchdatabase.mapping <- data.frame(
-    ref=xpathSApply(doc,"/x:mzIdentML/x:DataCollection/x:Inputs/x:SearchDatabase",
+    ref=xpathSApply(doc,paste0(root,"/x:DataCollection/x:Inputs/x:SearchDatabase"),
       xmlGetAttr,name="id",namespaces=ns),
-    name=xpathSApply(doc,"/x:mzIdentML/x:DataCollection/x:Inputs/x:SearchDatabase",
+    name=xpathSApply(doc,paste0(root,"/x:DataCollection/x:Inputs/x:SearchDatabase"),
       xmlGetAttr,name="name",namespaces=ns),stringsAsFactors=FALSE
   )
    
   modification.mapping.df <- t(do.call(cbind,
-                                  xpathApply(doc,"/x:mzIdentML/x:AnalysisProtocolCollection/x:SpectrumIdentificationProtocol/x:ModificationParams/x:SearchModification",
+                                  xpathApply(doc,paste0(root,"/x:AnalysisProtocolCollection/x:SpectrumIdentificationProtocol/x:ModificationParams/x:SearchModification"),
                                              function(modif) {
-    is.fixedmodif <- isTRUE(xmlGetAttr(modif,name='fixedMod') == 'true')
-    c(fixedmodif=is.fixedmodif,unlist(xpathApply(modif,"x:ModParam",function(modParam) {
-        c(xmlAttrs(modParam),xmlAttrs(modParam[['cvParam']]))
-    },namespaces=ns)))
+
+    res <- xmlAttrs(modif)
+    modparams <- getNodeSet(modif,"x:ModParam",namespaces=ns)
+    return (switch(as.character(length(modparams)),
+            "0" = c(res,xmlAttrs(modif[['cvParam']])),
+            "1" = c(res,xmlAttrs(modParams[[1]]),xmlAttrs(modParams[[1]][['cvParam']])),
+            stop("Expecting zero or one ModParam Node in ",
+                 "/mzIdentML/AnalysisProtocolCollection/SpectrumIdentificationProtocol/ModificationParams/SearchModification")))
   },namespaces=ns)))
 
   unknown.modif <- modification.mapping.df[,'name']=='unknown modification' | modification.mapping.df[,'accession']=='MS:1001460'
@@ -456,22 +465,33 @@ read.mzid <- function(f) {
   modif.map <- .as.vect(unique(modification.mapping.df[,c('massDelta','name')]))
 
   message("peptide and protein mapping")
-  peptide.mapping <- do.call(rbind,xpathApply(doc,"/x:mzIdentML/x:SequenceCollection/x:Peptide",namespaces=ns,
+  peptide.mapping <- do.call(rbind,xpathApply(doc,paste0(root,"/x:SequenceCollection/x:Peptide"),namespaces=ns,
          function(pep) {
            peptide.ref <- xmlGetAttr(pep,name='id')
-           peptide.seq <- xmlValue(pep[['peptideSequence']])
+           peptide.seq <- xmlValue(pep[[peptidesequence.name]])
 
            loc.n.delta <- xpathSApply(pep,"x:Modification",function(m) c(location=xmlGetAttr(m,name="location"),
                                                                          massDelta=xmlGetAttr(m,name="monoisotopicMassDelta")),
                                       namespaces=ns)
+
+          
            modifstring <- character(nchar(peptide.seq)+2)
-           if (length(loc.n.delta) > 0)
-             modifstring[as.numeric(loc.n.delta[1,])+1] <- modif.map[loc.n.delta[2,]]
+
+           if (length(loc.n.delta) > 0) {
+             modif.names <- modif.map[loc.n.delta[2,]]
+             if (any(is.na(modif.names)))
+               modif.names <- xpathSApply(pep,"x:Modification/x:cvParam[@cvRef='UNIMOD']",xmlGetAttr,name='name',namespaces=ns)
+
+             if (length(modif.names) < ncol(loc.n.delta)) 
+               stop("modif names and delta have different size")
+ 
+             modifstring[as.numeric(loc.n.delta[1,])+1] <- modif.names
+           }
            
            c(peptide.ref=peptide.ref,peptide=peptide.seq,modif=paste(modifstring,collapse=":"))
          }))
 
-  protein.mapping <- do.call(rbind,xpathApply(doc,"/x:mzIdentML/x:SequenceCollection/x:DBSequence",function(dbs) {
+  protein.mapping <- do.call(rbind,xpathApply(doc,paste0(root,"/x:SequenceCollection/x:DBSequence"),function(dbs) {
     c(dbseq.ref = xmlGetAttr(dbs,name='id'),
       accession = xmlGetAttr(dbs,name='accession'),
       length = xmlGetAttr(dbs,name='length'),
@@ -479,22 +499,24 @@ read.mzid <- function(f) {
       #sequence = xmlValue(dbs[['seq']]))
   },namespaces=ns))
   records.proteinDetections <- do.call(rbind,xpathApply(doc,
-    "/x:mzIdentML/x:DataCollection/x:AnalysisData/x:ProteinDetectionList/x:ProteinAmbiguityGroup",
+    paste0(root,"/x:DataCollection/x:AnalysisData/x:ProteinDetectionList/x:ProteinAmbiguityGroup"),
     namespaces=ns,
     fun=function(pag) {
     ## apply on ProteinAmbiguityGroup
     do.call(rbind,xmlApply(pag,function(pdh) {
       ## apply on ProteinDetectionHypothesis
-      cbind(dbseq.ref=xmlGetAttr(pdh,"DBSequence_ref"),
-            peptide.ev.ref=
-              as.character(getNodeSet(pdh,"x:PeptideHypothesis/@PeptideEvidence_Ref",namespaces=ns))
+      cbind(dbseq.ref=xmlGetAttr(pdh,dbsequenceref.attrname),
+            peptide.ev.ref=xpathSApply(pdh,"x:PeptideHypothesis",xmlGetAttr,name=peptideevref.attrname,namespaces=ns)
     )}))
   }))
 
+  # map PeptideEvidence attribute names to isobar columns
+  pe.attr.names <- c(id="peptide.ev.ref",start="start.pos",end="end.pos",pre="aa.before",post="aa.after",
+                     missedCleavages="nmc",isDecoy="is.decoy",DBSequence_Ref="dbseq.ref",dBSequence_Ref="dbseq.ref")
   
   message("spectrum mapping")
-  spectrumIdentifications <- 
-    xpathApply(doc,"/x:mzIdentML/x:DataCollection/x:AnalysisData/x:SpectrumIdentificationList/x:SpectrumIdentificationResult",
+  spectrumIdentifications <-
+    xpathApply(doc,paste0(root,"/x:DataCollection/x:AnalysisData/x:SpectrumIdentificationList/x:SpectrumIdentificationResult"),
               namespaces=ns,
               fun=function(sir) {
     ## _SpectrumIdentificationResult_ #
@@ -526,23 +548,32 @@ read.mzid <- function(f) {
                             )
                  },namespaces=ns))
 
-      pe <- sii[["PeptideEvidence"]]
-      c(
-                 spectrum=spectrum.id,
-                 peptide.ref   = xmlGetAttr(sii,name='Peptide_ref'),
-                 theo.mass     = xmlGetAttr(sii,name='calculatedMassToCharge'),
-                 exp.mass      = xmlGetAttr(sii,name='experimentalMassToCharge'),
-                 scores,
-                 peptide.ev.ref=xmlGetAttr(pe,name="id"),
-                 start.pos=xmlGetAttr(pe,name="start"),
-                 end.pos=xmlGetAttr(pe,name="end"),
-                 nmc=xmlGetAttr(pe,name="missedCleavages"))
-   
-  }
-  )
+      if ("PeptideEvidence" %in% names(sii)) {
+        pe.attr <- xmlAttrs(sii[["PeptideEvidence"]])
+        pe.res <- pe.attr.names[names(pe.attr)[names(pe.attr) %in% names(pe.attr.names)]]
+      } else {
+        pe.res <- c(peptide.ev.ref=xmlGetAttr(sii[["PeptideEvidenceRef"]],name="peptideEvidence_ref"))
+      }
+
+      c(spectrum=spectrum.id,
+        peptide.ref   = xmlGetAttr(sii,name=peptideref.attrname),
+        theo.mass     = xmlGetAttr(sii,name='calculatedMassToCharge'),
+        exp.mass      = xmlGetAttr(sii,name='experimentalMassToCharge'),
+        scores,pe.res)
+  })
+
   si.names <- unique(unlist(sapply(spectrumIdentifications,names)))
   records.spectrumIdentifications <- do.call(rbind,lapply(spectrumIdentifications,function(x) x[si.names]))
+  records.spectrumIdentifications <- as.data.frame(records.spectrumIdentifications,stringsAsFactors=FALSE)
 
+  peptide.ev.mapping <- xpathApply(doc,paste0(root,"/x:SequenceCollection/x:PeptideEvidence"),namespaces=ns,xmlAttrs)
+  if (length(peptide.ev.mapping) > 0) {
+    records.spectrumIdentifications <- merge(records.spectrumIdentifications,
+                                             as.data.frame(do.call(rbind,peptide.ev.mapping),stringsAsFactors=FALSE))
+  }
+
+  print(head(as.data.frame(records.spectrumIdentifications,stringsAsFactors=FALSE)))
+  print(head(as.data.frame(peptide.mapping,stringsAsFactors=FALSE)))
   spectra.n.peptides <- merge(as.data.frame(records.spectrumIdentifications,stringsAsFactors=FALSE),
                               as.data.frame(peptide.mapping,stringsAsFactors=FALSE),
                               by='peptide.ref')
@@ -1203,8 +1234,11 @@ read.mzid <- function(f) {
   }
 
   if (max(table(identifications[,SC['SPECTRUM']])) > 1) {
-    print(head(identifications))
-    stop("Identifications still have duplicate spectra!")
+    t <- table(identifications[,SC['SPECTRUM']])
+    bad.spectra <- subset(identifications,spectrum %in% names(t)[t>1])
+    #print(head(bad.spectra[order(bad.spectra$spectrum),]))
+    warning(nrow(bad.spectra)," spectra have diverging identifications after the merging, removing them.")
+    identifications <- identifications[!identifications[,SC['SPECTRUM']] %in% names(t)[t>1],]
   }
 
   if ('SEARCHENGINE' %in% names(SC)) {
@@ -1261,7 +1295,7 @@ read.mzid <- function(f) {
 
 
 ## read MSGF+ tab-separated identification files
-.read.msgfp.tsv <- function(filename,filter.rev.hits=TRUE) {
+.read.msgfp.tsv <- function(filename,filter.rev.hits=FALSE) {
   id.data <- read.delim(filename, sep="\t", stringsAsFactors=FALSE)
   ib.df <- data.frame(spectrum=id.data[,'Title'],.convert.msgfp.pepmodif(id.data[,'Peptide']),
 		      scan.from=id.data[,'ScanNum'],dissoc.method=tolower(id.data[,'FragMethod']),
@@ -1328,7 +1362,7 @@ read.mzid <- function(f) {
   }
 
   as.data.frame(do.call(rbind,lapply(seq_along(peptide),
-          function(i) cbind(peptide=peptide[i],accession=protein.acs[[i]]) )),stringsAsFactors=FALSE)
+          function(i) cbind(peptide=peptide[i],accession=protein.acs[[i]],is.decoy=grepl("^XXX_",protein.acs[[i]])) )),stringsAsFactors=FALSE)
 }
 
 

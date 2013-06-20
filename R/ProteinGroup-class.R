@@ -383,7 +383,9 @@ getProteinInfoFromUniprot <- function(x,splice.by=200,
   return(protein.info)
 }
 
-getProteinInfoFromEntrezProtein <- function(x,splice.by=200) {
+getProteinInfoFromEntrez <- function(x,splice.by=200) {
+  require(XML)
+
   eutils.url <- "http://eutils.ncbi.nlm.nih.gov/entrez/eutils/esummary.fcgi?db=protein&id="
   if (is.character(x))
     protein.acs <- x
