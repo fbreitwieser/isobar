@@ -1,3 +1,8 @@
+CHANGES IN VERSION 1.7.2
+------------------------
+ - added TMT 6plex masses to phosphoRS export script
+ - fixed mascot parsers
+
 CHANGES IN VERSION 1.7.1
 ------------------------
  - fixed import of MzIdentML files from Mascot and ProteomeDiscoverer
