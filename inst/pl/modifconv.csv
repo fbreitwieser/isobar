@@ -9,6 +9,7 @@ Carbamyl (K)				CAM_core
 Carbamyl (N-term)			CAM_nterm
 Carboxymethyl (C)			Cys_CM
 Deamidation (NQ)			DEAMID
+Deamidated (NQ)		   DEAMID
 GlyGly (K)					GlyGly
 Guanidination (K)			Guanidination
 ICAT_light					ICAT_light
