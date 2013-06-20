@@ -349,6 +349,7 @@ getProteinInfoFromBiomart <- function(x,database="Uniprot") {
   return(protein.info)
 }
 
+# for NCBI protein: http://eutils.ncbi.nlm.nih.gov/entrez/eutils/efetch.fcgi?db=protein&id=115298678
 
 getProteinInfoFromUniprot <- function(x,splice.by=200, 
                                       fields = c(accession="id",name="entry%20name",protein_name="protein%20names",
@@ -380,6 +381,38 @@ getProteinInfoFromUniprot <- function(x,splice.by=200,
     warning("getProteinInfoFromUniprot returned no results for ",protein.acs," accessions")
   }
   return(protein.info)
+}
+
+getProteinInfoFromEntrezProtein <- function(x,splice.by=200) {
+  eutils.url <- "http://eutils.ncbi.nlm.nih.gov/entrez/eutils/esummary.fcgi?db=protein&id="
+  if (is.character(x))
+    protein.acs <- x
+  else  
+    protein.acs <- x@isoformToGeneProduct[names(indistinguishableProteins(x)),"proteinac.wo.splicevariant"]
+
+  protein.info <- c()
+  i <- 1
+  while (i < length(protein.acs)) {
+    cat(".")
+
+    res <- xmlToList(paste0(eutils.url,paste(protein.acs[seq(from=i,to=min(length(protein.acs),i+splice.by-1))],collapse=",")))
+    res.l <- lapply(res, function(x) {
+      unlist(setNames(lapply(x[names(x) != 'Id'], function(y) 
+        if ('.attrs' %in% names(y) && y$.attrs['Name'] != 'Comment') 
+          setNames(y$text,y$.attrs['Name'])),NULL))
+    })
+  
+    enames.to.isobar <- c(Gi="accession",Caption="name",Title="protein_name")
+    res.df <- ldply(res.l, function(x) setNames(x[names(enames.to.isobar)],enames.to.isobar))
+  
+   protein.info <- rbind(protein.info,res.df)
+    i <- i + splice.by
+  }
+  protein.info[,c('protein_name','organism')] <- t(sapply(strsplit(sub("^(.*) \\[(.*)\\]$","\\1\t\\2",protein.info[,'protein_name']),"\t"),function(x) x))
+ 
+  protein.info$gene_name <- NA
+  protein.info$.id <- NULL
+  protein.info
 }
 
 getProteinInfoFromNextProt <- function(x) {
