@@ -1179,30 +1179,30 @@ read.mzid <- function(f) {
 .merge.quant.identifications <- function(identifications) {
 
   SC <- .SPECTRUM.COLS[.SPECTRUM.COLS %in% colnames(identifications)]
-  score.colname <- .SPECTRUM.COLS[c('PROB.PHOSPHORS','SCORE.MASCOT','SCORE.PHENYX','SCORE.MSGF')]
+  score.colname <- .SPECTRUM.COLS[c('SCORE.MASCOT','SCORE.PHENYX','SCORE.MSGF','PROB.PHOSPHORS')]
   score.colname <- score.colname[score.colname %in% colnames(identifications)]
 
   message("Merging identifications from different dissociation methods.")
   ddply(identifications,.SPECTRUM.COLS['SPECTRUM.QUANT'],function(x) {
-                           if (nrow(x) == 1) return(x)
-                           my.args <- as.list(x[,score.colname,drop=FALSE])
-                           my.args <- lapply(my.args,round,digits=2) ## take two significant digits before taking next score into account as top hitter
-                           my.args$decreasing=TRUE
-                           max.hit <- do.call(order,my.args)[1]
-                           if (!all(x[,SC['PEPTIDE']] == x[1,SC['PEPTIDE']]))
-                             return(NULL)
+      if (nrow(x) == 1) return(x)
+      my.args <- as.list(x[,score.colname,drop=FALSE])
+      my.args <- lapply(my.args,round,digits=2) ## take two significant digits before taking next score into account as top hitter
+      my.args$decreasing=TRUE
+      max.hit <- do.call(order,my.args)[1]
+      if (!all(x[,SC['PEPTIDE']] == x[1,SC['PEPTIDE']]))
+      return(NULL)
 
-                           x[max.hit,SC['DISSOCMETHOD']] = paste0("[",x[max.hit,SC['DISSOCMETHOD']],"]")
-                           if (all(x[,SC['MODIFSTRING']] == x[max.hit,SC['MODIFSTRING']]) && 'DISSOCMETHOD' %in% names(SC)) {
-                             if ("cid" %in% x[,SC['DISSOCMETHOD']])
-                               x[max.hit,SC['SPECTRUM']] <- x[x[,SC['DISSOCMETHOD']]=="cid",SC['SPECTRUM']][1]
+      x[max.hit,SC['DISSOCMETHOD']] = paste0("[",x[max.hit,SC['DISSOCMETHOD']],"]")
+      if (all(x[,SC['MODIFSTRING']] == x[max.hit,SC['MODIFSTRING']]) && 'DISSOCMETHOD' %in% names(SC)) {
+      if ("cid" %in% x[,SC['DISSOCMETHOD']])
+      x[max.hit,SC['SPECTRUM']] <- x[x[,SC['DISSOCMETHOD']]=="cid",SC['SPECTRUM']][1]
 
-                             x[max.hit,SC['DISSOCMETHOD']] <- paste(x[,SC['DISSOCMETHOD']],collapse="&")
-                             for (sc in score.colname[c(2,3)])
-                               x[max.hit,sc] <- paste(x[,sc],collapse="&")
-                           }
+      x[max.hit,SC['DISSOCMETHOD']] <- paste(x[,SC['DISSOCMETHOD']],collapse="&")
+      for (sc in score.colname[score.colname != 'pepprob'])
+        x[max.hit,sc] <- paste(x[,sc],collapse="&")
+      }
 
-                           return(x[max.hit,])
+      return(x[max.hit,])
   })
 
 }
