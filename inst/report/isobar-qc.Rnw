@@ -27,7 +27,6 @@ n.tags <- length(reporterTagNames(ibspectra))
 \usepackage{amsmath}
 \usepackage{longtable}
 \usepackage[pdftex]{graphicx}
-\usepackage{subfigure}
 \usepackage{float}
 \usepackage{verbatim}
 \usepackage{fancyhdr}
@@ -53,8 +52,6 @@ cat(sprintf("\\input{%s}\n",system.file("report","report-utils.tex",package="iso
   colorlinks=true,
   pdfauthor=isobar
 }
-
-\renewcommand*{\thesubfigure}{}
 
 \title{Isobar QC Report \analysisname\isobarthanks}
 \author{\analysisauthor}
