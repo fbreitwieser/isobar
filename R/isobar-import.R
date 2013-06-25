@@ -1227,8 +1227,8 @@ read.mzid <- function(f) {
   if ('SPECTRUM.QUANT' %in% names(SC)) {
     tt <- table(identifications[,SC['SPECTRUM.QUANT']])
     if (any(tt>1)) {
-      spectra.ok <- identifcations[,'SPECTRUM.QUANT'] %in% names(tt)[tt==1]
-      ids.quant.merged <- .merge.quant.identifications(identification[!spectra.ok])
+      spectra.ok <- identifications[,'SPECTRUM.QUANT'] %in% names(tt)[tt==1]
+      ids.quant.merged <- .merge.quant.identifications(identifications[!spectra.ok])
       identifications <- rbind(identifications[spectra.ok,],ids.quant.merged)
     }
   }
