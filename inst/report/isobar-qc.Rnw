@@ -69,14 +69,14 @@ cat(sprintf("\\input{%s}\n",system.file("report","report-utils.tex",package="iso
 %<<ibspectra,echo=FALSE>>=
 %ibspectra
 %@
-\subsection*{Reporter Mass Precision}
+\subsection*{Reporter mass precision}
 Histogram representing the distribution of the delta mass (in \emph{m/z}) for each reporter tag between theoretical and observed mass. Reporter tag ions were extracted from MS2 fragment spectra at $\pm$ \Sexpr{properties.env$fragment.precision/2} $m/z$ around the theoretical masses.
 
 <<fig-reporterMassPrecisionv,fig=T,echo=F,width=6.5,height=2.5,results=hide>>=
  print(reporterMassPrecision(ibspectra))
 @
 
-\subsection*{Reporter Intensities}
+\subsection*{Reporter intensities and Normalization}
 Box-plot of the reporter intensities before and after the normalization process. Isobar applies a normalization factor to impose equal median intensity in each channel.
 
 \begin{minipage}[c]{0.70\textwidth}
@@ -170,7 +170,8 @@ if (!is.null(ratiodistr)) {
 }
 @
 
-\paragrap{Individual ratio distributions}
+\subsection*{Individual ratio distributions}
+
 <<reporter-intensities-2,fig=T,echo=F,width=6.5,height=4.5,results=hide>>=
 if (all(c("class1","class2") %in% colnames(quant.tbl))) {
   quant.tbl$comp <- sprintf("%s [%s] /\n %s [%s]",
@@ -199,17 +200,17 @@ tableGrob(ddply(quant.tbl,c('channels','class2','class1')[c('channels','classes'
                  function(x) c('number of ratios'=sum(!is.na(x$lratio)),
                                'significantly\ndownregulated'=sum(x$is.significant[x$lratio<0],na.rm=TRUE),
                                'significantly\nupregulated'=sum(x$is.significant[x$lratio>0],na.rm=TRUE))),
-           gpar.coretext = gpar(fontsize=8), gpar.coltext=gpar(fontsize=8), gpar.rowtext=gpar(fontsize=8)),
+           gpar.coretext = gpar(fontsize=9), gpar.coltext=gpar(fontsize=10), gpar.rowtext=gpar(fontsize=10)),
 ncol=1))
 
 @
 
-\subsection*{Ratio-Intensity Plot}
+\subsection*{Ratio-intensity plot}
 Display of the ratio (\emph{y-axis}) versus the log10 average signal intensity (\emph{x-axis}) for all the reporter ratio combinations. The noise model used by Isobar is indicated as a solid red line.
 
 <<fig-maplot,echo=FALSE,results=hide>>=
 ppi <- 300
-png("fig_maplot.png",width=6*ppi,height=4*ppi,res=ppi,pointsize=12)
+png("fig_maplot.png",width=6.5*ppi,height=4.5*ppi,res=ppi,pointsize=12)
 maplot(ibspectra,noise.model=noise.model,bty="l",pairs=properties.env$qc.maplot.pairs)
 dev.off()
 @
@@ -224,8 +225,8 @@ quant.tbl$sign <- paste(quant.tbl$sign.string,": ",quant.tbl$V1,sep="")
 #message(paste(unique(quant.tbl$sign),collapse="\n"))
 
 g <- ggplot(quant.tbl,aes(x=lratio,y=sqrt(variance))) +
-  geom_point(aes(colour=factor(sign),shape=factor(sign)),alpha=0.8) +
-  geom_rug(alpha=0.1) + scale_shape(solid=FALSE) + theme_bw()
+  geom_point(aes(colour=factor(is.significant),shape=factor(is.significant)),alpha=0.8) +
+  scale_shape(solid=FALSE) + facet_grid(class1~class2) + theme_bw()
 print(g)
 @
 
