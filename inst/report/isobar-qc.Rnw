@@ -6,6 +6,7 @@ options(encoding="UTF-8")
 suppressPackageStartupMessages(library(distr))
 suppressPackageStartupMessages(require(ggplot2))
 suppressPackageStartupMessages(library(isobar))
+suppressPackageStartupMessages(library(gridExtra))
 pdf.options(pointsize=6)
 
 if (!exists("properties.env",inherits=FALSE)) {
@@ -71,7 +72,7 @@ cat(sprintf("\\input{%s}\n",system.file("report","report-utils.tex",package="iso
 \subsection*{Reporter Mass Precision}
 Histogram representing the distribution of the delta mass (in \emph{m/z}) for each reporter tag between theoretical and observed mass. Reporter tag ions were extracted from MS2 fragment spectra at $\pm$ \Sexpr{properties.env$fragment.precision/2} $m/z$ around the theoretical masses.
 
-<<fig-reporterMassPrecision,fig=T,echo=F,width=6.5,height=2.5,results=hide>>=
+<<fig-reporterMassPrecisionv,fig=T,echo=F,width=6.5,height=2.5,results=hide>>=
  print(reporterMassPrecision(ibspectra))
 @
 
@@ -126,6 +127,7 @@ if (!is.null(ratiodistr)) {
 }
 
 print(g)
+
 @
 \end{minipage}
 \hfill
@@ -166,6 +168,40 @@ if (!is.null(ratiodistr)) {
       "\\end{tabular} \\normalsize",
       sep="")
 }
+@
+
+\paragrap{Individual ratio distributions}
+<<reporter-intensities-2,fig=T,echo=F,width=6.5,height=4.5,results=hide>>=
+if (all(c("class1","class2") %in% colnames(quant.tbl))) {
+  quant.tbl$comp <- sprintf("%s [%s] /\n %s [%s]",
+                            quant.tbl$r2,quant.tbl$class2,
+                            quant.tbl$r1,quant.tbl$class1)
+  quant.tbl$channels <- sprintf("%s / %s",quant.tbl$r2,quant.tbl$r1)
+} else {
+  quant.tbl$comp <- sprintf("%s / %s",quant.tbl$r2,quant.tbl$r1)
+}
+
+g <- ggplot(quant.tbl,aes(x=lratio)) +
+  geom_histogram(
+                 aes(y=..density..,fill=comp),alpha=0.8,binwidth=1/20*(max(limits)-min(limits))) + facet_wrap(~comp,nrow=1) +
+#  scale_x_continuous("Ratio",breaks=log10(breaks),labels=breaks) +
+  scale_x_continuous(expression(paste(log[10]," ratio"))) +
+  theme_bw(base_size=10) +
+  opts(legend.position="none",axis.text.x = theme_text(colour="grey50"))  + scale_fill_brewer(palette="Set1")
+
+if (!is.null(ratiodistr)) {
+  curve.distr <- data.frame(x=limits,y=d(ratiodistr)(limits))
+  g <- g + geom_line(data=curve.distr,aes(x=x,y=y),colour="black",alpha=.5)
+}
+
+print(grid.arrange(g,
+tableGrob(ddply(quant.tbl,c('channels','class2','class1')[c('channels','classes') %in% colnames(quant.tbl)],
+                 function(x) c('number of ratios'=sum(!is.na(x$lratio)),
+                               'significantly\ndownregulated'=sum(x$is.significant[x$lratio<0],na.rm=TRUE),
+                               'significantly\nupregulated'=sum(x$is.significant[x$lratio>0],na.rm=TRUE))),
+           gpar.coretext = gpar(fontsize=8), gpar.coltext=gpar(fontsize=8), gpar.rowtext=gpar(fontsize=8)),
+ncol=1))
+
 @
 
 \subsection*{Ratio-Intensity Plot}
