@@ -42,8 +42,8 @@ setClass("iTRAQ8plexSpectra",
     contains = "iTRAQSpectra",
     prototype = prototype(
       reporterTagNames = as.character(c(113:119,121)),
-      reporterTagMasses = c(113.1078,114.1112,115.1082,116.1116,
-                         117.1149,118.1120,119.1153,121.1220),
+      reporterTagMasses = c(113.10787,114.11123,115.10826,116.11162,
+                            117.11497,118.11201,119.1153 ,121.1220),
       isotopeImpurities = diag(nrow=8)
     )
 )
