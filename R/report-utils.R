@@ -43,7 +43,7 @@ create.reports <- function(properties.file="properties.R",
       zip.files <- .compile.tex(qc.name,zip.files)
   }
 
-  if(property('write.report',properties.env)) {
+  if(property('write.report',properties.env) && report.type != 'peptide') {
     message("Weaving isobar-analysis report")
     name <- switch(report.type,
                    protein="isobar-analysis",

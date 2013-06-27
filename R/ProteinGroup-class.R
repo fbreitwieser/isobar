@@ -486,14 +486,18 @@ getPtmInfoFromPhosphoSitePlus <- function(protein.group,file.name=NULL,modif="PH
 
   sites <- read.delim(file.name,
                       sep="\t",header=TRUE,skip=3,stringsAsFactors=FALSE)
-  sites <- sites[gsub("-.*","",sites$ACC.) %in% gsub("-.*","",names(indistinguishableProteins(protein.group))),]
+  ac.column <- ifelse("ACC_ID" %in% colnames(sites),"ACC_ID","ACC.")
+  species.column <- ifelse("ORG" %in% colnames(sites),"ORG","SPECIES")
+  residue.column <- ifelse("MOD_RSD" %in% colnames(sites),"MOD_RSD","RSD")
+
+  sites <- sites[gsub("-.*","",sites[,ac.column]) %in% gsub("-.*","",names(indistinguishableProteins(protein.group))),]
 
   sites$PUBMED_LTP[!is.na(sites$PUBMED_LTP)] <- paste("n.publ ltp:",sites$PUBMED_LTP[!is.na(sites$PUBMED_LTP)])
   sites$PUBMED_MS2[!is.na(sites$PUBMED_MS2)] <- paste("n.publ htp:",sites$PUBMED_MS2[!is.na(sites$PUBMED_MS2)])
 
-  data.frame(.id=sites[,"ACC."],
-             isoform_ac=sapply(sites[,"ACC."],function(ac) ifelse(grepl("-[0-9]$",ac),ac,paste0(ac,"-1"))),
-             species=tolower(sites[,'SPECIES']),
+  data.frame(.id=sites[,ac.column],
+             isoform_ac=sapply(sites[,ac.column],function(ac) ifelse(grepl("-[0-9]$",ac),ac,paste0(ac,"-1"))),
+             species=tolower(sites[,species.column]),
              modification.name=tolower(sites[,'MOD_TYPE']),
              description=apply(sites,1,function(x) {
                                y <- tolower(x['MOD_TYPE'])
@@ -503,7 +507,7 @@ getPtmInfoFromPhosphoSitePlus <- function(protein.group,file.name=NULL,modif="PH
                              }),
              evidence=apply(sites[,c("PUBMED_LTP","PUBMED_MS2")],1,
                             function(x) { x<-x[!is.na(x)]; paste(x,collapse=";")}),
-             position=as.integer(substr(sites$RSD,2,nchar(sites$RSD))),
+             position=as.integer(substr(sites[,residue.column],2,nchar(sites[,residue.column]))),
              stringsAsFactors=FALSE)
 }
 
