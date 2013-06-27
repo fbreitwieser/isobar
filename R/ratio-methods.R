@@ -1133,7 +1133,7 @@ ratiosReshapeWide <- function(quant.tbl,grouped.cols=TRUE,vs.class=NULL,sep=".",
   }
   quant.tbl  <- quant.tbl[,-(c(which(colnames(quant.tbl) %in% c("r1","r2","class1","class2"))))]
   v.names <- c("lratio","lratio.modpep","lratio.prot","variance","variance.modpep","variance.prot","n.spectra",
-               "p.value.rat","p.value.rat.adjusted","p.value.sample",
+               "p.value.rat","p.value.rat.adjusted","p.value.sample","z.score",
                "is.significant","is.significant.modpep","is.significant.prot","sd","n.na1","n.na2","n.pos","n.neg") # 
   v.names <- v.names[v.names %in% colnames(quant.tbl)]
   timevar <- "comp"
