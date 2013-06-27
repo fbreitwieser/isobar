@@ -72,6 +72,17 @@ setClass("TMT6plexSpectra",
        )
     )
 
+setClass("TMT6plexSpectra2",
+    contains = "TMTSpectra",
+    prototype = prototype(
+      reporterTagNames = as.character(126:131),
+      reporterTagMasses = c(126.127725,127.124760,128.134433,
+                            129.131468,130.141141,131.138176),
+       isotopeImpurities = diag(nrow=6)
+       )
+    )
+
+
 
 ### - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 ### Validity.
