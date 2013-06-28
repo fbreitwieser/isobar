@@ -23,6 +23,7 @@ Collate: utils.R
 	 NoiseModel-class.R
    Tlsd-class.R
 	 ratio-methods.R
+   distr-methods.R
    sharedpep-methods.R
    report-utils-xls.R
    report-utils-tex.R

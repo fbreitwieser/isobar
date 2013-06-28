@@ -127,6 +127,7 @@ load.properties <- function(properties.file="properties.R",
   message("parsing command line arguments ...")
   for (arg in args) {
     if (grepl("^--",arg)) {
+
       arg.n.val <- strsplit(substring(arg,3),"=")[[1]]
       if (length(arg.n.val) == 1)
         tmp.properties.env[[arg.n.val]] <- TRUE
@@ -157,7 +158,15 @@ initialize.env <- function(env,report.type="protein",properties.env) {
     if (!ret) stop("Error creating cachedir [",get.property('cachedir'),"]")
   }
 
-  env$ibspectra <- .create.or.load.ibspectra(properties.env)
+  ib.name <- sprintf("%s/ibspectra.rda",.get.property('cachedir',envir))
+  if (file.exists(file.name)) {
+    load(ib.name)
+    env$ibspectra <- ibspectra
+  } else {
+    env$ibspectra <- .create.or.load.ibspectra(properties.env)
+    save(list='ibspectra',envir=env,file=ib.name)
+  }
+
   env$noise.model <- .create.or.load.noise.model(env,properties.env)
   env$ratiodistr <- .create.or.load.ratiodistr(env,properties.env,level=report.type)
   if (identical(report.type,"peptide") )
@@ -592,34 +601,6 @@ property <- function(x, envir, null.ok=TRUE,class=NULL) {
       quant.tbl[,"group"] <- as.numeric(factor(quant.tbl[,"ac"],levels=unique(quant.tbl[,"ac"])))
     }
     return(quant.tbl)
-  })
-}
-
-.protein.acc <- function(prots,protein.info=NULL,ip=NULL) {
-  if (is.null(ip)) {
-    proteins <- list(prots)
-  } else {
-    proteins <- lapply(prots,function(p) {names(ip)[ip == p]})
-  }
-
-  sapply(proteins,function(prots) {
-         ## consider ACs with -[0-9]*$ as splice variants (ACs w/ more than one dash are not considered)
-         pos.splice <- grepl("^[^-]*-[0-9]*$",prots)
-         df <- data.frame(protein=prots,accession=prots,splice=0,stringsAsFactors=FALSE)
-
-         if (any(pos.splice))
-           df[pos.splice,c("accession","splice")] <- 
-             do.call(rbind,strsplit(prots[pos.splice],"-"))
-
-         res <- 
-           ddply(df,"accession",function(y) {
-                 if(sum(y$splice>0) <= 1)
-                   return(data.frame(protein=unique(y$protein)))
-                 else 
-                   return(data.frame(protein=sprintf("%s-[%s]",unique(y$accession),
-                                                     paste(sort(y[y$splice>0,'splice']),collapse=","))))
-                                 })
-         return(paste(res$protein,collapse=", "))
   })
 }
 

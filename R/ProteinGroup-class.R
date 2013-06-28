@@ -618,9 +618,7 @@ proteinGroup.as.concise.data.frame <-
 
         pep.n.prot <- merge(as.data.frame(peptideNProtein(from),stringsAsFactors=FALSE),
                             from@peptideInfo)
-        rp <- reporterProteins(from)
-        p.ac <- sapply(rp,.protein.acc,indistinguishableProteins(from))
-        #names(p.ac) <- rp
+        p.ac <- .protein.acc(reporterProteins(from),from)
         ip.df <- .vector.as.data.frame(indistinguishableProteins(from),
                                        colnames=c("protein","protein.g"))
         if (only.reporters)
@@ -652,9 +650,7 @@ proteinGroup.as.concise.data.frame <-
 
         pep.n.prot <- merge(as.data.frame(peptideNProtein(from),stringsAsFactors=FALSE),
                             from@peptideInfo)
-        rp <- reporterProteins(from)
-        p.ac <- sapply(rp,.protein.acc,indistinguishableProteins(from))
-        #names(p.ac) <- rp
+        p.ac <- .protein.acc(reporterProteins(from),from)
         ip.df <- .vector.as.data.frame(indistinguishableProteins(from),
                                        colnames=c("protein","protein.g"))
         if (only.reporters)
@@ -1637,32 +1633,30 @@ calculate.emPAI <- function(protein.group,protein.g=reporterProteins(protein.gro
   return(empai)
 }
 
-.protein.acc <- function(prots,ip=NULL) {
-  if (is.null(ip)) {
-    proteins <- list(prots)
-  } else {
-    proteins <- lapply(prots,function(p) {names(ip)[ip == p]})
-  }
+# pretty format group identifiers
+#   Input: c("P1234-1,P1234-2","P6543")
+#  Output: c("P1234-[1,2]","P6543")
+.protein.acc <- function(protein.g,protein.group) {
 
-  sapply(proteins,function(prots) {
-         ## consider ACs with -[0-9]*$ as splice variants (ACs w/ more than one dash are not considered)
-         pos.splice <- grepl("^[^-]*-[0-9]*$",prots)
-         my.df <- data.frame(protein=prots,accession=prots,splice=0,stringsAsFactors=FALSE)
+  if (length(protein.g) > 1) 
+    return(sapply(protein.g,function(p) .protein.acc(p,protein.group)))
 
-         if (any(pos.splice))
-           my.df[pos.splice,c("accession","splice")] <- 
-             do.call(rbind,strsplit(prots[pos.splice],"-"))
+  protein.g <- names(indistinguishableProteins(protein.group))[indistinguishableProteins(protein.group)==protein.g]
 
-         res <- 
-           ddply(my.df,"accession",function(y) {
-                 if(sum(y$splice>0) <= 1)
-                   return(data.frame(protein=unique(y$protein)))
-                 else 
-                   return(data.frame(protein=sprintf("%s-[%s]",unique(y$accession),
-                                                     paste(sort(y[y$splice>0,'splice']),collapse=","))))
-                                 })
-         return(paste(res$protein,collapse=", "))
+  if (length(protein.g) == 1) return(protein.g)
+  splice.df <- protein.group@isoformToGeneProduct[protein.g,]
+  if (all(is.na(splice.df[,'splicevariant']))) 
+    return(paste(splice.df[,'proteinac.w.splicevariant'],collapse=", "))
+
+  res <- ddply(splice.df,"proteinac.wo.splicevariant",function(y) {
+        if (nrow(y) == 1) return(y[,'proteinac.w.splicevariant'])
+        if (all(is.na(y$splicevariant))) return(y[1,'proteinac.w.splicevariant'])
+
+        return(sprintf("%s-[%s]",
+                       y[1,'proteinac.wo.splicevariant'],
+                       number.ranges(y[,'splicevariant'])))
   })
+  return(paste(res[,'V1'],collapse=", "))
 }
 
 
