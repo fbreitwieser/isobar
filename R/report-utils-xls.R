@@ -344,7 +344,7 @@ write.xls.report <- function(report.type,properties.env,report.env,file="isobar-
 
   ## creating xls protein table
   tbl <- data.frame(i=input.tbl$i, group=input.tbl[,"group"],
-                    AC=.protein.acc(input.tbl[,"ac"],ip=indist.proteins))
+                    AC=.protein.acc(input.tbl[,"ac"],protein.group))
 
   if (proteinInfo.ok)
     tbl <- cbind(tbl, ID=.getProteinInfo("name"),

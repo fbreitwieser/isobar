@@ -242,7 +242,7 @@ ibSpectra.as.concise.data.frame  <- function(from) {
   }
   res.nice <- cbind(res.nice,
                     Modification=res$modif,
-                    AC=.protein.acc(res[,"accession"],ip=indist.proteins),
+                    AC=.protein.acc(res[,"accession"],proteinGroup(from)),
                     ID=proteinInfo(protein.group,res[,"accession"],do.warn=FALSE),
                     n=sapply(res[,"accession"],function(p) {length(names(indist.proteins)[indist.proteins == p])}))
   res <- res[,!.grep_columns(res,c("peptide","modif","accession"))]

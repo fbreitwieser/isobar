@@ -18,7 +18,7 @@ create.meta.reports <- function(report.type="protein",properties.file="meta-prop
     } else {
       acs <- reporterProteins(protein.group)
       pg.df <- data.frame(ac=acs,
-                          AC=.protein.acc(acs,ip=indistinguishableProteins(protein.group)),
+                          AC=.protein.acc(acs,protein.group),
                           ID=proteinInfo(protein.group,acs,do.warn=FALSE),
                           Description=proteinInfo(protein.group,acs,select="protein_name",do.warn=FALSE),
                           Gene=proteinInfo(protein.group,acs,select="gene_name",do.warn=FALSE))
