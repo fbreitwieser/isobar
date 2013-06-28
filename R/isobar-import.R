@@ -2,7 +2,7 @@
 ### Constructor and readIBSpectra.
 ###
 
-.check.columns <- function(identifications,data.ions,data.mass,allow.missing.columns) {
+.check.columns <- function(identifications,data.ions=NULL,data.mass=NULL,allow.missing.columns=FALSE) {
   SC <- .SPECTRUM.COLS[.SPECTRUM.COLS %in% colnames(identifications)]
   PC <- .PROTEIN.COLS[.PROTEIN.COLS %in% colnames(identifications)]
   missing.cols = c()
@@ -24,12 +24,16 @@
   if (length(missing.cols) > 0) {
       msg <- paste("not all required columns in identifications, the following are missing: \n\t",
                paste(missing.cols,collapse="\n\t"),
-               "\nData:\n",paste(capture.output(print(head(identifications))),collapse="\n"))
+               "\nData:\n")
+      #paste(capture.output(print(head(identifications))))
       if (allow.missing.columns) {
-          warning(msg)
-          identifications[,missing.cols] <- NA
+         warning(msg)
+         print(head(identifications))
+         identifications[,missing.cols] <- NA
       } else {
-          stop(msg)
+         message(msg)
+         print(head(identifications))
+         stop()
       }
   }
   return(identifications)
@@ -162,6 +166,23 @@
   return(VARMETADATA[nn,,drop=FALSE])
 }
 
+.remove.duplications <- function(identifications) {
+  if (max(table(identifications[,SC['SPECTRUM']])) > 1) {
+    t <- table(identifications[,SC['SPECTRUM']])
+    bad.spectra <- subset(identifications,spectrum %in% names(t)[t>1])
+    #print(head(bad.spectra[order(bad.spectra$spectrum),]))
+    warning(nrow(bad.spectra)," spectra have diverging identifications after the merging, removing them.")
+    identifications <- identifications[!identifications[,SC['SPECTRUM']] %in% names(t)[t>1],]
+  }
+
+  if ('SEARCHENGINE' %in% names(SC)) {
+    message("Identification details:")
+    tt <- table(identifications[,SC['SEARCHENGINE']])
+    print(data.frame(perc=sprintf("%.2f %%",tt[order(tt)]/sum(tt)*100),n=sort(tt)))
+  }
+  identifications
+}
+
 .merge.identifications.full <- function(identifications, ...) {
   SC <- .SPECTRUM.COLS[.SPECTRUM.COLS %in% colnames(identifications)]
   ## Substitute Isoleucins with Leucins (indistinguishable by Masspec)
@@ -175,10 +196,16 @@
   identifications <- unique(identifications[,-which(colnames(identifications) %in% PC)])
 
   ## Merge identifications
-  if (max(table(identifications[,SC['SPECTRUM']])) > 1)
-    identifications <- .merge.identifications(identifications, ...)
-  if (anyDuplicated(identifications[,SC['SPECTRUM']])) 
-    stop('No divergent spectra identifications should be left.')
+  if (max(table(identifications[,SC['SPECTRUM']])) > 1) {
+    if (SC['DISSOCMETHOD'] %in% colnames(identifications) && 
+        length(unique(identifications[,SC['DISSOCMETHOD'] ]))) {
+      identifications <- ddply(identifications,'dissoc.method',.merge.identifications,...)
+      identifications <- .merge.quant.identifications(identifications)
+    } else {
+      identifications <- .merge.identifications(identifications, ...)
+    }
+  }
+  .remove.duplications(identifications)
   
   ## Merge back the protein mapping
   merge(pept.n.prot,identifications,by="peptide")
@@ -211,12 +238,17 @@ setMethod("initialize","IBSpectra",
   identifications <- unique(identifications[,-which(colnames(identifications) %in% PC)])
 
   ## Merge identifications
-  if (max(table(identifications[,SC['SPECTRUM']])) > 1)
-    identifications <- .merge.identifications(identifications)
-  if (anyDuplicated(identifications[,SC['SPECTRUM']])) 
-    stop('No divergent spectra identifications should be left.')
-  rownames(identifications) <- identifications[,SC['SPECTRUM']]
-  
+  if (max(table(identifications[,SC['SPECTRUM']])) > 1) {
+    if (SC['DISSOCMETHOD'] %in% colnames(identifications) && 
+        length(unique(identifications[,SC['DISSOCMETHOD'] ]))) {
+      identifications <- ddply(identifications,'dissoc.method',.merge.identifications,...)
+      identifications <- .merge.quant.identifications(identifications)
+    } else {
+      identifications <- .merge.identifications(identifications, ...)
+    }
+  }
+  .remove.duplications(identifications)
+ 
   # Create ProteinGroup
   proteinGroup <- ProteinGroup(merge(pept.n.prot,identifications,by="peptide"),template=proteinGroupTemplate)
   
@@ -233,8 +265,10 @@ setMethod("initialize","IBSpectra",
     #                            and spectra with no values
     identifications[,.SPECTRUM.COLS['USEFORQUANT']] <- TRUE
   }
-    
+  
+
   fdata <- identifications[,colnames(identifications) %in% .SPECTRUM.COLS]
+  rownames(fdata) <- fdata[,'spectrum']
   featureData <- new("AnnotatedDataFrame",data=fdata,
                      varMetadata=.get.varMetaData(fdata))
 	   
@@ -314,83 +348,83 @@ setMethod("readIBSpectra",
              peaklist.format=NULL,scan.lines=0,
              fragment.precision=NULL,fragment.outlier.prob=NULL,...) {
       
-      log <- data.frame(key=c(),message=c())
-
-      id.data <- id.file
       if (is.function(annotate.spectra.f)) {
-        id.data <- annotate.spectra.f(id.data,peaklist.file)
+        id.file <- annotate.spectra.f(id.file,peaklist.file)
       }
-
-      # all identified spectrum titles
-      id.spectra <- unique(id.data[,.SPECTRUM.COLS['SPECTRUM']])
 
       .Object <- new(type)
-      reporterMasses <- .Object@reporterTagMasses
-      reporterTagNames <- .Object@reporterTagNames
-
-      data.ions=c()
-      data.mass=c()
-      data.titles=c()
-      for (peaklist.f in peaklist.file) {
-        peaklist.format.f <- peaklist.format
-        if (is.null(peaklist.format.f)) {
-
-          if (grepl(".mgf$",peaklist.f,ignore.case=TRUE))peaklist.format.f <- "mgf"
-          else if (grepl(".mcn$",peaklist.f,ignore.case=TRUE))peaklist.format.f <- "mcn"
-          else if (grepl(".intensities.csv$",peaklist.f,ignore.case=TRUE))peaklist.format.f <- "csv"
-          else
-            stop(paste0("cannot parse file ",peaklist.f," - cannot deduce format (mgf or mcn)"))          
-
-        }
-
-        if (tolower(peaklist.format.f) == "mgf") {
-
-          intensities.f <- .read.mgf(peaklist.f,reporterMasses,reporterTagNames,
-                                     fragment.precision=fragment.precision,
-                                     prob=fragment.outlier.prob,scan.lines=scan.lines)
-          if (nrow(intensities.f$ions) == 0) { stop("only NA data in ions/mass") }
-          data.titles <- c(data.titles,intensities.f$spectrumtitles)
-          data.ions <- rbind(data.ions,intensities.f$ions)
-          data.mass <- rbind(data.mass,intensities.f$mass)
-        } else if (tolower(peaklist.format.f) == "mcn") {
-            if (type != "iTRAQ4plexSpectra")
-              stop("mcn format (iTracker) only supports iTRAQ 4plex spectra!")
-            mcn.i <- read.table("itraqdta/i-Tracker.mcn",sep=",",skip=2,
-                                colClasses=c("character","character",
-                  "numeric","numeric","numeric","numeric",rep("NULL",36)),
-                col.names=c("spectrum","spectrum.t","114","115","116","117",rep("",36)),
-                check.names=FALSE)
-            data.titles <- c(data.titles,mcn.i$spectrum)
-            data.ions <- c(data.ions,as.matrix(mcn.i[,3:6]))
-            data.mass <- c(data.mass,
-                matrix(rep(114:117,nrow(mcn.i)),nrow=nrow(mcn.i),byrow=TRUE))
-        } else if (tolower(peaklist.format.f) == "csv") {
-          message("reading ",peaklist.f)
-          res <- read.delim(peaklist.f,stringsAsFactors=FALSE)
-          message("done reading ",peaklist.f)
-          
-          ## FIX::
-          #if (!is.null(id.spectra) && length(id.spectra) != 0) 
-          #  res <- res[res[,"spectrum"] %in% id.spectra,]
-
-          data.titles <- c(data.titles,res[,"spectrum"])
-          data.ions <- rbind(data.ions,as.matrix(res[,.grep_columns(res,"ions$")]))
-          data.mass <- rbind(data.mass,as.matrix(res[,.grep_columns(res,"mass$")]))
-
-        }
-      }
-      if (.SPECTRUM.COLS['SPECTRUM.QUANT'] %in% colnames(id.data))
-        data.titles <- .do.map(data.titles,unique(id.data[,.SPECTRUM.COLS[c('SPECTRUM','SPECTRUM.QUANT')]]))
-      rownames(data.ions)  <- data.titles
-      rownames(data.mass)  <- data.titles
-      ## TODO: check that all identified spectra are present in intensities
-
-      colnames(data.ions) <- reporterTagNames
-      colnames(data.mass) <- reporterTagNames
-      
-      new(type,identifications=id.data,data.mass=data.mass,data.ions=data.ions,...)
+      quant <- .read.peaklist(peaklist.file,peaklist.format,
+                              .Object@reporterTagMasses,.Object@reporterTagNames,
+                              scan.lines,fragment.precision,fragment.outlier.prob,
+                              id.data=id.file) 
+     
+      new(type,identifications=id.file,quant[[2]],data.ions=quant[[1]],...)
     }
 )
+
+# returns a list with intensities and mass matrices
+.read.peaklist <- function(peaklist.file,peaklist.format,reporterMasses,reporterTagNames,
+                           scan.lines,fragment.precision,fragment.outlier.prob,id.data=NULL) {
+  data.ions=c()
+  data.mass=c()
+  data.titles=c()
+  for (peaklist.f in peaklist.file) {
+    peaklist.format.f <- peaklist.format
+    if (is.null(peaklist.format.f)) {
+      if (grepl(".mgf$",peaklist.f,ignore.case=TRUE))peaklist.format.f <- "mgf"
+      else if (grepl(".mcn$",peaklist.f,ignore.case=TRUE))peaklist.format.f <- "mcn"
+      else if (grepl(".intensities.csv$",peaklist.f,ignore.case=TRUE))peaklist.format.f <- "csv"
+      else
+        stop(paste0("cannot parse file ",peaklist.f," - cannot deduce format (mgf or mcn)"))          
+    }
+
+    if (tolower(peaklist.format.f) == "mgf") {
+      intensities.f <- .read.mgf(peaklist.f,reporterMasses,reporterTagNames,
+                                 fragment.precision=fragment.precision,
+                                 prob=fragment.outlier.prob,scan.lines=scan.lines)
+      if (nrow(intensities.f$ions) == 0) { stop("only NA data in ions/mass") }
+      data.titles <- c(data.titles,intensities.f$spectrumtitles)
+      data.ions <- rbind(data.ions,intensities.f$ions)
+      data.mass <- rbind(data.mass,intensities.f$mass)
+    } else if (tolower(peaklist.format.f) == "mcn") {
+        if (type != "iTRAQ4plexSpectra")
+          stop("mcn format (iTracker) only supports iTRAQ 4plex spectra!")
+        mcn.i <- read.table("itraqdta/i-Tracker.mcn",sep=",",skip=2,
+                            colClasses=c("character","character",
+              "numeric","numeric","numeric","numeric",rep("NULL",36)),
+            col.names=c("spectrum","spectrum.t","114","115","116","117",rep("",36)),
+            check.names=FALSE)
+        data.titles <- c(data.titles,mcn.i$spectrum)
+        data.ions <- c(data.ions,as.matrix(mcn.i[,3:6]))
+        data.mass <- c(data.mass,
+            matrix(rep(114:117,nrow(mcn.i)),nrow=nrow(mcn.i),byrow=TRUE))
+    } else if (tolower(peaklist.format.f) == "csv") {
+      message("reading ",peaklist.f)
+      res <- read.delim(peaklist.f,stringsAsFactors=FALSE)
+      message("done reading ",peaklist.f)
+      if (!"spectrum" %in% colnames(res)) stop("'spectrum' column is missing from peaklist CSV")
+      if (sum(.grep_columns(res,"ions$")) < length(reporterTagNames)) 
+        stop("Not all neccessary intensity columns [",paste0(reporterTagNames,"_ions"),"] in peaklist CSV")
+      if (sum(.grep_columns(res,"mass$")) < length(reporterTagNames)) 
+        stop("Not all neccessary reporter mass columns [",paste0(reporterTagNames,"_mass"),"] in peaklist CSV")
+      
+      data.titles <- c(data.titles,res[,"spectrum"])
+      data.ions <- rbind(data.ions,as.matrix(res[,.grep_columns(res,"ions$")]))
+      data.mass <- rbind(data.mass,as.matrix(res[,.grep_columns(res,"mass$")]))
+    }
+  }
+  if (!is.null(id.data) && .SPECTRUM.COLS['SPECTRUM.QUANT'] %in% colnames(id.data))
+    data.titles <- .do.map(data.titles,unique(id.data[,.SPECTRUM.COLS[c('SPECTRUM','SPECTRUM.QUANT')]]))
+
+  rownames(data.ions)  <- data.titles
+  rownames(data.mass)  <- data.titles
+  ## TODO: check that all identified spectra are present in intensities
+
+  colnames(data.ions) <- reporterTagNames
+  colnames(data.mass) <- reporterTagNames
+ 
+  return(list(data.ions,data.mass))
+}
 
 
 .do.map <- function(spectrumtitles,mapping.quant2id) {
@@ -572,8 +606,6 @@ read.mzid <- function(f) {
                                              as.data.frame(do.call(rbind,peptide.ev.mapping),stringsAsFactors=FALSE))
   }
 
-  print(head(as.data.frame(records.spectrumIdentifications,stringsAsFactors=FALSE)))
-  print(head(as.data.frame(peptide.mapping,stringsAsFactors=FALSE)))
   spectra.n.peptides <- merge(as.data.frame(records.spectrumIdentifications,stringsAsFactors=FALSE),
                               as.data.frame(peptide.mapping,stringsAsFactors=FALSE),
                               by='peptide.ref')
@@ -830,6 +862,7 @@ read.mzid <- function(f) {
     id.data <- lapply(id.data,function(i.d) i.d[,intersect.colnames])
   }
   id.data <- do.call(rbind,id.data)
+  .check.columns(id.data)
 
   if (!is.character(id.data[,.SPECTRUM.COLS['SPECTRUM']]))
     id.data[,.SPECTRUM.COLS['SPECTRUM']] <- as.character(id.data[,.SPECTRUM.COLS['SPECTRUM']])
@@ -924,11 +957,11 @@ read.mzid <- function(f) {
     id.good <- identifications[identifications$spectrum %in% names(tt)[tt==1],]
     id.bad <- identifications[identifications$spectrum %in% names(tt)[tt>1],]
     id.bad$n.se <- rowSums(!is.na(id.bad[,score.columns]))
-    id.res <- ddply(id.bad,'spectrum',function(x) {
+    id.bad <- ddply(id.bad,'spectrum',function(x) {
       x[which.max(x$n.se),]
     })
-    id.res$n.se <- NULL
-    identifications <- rbind(id.good,id.res)
+    id.bad$n.se <- NULL
+    identifications <- rbind(id.good,id.bad)
   }
 
   if ('SCORE' %in% names(SC))
@@ -1178,12 +1211,15 @@ read.mzid <- function(f) {
 
 .merge.quant.identifications <- function(identifications) {
 
+  tt <- table(identifications[,SC['SPECTRUM.QUANT']])
+  spectra.ok <- identifications[,SC['SPECTRUM.QUANT']] %in% names(tt)[tt==1]
+
   SC <- .SPECTRUM.COLS[.SPECTRUM.COLS %in% colnames(identifications)]
   score.colname <- .SPECTRUM.COLS[c('SCORE.MASCOT','SCORE.PHENYX','SCORE.MSGF','PROB.PHOSPHORS')]
   score.colname <- score.colname[score.colname %in% colnames(identifications)]
 
-  message("Merging identifications from different dissociation methods.")
-  ddply(identifications,.SPECTRUM.COLS['SPECTRUM.QUANT'],function(x) {
+  message("Merging ",sum(!spectra.ok)," identifications from different dissociation methods.")
+  ids.quant.merged <- ddply(identifications[!spectra.ok,],.SPECTRUM.COLS['SPECTRUM.QUANT'],function(x) {
       if (nrow(x) == 1) return(x)
       my.args <- as.list(x[,score.colname,drop=FALSE])
       my.args <- lapply(my.args,round,digits=2) ## take two significant digits before taking next score into account as top hitter
@@ -1202,12 +1238,16 @@ read.mzid <- function(f) {
         x[max.hit,sc] <- paste(x[,sc],collapse="&")
       }
 
-      return(x[max.hit,])
+      return(x[max.hit,,drop=FALSE])
   })
 
+  colnames(ids.quant.merged)[colnames(ids.quant.merged)=='SPECTRUM.QUANT'] <- 'spectrum.quant'
+  ids.quant.merged <- ids.quant.merged[,colnames(identifications)]
+  rbind(identifications[spectra.ok,],ids.quant.merged)
 }
 
 .merge.identifications <- function(identifications,...) {
+  idsx <<- identifications
   SC <- .SPECTRUM.COLS[.SPECTRUM.COLS %in% colnames(identifications)]
 
   ## Merge results of different search engines / on different spectra
@@ -1221,32 +1261,6 @@ read.mzid <- function(f) {
       identifications <- .merge.search.engine.identifications(identifications,...)  ## merge identifications
     }
   }
-
-  ## Merge identifications from different dissociation methods (e.g. CID and HCD)
-  ##   TODO: Can this be done by the code above?
-  if ('SPECTRUM.QUANT' %in% names(SC)) {
-    tt <- table(identifications[,SC['SPECTRUM.QUANT']])
-    if (any(tt>1)) {
-      spectra.ok <- identifications[,SC['SPECTRUM.QUANT']] %in% names(tt)[tt==1]
-      ids.quant.merged <- .merge.quant.identifications(identifications[!spectra.ok,])
-      identifications <- rbind(identifications[spectra.ok,],ids.quant.merged)
-    }
-  }
-
-  if (max(table(identifications[,SC['SPECTRUM']])) > 1) {
-    t <- table(identifications[,SC['SPECTRUM']])
-    bad.spectra <- subset(identifications,spectrum %in% names(t)[t>1])
-    #print(head(bad.spectra[order(bad.spectra$spectrum),]))
-    warning(nrow(bad.spectra)," spectra have diverging identifications after the merging, removing them.")
-    identifications <- identifications[!identifications[,SC['SPECTRUM']] %in% names(t)[t>1],]
-  }
-
-  if ('SEARCHENGINE' %in% names(SC)) {
-    message("Identification details:")
-    tt <- table(identifications[,SC['SEARCHENGINE']])
-    print(data.frame(perc=sprintf("%.2f %%",tt[order(tt)]/sum(tt)*100),n=sort(tt)))
-  }
-
   return(identifications)
 }
 
@@ -1264,12 +1278,20 @@ read.mzid <- function(f) {
 
   ## load mapping (either character or data.frame)
   if (!is.null(mapping)) {
-    if (is.null(mapping.names)) stop("mapping.names must be given alongside with mapping")
-    if (!'identification.spectrum' %in% names(mapping.names) || !'quantification.spectrum' %in% names(mapping.names)) 
-      stop("mapping.names must be given alongside with mapping. names(mapping.names) must be 'identification.spectrum' and 'quantification.spectrum'")
     if (is.character(mapping) && file.exists(mapping))
       mapping <- do.call(rbind,lapply(mapping,read.table,sep=",",header=TRUE,stringsAsFactors=FALSE))
     if (!is.data.frame(mapping)) stop("mapping must be a data.frame or valid file name")
+    if (ncol(mapping) > 2) stop("only one column in mapping")
+
+    if (is.null(mapping.names)) { 
+      if (ncol(mapping) > 2) stop("more than one column in mapping data - mapping.names are therefore required")
+      message("trying to assess right mapping")
+      cn <- apply(mapping,2,function(x) sum(x %in% identifications[,.SPECTRUM.COLS['SPECTRUM']]))
+      mapping.names <- c(quantification.spectrum=names(cn)[which.min(cn)],
+                         identification.spectrum=names(cn)[which.max(cn)])
+    }
+    if (!all(c('identification.spectrum','quantification.spectrum') %in% names(mapping.names)))
+      stop("mapping.names must be given alongside with mapping. names(mapping.names) must be 'identification.spectrum' and 'quantification.spectrum'")
     if (!all(mapping.names %in% colnames(mapping))) stop("mapping.names must be column names of mapping")
 
     quant2id <- .as.vect(mapping,mapping.names['identification.spectrum'],mapping.names['quantification.spectrum'])
@@ -1285,6 +1307,7 @@ read.mzid <- function(f) {
         identifications.quant <- .read.idfile(identifications.quant,...)
       if (!is.data.frame(identifications.quant)) stop("identifications.quant must be a data.frame or valid file name")
       identifications.quant[,.SPECTRUM.COLS['SPECTRUM.QUANT']] <- identifications.quant[,.SPECTRUM.COLS['SPECTRUM']]
+      identifications.quant[,.SPECTRUM.COLS['SPECTRUM']] <- quant2id[ identifications.quant[,.SPECTRUM.COLS['SPECTRUM.QUANT']] ]
       identifications.quant[,.SPECTRUM.COLS['DISSOCMETHOD']] <- "hcd"
       #identifications.quant[,.SPECTRUM.COLS['DISSOCMETHOD']] <- names(mapping.names)[mapping.names=='quantification.spectrum']
       identifications <- rbind(identifications,identifications.quant)
