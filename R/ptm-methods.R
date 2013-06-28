@@ -31,7 +31,7 @@ writePhosphoRSInput <-
                  c("Cys_CAM",    "3","3:Carbamidomethylation:Carbamidomethylation:57.021464:null:0:C"),
                  c("iTRAQ4plex", "4","4:iTRAQ4:iTRAQ4:144.1544:null:0:KX"),
                  c("iTRAQ8plex", "5","5:iTRAQ8:iTRAQ8:304.308:null:0:KX"),
-                 c("TMT6plex",   "6","6:TMT6:TMT6:229.162932:null:0:KX"),
+                 c("TMT6plex",   "7","7:TMT6:TMT6:229.162932:null:0:KX"),
                  c("TMTsixplex",   "6","6:TMT6:TMT6:229.162932:null:0:KX"))) {
 
   if (is.data.frame(id.file)) 
