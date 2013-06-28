@@ -120,7 +120,7 @@ write.xls.report <- function(report.type,properties.env,report.env,file="isobar-
     perl.cl <- paste(tab2spreadsheet.cmd," ",
                      ifelse(properties.env$use.name.for.report,sprintf("%s.quant",properties.env$name),"isobar-analysis"),
                      ".",properties.env$spreadsheet.format,
-                     " ':autofilter,freeze_col=9,name=Quantifications:",protein.quant.f,"'",
+                     " ':autofilter,freeze_col=6,name=Quantifications:",protein.quant.f,"'",
                      ifelse(identical(report.type,"peptide") && !is.null(modificationSites),
                             paste(" ':autofilter,freeze_col=3,name=Modification Sites:",modifsites.f,"'",sep=""),""),
                      " ':autofilter,freeze_col=3,name=Identifications:",protein.id.f,"'",
@@ -130,6 +130,20 @@ write.xls.report <- function(report.type,properties.env,report.env,file="isobar-
     ## generate Excel report (using Spreadsheet::WriteExcel)
     message(perl.cl)
     system(perl.cl)
+
+    perl.cl <- paste(tab2spreadsheet.cmd," ",
+                     ifelse(properties.env$use.name.for.report,sprintf("%s.quantonly",properties.env$name),"isobar-analysis-quantonly"),
+                     ".",properties.env$spreadsheet.format,
+                     " ':autofilter,freeze_col=6,name=Quantifications:",protein.quant.f,"'",
+                     ifelse(identical(report.type,"peptide") && !is.null(modificationSites),
+                            paste(" ':autofilter,freeze_col=3,name=Modification Sites:",modifsites.f,"'",sep=""),""),
+                     " ':name=Analysis Properties:",analysis.properties.f,"'",
+                     " ':name=Log:",log.f,"'",sep="")
+    
+    ## generate Excel report (using Spreadsheet::WriteExcel)
+    message(perl.cl)
+    system(perl.cl)
+
 }
 
 
