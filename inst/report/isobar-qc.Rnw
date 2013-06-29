@@ -31,7 +31,6 @@ n.tags <- length(reporterTagNames(ibspectra))
 \usepackage{float}
 \usepackage{verbatim}
 \usepackage{fancyhdr}
-\usepackage{tikz}
 \setlength{\headheight}{13.6pt}
 \pagestyle{fancy}
 \lfoot{\today}
