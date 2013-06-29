@@ -1,7 +1,7 @@
 
 
 
-calcTwoSidedProb <- function(X,mu_Y,sd_Y,...) {
+calcTwoSidedNormalProb <- function(X,mu_Y,sd_Y,...) {
   # calculates an estimate of min(P(X>Y),P(Y>X))
   #  Y ~ N(mu_Y,sd_Y)
   require(distr)

@@ -176,6 +176,10 @@ setMethod("estimateRatioNumeric",signature(channel1="numeric",channel2="numeric"
         if (is.method("isobar"))
           return(c(lratio=NA,variance=NA,n.spectra=NA,n.na1=NA,n.na2=NA,
                    p.value.rat=NA,p.value.sample=NA,is.significant=NA))
+        if (is.method("isobar-combn"))
+          return(c(lratio=NA,variance=NA,n.spectra=NA,n.na1=NA,n.na2=NA,
+                   p.value.rat=NA,p.value.sample=NA,is.significant=NA,is.significant.ev=NA,
+                   p.value.combined=NA))
         else if (is.method("libra") || is.method("pep"))
           return(c(ch1=NA,ch2=NA))
         else if (is.method("multiq"))
@@ -267,7 +271,7 @@ setMethod("estimateRatioNumeric",signature(channel1="numeric",channel2="numeric"
  
       weighted.ratio <- as.numeric(lratio.n.var['lratio'])
       calc.variance <- as.numeric(lratio.n.var['calc.variance'])
-      if (is.a.method("isobar")) {
+      if (is.a.method("isobar") || is.a.method("isobar-combn")) {
         # Check for channels where one is NA
         sel.ch1na <- is.na(channel1) & !is.na(channel2)
         sel.ch2na <- is.na(channel2) & !is.na(channel1)
@@ -294,6 +298,15 @@ setMethod("estimateRatioNumeric",signature(channel1="numeric",channel2="numeric"
         res.isobar['is.significant'] <- 
           (res.isobar['p.value.sample'] <= sign.level.sample) && 
           (res.isobar['p.value.rat'] <= sign.level.rat)
+
+        if (is.method("isobar-combn")) {
+          p.value.combined <- NA
+          if (all(!is.na(c(res.isobar['lratio'],res.isobar['variance'])))) {
+            p.value.combined <- calcProbXGreaterThanY(ratiodistr,Norm(res.isobar['lratio'],sqrt(res.isobar['variance'])))
+            p.value.combined <- 2*ifelse(p.value.combined<.5,p.value.combined,1-p.value.combined)
+          }
+          return(c(res.isobar,p.value.combined=p.value.combined))
+        }
 
         if (is.method("isobar")) return(res.isobar)
       }
@@ -619,7 +632,8 @@ correct.peptide.ratios <- function(ibspectra, peptide.quant.tbl, protein.quant.t
   calc.variance <- switch(variance.function,
       maxi = max(estimator.variance,sample.variance,na.rm=T),
       ev = estimator.variance,
-      wsv = sample.variance
+      wsv = sample.variance,
+      stop("unknown variance function - choose one of [maxi,ev,wsv]")
   )
 
   return(c(lratio=weighted.ratio,
