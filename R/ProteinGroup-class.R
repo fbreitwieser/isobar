@@ -865,7 +865,7 @@ setMethod("indistinguishableProteins",signature(x="ProteinGroup",protein="charac
           function(x,protein) {
             protein.groups <- x@indistinguishableProteins[protein]
             if (length(protein.groups) == 0) {
-              warning(protein," is in no protein group")
+              warning(protein," is in not in the list")
               return(NA)
             }
             return(protein.groups)
@@ -1641,7 +1641,7 @@ calculate.emPAI <- function(protein.group,protein.g=reporterProteins(protein.gro
   if (length(protein.g) > 1) 
     return(sapply(protein.g,function(p) .protein.acc(p,protein.group)))
 
-  protein.g <- names(indistinguishableProteins(protein.group))[indistinguishableProteins(protein.group)==protein.g]
+  protein.g <- indistinguishableProteins(protein.group,protein.g)
 
   if (length(protein.g) == 1) return(protein.g)
   splice.df <- protein.group@isoformToGeneProduct[protein.g,]
