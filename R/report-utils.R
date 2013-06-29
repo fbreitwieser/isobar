@@ -158,8 +158,8 @@ initialize.env <- function(env,report.type="protein",properties.env) {
     if (!ret) stop("Error creating cachedir [",get.property('cachedir'),"]")
   }
 
-  ib.name <- sprintf("%s/ibspectra.rda",.get.property('cachedir',envir))
-  if (file.exists(file.name)) {
+  ib.name <- sprintf("%s/ibspectra.rda",.get.property('cachedir',properties.env))
+  if (file.exists(ib.name)) {
     load(ib.name)
     env$ibspectra <- ibspectra
   } else {
