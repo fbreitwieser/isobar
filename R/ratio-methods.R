@@ -361,16 +361,17 @@ calculate.mult.sample.pvalue <- function(lratio,ratiodistr,strict.pval,lower.tai
   return(pval)
 }
 
-adjust.ratio.pvalue <- function(quant.tbl,p.adjust,sign.level.rat,globally=TRUE) {
+adjust.ratio.pvalue <- function(quant.tbl,p.adjust,sign.level.rat,globally=FALSE) {
   if (globally) {
     quant.tbl[,'p.value.rat.adjusted'] <- p.adjust(quant.tbl[,'p.value.rat'], p.adjust)
     quant.tbl[,'is.significant'] <- quant.tbl[,'is.significant'] & quant.tbl[,'p.value.rat.adjusted'] < sign.level.rat
   } else {
     comp.cols <- c("r1","r2","class1","class2")
-    comp.cols <- comp.cols[comp.cols %in% colnames(quant.tbl),]
+    comp.cols <- comp.cols[comp.cols %in% colnames(quant.tbl)]
     quant.tbl <- ddply(quant.tbl,comp.cols,function(x) {
       x[,'p.value.rat.adjusted'] <- p.adjust(x[,'p.value.rat'], p.adjust)
       x[,'is.significant'] <- x[,'is.significant'] & x[,'p.value.rat.adjusted'] < sign.level.rat
+      x
     })
   }
   quant.tbl
