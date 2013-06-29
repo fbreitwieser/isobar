@@ -49,6 +49,7 @@ get.property <- function(name) { get(name,properties.env,inherits=FALSE) }
 cat("\\newcommand{\\analysisname}{",sanitize(get.property('name')),"}")
 cat("\\newcommand{\\analysisauthor}{",sanitize(get.property('author')),"}")
 cat(sprintf("\\input{%s}\n",system.file("report","report-utils.tex",package="isobar")))
+cat(sprintf("\\input{%s}\n",system.file("report","report-utils-tikz.tex",package="isobar")))
 @
 
 \newcommand{\rr}{\raggedright}

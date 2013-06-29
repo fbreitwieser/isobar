@@ -167,6 +167,7 @@
 }
 
 .remove.duplications <- function(identifications) {
+  SC <- .SPECTRUM.COLS[.SPECTRUM.COLS %in% colnames(identifications)]
   if (max(table(identifications[,SC['SPECTRUM']])) > 1) {
     t <- table(identifications[,SC['SPECTRUM']])
     bad.spectra <- subset(identifications,spectrum %in% names(t)[t>1])
@@ -1210,6 +1211,7 @@ read.mzid <- function(f) {
 }
 
 .merge.quant.identifications <- function(identifications) {
+  SC <- .SPECTRUM.COLS[.SPECTRUM.COLS %in% colnames(identifications)]
 
   tt <- table(identifications[,SC['SPECTRUM.QUANT']])
   spectra.ok <- identifications[,SC['SPECTRUM.QUANT']] %in% names(tt)[tt==1]
