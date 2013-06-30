@@ -1106,7 +1106,8 @@ peptideRatios <- function(ibspectra,...,peptide=peptides(proteinGroup(ibspectra)
 }
 
 ratiosReshapeWide <- function(quant.tbl,grouped.cols=TRUE,vs.class=NULL,sep=".",cmbn=NULL,short.names=FALSE) {
-  attrs <- attributes(quant.tbl)
+  id.cols <- c("group","ac","peptide","modif")
+  id.cols <- id.cols[id.cols %in% colnames(quant.tbl)]
 
   if (!is.null(cmbn)) {
     sel <- paste(quant.tbl$r1,quant.tbl$r2) %in% paste(cmbn[1,],cmbn[2,])
@@ -1132,25 +1133,36 @@ ratiosReshapeWide <- function(quant.tbl,grouped.cols=TRUE,vs.class=NULL,sep=".",
       quant.tbl[,'comp']<- paste(quant.tbl$r2,quant.tbl$r1,sep="/")
     }
   }
-  quant.tbl  <- quant.tbl[,-(c(which(colnames(quant.tbl) %in% c("r1","r2","class1","class2"))))]
-  v.names <- c("lratio","lratio.modpep","lratio.prot","variance","variance.modpep","variance.prot","n.spectra",
-               "p.value.rat","p.value.rat.adjusted","p.value.sample","z.score","zscore",
-               "is.significant","is.significant.modpep","is.significant.prot","sd","n.na1","n.na2","n.pos","n.neg") # 
-  v.names <- v.names[v.names %in% colnames(quant.tbl)]
-  timevar <- "comp"
-  idvar <- colnames(quant.tbl)[!colnames(quant.tbl) %in% c(timevar,v.names)]
-  if ("ac" %in% colnames(quant.tbl))
-    quant.tbl[is.na(quant.tbl[,"ac"]),"ac"] <- "NA"
 
-  res <- reshape(quant.tbl,v.names=v.names,idvar=idvar,timevar=timevar,direction="wide",sep=sep)
-  if (grouped.cols) {
-    col.order <- c(idvar,
-                   unlist(lapply(v.names,function(n) grep(n,colnames(res),fixed=TRUE,value=TRUE))))
-    res <- res[,col.order]
-  }
+  ccomp <- unique(quant.tbl$comp)
+  fac <- factor(apply(quant.tbl[,id.cols,drop=FALSE],1,paste,collapse="."))
+
+  ## check that all 'comp' entries are in the right order
+  if (!all(tapply(quant.tbl$comp,fac,function(x) all(x==ccomp))))
+    stop("quant.tbl not in the right format - comp column values different")
+  
+  quant.tbl.num  <- quant.tbl[,-(c(which(colnames(quant.tbl) %in% 
+                                c(id.cols,"comp","r1","r2","class1","class2"))))]
+
+  colnames.wide <- paste(rep(colnames(quant.tbl.num),each=length(ccomp)),
+                         rep(ccomp,each=ncol(quant.tbl.num)),sep=sep)
+
+  q1 <- do.call(rbind,tapply(seq_len(nrow(quant.tbl)),fac,function(x) {
+    quant.tbl[x[1],id.cols]
+  },simplify=FALSE))
+  q2 <- do.call(rbind,tapply(seq_len(nrow(quant.tbl.num)),fac,function(x) {
+    unlist(quant.tbl.num[x,])
+  },simplify=FALSE))
+  colnames(q2) <- colnames.wide
+  
+  qq <- cbind(q1,q2)
+  rownames(qq) <- NULL
+
+  attrs <- attributes(quant.tbl)
   for (a in names(attrs))
-    if (!a %in% c("row.names","names","class")) attr(res,a) <- attrs[[a]]
-  res
+    if (!a %in% c("row.names","names","class")) attr(qq,a) <- attrs[[a]]
+
+  qq
 }
 
 proteinRatios <-
