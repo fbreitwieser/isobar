@@ -1334,8 +1334,8 @@ spectra.count2 <- function(ibspectra,value=reporterProteins(protein.group),type=
     has.modif <- sapply(strsplit(fd$modif,":"),function(x) any(x %in% modif))
     sum(has.modif)
   }
-
 }
+
 spectra.count <- function(protein.group,protein.g=reporterProteins(protein.group),
                           specificity=c("reporter-specific","group-specific","unspecific"),
                           modif=NULL,...) {
@@ -1640,15 +1640,15 @@ calculate.emPAI <- function(protein.group,protein.g=reporterProteins(protein.gro
 # pretty format group identifiers
 #   Input: c("P1234-1,P1234-2","P6543")
 #  Output: c("P1234-[1,2]","P6543")
-.protein.acc <- function(protein.g,protein.group) {
+.protein.acc <- function(my.protein.g,protein.group) {
 
-  if (length(protein.g) > 1) 
-    return(sapply(protein.g,function(p) .protein.acc(p,protein.group)))
+  if (length(my.protein.g) > 1) 
+    return(sapply(my.protein.g,function(p) .protein.acc(p,protein.group)))
 
-  protein.g <- as.character(indistinguishableProteins(protein.group,protein.g=protein.g))
+  protein.acs <- as.character(indistinguishableProteins(protein.group,protein.g=my.protein.g))
 
-  if (length(protein.g) == 1) return(protein.g)
-  splice.df <- protein.group@isoformToGeneProduct[protein.g,]
+  if (length(protein.acs) == 1) return(protein.acs)
+  splice.df <- protein.group@isoformToGeneProduct[protein.acs,]
   if (all(is.na(splice.df[,'splicevariant']))) 
     return(paste0(splice.df[,'proteinac.w.splicevariant'],collapse=", "))
 
