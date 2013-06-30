@@ -203,7 +203,7 @@ if (!is.null(ratiodistr)) {
 
 
 gg <- grid.arrange(g,
-tableGrob(ddply(quant.tbl,c('channels','class2','class1')[c('channels','classes') %in% colnames(quant.tbl)],
+tableGrob(ddply(quant.tbl,c('channels','class2','class1')[c('channels','class2','class1') %in% colnames(quant.tbl)],
                  function(x) c('number of ratios'=sum(!is.na(x$lratio)),
                                'significantly\ndownregulated'=sum(x$is.significant[x$lratio<0],na.rm=TRUE),
                                'significantly\nupregulated'=sum(x$is.significant[x$lratio>0],na.rm=TRUE))),

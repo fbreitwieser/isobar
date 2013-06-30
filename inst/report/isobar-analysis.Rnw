@@ -374,7 +374,7 @@ Peptide types:
 \\end{center}
 ")
 
-message("Writing protein group details ...")
+message("Writing protein group details ")
 
 colors <- c("blue","red","green","cyan","magenta","yellow")
 prot_i <- 1
@@ -397,6 +397,7 @@ for (reporter.protein.g in proteins) {
   #            sanitize(group.section.name,dash=F)))
   #cat(sprintf("\\label{protein.%s}\n",prot_i))
   draw.proteingroup.row(sprintf("\\label{protein.%s} %s",prot_i,prot_i),protein.group,reporter.protein.g)
+  if (prot_i%%100 == 0) message(".",appendLF=FALSE);
   prot_i <- prot_i + 1
   
 }
