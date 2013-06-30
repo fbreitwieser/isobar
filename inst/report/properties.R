@@ -19,7 +19,7 @@ correct.isotope.impurities=TRUE
 ## Name of project, by default the name of working directory
 ## Will be title and author of the analysis reports.
 name=basename(getwd())
-author="isobar R package"
+author=paste0("isobar R package v",packageDescription("isobar")$Version)
 ibspectra=paste(name,"ibspectra.csv",sep=".")
 
 ## When replicates or 'samples belonging together' are analyzed, a
@@ -84,11 +84,15 @@ noise.model=noise.model.hcd
 ## the file
 # noise.model="noise.model.rda"
 
-## Certain channels can be defined for creation of a noise model
-## e.g. if the first and second channel are technical repeats If NULL,
-## all channel combinations are taken into account when creating a
-## noise model.
+## Define channels for creation of a noise model, ideally a set of 
+##  channels which are technical replicates. 
 noise.model.channels=NULL
+
+## If noise.model.is.technicalreplicates is FALSE, the intensities
+##   are normalized for protein means, creating artifical technical
+##   replicates. For this procedure, only proteins with more than
+##   noise.model.minspectra are considered.
+noise.model.is.technicalreplicates=FALSE
 noise.model.minspectra=50
 
 summarize=FALSE
@@ -135,6 +139,10 @@ ratiodistr.class.labels=NULL
 
 ## Function for fitting. Available: fitCauchy, fitTlsd
 ratiodistr.fitting.f=fitCauchy
+
+## Use symetrical ratios - i.e. for every ratio r add a ratio -r
+##   prior to fitting of a distribution
+ratiodistr.symmetry=TRUE
 
 ## If defined, use z-score instead of ratio distribution
 # zscore.threshold=2.5
