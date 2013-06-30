@@ -1120,7 +1120,7 @@ peptideRatios <- function(ibspectra,...,peptide=peptides(proteinGroup(ibspectra)
 }
 
 ratiosReshapeWide <- function(quant.tbl,grouped.cols=TRUE,vs.class=NULL,sep=".",cmbn=NULL,short.names=FALSE) {
-  id.cols <- c("group","ac","peptide","modif")
+  id.cols <- c("group","ac","peptide","modif","gene_names")
   id.cols <- id.cols[id.cols %in% colnames(quant.tbl)]
 
   if (!is.null(cmbn)) {
@@ -1158,6 +1158,14 @@ ratiosReshapeWide <- function(quant.tbl,grouped.cols=TRUE,vs.class=NULL,sep=".",
   quant.tbl.num  <- quant.tbl[,-(c(which(colnames(quant.tbl) %in% 
                                 c(id.cols,"comp","r1","r2","class1","class2"))))]
 
+  q.coltypes <- sapply(quant.tbl.num,class)
+  if (!all(q.coltypes %in% c("numeric","logical"))) {
+    bad.cols <- q.coltypes[!q.coltypes %in% c("numeric","logical")]
+    stop("quantification table reshape does not work - ",
+         " columns ",paste0(names(bad.cols),collapse=","),
+         " have types ",paste0(bad.cols,collapse=","),".")
+  }
+
   colnames.wide <- paste(rep(colnames(quant.tbl.num),each=length(ccomp)),
                          rep(ccomp,each=ncol(quant.tbl.num)),sep=sep)
 
@@ -1169,6 +1177,9 @@ ratiosReshapeWide <- function(quant.tbl,grouped.cols=TRUE,vs.class=NULL,sep=".",
   },simplify=FALSE))
   colnames(q2) <- colnames.wide
   
+  if (!all(sapply(q2,is.numeric)))
+    stop("quantification table reshape did not work - columns should be numeric")
+
   qq <- cbind(q1,q2)
   rownames(qq) <- NULL
 
