@@ -406,13 +406,15 @@ property <- function(x, envir, null.ok=TRUE,class=NULL) {
   noise.model.channels <- .get.property("noise.model.channels",properties.env)
   if (is.null(noise.model.channels)) 
     noise.model.channels <- reporterTagNames(env$ibspectra)[!is.na(classLabels(env$ibspectra))]
+  is.one.to.one <- isTRUE(.get.property("noise.model.is.technicalreplicates",properties.env))
 
   noise.model <- .get.property("noise.model",properties.env)
   if (!is(noise.model,"NoiseModel")) {
     noise.model.f <- .get.property("noise.model",properties.env)
     if (!file.exists(noise.model.f)) {
-      message("estimating noise model as non one-to-one ...")
-      noise.model <- new("ExponentialNoiseModel",env$ibspectra,one.to.one=F,
+      message("estimating noise model as ",ifelse(is.one.to.one,"","non"),
+              " one-to-one from channels ",paste0(noise.model.channels,collapse=", ")," ...")
+      noise.model <- new("ExponentialNoiseModel",env$ibspectra,one.to.one=is.one.to.one,
                          reporterTagNames=noise.model.channels,
                          min.spectra=property('noise.model.minspectra',properties.env))
       save(noise.model,file=noise.model.f,compress=TRUE)
@@ -484,10 +486,10 @@ property <- function(x, envir, null.ok=TRUE,class=NULL) {
 
     if (identical(level,"peptide"))
       ratios.for.distr.fitting <- peptideRatios(env$ibspectra,noise.model=env$noise.model,do.warn=FALSE,
-                                  cl=cl,combn.method=method,symmetry=TRUE,summarize=do.summarize)
+                                  cl=cl,combn.method=method,symmetry=isTRUE(properties.env$ratiodistr.symmetry),summarize=do.summarize)
     else
       ratios.for.distr.fitting <- proteinRatios(env$ibspectra,noise.model=env$noise.model,do.warn=FALSE,
-                                      cl=cl,combn.method=method,symmetry=TRUE,summarize=do.summarize)
+                                      cl=cl,combn.method=method,symmetry=isTRUE(properties.env$ratiodistr.symmetry),summarize=do.summarize)
 
     if (all(is.nan(ratios.for.distr.fitting$lratio)))
       stop("Cannot compute protein ratio distribution - no ratios available.\n",

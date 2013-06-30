@@ -403,9 +403,13 @@ getProteinInfoFromEntrez <- function(x,splice.by=200) {
         if ('.attrs' %in% names(y) && y$.attrs['Name'] != 'Comment') 
           setNames(y$text,y$.attrs['Name'])),NULL))
     })
+
+    res.l <- res.l[!sapply(res.l,is.null)]
   
     enames.to.isobar <- c(Gi="accession",Caption="name",Title="protein_name")
-    res.df <- ldply(res.l, function(x) setNames(x[names(enames.to.isobar)],enames.to.isobar))
+    res.df <- ldply(res.l, function(x) { 
+                    setNames(x[names(enames.to.isobar)],enames.to.isobar)
+    })
   
    protein.info <- rbind(protein.info,res.df)
     i <- i + splice.by
@@ -1641,12 +1645,12 @@ calculate.emPAI <- function(protein.group,protein.g=reporterProteins(protein.gro
   if (length(protein.g) > 1) 
     return(sapply(protein.g,function(p) .protein.acc(p,protein.group)))
 
-  protein.g <- indistinguishableProteins(protein.group,protein.g)
+  protein.g <- as.character(indistinguishableProteins(protein.group,protein.g=protein.g))
 
   if (length(protein.g) == 1) return(protein.g)
   splice.df <- protein.group@isoformToGeneProduct[protein.g,]
   if (all(is.na(splice.df[,'splicevariant']))) 
-    return(paste(splice.df[,'proteinac.w.splicevariant'],collapse=", "))
+    return(paste0(splice.df[,'proteinac.w.splicevariant'],collapse=", "))
 
   res <- ddply(splice.df,"proteinac.wo.splicevariant",function(y) {
         if (nrow(y) == 1) return(y[,'proteinac.w.splicevariant'])
@@ -1656,7 +1660,7 @@ calculate.emPAI <- function(protein.group,protein.g=reporterProteins(protein.gro
                        y[1,'proteinac.wo.splicevariant'],
                        number.ranges(y[,'splicevariant'])))
   })
-  return(paste(res[,'V1'],collapse=", "))
+  return(as.character(paste0(res[,'V1'],collapse=", ")))
 }
 
 
