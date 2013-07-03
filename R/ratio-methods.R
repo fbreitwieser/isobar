@@ -175,10 +175,10 @@ setMethod("estimateRatioNumeric",signature(channel1="numeric",channel2="numeric"
       if (length(channel1)==0) {
         if (is.method("isobar"))
           return(c(lratio=NA,variance=NA,n.spectra=NA,n.na1=NA,n.na2=NA,
-                   p.value.rat=NA,p.value.sample=NA,is.significant=NA))
+                   p.value.rat=NA,p.value.sample=NA,is.significant=FALSE))
         if (is.method("isobar-combn"))
           return(c(lratio=NA,variance=NA,n.spectra=NA,n.na1=NA,n.na2=NA,
-                   p.value.rat=NA,p.value.sample=NA,is.significant=NA,is.significant.ev=NA,
+                   p.value.rat=NA,p.value.sample=NA,is.significant=FALSE,is.significant.ev=NA,
                    p.value.combined=NA))
         else if (is.method("libra") || is.method("pep"))
           return(c(ch1=NA,ch2=NA))
@@ -1119,7 +1119,7 @@ peptideRatios <- function(ibspectra,...,peptide=peptides(proteinGroup(ibspectra)
   proteinRatios(ibspectra,...,proteins=NULL,peptide=peptide)
 }
 
-ratiosReshapeWide <- function(quant.tbl,grouped.cols=TRUE,vs.class=NULL,sep=".",cmbn=NULL,short.names=FALSE) {
+ratiosReshapeWide <- function(quant.tbl,vs.class=NULL,sep=".",cmbn=NULL,short.names=FALSE) {
   id.cols <- c("group","ac","peptide","modif","gene_names")
   id.cols <- id.cols[id.cols %in% colnames(quant.tbl)]
 
@@ -1159,6 +1159,7 @@ ratiosReshapeWide <- function(quant.tbl,grouped.cols=TRUE,vs.class=NULL,sep=".",
                                 c(id.cols,"comp","r1","r2","class1","class2"))))]
 
   q.coltypes <- sapply(quant.tbl.num,class)
+  logical.cols <- q.coltypes == 'logical'
   if (!all(q.coltypes %in% c("numeric","logical"))) {
     bad.cols <- q.coltypes[!q.coltypes %in% c("numeric","logical")]
     stop("quantification table reshape does not work - ",
@@ -1167,11 +1168,12 @@ ratiosReshapeWide <- function(quant.tbl,grouped.cols=TRUE,vs.class=NULL,sep=".",
   }
 
   colnames.wide <- paste(rep(colnames(quant.tbl.num),each=length(ccomp)),
-                         rep(ccomp,each=ncol(quant.tbl.num)),sep=sep)
+                         rep(ccomp,times=ncol(quant.tbl.num)),sep=sep)
 
   q1 <- do.call(rbind,tapply(seq_len(nrow(quant.tbl)),fac,function(x) {
     quant.tbl[x[1],id.cols]
   },simplify=FALSE))
+  
   q2 <- do.call(rbind,tapply(seq_len(nrow(quant.tbl.num)),fac,function(x) {
     unlist(quant.tbl.num[x,])
   },simplify=FALSE))
@@ -1179,6 +1181,15 @@ ratiosReshapeWide <- function(quant.tbl,grouped.cols=TRUE,vs.class=NULL,sep=".",
   
   if (!all(sapply(q2,is.numeric)))
     stop("quantification table reshape did not work - columns should be numeric")
+  q2 <- as.data.frame(q2)
+  if (any(logical.cols)) {
+    col.n <- seq(which(logical.cols)*(length(ccomp)-1),length.out=length(ccomp))
+    str(q2[,col.n])
+    q2[,col.n] <- sapply(q2[,col.n],as.logical)
+    str(q2[,col.n])
+  }
+
+
 
   qq <- cbind(q1,q2)
   rownames(qq) <- NULL
