@@ -152,6 +152,8 @@ write.xls.report <- function(report.type,properties.env,report.env,file="isobar-
   .create.or.load("xls.quant.tbl",envir=properties.env,
                   msg.f="protein table for Excel export",f=function() {
     message("XLS report format: ",properties.env$xls.report.format)
+
+    env$quant.tbl$is.significant[is.na(env$quant.tbl$is.significant)] <- FALSE
                     
     compare.to.quant <- .get.or.load('compare.to.quant',properties.env,class="data.frame",null.ok=TRUE)
 
@@ -380,7 +382,7 @@ write.xls.report <- function(report.type,properties.env,report.env,file="isobar-
                               .vector.as.data.frame(protein.group@spectrumToPeptide,colnames=c("spectrum","peptide")),
                               by="peptide")
 
-  tbl <- cbind(tbl, n=sapply(input.tbl[,"ac"],function(p) {sum(indist.proteins == p)}),
+  tbl <- cbind(tbl, n=sapply(protein.gs,function(p) {sum(indist.proteins == p)}),
                     "@comment=Number of specific peptides@Peptide Count" = 
                        table(protein.to.peptides[,'protein.g'])[protein.gs],
                     "@comment=Number of specific spectra@Spectral Count" = 
@@ -391,7 +393,19 @@ write.xls.report <- function(report.type,properties.env,report.env,file="isobar-
   if (proteinInfo.ok && "sequence" %in% colnames(proteinInfo(protein.group))) {
     peptide.info <- unique(peptideInfo(protein.group)[,c("protein","peptide","start.pos")])
     peptide.info[,'end.pos'] <- peptide.info[,'start.pos'] + nchar(peptide.info[,'peptide']) - 1
+    peptide.info <- peptide.info[peptide.info[,'protein'] %in% indist.proteins[,'protein'],]
     protein.lengths <- nchar(unlist(setNames(proteinInfo(protein.group,protein.g=protein.gs,select=c("sequence"),simplify=FALSE),NULL)))
+
+    if (!proteinInfoIsOnSpliceVariants(proteinInfo(protein.group))) {
+      splice.df <- protein.group@isoformToGeneProduct
+      splice.df <- splice.df[splice.df[,'proteinac.w.splicevariant'] %in% indist.proteins[,'protein'] &
+                             splice.df[,'proteinac.wo.splicevariant'] %in% names(protein.lengths),]
+
+      # only keep first AC
+      splice.df.1 <- ddply(splice.df,'proteinac.wo.splicevariant',function(x) x[1,])
+      peptide.info <- merge(peptide.info,splice.df.1,by.x='protein',by.y='proteinac.w.splicevariant')
+      peptide.info[,'protein'] <- peptide.info[,'proteinac.wo.splicevariant']
+    }
   
     seq.covs <- ddply(peptide.info,"protein",function(x) {
       protein.length <- protein.lengths[x[1,'protein']]
@@ -403,6 +417,11 @@ write.xls.report <- function(report.type,properties.env,report.env,file="isobar-
       return(c(seq.cov=sum(seqq)/length(seqq)))
     },.parallel=isTRUE(options('isobar.parallel')))
   
+    if (!proteinInfoIsOnSpliceVariants(proteinInfo(protein.group))) {
+      seq.covs <- merge(seq.covs,splice.df,by.x='protein',by.y='proteinac.wo.splicevariant')
+      seq.covs[,'protein'] <- seq.covs[,'proteinac.w.splicevariant']
+    }
+
     proteing.seq.covs <- merge(indist.proteins,seq.covs,by='protein')
     seq.covs <- tapply(proteing.seq.covs[,'seq.cov'],factor(proteing.seq.covs[,'protein.g']),mean)
   
