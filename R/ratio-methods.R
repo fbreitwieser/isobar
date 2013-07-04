@@ -1183,10 +1183,8 @@ ratiosReshapeWide <- function(quant.tbl,vs.class=NULL,sep=".",cmbn=NULL,short.na
     stop("quantification table reshape did not work - columns should be numeric")
   q2 <- as.data.frame(q2)
   if (any(logical.cols)) {
-    col.n <- seq(which(logical.cols)*(length(ccomp)-1),length.out=length(ccomp))
-    str(q2[,col.n])
+    col.n <- seq((which(logical.cols)-1)*length(ccomp)+1,length.out=length(ccomp))
     q2[,col.n] <- sapply(q2[,col.n],as.logical)
-    str(q2[,col.n])
   }
 
 
