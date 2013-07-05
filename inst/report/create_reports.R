@@ -47,11 +47,6 @@ if (length(args) > 0 && file.exists(args[length(args)])) {
   args[length(args)] <- NULL
 }
 
-do.compile <- get.arg("--compile")
-do.zip <- get.arg("--zip")
-protein.report <- get.arg("--protein")
-peptide.report <- get.arg("--peptide")
-
 xls.report <- get.arg("--xls")
 xlsx.report <- get.arg("--xlsx")
 qc.report <- get.arg("--qc")
@@ -86,8 +81,7 @@ if (xls.report || xlsx.report || qc.report || pdf.report) {
 tryCatch({
   if (meta.report) create.reports.f <- create.meta.reports
   else create.reports.f <- create.reports
-  create.reports.f(report.type=ifelse(peptide.report,"peptide","protein"),
-                         compile=do.compile,zip=do.zip)},
+  create.reports.f()},
          error=function(e) {
            save.image(file="isobar.fail.rda")
            stop("create.reports exited with an error - saving session to isobar.fail.rda.\n\n  Message: ",

@@ -2,7 +2,7 @@
 #########################################
 ## Functions for XLS Report Generation 
 
-write.xls.report <- function(report.type,properties.env,report.env,file="isobar-analysis.xls") {
+write.xls.report <- function(properties.env,report.env,file="isobar-analysis.xls") {
     write.t <- function(...,sep="\t",row.names=FALSE,quote=FALSE)
       write.table(...,sep=sep,row.names=row.names,quote=quote,na="")
 
@@ -12,7 +12,7 @@ write.xls.report <- function(report.type,properties.env,report.env,file="isobar-
     indist.proteins <- indistinguishableProteins(protein.group)
     modificationSites <- NULL
     
-    if (identical(report.type,"protein")) {
+    if (identical(properties.env$report.type,"protein")) {
       ## TODO: add groups column to provide a link to the groups in report and quant table
       ## in principle, it works by defining the protein.group.ids attr, but does not here - 
       ## probably due to the environment it does not
@@ -74,7 +74,7 @@ write.xls.report <- function(report.type,properties.env,report.env,file="isobar-
     log.f <- paste(get.property('cachedir'),"logged_operations.csv",sep="/")
 
     xls.quant.tbl <- get.val('xls.quant.tbl')
-    if (report.type == "protein") {
+    if (identical(properties.env$report.type,"protein")) {
       xls.quant.tbl <- xls.quant.tbl[order(xls.quant.tbl[,"group"]),]
       ## Create links
     } else {
@@ -106,7 +106,7 @@ write.xls.report <- function(report.type,properties.env,report.env,file="isobar-
     write.t(ii,file=analysis.properties.f,col.names=FALSE)
     write.t(get.val('ibspectra')@log,file=log.f,col.names=NA,row.names=TRUE)
 
-    if (identical(report.type,"peptide") && !is.null(modificationSites)) {
+    if (identical(properties.env$report.type,"peptide") && !is.null(modificationSites)) {
       modifsites.f <- paste(get.property('cachedir'),"modification_sites.csv",sep="/")
       write.t(modificationSites,file=modifsites.f)
     }
@@ -121,7 +121,7 @@ write.xls.report <- function(report.type,properties.env,report.env,file="isobar-
                      ifelse(properties.env$use.name.for.report,sprintf("%s.quant",properties.env$name),"isobar-analysis"),
                      ".",properties.env$spreadsheet.format,
                      " ':autofilter,freeze_col=6,name=Quantifications:",protein.quant.f,"'",
-                     ifelse(identical(report.type,"peptide") && !is.null(modificationSites),
+                     ifelse(identical(properties.env$report.type,"peptide") && !is.null(modificationSites),
                             paste(" ':autofilter,freeze_col=3,name=Modification Sites:",modifsites.f,"'",sep=""),""),
                      " ':autofilter,freeze_col=3,name=Identifications:",protein.id.f,"'",
                      " ':name=Analysis Properties:",analysis.properties.f,"'",
@@ -135,7 +135,7 @@ write.xls.report <- function(report.type,properties.env,report.env,file="isobar-
                      ifelse(properties.env$use.name.for.report,sprintf("%s.quantonly",properties.env$name),"isobar-analysis-quantonly"),
                      ".",properties.env$spreadsheet.format,
                      " ':autofilter,freeze_col=6,name=Quantifications:",protein.quant.f,"'",
-                     ifelse(identical(report.type,"peptide") && !is.null(modificationSites),
+                     ifelse(identical(properties.env$report.type,"peptide") && !is.null(modificationSites),
                             paste(" ':autofilter,freeze_col=3,name=Modification Sites:",modifsites.f,"'",sep=""),""),
                      " ':name=Analysis Properties:",analysis.properties.f,"'",
                      " ':name=Log:",log.f,"'",sep="")
@@ -148,7 +148,7 @@ write.xls.report <- function(report.type,properties.env,report.env,file="isobar-
 
 
 
-.create.or.load.xls.quant.tbl <- function(report.type,env,properties.env) {
+.create.or.load.xls.quant.tbl <- function(env,properties.env) {
   .create.or.load("xls.quant.tbl",envir=properties.env,
                   msg.f="protein table for Excel export",f=function() {
     message("XLS report format: ",properties.env$xls.report.format)
@@ -170,7 +170,7 @@ write.xls.report <- function(report.type,properties.env,report.env,file="isobar-
     }
 
     message(" adding protein or peptide details columns ",appendLF=FALSE)
-    if (identical(report.type,"protein"))
+    if (identical(properties.env$report.type,"protein"))
       res.tbl <- .create.xls.protein.quant.tbl(tbl.input,proteinGroup(env$ibspectra))
     else
       res.tbl <- .create.xls.peptide.quant.tbl(tbl.input,env$ibspectra,
@@ -180,7 +180,7 @@ write.xls.report <- function(report.type,properties.env,report.env,file="isobar-
     tbl <- .add.quant.to.xls.tbl(env,properties.env,res.tbl[[1]],res.tbl[[2]],compare.to.quant)
     
     #order.c <- if(isTRUE(properties.env$xls.report.format=="long"),"Channels",NULL)
-    if (identical(report.type,"protein"))
+    if (identical(properties.env$report.type,"protein"))
       tbl <- tbl[order(tbl[,"group"]),]
     else 
       tbl <- tbl[order(tbl[,"ID"],tbl[,"Sequence"]),]

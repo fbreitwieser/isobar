@@ -198,7 +198,7 @@ setMethod("weightedVariance",
       weights <- weights[sel]
       data <- data[sel]
 
-      if (trim < 0 | trim > 0.5)
+      if (trim < 0 || trim > 0.5)
         stop("trim has to be between 0 and 0,5")
 
       if (trim > 0) {

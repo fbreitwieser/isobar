@@ -7,6 +7,10 @@
 #####################################################################
 ## General properties
 
+## Report type: Either 'protein' or 'peptide'
+# report.type="peptide"
+report.type="protein"
+
 ## Isobaric tagging type. Use one of the following:
 # type='iTRAQ4plexSpectra'
 # type='iTRAQ8plexSpectra'
@@ -20,6 +24,13 @@ correct.isotope.impurities=TRUE
 ## Will be title and author of the analysis reports.
 name=basename(getwd())
 author=paste0("isobar R package v",packageDescription("isobar")$Version)
+
+## specifes the IBSpectra file or object
+##   - can be a data.frame (e.g. ibspectra=as.data.frame(ibspiked_set1) )
+##   - if it is a character string, it is assumed to be a file
+##     - if it ends on .rda, then it is assumed to be a R data object
+##     - if it does not exists, then it is may generated based on 
+##        the peaklist and identifications properties
 ibspectra=paste(name,"ibspectra.csv",sep=".")
 
 ## When replicates or 'samples belonging together' are analyzed, a
@@ -264,3 +275,14 @@ scratch=list(normalize.exclude.set = list (seppro_igy14=c(
         "P01871-1", #  IgM
         "P02787"    #  Transferrin
         )))
+
+
+##
+#  compile LaTeX reports into PDF files
+compile=TRUE
+
+# zip final report files into archive
+zip=FALSE
+
+# warning level (see 'warn' in ?options)
+warning.level=1
