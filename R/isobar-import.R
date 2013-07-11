@@ -156,9 +156,13 @@
       SITEPROBS='PhosphoRS site.probs',
       FILE='file',SAMPLE='sample',NOTES='notes'
       )
-  if (!all(names(.SPECTRUM.COLS) %in% names(label.desc)))
-    stop("Not all SPECTRUM COLS have a label description:\n\t",
-         paste(names(.SPECTRUM.COLS)[!names(.SPECTRUM.COLS) %in% names(label.desc)],collapse="\n\t"))
+  if (!all(names(.SPECTRUM.COLS) %in% names(label.desc))) {
+    sel.bad <- !names(.SPECTRUM.COLS) %in% names(label.desc)
+    warning("Not all SPECTRUM COLS have a label description:\n\t",
+            paste(names(.SPECTRUM.COLS)[sel.bad],collapse="\n\t"))
+    label.desc[names(.SPECTRUM.COLS)[sel.bad]] <- .SPECTRUM.COLS[sel.bad]
+  }
+
 
   VARMETADATA=data.frame(labelDescription=label.desc[names(.SPECTRUM.COLS)],
                          row.names=.SPECTRUM.COLS)
@@ -916,9 +920,9 @@ read.mzid <- function(f) {
   data.r$all.protein.matches <- NULL
   ## end transform
 
-  sel <- names(.ROCKERBOX.COLS) %in% names(c(.SPECTRUM.COLS,.PEPTIDE.COLS))
-  data.r <- data.r[,.ROCKERBOX.COLS[sel]]
-  colnames(data.r) <- c(.SPECTRUM.COLS,.PEPTIDE.COLS)[names(.ROCKERBOX.COLS)[sel]]
+  sel <- names(.ROCKERBOX.MAPPING.COLS) %in% names(c(.SPECTRUM.COLS,.PEPTIDE.COLS))
+  data.r <- data.r[,.ROCKERBOX.MAPPING.COLS[sel]]
+  colnames(data.r) <- c(.SPECTRUM.COLS,.PEPTIDE.COLS)[names(.ROCKERBOX.MAPPING.COLS)[sel]]
   return(data.r)
 }
 
@@ -1325,9 +1329,17 @@ read.mzid <- function(f) {
   ib.df <- data.frame(spectrum=id.data[,'Title'],.convert.msgfp.pepmodif(id.data[,'Peptide']),
 		      scan.from=id.data[,'ScanNum'],dissoc.method=tolower(id.data[,'FragMethod']),
 		      precursor.error=id.data[,'PrecursorError.ppm.'],charge=id.data[,'Charge'],
-		      search.engine="MSGF+",score=id.data[,'MSGFScore'],stringsAsFactors=FALSE)
+		      search.engine="MSGF+",score=-log10(id.data[,'SpecEValue']),
+          stringsAsFactors=FALSE)
+
+  sel <- names(.MSGF.MAPPINGCOLS) %in% names(c(.SPECTRUM.COLS,.PEPTIDE.COLS))
+  data.r <- data.r[,.MSGF.MAPPINGCOLS[sel]]
+  colnames(data.r) <- c(.SPECTRUM.COLS,.PEPTIDE.COLS)[names(.MSGF.MAPPINGCOLS)[sel]]
+  
+  ib.df <- cbind(ib.df,data.r)
+
   ib.protnpep <-  .convert.msgfp.protein(id.data[,'Protein'],ib.df[,'peptide'],filter.rev.hits=filter.rev.hits)
-  merge(ib.df,ib.protnpep,by='peptide',all=TRUE)
+  merge(ib.protnpep,ib.df,by='peptide',all=TRUE)
 }
 
 .convert.msgfp.pepmodif <- function(peptide,modif.masses=

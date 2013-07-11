@@ -123,6 +123,8 @@ setValidity("IBSpectra",.valid.IBSpectra)
 .PEAKS.COLS <- c(MASSFIELD="X%s_mass",IONSFIELD="X%s_ions")
 
 .ID.COLS <- c(SEARCHENGINE="search.engine",SCORE="score",SCORE.MASCOT="score.mascot",SCORE.PHENYX="score.phenyx",SCORE.MSGF="score.msgf",
+              P.VALUE="p.value",MSGF.RAWSCORE="msgf.rawscore",MSGF.DENOVOSCORE="msgf.denvoscore",MSGF.SPECEVALUE='msgf.specevalue',MSGF.EVALUE='msgf.evalue',
+              MSGF.QVALUE="msgf.qvalue",MSGF.PEPQVALUE="msgf.pepqvalue",
               SCAFFOLD.PEPPROB="scaffold.pepprob",SEQUEST.XCORR="sequest.xcorr",SEQUEST.DELTACN="sequest.deltacn")
 
 .PTM.COLS <- c(SCORE.PHOSPHORS='pepscore',PROB.PHOSPHORS='pepprob',SEQPOS='seqpos',SITEPROBS='site.probs',PHOSPHO.SITES='phospho.sites')
@@ -147,7 +149,12 @@ setValidity("IBSpectra",.valid.IBSpectra)
                    NAME="name",PROTEIN_NAME="protein_name",DATABASE="database",
                    GENE_NAME="gene_name",ORGANISM="organism")
 
-.ROCKERBOX.COLS <- c(PROTEINAC="accession",STARTPOS="start.pos",MODIFSTRING="modif",
+## for mapping
+.MSGF.MAPPINGCOLS <- c(MSGF.RAWSCORE="MSGFScore",MSGF.DENOVOSCORE="DeNovoScore",
+                       MSGF.SPECEVALUE='SpecEValue',MSGF.EVALUE='EValue',
+                       MSGF.QVALUE="QValue",MSGF.PEPQVALUE="PepQValue")
+
+.ROCKERBOX.MAPPING.COLS <- c(PROTEINAC="accession",STARTPOS="start.pos",MODIFSTRING="modif",
                      QN="mascot.query.number",RANK="rank",SCANS="scan.number.s.",RT="retention.time",
                      RAWFILE="raw.file",PEPTIDE="sequence", "phosphosequence",NMC="miscleavages",
                      SCORE="score",DELTASCORE="deltascore",PHOSPHO.DELTASCORE.PEP="phospho_deltascore",
