@@ -1,3 +1,14 @@
+CHANGES IN VERSION 1.7.3
+------------------------
+ - fix wide XLS report format
+ - novel plot for ratio combinations in QC report
+
+CHANGES IN VERSION 1.7.2
+------------------------
+ - added TMT 6plex masses to phosphoRS export script
+ - fixed mascot parsers
+ - MzIdentML version  1.1.0 support implemented [not fully tested]
+
 CHANGES IN VERSION 1.7.1
 ------------------------
  - fixed import of MzIdentML files from Mascot and ProteomeDiscoverer

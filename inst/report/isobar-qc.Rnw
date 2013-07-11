@@ -2,103 +2,106 @@
 \SweaveOpts{eps=FALSE}
 \SweaveOpts{strip.white=false}
 <<initialization,echo=FALSE,results=hide>>=
-options(encoding="UTF-8")  
 suppressPackageStartupMessages(library(distr))
 suppressPackageStartupMessages(require(ggplot2))
 suppressPackageStartupMessages(library(isobar))
+suppressPackageStartupMessages(library(gridExtra))
+options(encoding="UTF-8")  
 pdf.options(pointsize=6)
 
-if (!exists("properties.env",inherits=FALSE)) {
-  stop("No properties.env?")
-  #properties.env <- load.properties()
-}
-needed.objects <- c('ibspectra','noise.model','quant.tbl','ratiodistr')
-if (!all(needed.objects %in% objects())) {
-  message("Initializing environment ...")
-  initialize.env(.GlobalEnv,"protein",properties.env)
-}
-
-get.property <- function(name) { get(name,properties.env,inherits=FALSE) }
+load.tex.properties(.GlobalEnv) # loads environments 
 n.tags <- length(reporterTagNames(ibspectra))
 @
+
 \documentclass[11pt,oneside,nogin]{article}
 \usepackage[margin=2cm]{geometry}
 \usepackage[utf8]{inputenc}
 \usepackage{amsmath}
 \usepackage{longtable}
 \usepackage[pdftex]{graphicx}
-\usepackage{subfigure}
 \usepackage{float}
 \usepackage{verbatim}
 \usepackage{fancyhdr}
-\usepackage{tikz}
 \setlength{\headheight}{13.6pt}
 \pagestyle{fancy}
 \lfoot{\today}
 \cfoot{\thepage}
 
 <<echo=FALSE,results=tex>>=
-cat("\\newcommand{\\analysisname}{",sanitize(get.property('name')),"}\n",sep="")
-cat("\\newcommand{\\analysisauthor}{",sanitize(get.property('author')),"}\n",sep="")
-cat(sprintf("\\input{%s}\n",system.file("report","report-utils.tex",package="isobar")))
+write.tex.commands() # prints analysisname, analysisauthor, and isobarthanks commands
 @
 
-\rfoot{Isobar Quality Control Report \analysisname}
-
-%\bibliography{isobar}
-%\bibliographystyle{plain}
+\rfoot{Isobar QC Report \analysisname}
 
 \usepackage{hyperref}
 \hypersetup{
   colorlinks=true,
-  pdfauthor=isobar
+  pdfauthor=\analysisauthor
 }
-
-\renewcommand*{\thesubfigure}{}
 
 \title{Isobar QC Report \analysisname\isobarthanks}
 \author{\analysisauthor}
-
 \date{\today}
+
 \raggedbottom
-\setcounter{tocdepth}{1}
 
 \begin{document}
 
 \maketitle
 
-%\section{IBSpectra object}
-%<<ibspectra,echo=FALSE>>=
-%ibspectra
-%@
-\subsection*{Reporter Mass Precision}
+\subsection*{Reporter mass precision}
 Histogram representing the distribution of the delta mass (in \emph{m/z}) for each reporter tag between theoretical and observed mass. Reporter tag ions were extracted from MS2 fragment spectra at $\pm$ \Sexpr{properties.env$fragment.precision/2} $m/z$ around the theoretical masses.
 
-<<fig-reporterMassPrecision,fig=T,echo=F,width=6.5,height=2.5,results=hide>>=
+<<fig-reporterMassPrecisionv,fig=T,echo=F,width=6.5,height=2.5,results=hide>>=
  print(reporterMassPrecision(ibspectra))
 @
 
-\subsection*{Reporter Intensities}
-Box-plot of the reporter intensities before and after the normalization process. Isobar applies a normalization factor to impose equal median intensity in each channel.
+\subsection*{Reporter intensities and Normalization}
+Box-plot of the reporter intensities before and after the normalization process. Isobar applies a normalization factor to impose equal median or summed intensity in each channel. Some channels may be excluded, as defined in \texttt{properties.R}.
 
-\begin{minipage}[c]{0.70\textwidth}
-<<fig-reporterIntensityPlot,fig=T,echo=F,width=4,height=2,results=hide>>=
+\begin{minipage}[c]{0.4\textwidth}
+<<fig-reporterIntensityPlot,fig=T,echo=F,width=2.5,height=2.3,results=hide>>=
  print(reporterIntensityPlot(ibspectra) + opts(legend.position="bottom"))
 @
 \end{minipage}
 \hfill
-\begin{minipage}[b]{0.25\textwidth}
-\vspace{0pt}
+\begin{minipage}[c]{0.6\textwidth}
+\vspace{0pt} \small
 <<normalization factors,echo=FALSE,results=tex,strip.white=false>>=
-n.factors = ibspectra@log[grep("normalization.multiplicative.factor",rownames(ibspectra@log)),"Message"]
-if (length(n.factors) > 0) {
-   names(n.factors) <- sub(".* channel ","",names(n.factors))
-   cat("\\begin{tabular}{rr}",
-       "tag & factor \\\\ \\hline",
-       paste(names(n.factors),round(as.numeric(n.factors),5),sep=" & ",collapse="\\\\ \n"),
+reporter.tags <- reporterTagNames(ibspectra)
+n.factors <- setNames(rep("n.n.", length(reporter.tags)),reporter.tags)
+nn.factors <- ibspectra@log[grep("normalization.multiplicative.factor",
+                                 rownames(ibspectra@log)),"Message"]
+names(nn.factors) <- sub(".* channel ","",names(nn.factors))
+n.factors[names(nn.factors)] <- nn.factors
+
+ri <- reporterIntensities(ibspectra)
+ri.nn <- reporterData(ibspectra,element="ions_not_normalized") # null if not normalized
+
+   cat("\\begin{tabular}{rrrrrrr}",
+       paste("","",
+             "\\multicolumn{2}{c}{before norm.}",
+             "\\multicolumn{2}{c}{after norm.}",
+#"\\multicolumn{2}{c}{after n.\\footnote{Intensities before and after normalization}}",
+             "",sep=" & "),"\\\\",
+       paste("tag",
+             "NA \\%\\footnote{Percentage of spectra with no quantitative information}",
+             "mean",
+             "median",
+             "mean",
+             "median",
+             "factor\\footnote{n.n. \\ldots~excluded from normalization}",sep=" & "),
+       " \\\\ \\hline",
+       paste(names(n.factors),
+             sprintf("%.2f",100*colSums(is.na(ri))/nrow(ri)),
+             sprintf("%.2f",colMeans(ri.nn,na.rm=TRUE)),
+             sprintf("%.2f",apply(ri.nn,2,median,na.rm=TRUE)),
+             sprintf("%.2f",colMeans(ri,na.rm=TRUE)),             
+             sprintf("%.2f",apply(ri,2,median,na.rm=TRUE)),
+             n.factors,sep=" & ",collapse="\\\\ \n"),
        "\\end{tabular}",sep="\n")
-}
 @
+\normalsize
 \end{minipage}
 
 \subsection*{Ratio distribution}
@@ -129,6 +132,7 @@ if (!is.null(ratiodistr)) {
 }
 
 print(g)
+
 @
 \end{minipage}
 \hfill
@@ -171,12 +175,55 @@ if (!is.null(ratiodistr)) {
 }
 @
 
-\subsection*{Ratio-Intensity Plot}
+\subsection*{Individual ratio distributions}
+
+<<reporter-intensities-2,fig=TRUE,width=6.5,height=4.5,echo=F,results=hide>>=
+if (all(c("class1","class2") %in% colnames(quant.tbl)) && 
+    (!all(quant.tbl[,'class1']==quant.tbl[,'r1']))) {
+  quant.tbl$comp <- sprintf("%s [%s] /\n %s [%s]",
+                            quant.tbl$r2,quant.tbl$class2,
+                            quant.tbl$r1,quant.tbl$class1)
+  quant.tbl$channels <- sprintf("%s / %s",quant.tbl$r2,quant.tbl$r1)
+} else {
+  quant.tbl$comp <- sprintf("%s / %s",quant.tbl$r2,quant.tbl$r1)
+}
+
+g <- ggplot(quant.tbl,aes(x=lratio)) +
+  geom_histogram(
+                 aes(y=..density..,fill=comp),alpha=0.8,binwidth=1/20*(max(limits)-min(limits))) + facet_wrap(~comp,nrow=1) +
+#  scale_x_continuous("Ratio",breaks=log10(breaks),labels=breaks) +
+  scale_x_continuous(expression(paste(log[10]," ratio"))) +
+  theme_bw(base_size=10) +
+  opts(legend.position="none",axis.text.x = theme_text(colour="grey50"))  + scale_fill_brewer(palette="Set1")
+
+if (!is.null(ratiodistr)) {
+  curve.distr <- data.frame(x=limits,y=d(ratiodistr)(limits))
+  g <- g + geom_line(data=curve.distr,aes(x=x,y=y),colour="black",alpha=.5)
+}
+
+
+gg <- grid.arrange(g,
+tableGrob(ddply(quant.tbl,c('channels','class2','class1')[c('channels','class2','class1') %in% colnames(quant.tbl)],
+                 function(x) c('number of ratios'=sum(!is.na(x$lratio)),
+                               'significantly\ndownregulated'=sum(x$is.significant[x$lratio<0],na.rm=TRUE),
+                               'significantly\nupregulated'=sum(x$is.significant[x$lratio>0],na.rm=TRUE))),
+           gpar.coretext = gpar(fontsize=9), gpar.coltext=gpar(fontsize=10), gpar.rowtext=gpar(fontsize=10)),
+ncol=1)
+
+#width <- max(6.5,nrow(unique(quant.tbl[,c('r1','r2')])) * 2)
+#width<- 6.5
+#pdf("reporter-intensities-2.pdf",width=width,height=4.5)
+#print(gg)
+#dev.off()   
+@
+%\includegraphics{reporter-intensities-2}
+
+\subsection*{Ratio-intensity plot}
 Display of the ratio (\emph{y-axis}) versus the log10 average signal intensity (\emph{x-axis}) for all the reporter ratio combinations. The noise model used by Isobar is indicated as a solid red line.
 
 <<fig-maplot,echo=FALSE,results=hide>>=
 ppi <- 300
-png("fig_maplot.png",width=6*ppi,height=4*ppi,res=ppi,pointsize=12)
+png("fig_maplot.png",width=6.5*ppi,height=4.5*ppi,res=ppi,pointsize=12)
 maplot(ibspectra,noise.model=noise.model,bty="l",pairs=properties.env$qc.maplot.pairs)
 dev.off()
 @
@@ -191,8 +238,8 @@ quant.tbl$sign <- paste(quant.tbl$sign.string,": ",quant.tbl$V1,sep="")
 #message(paste(unique(quant.tbl$sign),collapse="\n"))
 
 g <- ggplot(quant.tbl,aes(x=lratio,y=sqrt(variance))) +
-  geom_point(aes(colour=factor(sign),shape=factor(sign)),alpha=0.8) +
-  geom_rug(alpha=0.1) + scale_shape(solid=FALSE) + theme_bw()
+  geom_point(aes(colour=factor(is.significant),shape=factor(is.significant)),alpha=0.8) +
+  scale_shape(solid=FALSE) + facet_grid(class1~class2) + theme_bw()
 print(g)
 @
 

@@ -20,47 +20,48 @@ setGeneric("reporterIntensityPlot",function(x) standardGeneric("reporterIntensit
 
 # Calculates and displays the deviation from the 'true' tag mass 
 # - as specified in the IBSpectra object - of each channel.
-setMethod("reporterMassPrecision",
-          signature=c(x="IBSpectra",plot="logical"),
-          function(x,plot=TRUE) {
-            masses <- reporterMasses(x)
-            if (plot) {
-              require(ggplot2)
-              melt.masses <-
-                data.frame(
-                           reporter=rep(colnames(masses),each=nrow(masses)),
-#                           charge=fData(x)[,.SPECTRUM.COLS['CHARGE']],
-                           mass=as.numeric(masses),stringsAsFactors=FALSE)
-              
-              melt.masses$mass <-
-                melt.masses$mass - rep(reporterTagMasses(x),each=nrow(masses))
-
-              melt.masses$reporter <-
-                factor(melt.masses$reporter,
-                       levels=reporterTagNames(x),
-                       #labels=sprintf("tag %s: m/z %.2f",
-                       labels=sprintf("%s: m/z %.2f",
-                         reporterTagNames(x),reporterTagMasses(x)))
-             
-             if (compareVersion(packageDescription("ggplot2")$Version,"0.9.1") <= 0) {
-              opts.f <- opts; text.f <- theme_text;
-             } else {
-              opts.f <- theme; text.f <- element_text;
-             }
-
-
-              ggplot(melt.masses,aes(x=mass)) + geom_vline(xintercept=0,alpha=0.8) +
-                geom_histogram(fill="white",aes(colour=factor(reporter)),alpha=0.8,
-                               binwidth=1/20*(max(melt.masses$mass,na.rm=TRUE)-min(melt.masses$mass,na.rm=TRUE))) + 
-                  facet_wrap(~reporter,scales="fixed",nrow=1) + 
-                  theme_bw(base_size=10) + xlab("mass difference theoretical vs observed reporter tag mass") +
-                    opts.f(legend.position="none",
-                         axis.text.x = text.f(angle=330,hjust=0,vjust=1,colour="grey50",size=7))
-            }
-
-            #return(summary(masses-matrix(reporterTagMasses(x),byrow=T,
-            #       nrow=nrow(masses),ncol=ncol(masses))))
-          }
+setMethod("reporterMassPrecision", signature=c(x="IBSpectra",plot="logical"),
+    function(x,plot=TRUE) {
+      masses <- reporterMasses(x)
+      melt.masses <- data.frame(reporter=rep(colnames(masses),each=nrow(masses)),
+                                reporter.tag.mass=rep(reporterTagMasses(x),each=nrow(masses)),
+                                observed.moz=as.numeric(masses),stringsAsFactors=FALSE)
+      melt.masses$mass.difference <-
+          melt.masses$observed.moz - rep(reporterTagMasses(x),each=nrow(masses))
+      if (plot) {
+        require(ggplot2)
+        melt.masses$reporter <-
+          factor(melt.masses$reporter,
+                 levels=reporterTagNames(x),
+                 labels=sprintf("%s: m/z %.2f",
+                   reporterTagNames(x),reporterTagMasses(x)))
+       
+       if (compareVersion(packageDescription("ggplot2")$Version,"0.9.1") <= 0) {
+        opts.f <- opts; text.f <- theme_text;
+       } else {
+        opts.f <- theme; text.f <- element_text;
+       }
+       ggplot(melt.masses,aes(x=mass.difference)) + geom_vline(xintercept=0,alpha=0.8) +
+          geom_histogram(fill="white",aes(colour=factor(reporter)),alpha=0.8,
+                         binwidth=1/20*(max(melt.masses$mass.difference,na.rm=TRUE)-min(melt.masses$mass.difference,na.rm=TRUE))) + 
+            facet_wrap(~reporter,scales="fixed",nrow=1) + 
+            theme_bw(base_size=10) + xlab("mass difference theoretical vs observed reporter tag mass") +
+              opts.f(legend.position="none",
+                   axis.text.x = text.f(angle=330,hjust=0,vjust=1,colour="grey50",size=7))
+      } else {
+        res <- ddply(melt.masses,'reporter',function(x) {
+          c('true reporter mass'=x$reporter.tag.mass[1],
+            'number of spectra'=sum(!is.na(x$observed.moz)),
+            'mean of observed m/z'=mean(x$observed.moz,na.rm=TRUE),
+            'sd of obseved m/z'=sd(x$observed.moz,na.rm=TRUE),
+            'mean of mass difference * 10^3'=mean(x$mass.difference*10^3,na.rm=TRUE),
+            'sd of mass difference * 10^3'=sd(x$mass.difference,na.rm=TRUE))
+        })
+        rownames(res) <- res$reporter
+        res$reporter <- NULL
+        res
+      }
+    }
 )
 
 .reshapeLong <- function(x,key="key",value="value") {
@@ -449,8 +450,8 @@ setMethod("maplot",
           noise.model <- c(noise.model)
         ss <- seq(min(A),max(A),by=0.05)
         for (i in seq_along(noise.model)) {          
-          lines(ss,1.96*sqrt(variance(noise.model[[i]],ss)),col=noise.model.col[i],lwd=2)
-          lines(ss,-1.96*sqrt(variance(noise.model[[i]],ss)),col=noise.model.col[i],lwd=2)
+          lines(ss,1.96*sqrt(variance(noise.model[[i]],ss)),col=noise.model.col[i],lwd=1.5)
+          lines(ss,-1.96*sqrt(variance(noise.model[[i]],ss)),col=noise.model.col[i],lwd=1.5)
           #lines(A,1.96*sqrt(variance(noise.model[[i]],channel1,channel2)),col=noise.model.col[i])
           #lines(A,-1.96*sqrt(variance(noise.model[[i]],channel1,channel2)),col=noise.model.col[i])
         }

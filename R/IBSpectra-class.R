@@ -42,8 +42,8 @@ setClass("iTRAQ8plexSpectra",
     contains = "iTRAQSpectra",
     prototype = prototype(
       reporterTagNames = as.character(c(113:119,121)),
-      reporterTagMasses = c(113.1078,114.1112,115.1082,116.1116,
-                         117.1149,118.1120,119.1153,121.1220),
+      reporterTagMasses = c(113.10787,114.11123,115.10826,116.11162,
+                            117.11497,118.11201,119.1153 ,121.1220),
       isotopeImpurities = diag(nrow=8)
     )
 )
@@ -71,6 +71,17 @@ setClass("TMT6plexSpectra",
        isotopeImpurities = diag(nrow=6)
        )
     )
+
+setClass("TMT6plexSpectra2",
+    contains = "TMTSpectra",
+    prototype = prototype(
+      reporterTagNames = as.character(126:131),
+      reporterTagMasses = c(126.127725,127.124760,128.134433,
+                            129.131468,130.141141,131.138176),
+       isotopeImpurities = diag(nrow=6)
+       )
+    )
+
 
 
 ### - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -133,7 +144,7 @@ setValidity("IBSpectra",.valid.IBSpectra)
                   REALPEPTIDE="real.peptide",AA.BEFORE="aa.before",AA.AFTER="aa.after")
 
 .PROTEIN.COLS <- c(PROTEINAC="accession",PROTEINAC_CONCISE="accessions",
-                   NAME="name",PROTEIN_NAME="protein_name",
+                   NAME="name",PROTEIN_NAME="protein_name",DATABASE="database",
                    GENE_NAME="gene_name",ORGANISM="organism")
 
 .ROCKERBOX.COLS <- c(PROTEINAC="accession",STARTPOS="start.pos",MODIFSTRING="modif",
@@ -231,7 +242,7 @@ ibSpectra.as.concise.data.frame  <- function(from) {
   }
   res.nice <- cbind(res.nice,
                     Modification=res$modif,
-                    AC=.protein.acc(res[,"accession"],ip=indist.proteins),
+                    AC=.protein.acc(res[,"accession"],proteinGroup(from)),
                     ID=proteinInfo(protein.group,res[,"accession"],do.warn=FALSE),
                     n=sapply(res[,"accession"],function(p) {length(names(indist.proteins)[indist.proteins == p])}))
   res <- res[,!.grep_columns(res,c("peptide","modif","accession"))]

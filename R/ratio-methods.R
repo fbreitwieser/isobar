@@ -175,7 +175,11 @@ setMethod("estimateRatioNumeric",signature(channel1="numeric",channel2="numeric"
       if (length(channel1)==0) {
         if (is.method("isobar"))
           return(c(lratio=NA,variance=NA,n.spectra=NA,n.na1=NA,n.na2=NA,
-                   p.value.rat=NA,p.value.sample=NA,is.significant=NA))
+                   p.value.rat=NA,p.value.sample=NA,is.significant=FALSE))
+        if (is.method("isobar-combn"))
+          return(c(lratio=NA,variance=NA,n.spectra=NA,n.na1=NA,n.na2=NA,
+                   p.value.rat=NA,p.value.sample=NA,is.significant=FALSE,is.significant.ev=NA,
+                   p.value.combined=NA))
         else if (is.method("libra") || is.method("pep"))
           return(c(ch1=NA,ch2=NA))
         else if (is.method("multiq"))
@@ -267,7 +271,7 @@ setMethod("estimateRatioNumeric",signature(channel1="numeric",channel2="numeric"
  
       weighted.ratio <- as.numeric(lratio.n.var['lratio'])
       calc.variance <- as.numeric(lratio.n.var['calc.variance'])
-      if (is.a.method("isobar")) {
+      if (is.a.method("isobar") || is.a.method("isobar-combn")) {
         # Check for channels where one is NA
         sel.ch1na <- is.na(channel1) & !is.na(channel2)
         sel.ch2na <- is.na(channel2) & !is.na(channel1)
@@ -294,6 +298,15 @@ setMethod("estimateRatioNumeric",signature(channel1="numeric",channel2="numeric"
         res.isobar['is.significant'] <- 
           (res.isobar['p.value.sample'] <= sign.level.sample) && 
           (res.isobar['p.value.rat'] <= sign.level.rat)
+
+        if (is.method("isobar-combn")) {
+          p.value.combined <- NA
+          if (all(!is.na(c(res.isobar['lratio'],res.isobar['variance'])))) {
+            p.value.combined <- calcProbXGreaterThanY(ratiodistr,Norm(res.isobar['lratio'],sqrt(res.isobar['variance'])))
+            p.value.combined <- 2*ifelse(p.value.combined<.5,p.value.combined,1-p.value.combined)
+          }
+          return(c(res.isobar,p.value.combined=p.value.combined))
+        }
 
         if (is.method("isobar")) return(res.isobar)
       }
@@ -361,9 +374,19 @@ calculate.mult.sample.pvalue <- function(lratio,ratiodistr,strict.pval,lower.tai
   return(pval)
 }
 
-adjust.ratio.pvalue <- function(quant.tbl,p.adjust,sign.level.rat) {
-  quant.tbl[,'p.value.rat.adjusted'] <- p.adjust(quant.tbl[,'p.value.rat'], p.adjust)
-  quant.tbl[,'is.significant'] <- quant.tbl[,'is.significant'] & quant.tbl[,'p.value.rat.adjusted'] < sign.level.rat
+adjust.ratio.pvalue <- function(quant.tbl,p.adjust,sign.level.rat,globally=FALSE) {
+  if (globally) {
+    quant.tbl[,'p.value.rat.adjusted'] <- p.adjust(quant.tbl[,'p.value.rat'], p.adjust)
+    quant.tbl[,'is.significant'] <- quant.tbl[,'is.significant'] & quant.tbl[,'p.value.rat.adjusted'] < sign.level.rat
+  } else {
+    comp.cols <- c("r1","r2","class1","class2")
+    comp.cols <- comp.cols[comp.cols %in% colnames(quant.tbl)]
+    quant.tbl <- ddply(quant.tbl,comp.cols,function(x) {
+      x[,'p.value.rat.adjusted'] <- p.adjust(x[,'p.value.rat'], p.adjust)
+      x[,'is.significant'] <- x[,'is.significant'] & x[,'p.value.rat.adjusted'] < sign.level.rat
+      x
+    })
+  }
   quant.tbl
 }
 
@@ -610,7 +633,8 @@ correct.peptide.ratios <- function(ibspectra, peptide.quant.tbl, protein.quant.t
   calc.variance <- switch(variance.function,
       maxi = max(estimator.variance,sample.variance,na.rm=T),
       ev = estimator.variance,
-      wsv = sample.variance
+      wsv = sample.variance,
+      stop("unknown variance function - choose one of [maxi,ev,wsv]")
   )
 
   return(c(lratio=weighted.ratio,
@@ -1095,8 +1119,9 @@ peptideRatios <- function(ibspectra,...,peptide=peptides(proteinGroup(ibspectra)
   proteinRatios(ibspectra,...,proteins=NULL,peptide=peptide)
 }
 
-ratiosReshapeWide <- function(quant.tbl,grouped.cols=TRUE,vs.class=NULL,sep=".",cmbn=NULL,short.names=FALSE) {
-  attrs <- attributes(quant.tbl)
+ratiosReshapeWide <- function(quant.tbl,vs.class=NULL,sep=".",cmbn=NULL,short.names=FALSE) {
+  id.cols <- c("group","ac","peptide","modif","gene_names")
+  id.cols <- id.cols[id.cols %in% colnames(quant.tbl)]
 
   if (!is.null(cmbn)) {
     sel <- paste(quant.tbl$r1,quant.tbl$r2) %in% paste(cmbn[1,],cmbn[2,])
@@ -1122,25 +1147,56 @@ ratiosReshapeWide <- function(quant.tbl,grouped.cols=TRUE,vs.class=NULL,sep=".",
       quant.tbl[,'comp']<- paste(quant.tbl$r2,quant.tbl$r1,sep="/")
     }
   }
-  quant.tbl  <- quant.tbl[,-(c(which(colnames(quant.tbl) %in% c("r1","r2","class1","class2"))))]
-  v.names <- c("lratio","lratio.modpep","lratio.prot","variance","variance.modpep","variance.prot","n.spectra",
-               "p.value.rat","p.value.rat.adjusted","p.value.sample",
-               "is.significant","is.significant.modpep","is.significant.prot","sd","n.na1","n.na2","n.pos","n.neg") # 
-  v.names <- v.names[v.names %in% colnames(quant.tbl)]
-  timevar <- "comp"
-  idvar <- colnames(quant.tbl)[!colnames(quant.tbl) %in% c(timevar,v.names)]
-  if ("ac" %in% colnames(quant.tbl))
-    quant.tbl[is.na(quant.tbl[,"ac"]),"ac"] <- "NA"
 
-  res <- reshape(quant.tbl,v.names=v.names,idvar=idvar,timevar=timevar,direction="wide",sep=sep)
-  if (grouped.cols) {
-    col.order <- c(idvar,
-                   unlist(lapply(v.names,function(n) grep(n,colnames(res),fixed=TRUE,value=TRUE))))
-    res <- res[,col.order]
+  ccomp <- unique(quant.tbl$comp)
+  fac <- factor(apply(quant.tbl[,id.cols,drop=FALSE],1,paste,collapse="."))
+
+  ## check that all 'comp' entries are in the right order
+  if (!all(tapply(quant.tbl$comp,fac,function(x) all(x==ccomp))))
+    stop("quant.tbl not in the right format - comp column values different")
+  
+  quant.tbl.num  <- quant.tbl[,-(c(which(colnames(quant.tbl) %in% 
+                                c(id.cols,"comp","r1","r2","class1","class2"))))]
+
+  q.coltypes <- sapply(quant.tbl.num,class)
+  logical.cols <- q.coltypes == 'logical'
+  if (!all(q.coltypes %in% c("numeric","logical"))) {
+    bad.cols <- q.coltypes[!q.coltypes %in% c("numeric","logical")]
+    stop("quantification table reshape does not work - ",
+         " columns ",paste0(names(bad.cols),collapse=","),
+         " have types ",paste0(bad.cols,collapse=","),".")
   }
+
+  colnames.wide <- paste(rep(colnames(quant.tbl.num),each=length(ccomp)),
+                         rep(ccomp,times=ncol(quant.tbl.num)),sep=sep)
+
+  q1 <- do.call(rbind,tapply(seq_len(nrow(quant.tbl)),fac,function(x) {
+    quant.tbl[x[1],id.cols]
+  },simplify=FALSE))
+  
+  q2 <- do.call(rbind,tapply(seq_len(nrow(quant.tbl.num)),fac,function(x) {
+    unlist(quant.tbl.num[x,])
+  },simplify=FALSE))
+  colnames(q2) <- colnames.wide
+  
+  if (!all(sapply(q2,is.numeric)))
+    stop("quantification table reshape did not work - columns should be numeric")
+  q2 <- as.data.frame(q2)
+  if (any(logical.cols)) {
+    col.n <- seq((which(logical.cols)-1)*length(ccomp)+1,length.out=length(ccomp))
+    q2[,col.n] <- sapply(q2[,col.n],as.logical)
+  }
+
+
+
+  qq <- cbind(q1,q2)
+  rownames(qq) <- NULL
+
+  attrs <- attributes(quant.tbl)
   for (a in names(attrs))
-    if (!a %in% c("row.names","names","class")) attr(res,a) <- attrs[[a]]
-  res
+    if (!a %in% c("row.names","names","class")) attr(qq,a) <- attrs[[a]]
+
+  qq
 }
 
 proteinRatios <-

@@ -198,7 +198,7 @@ setMethod("weightedVariance",
       weights <- weights[sel]
       data <- data[sel]
 
-      if (trim < 0 | trim > 0.5)
+      if (trim < 0 || trim > 0.5)
         stop("trim has to be between 0 and 0,5")
 
       if (trim > 0) {
@@ -280,7 +280,7 @@ setMethod("weightedMean",
     stop("unequal number of '^lratio.' and '^p.value.rat' columns")
 
   combined.p <- rep(1,nrow(df))
-  signs.equal <- apply(sign(df[,lr.cols]),1,function(x) all(x==x[1]))
+  signs.equal <- apply(sign(df[,lr.cols]),1,function(x) { y=x[!is.na(x)]; all(y==y[1])})
   ks <- apply(!is.na(df[,p.cols]),1,sum)
   logsums <- rowSums(log(df[,p.cols]),na.rm=TRUE)
   sel <-  ks > 1 & signs.equal

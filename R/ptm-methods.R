@@ -20,6 +20,7 @@ getPhosphoRSProbabilities <- function(
 .iTRAQ8.mass = c(monoisotopic = 304.2, average = 304.308)
 .CysCAM.mass = c(monoisotopic = 57.021464, average =  57.0513)
 .OxidationM.mass = c(monoisotopic = 15.994915, average =  15.9994)
+.TMT6.mass = c(monoisotopic = 229.162932, average = 229.2634)
   
 writePhosphoRSInput <- 
   function(phosphoRS.infile,id.file,mgf.file,massTolerance,activationType,
@@ -29,8 +30,9 @@ writePhosphoRSInput <-
                  c("Oxidation_M","2","2:Oxidation:Oxidation:15.994919:null:0:M"),
                  c("Cys_CAM",    "3","3:Carbamidomethylation:Carbamidomethylation:57.021464:null:0:C"),
                  c("iTRAQ4plex", "4","4:iTRAQ4:iTRAQ4:144.1544:null:0:KX"),
-                 c("iTRAQ8plex", "5","5:iTRAQ8:iTRAQ8:304.308:null:0:KX"))
-) {
+                 c("iTRAQ8plex", "5","5:iTRAQ8:iTRAQ8:304.308:null:0:KX"),
+                 c("TMT6plex",   "7","7:TMT6:TMT6:229.162932:null:0:KX"),
+                 c("TMTsixplex",   "6","6:TMT6:TMT6:229.162932:null:0:KX"))) {
 
   if (is.data.frame(id.file)) 
     ids <- id.file
@@ -88,23 +90,25 @@ writePhosphoRSInput <-
     spectrum <- input[begin_ions[spectrum_i]:end_ions[spectrum_i]]
     ## read header
     header <- .strsplit_vector(spectrum[grep("^[A-Z]",spectrum)],"=")
-    
-    cat.f("    <Spectrum ID='",URLencode(header["TITLE"],reserved=TRUE),"'",
-          " PrecursorCharge='",sub("+","",header["CHARGE"],fixed=TRUE),"'",
-          " ActivationTypes='",activationType,"'>")
-    
     peaks <- gsub(" ?","",spectrum[grep("^[0-9]",spectrum)],fixed=TRUE)
-    cat.f("    <Peaks>",paste(gsub("\\s+",":",peaks),collapse=","),"</Peaks>")
 
-    for (id_i in which(ids$spectrum==title)) {
-      pepid <- pepid + 1
-      cat.f("      <IdentifiedPhosphorPeptides>")
-      cat.f("        <Peptide ID='",ids[id_i,"peptide"],pepmodif.sep,ids[id_i,"modif"],"'",
-            " Sequence='",ids[id_i,"peptide"],"'",
-            " ModificationInfo='",ids[id_i,"modifrs"],"' />")
-      cat.f("      </IdentifiedPhosphorPeptides>")
+    if (length(peaks) > 0) {
+      cat.f("    <Spectrum ID='",URLencode(header["TITLE"],reserved=TRUE),"'",
+            " PrecursorCharge='",sub("+","",header["CHARGE"],fixed=TRUE),"'",
+            " ActivationTypes='",activationType,"'>")
+    
+      cat.f("    <Peaks>",paste(gsub("\\s+",":",peaks),collapse=","),"</Peaks>")
+
+      for (id_i in which(ids$spectrum==title)) {
+        pepid <- pepid + 1
+        cat.f("      <IdentifiedPhosphorPeptides>")
+        cat.f("        <Peptide ID='",ids[id_i,"peptide"],pepmodif.sep,ids[id_i,"modif"],"'",
+              " Sequence='",ids[id_i,"peptide"],"'",
+              " ModificationInfo='",ids[id_i,"modifrs"],"' />")
+        cat.f("      </IdentifiedPhosphorPeptides>")
+      }
+      cat.f("    </Spectrum>")
     }
-    cat.f("    </Spectrum>")
   }
 
   cat.f("  </Spectra>")
@@ -320,6 +324,14 @@ filterSpectraPhosphoRS <- function(id.file,mgf.file,...,min.prob=NULL, do.remove
   ## probs excludes non-PHOS peptides - we do filter them for now? (about 8-10%)
   id.file$peptide <- NULL
   id.file$modif <- NULL
+
+  colnames.both <- intersect(colnames(id.file),colnames(probs))
+  if (length(colnames.both) > 1) {
+    stop("id.file includes colnames which are added by the function filterSpectraPhosphoRS: \n",
+         "\t",paste(sort(colnames.both[colnames.both != 'spectrum']),collapse=", "),
+         "\nRemove them prior to calling filterSpectraPhosphoRS.")
+  }
+
   id.file <- merge(id.file,probs,by="spectrum")
   if (!is.null(min.prob)) {
     if (!'use.for.quant' %in% colnames(id.file)) id.file$use.for.quant <- TRUE

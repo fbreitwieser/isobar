@@ -385,7 +385,7 @@ setMethod("variance",signature(x="NoiseModel",channel1="numeric",channel2="numer
     }
 )
 setMethod("stddev",signature(x="NoiseModel"),
-    function(x,...) sqrt(variance(x))
+    function(x,...) sqrt(variance(x,...))
 )
 
 

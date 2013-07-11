@@ -349,6 +349,7 @@ getProteinInfoFromBiomart <- function(x,database="Uniprot") {
   return(protein.info)
 }
 
+# for NCBI protein: http://eutils.ncbi.nlm.nih.gov/entrez/eutils/efetch.fcgi?db=protein&id=115298678
 
 getProteinInfoFromUniprot <- function(x,splice.by=200, 
                                       fields = c(accession="id",name="entry%20name",protein_name="protein%20names",
@@ -380,6 +381,44 @@ getProteinInfoFromUniprot <- function(x,splice.by=200,
     warning("getProteinInfoFromUniprot returned no results for ",protein.acs," accessions")
   }
   return(protein.info)
+}
+
+getProteinInfoFromEntrez <- function(x,splice.by=200) {
+  require(XML)
+
+  eutils.url <- "http://eutils.ncbi.nlm.nih.gov/entrez/eutils/esummary.fcgi?db=protein&id="
+  if (is.character(x))
+    protein.acs <- x
+  else  
+    protein.acs <- x@isoformToGeneProduct[names(indistinguishableProteins(x)),"proteinac.wo.splicevariant"]
+
+  protein.info <- c()
+  i <- 1
+  while (i < length(protein.acs)) {
+    cat(".")
+
+    res <- xmlToList(paste0(eutils.url,paste(protein.acs[seq(from=i,to=min(length(protein.acs),i+splice.by-1))],collapse=",")))
+    res.l <- lapply(res, function(x) {
+      unlist(setNames(lapply(x[names(x) != 'Id'], function(y) 
+        if ('.attrs' %in% names(y) && y$.attrs['Name'] != 'Comment') 
+          setNames(y$text,y$.attrs['Name'])),NULL))
+    })
+
+    res.l <- res.l[!sapply(res.l,is.null)]
+  
+    enames.to.isobar <- c(Gi="accession",Caption="name",Title="protein_name")
+    res.df <- ldply(res.l, function(x) { 
+                    setNames(x[names(enames.to.isobar)],enames.to.isobar)
+    })
+  
+   protein.info <- rbind(protein.info,res.df)
+    i <- i + splice.by
+  }
+  protein.info[,c('protein_name','organism')] <- t(sapply(strsplit(sub("^(.*) \\[(.*)\\]$","\\1\t\\2",protein.info[,'protein_name']),"\t"),function(x) x))
+ 
+  protein.info$gene_name <- NA
+  protein.info$.id <- NULL
+  protein.info
 }
 
 getProteinInfoFromNextProt <- function(x) {
@@ -451,14 +490,18 @@ getPtmInfoFromPhosphoSitePlus <- function(protein.group,file.name=NULL,modif="PH
 
   sites <- read.delim(file.name,
                       sep="\t",header=TRUE,skip=3,stringsAsFactors=FALSE)
-  sites <- sites[gsub("-.*","",sites$ACC.) %in% gsub("-.*","",names(indistinguishableProteins(protein.group))),]
+  ac.column <- ifelse("ACC_ID" %in% colnames(sites),"ACC_ID","ACC.")
+  species.column <- ifelse("ORG" %in% colnames(sites),"ORG","SPECIES")
+  residue.column <- ifelse("MOD_RSD" %in% colnames(sites),"MOD_RSD","RSD")
+
+  sites <- sites[gsub("-.*","",sites[,ac.column]) %in% gsub("-.*","",names(indistinguishableProteins(protein.group))),]
 
   sites$PUBMED_LTP[!is.na(sites$PUBMED_LTP)] <- paste("n.publ ltp:",sites$PUBMED_LTP[!is.na(sites$PUBMED_LTP)])
   sites$PUBMED_MS2[!is.na(sites$PUBMED_MS2)] <- paste("n.publ htp:",sites$PUBMED_MS2[!is.na(sites$PUBMED_MS2)])
 
-  data.frame(.id=sites[,"ACC."],
-             isoform_ac=sapply(sites[,"ACC."],function(ac) ifelse(grepl("-[0-9]$",ac),ac,paste0(ac,"-1"))),
-             species=tolower(sites[,'SPECIES']),
+  data.frame(.id=sites[,ac.column],
+             isoform_ac=sapply(sites[,ac.column],function(ac) ifelse(grepl("-[0-9]$",ac),ac,paste0(ac,"-1"))),
+             species=tolower(sites[,species.column]),
              modification.name=tolower(sites[,'MOD_TYPE']),
              description=apply(sites,1,function(x) {
                                y <- tolower(x['MOD_TYPE'])
@@ -468,7 +511,7 @@ getPtmInfoFromPhosphoSitePlus <- function(protein.group,file.name=NULL,modif="PH
                              }),
              evidence=apply(sites[,c("PUBMED_LTP","PUBMED_MS2")],1,
                             function(x) { x<-x[!is.na(x)]; paste(x,collapse=";")}),
-             position=as.integer(substr(sites$RSD,2,nchar(sites$RSD))),
+             position=as.integer(substr(sites[,residue.column],2,nchar(sites[,residue.column]))),
              stringsAsFactors=FALSE)
 }
 
@@ -579,9 +622,7 @@ proteinGroup.as.concise.data.frame <-
 
         pep.n.prot <- merge(as.data.frame(peptideNProtein(from),stringsAsFactors=FALSE),
                             from@peptideInfo)
-        rp <- reporterProteins(from)
-        p.ac <- sapply(rp,.protein.acc,indistinguishableProteins(from))
-        #names(p.ac) <- rp
+        p.ac <- .protein.acc(reporterProteins(from),from)
         ip.df <- .vector.as.data.frame(indistinguishableProteins(from),
                                        colnames=c("protein","protein.g"))
         if (only.reporters)
@@ -613,9 +654,7 @@ proteinGroup.as.concise.data.frame <-
 
         pep.n.prot <- merge(as.data.frame(peptideNProtein(from),stringsAsFactors=FALSE),
                             from@peptideInfo)
-        rp <- reporterProteins(from)
-        p.ac <- sapply(rp,.protein.acc,indistinguishableProteins(from))
-        #names(p.ac) <- rp
+        p.ac <- .protein.acc(reporterProteins(from),from)
         ip.df <- .vector.as.data.frame(indistinguishableProteins(from),
                                        colnames=c("protein","protein.g"))
         if (only.reporters)
@@ -830,7 +869,7 @@ setMethod("indistinguishableProteins",signature(x="ProteinGroup",protein="charac
           function(x,protein) {
             protein.groups <- x@indistinguishableProteins[protein]
             if (length(protein.groups) == 0) {
-              warning(protein," is in no protein group")
+              warning(protein," is in not in the list")
               return(NA)
             }
             return(protein.groups)
@@ -1295,8 +1334,8 @@ spectra.count2 <- function(ibspectra,value=reporterProteins(protein.group),type=
     has.modif <- sapply(strsplit(fd$modif,":"),function(x) any(x %in% modif))
     sum(has.modif)
   }
-
 }
+
 spectra.count <- function(protein.group,protein.g=reporterProteins(protein.group),
                           specificity=c("reporter-specific","group-specific","unspecific"),
                           modif=NULL,...) {
@@ -1598,32 +1637,30 @@ calculate.emPAI <- function(protein.group,protein.g=reporterProteins(protein.gro
   return(empai)
 }
 
-.protein.acc <- function(prots,ip=NULL) {
-  if (is.null(ip)) {
-    proteins <- list(prots)
-  } else {
-    proteins <- lapply(prots,function(p) {names(ip)[ip == p]})
-  }
+# pretty format group identifiers
+#   Input: c("P1234-1,P1234-2","P6543")
+#  Output: c("P1234-[1,2]","P6543")
+.protein.acc <- function(my.protein.g,protein.group) {
 
-  sapply(proteins,function(prots) {
-         ## consider ACs with -[0-9]*$ as splice variants (ACs w/ more than one dash are not considered)
-         pos.splice <- grepl("^[^-]*-[0-9]*$",prots)
-         my.df <- data.frame(protein=prots,accession=prots,splice=0,stringsAsFactors=FALSE)
+  if (length(my.protein.g) > 1) 
+    return(sapply(my.protein.g,function(p) .protein.acc(p,protein.group)))
 
-         if (any(pos.splice))
-           my.df[pos.splice,c("accession","splice")] <- 
-             do.call(rbind,strsplit(prots[pos.splice],"-"))
+  protein.acs <- as.character(indistinguishableProteins(protein.group,protein.g=my.protein.g))
 
-         res <- 
-           ddply(my.df,"accession",function(y) {
-                 if(sum(y$splice>0) <= 1)
-                   return(data.frame(protein=unique(y$protein)))
-                 else 
-                   return(data.frame(protein=sprintf("%s-[%s]",unique(y$accession),
-                                                     paste(sort(y[y$splice>0,'splice']),collapse=","))))
-                                 })
-         return(paste(res$protein,collapse=", "))
+  if (length(protein.acs) == 1) return(protein.acs)
+  splice.df <- protein.group@isoformToGeneProduct[protein.acs,]
+  if (all(is.na(splice.df[,'splicevariant']))) 
+    return(paste0(splice.df[,'proteinac.w.splicevariant'],collapse=", "))
+
+  res <- ddply(splice.df,"proteinac.wo.splicevariant",function(y) {
+        if (nrow(y) == 1) return(y[,'proteinac.w.splicevariant'])
+        if (all(is.na(y$splicevariant))) return(y[1,'proteinac.w.splicevariant'])
+
+        return(sprintf("%s-[%s]",
+                       y[1,'proteinac.wo.splicevariant'],
+                       number.ranges(y[,'splicevariant'])))
   })
+  return(as.character(paste0(res[,'V1'],collapse=", ")))
 }
 
 

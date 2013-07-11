@@ -2,7 +2,7 @@
 #########################################
 ## Functions for XLS Report Generation 
 
-write.xls.report <- function(report.type,properties.env,report.env,file="isobar-analysis.xls") {
+write.xls.report <- function(properties.env,report.env,file="isobar-analysis.xls") {
     write.t <- function(...,sep="\t",row.names=FALSE,quote=FALSE)
       write.table(...,sep=sep,row.names=row.names,quote=quote,na="")
 
@@ -12,7 +12,7 @@ write.xls.report <- function(report.type,properties.env,report.env,file="isobar-
     indist.proteins <- indistinguishableProteins(protein.group)
     modificationSites <- NULL
     
-    if (identical(report.type,"protein")) {
+    if (identical(properties.env$report.type,"protein")) {
       ## TODO: add groups column to provide a link to the groups in report and quant table
       ## in principle, it works by defining the protein.group.ids attr, but does not here - 
       ## probably due to the environment it does not
@@ -74,7 +74,7 @@ write.xls.report <- function(report.type,properties.env,report.env,file="isobar-
     log.f <- paste(get.property('cachedir'),"logged_operations.csv",sep="/")
 
     xls.quant.tbl <- get.val('xls.quant.tbl')
-    if (report.type == "protein") {
+    if (identical(properties.env$report.type,"protein")) {
       xls.quant.tbl <- xls.quant.tbl[order(xls.quant.tbl[,"group"]),]
       ## Create links
     } else {
@@ -106,7 +106,7 @@ write.xls.report <- function(report.type,properties.env,report.env,file="isobar-
     write.t(ii,file=analysis.properties.f,col.names=FALSE)
     write.t(get.val('ibspectra')@log,file=log.f,col.names=NA,row.names=TRUE)
 
-    if (identical(report.type,"peptide") && !is.null(modificationSites)) {
+    if (identical(properties.env$report.type,"peptide") && !is.null(modificationSites)) {
       modifsites.f <- paste(get.property('cachedir'),"modification_sites.csv",sep="/")
       write.t(modificationSites,file=modifsites.f)
     }
@@ -120,8 +120,8 @@ write.xls.report <- function(report.type,properties.env,report.env,file="isobar-
     perl.cl <- paste(tab2spreadsheet.cmd," ",
                      ifelse(properties.env$use.name.for.report,sprintf("%s.quant",properties.env$name),"isobar-analysis"),
                      ".",properties.env$spreadsheet.format,
-                     " ':autofilter,freeze_col=9,name=Quantifications:",protein.quant.f,"'",
-                     ifelse(identical(report.type,"peptide") && !is.null(modificationSites),
+                     " ':autofilter,freeze_col=6,name=Quantifications:",protein.quant.f,"'",
+                     ifelse(identical(properties.env$report.type,"peptide") && !is.null(modificationSites),
                             paste(" ':autofilter,freeze_col=3,name=Modification Sites:",modifsites.f,"'",sep=""),""),
                      " ':autofilter,freeze_col=3,name=Identifications:",protein.id.f,"'",
                      " ':name=Analysis Properties:",analysis.properties.f,"'",
@@ -130,14 +130,30 @@ write.xls.report <- function(report.type,properties.env,report.env,file="isobar-
     ## generate Excel report (using Spreadsheet::WriteExcel)
     message(perl.cl)
     system(perl.cl)
+
+    perl.cl <- paste(tab2spreadsheet.cmd," ",
+                     ifelse(properties.env$use.name.for.report,sprintf("%s.quantonly",properties.env$name),"isobar-analysis-quantonly"),
+                     ".",properties.env$spreadsheet.format,
+                     " ':autofilter,freeze_col=6,name=Quantifications:",protein.quant.f,"'",
+                     ifelse(identical(properties.env$report.type,"peptide") && !is.null(modificationSites),
+                            paste(" ':autofilter,freeze_col=3,name=Modification Sites:",modifsites.f,"'",sep=""),""),
+                     " ':name=Analysis Properties:",analysis.properties.f,"'",
+                     " ':name=Log:",log.f,"'",sep="")
+    
+    ## generate Excel report (using Spreadsheet::WriteExcel)
+    message(perl.cl)
+    system(perl.cl)
+
 }
 
 
 
-.create.or.load.xls.quant.tbl <- function(report.type,env,properties.env) {
+.create.or.load.xls.quant.tbl <- function(env,properties.env) {
   .create.or.load("xls.quant.tbl",envir=properties.env,
                   msg.f="protein table for Excel export",f=function() {
     message("XLS report format: ",properties.env$xls.report.format)
+
+    env$quant.tbl$is.significant[is.na(env$quant.tbl$is.significant)] <- FALSE
                     
     compare.to.quant <- .get.or.load('compare.to.quant',properties.env,class="data.frame",null.ok=TRUE)
 
@@ -153,7 +169,8 @@ write.xls.report <- function(report.type,properties.env,report.env,file="isobar-
       tbl.input <- env$quant.tbl
     }
 
-    if (identical(report.type,"protein"))
+    message(" adding protein or peptide details columns ",appendLF=FALSE)
+    if (identical(properties.env$report.type,"protein"))
       res.tbl <- .create.xls.protein.quant.tbl(tbl.input,proteinGroup(env$ibspectra))
     else
       res.tbl <- .create.xls.peptide.quant.tbl(tbl.input,env$ibspectra,
@@ -163,7 +180,7 @@ write.xls.report <- function(report.type,properties.env,report.env,file="isobar-
     tbl <- .add.quant.to.xls.tbl(env,properties.env,res.tbl[[1]],res.tbl[[2]],compare.to.quant)
     
     #order.c <- if(isTRUE(properties.env$xls.report.format=="long"),"Channels",NULL)
-    if (identical(report.type,"protein"))
+    if (identical(properties.env$report.type,"protein"))
       tbl <- tbl[order(tbl[,"group"]),]
     else 
       tbl <- tbl[order(tbl[,"ID"],tbl[,"Sequence"]),]
@@ -333,34 +350,87 @@ write.xls.report <- function(report.type,properties.env,report.env,file="isobar-
 .create.xls.protein.quant.tbl <- function(input.tbl,protein.group,
                                           specificity=c(GROUPSPECIFIC,REPORTERSPECIFIC)) {
 
-  indist.proteins <- indistinguishableProteins(protein.group)
+  message(".",appendLF=FALSE)
   input.tbl$i  <- seq_len(nrow(input.tbl))
-
   proteinInfo.ok <- is.data.frame(proteinInfo(protein.group)) && 
                       length(proteinInfo(protein.group)) > 0
 
-  .getProteinInfo <- function(name) 
-    proteinInfo(protein.group,protein.g=input.tbl[,"ac"],select=name,do.warn=FALSE)
+  tbl.meta <- data.frame(i=input.tbl$i, group=input.tbl[,"group"],protein.g=input.tbl[,'ac'],
+                         stringsAsFactors=FALSE)
+ 
+  # protein information
+  protein.gs <- unique(input.tbl[,"ac"])
+  tbl <- data.frame(protein.g=protein.gs,
+                    AC=.protein.acc(protein.gs,protein.group),
+                    stringsAsFactors=FALSE)
 
-  ## creating xls protein table
-  tbl <- data.frame(i=input.tbl$i, group=input.tbl[,"group"],
-                    AC=.protein.acc(input.tbl[,"ac"],ip=indist.proteins))
+  message(".",appendLF=FALSE)
+  indist.proteins <- .vector.as.data.frame(indistinguishableProteins(protein.group),colnames=c("protein","protein.g"))
+  indist.proteins <- indist.proteins[indist.proteins[,'protein.g'] %in% protein.gs,]
+  protein.info.tbl <- proteinInfo(protein.group,protein.g=protein.gs,select=c("name","protein_name","gene_name"))
+  colnames(protein.info.tbl) <- c("ID","Description","Gene")
+  tbl <- cbind(tbl,protein.info.tbl)
 
-  if (proteinInfo.ok)
-    tbl <- cbind(tbl, ID=.getProteinInfo("name"),
-                      Description=.getProteinInfo("protein_name"),
-                      Gene=.getProteinInfo("gene_name"))
+  message(".",appendLF=FALSE)
+  # spectra and peptide counts
+  pnp <- as.data.frame(peptideNProtein(protein.group),stringsAsFactors=FALSE)
+  ps <- peptideSpecificity(protein.group)
+  protein.to.peptides <- merge(pnp[pnp[,'protein.g'] %in% protein.gs,],
+                               ps[ps[,'specificity'] %in% specificity,],
+                               by="peptide")
+  protein.to.spectra <- merge(protein.to.peptides,
+                              .vector.as.data.frame(protein.group@spectrumToPeptide,colnames=c("spectrum","peptide")),
+                              by="peptide")
 
-  tbl <- cbind(tbl, n=sapply(input.tbl[,"ac"],function(p) {length(names(indist.proteins)[indist.proteins == p])}),
+  tbl <- cbind(tbl, n=sapply(protein.gs,function(p) {sum(indist.proteins == p)}),
                     "@comment=Number of specific peptides@Peptide Count" = 
-                      peptide.count(protein.group,input.tbl[,'ac'],specificity=specificity,do.warn=FALSE),
+                       table(protein.to.peptides[,'protein.g'])[protein.gs],
                     "@comment=Number of specific spectra@Spectral Count" = 
-                      spectra.count(protein.group,input.tbl[,'ac'],specificity=specificity,do.warn=FALSE))
+                       table(protein.to.spectra[,'protein.g'])[protein.gs])
 
-  if (proteinInfo.ok && "length" %in% colnames(proteinInfo(protein.group))) {
+  message(".",appendLF=FALSE)
+  # sequence coverage
+  if (proteinInfo.ok && "sequence" %in% colnames(proteinInfo(protein.group))) {
+    peptide.info <- unique(peptideInfo(protein.group)[,c("protein","peptide","start.pos")])
+    peptide.info[,'end.pos'] <- peptide.info[,'start.pos'] + nchar(peptide.info[,'peptide']) - 1
+    peptide.info <- peptide.info[peptide.info[,'protein'] %in% indist.proteins[,'protein'],]
+    protein.lengths <- nchar(unlist(setNames(proteinInfo(protein.group,protein.g=protein.gs,select=c("sequence"),simplify=FALSE),NULL)))
+
+    if (!proteinInfoIsOnSpliceVariants(proteinInfo(protein.group))) {
+      splice.df <- protein.group@isoformToGeneProduct
+      splice.df <- splice.df[splice.df[,'proteinac.w.splicevariant'] %in% indist.proteins[,'protein'] &
+                             splice.df[,'proteinac.wo.splicevariant'] %in% names(protein.lengths),]
+
+      # only keep first AC
+      splice.df.1 <- ddply(splice.df,'proteinac.wo.splicevariant',function(x) x[1,])
+      peptide.info <- merge(peptide.info,splice.df.1,by.x='protein',by.y='proteinac.w.splicevariant')
+      peptide.info[,'protein'] <- peptide.info[,'proteinac.wo.splicevariant']
+    }
+  
+    seq.covs <- ddply(peptide.info,"protein",function(x) {
+      protein.length <- protein.lengths[x[1,'protein']]
+      if (is.na(protein.length)) return(c(seq.cov=NA))
+      x <- x[x[,'end.pos'] <= protein.length,]
+      if (nrow(x) == 0) return(c(seq.cov=NA))
+      seqq <- rep(FALSE,protein.length);
+      for (i in seq_along(nrow(x))) seqq[x[i,'start.pos']:x[i,'end.pos']] <-  TRUE
+      return(c(seq.cov=sum(seqq)/length(seqq)))
+    },.parallel=isTRUE(options('isobar.parallel')))
+  
+    if (!proteinInfoIsOnSpliceVariants(proteinInfo(protein.group))) {
+      seq.covs <- merge(seq.covs,splice.df,by.x='protein',by.y='proteinac.wo.splicevariant')
+      seq.covs[,'protein'] <- seq.covs[,'proteinac.w.splicevariant']
+    }
+
+    proteing.seq.covs <- merge(indist.proteins,seq.covs,by='protein')
+    seq.covs <- tapply(proteing.seq.covs[,'seq.cov'],factor(proteing.seq.covs[,'protein.g']),mean)
+  
     tbl <- cbind(tbl, "@comment=Coverage of the protein sequence with observed peptides@Sequence Coverage" = 
-                        round(sequence.coverage(protein.group,input.tbl[,'ac'],do.warn=FALSE),digits=4))
+                        round(seq.covs[protein.gs],digits=4))
   }
+  tbl <- merge(tbl.meta,tbl,by='protein.g')
+  tbl$protein.g <- NULL
+  message()
   return(list(tbl,input.tbl))
 }
 

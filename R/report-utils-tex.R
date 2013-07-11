@@ -1,6 +1,34 @@
 #################################################
 ## Helper Functions for LaTeX Report Generation
 
+load.tex.properties <- function(env) {
+  get.property <- function(name) { get(name,properties.env,inherits=FALSE) }
+  if (!exists("properties.env",envir=env)) {
+    warning("No properties.env - loading properties")
+    assign("properties.env",load.properties(),envir=env)
+  }
+  needed.objects <- c('ibspectra','noise.model','quant.tbl','ratiodistr')
+  if (!all(needed.objects %in% objects(envir=env))) {
+    warning("Not all necessary objects present - calling initialize.env")
+    initialize.env(env,"protein",properties.env) # TOFIX: protein report-type is hard-coded
+  }
+  assign("get.property",get.property,envir=env)
+}
+
+write.tex.commands <- function() {
+  cat("\\newcommand{\\analysisname}{",sanitize(get.property('name')),"}\n")
+  cat("\\newcommand{\\analysisauthor}{",sanitize(get.property('author')),"}\n")
+
+  cat("\\newcommand{\\isobarthanks}{\\thanks{This report was 
+    generated using the \\texttt{isobar} R package version ",
+    packageDescription("isobar")$Version,
+    " [built using ",packageDescription("isobar")$Built,"]",
+    ". If you use it in published work, please cite ",
+    "'Breitwieser FP \\textit{et~al.}: General statistical ",
+    " modeling of data from protein relative expression isobaric tags, ",
+    " \\textit{Journal of Proteome Research} 2011'}}\n",sep="")
+}
+
 print_longtablehdr <- function(level,coldef,draw.channels,ncol.p,draw.signcol) {
   #cat("\n\n\\renewcommand{\\arraystretch}{0.75}\n")
   cat("\\begin{longtable}{",coldef,"}",'\n',sep="")

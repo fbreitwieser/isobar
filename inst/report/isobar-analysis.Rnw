@@ -9,17 +9,8 @@ options(SweaveHooks=list(fig=function()
 suppressPackageStartupMessages(library(isobar))
 options(encoding="UTF-8")  
 
-if (!exists("properties.env")) {
-  warning("No properties.env - loading properties")
-  properties.env <- load.properties()
-}
-needed.objects <- c('ibspectra','noise.model','quant.tbl','ratiodistr')
-if (!all(needed.objects %in% objects())) {
-  warning("Not all necessary objects present - calling initialize.env")
-  initialize.env(.GlobalEnv,"protein",properties.env)
-}
+load.tex.properties(.GlobalEnv) # loads environments 
 
-get.property <- function(name) { get(name,properties.env,inherits=FALSE) }
 @
 \documentclass[10pt,oneside]{article}
 \usepackage[margin=2cm]{geometry}
@@ -44,21 +35,12 @@ get.property <- function(name) { get(name,properties.env,inherits=FALSE) }
 \usepackage{multirow}
 \usepackage{ctable} % for midrule, etc
 %\setlength{\tabcolsep}{5pt} %default value: 6pt
+\newcolumntype{x}[1]{>{\raggedright}p{#1}}
 
 <<echo=FALSE,results=tex>>=
-cat("\\newcommand{\\analysisname}{",sanitize(get.property('name')),"}")
-cat("\\newcommand{\\analysisauthor}{",sanitize(get.property('author')),"}")
+write.tex.commands() # prints analysisname, analysisauthor, and isobarthanks commands
 cat(sprintf("\\input{%s}\n",system.file("report","report-utils.tex",package="isobar")))
 @
-
-\newcommand{\rr}{\raggedright}
-\newcolumntype{x}[1]{>{\raggedright}p{#1}}
-\newcommand{\tn}{\tabularnewline}
-\newcommand{\rh}[1]{\begin{rotate}{65}\textbf{#1}\end{rotate}}
-\newcommand{\rth}[1]{\begin{turn}{65}\textbf{#1}\end{turn}}
-%\newcommand{\mboxc}[2]{\begin{minipage}{#1}#2\end{minipage}}
-\newcommand{\mboxc}[2]{#2}
-\newcommand{\secsubtitle}[1]{\begin{flushright}\small\textit{#1}\end{flushright}}
 
 \makeatletter
 \renewcommand\paragraph{%
@@ -392,7 +374,7 @@ Peptide types:
 \\end{center}
 ")
 
-message("Writing protein group details ...")
+message("Writing protein group details ")
 
 colors <- c("blue","red","green","cyan","magenta","yellow")
 prot_i <- 1
@@ -415,6 +397,7 @@ for (reporter.protein.g in proteins) {
   #            sanitize(group.section.name,dash=F)))
   #cat(sprintf("\\label{protein.%s}\n",prot_i))
   draw.proteingroup.row(sprintf("\\label{protein.%s} %s",prot_i,prot_i),protein.group,reporter.protein.g)
+  if (prot_i%%100 == 0) message(".",appendLF=FALSE);
   prot_i <- prot_i + 1
   
 }

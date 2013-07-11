@@ -1,20 +1,19 @@
 
 create.reports <- function(properties.file="properties.R",
                            global.properties.file=system.file("report","properties.R",package="isobar"),
-                           args=NULL,
-                           report.type="protein",compile=FALSE,zip=FALSE,warn=1) {
+                           args=NULL,...) {
   ow <- options("warn")
-  options(warn=warn)
   if (!exists("properties.env")) {
     properties.env <- load.properties(properties.file,
                                       global.properties.file,
-                                      args=args)
+                                      args=args,...)
     assign("properties.env",properties.env,envir=.GlobalEnv)
   }
+  options(warn=properties.env$warning.level)
 
   if (!exists("report.env")) {
     report.env <- .GlobalEnv
-    initialize.env(report.env,report.type,properties.env)
+    initialize.env(report.env,properties.env)
   }
 
   zip.files <- c(properties.file)
@@ -22,7 +21,7 @@ create.reports <- function(properties.file="properties.R",
   ## generate XLS report
   if(property('write.xls.report',properties.env)) {
     message("Writing isobar-analysis.xls")
-    write.xls.report(report.type,properties.env,report.env)
+    write.xls.report(properties.env,report.env)
     zip.files <- c(zip.files,"isobar-analysis.xls")
   }
   
@@ -39,16 +38,16 @@ create.reports <- function(properties.file="properties.R",
     }
 
     zip.files <- c(zip.files,sprintf("%s.tex",qc.name))
-    if (compile) 
+    if (properties.env$compile) 
       zip.files <- .compile.tex(qc.name,zip.files)
   }
 
-  if(property('write.report',properties.env)) {
+  if(property('write.report',properties.env) && properties.env$report.type != 'peptide') {
     message("Weaving isobar-analysis report")
-    name <- switch(report.type,
+    name <- switch(properties.env$report.type,
                    protein="isobar-analysis",
                    peptide="isobar-peptide-analysis",
-                   stop(report.type," report type not known",
+                   stop(properties.env$report.type," report type not known",
                         " - choose protein or peptide"))
     Sweave(system.file("report",paste(name,".Rnw",sep=""),package="isobar"))
 
@@ -61,11 +60,11 @@ create.reports <- function(properties.file="properties.R",
 
 
     zip.files <- c(zip.files,sprintf("%s.tex",name))
-    if (compile)
+    if (properties.env$compile)
       zip.files <- .compile.tex(name,zip.files)
   }
 
-  if (zip) {
+  if (properties.env$zip) {
     zip.f <- sprintf("%s.zip",property('name',properties.env))
     zip(zip.f,zip.files)
     message("Created zip archive ",zip.f)
@@ -100,7 +99,7 @@ create.reports <- function(properties.file="properties.R",
 
 load.properties <- function(properties.file="properties.R",
                             global.properties.file=system.file("report","properties.R",package="isobar"),
-                            args=NULL) {
+                            args=NULL,...) {
 
   properties.env <- new.env()
   tmp.properties.env <- new.env()
@@ -124,9 +123,11 @@ load.properties <- function(properties.file="properties.R",
   
   ## command argument parsing
   tmp.properties.env <- new.env()
-  message("parsing command line arguments ...")
+  if (length(args) > 0)
+    message("parsing command line arguments ...")
   for (arg in args) {
     if (grepl("^--",arg)) {
+
       arg.n.val <- strsplit(substring(arg,3),"=")[[1]]
       if (length(arg.n.val) == 1)
         tmp.properties.env[[arg.n.val]] <- TRUE
@@ -140,11 +141,18 @@ load.properties <- function(properties.file="properties.R",
     .env.copy(properties.env,tmp.properties.env)
   }
 
+  ## ... parsing
+  dotargs <- list2env(list(...))
+  if (length(dotargs) > 0) {
+    mesage("parsing function arguments")
+    .env.copy(properties.env,list2env(dotargs))
+  }
+
   return(properties.env)
 }
 
 #- initialize environment
-initialize.env <- function(env,report.type="protein",properties.env) {
+initialize.env <- function(env,properties.env) {
   ## get property and exists property convenience functions
   get.property <- function(name) .get.property(name,properties.env)
 
@@ -157,21 +165,29 @@ initialize.env <- function(env,report.type="protein",properties.env) {
     if (!ret) stop("Error creating cachedir [",get.property('cachedir'),"]")
   }
 
-  env$ibspectra <- .create.or.load.ibspectra(properties.env)
+  ib.name <- sprintf("%s/ibspectra.rda",.get.property('cachedir',properties.env))
+  if (file.exists(ib.name)) {
+    load(ib.name)
+    env$ibspectra <- ibspectra
+  } else {
+    env$ibspectra <- .create.or.load.ibspectra(properties.env)
+    save(list='ibspectra',envir=env,file=ib.name)
+  }
+
   env$noise.model <- .create.or.load.noise.model(env,properties.env)
-  env$ratiodistr <- .create.or.load.ratiodistr(env,properties.env,level=report.type)
-  if (identical(report.type,"peptide") )
+  env$ratiodistr <- .create.or.load.ratiodistr(env,properties.env)
+  if (identical(properties.env$report.type,"peptide") )
     env$ptm.info  <- .create.or.load.ptm.info(env,properties.env)
-  env$quant.tbl <- .create.or.load.quant.table(env,properties.env,level=report.type)
+  env$quant.tbl <- .create.or.load.quant.table(env,properties.env)
   if (!"ac" %in% colnames(env$quant.tbl) && "protein" %in% colnames(env$quant.tbl))
     env$quant.tbl[,'ac'] <- env$quant.tbl$protein
 
   ## required for TeX
-  if (property('write.report',properties.env) && identical(report.type,"protein"))
+  if (property('write.report',properties.env) && identical(properties.env$report.type,"protein"))
     env$my.protein.infos <- .create.or.load.my.protein.infos(env,properties.env)
 
   if (property('write.xls.report',properties.env))
-    env$xls.quant.tbl <- .create.or.load.xls.quant.tbl(report.type,env,properties.env)
+    env$xls.quant.tbl <- .create.or.load.xls.quant.tbl(env,properties.env)
 }
 
 #- property loading helper functions
@@ -397,13 +413,15 @@ property <- function(x, envir, null.ok=TRUE,class=NULL) {
   noise.model.channels <- .get.property("noise.model.channels",properties.env)
   if (is.null(noise.model.channels)) 
     noise.model.channels <- reporterTagNames(env$ibspectra)[!is.na(classLabels(env$ibspectra))]
+  is.one.to.one <- isTRUE(.get.property("noise.model.is.technicalreplicates",properties.env))
 
   noise.model <- .get.property("noise.model",properties.env)
   if (!is(noise.model,"NoiseModel")) {
     noise.model.f <- .get.property("noise.model",properties.env)
     if (!file.exists(noise.model.f)) {
-      message("estimating noise model as non one-to-one ...")
-      noise.model <- new("ExponentialNoiseModel",env$ibspectra,one.to.one=F,
+      message("estimating noise model as ",ifelse(is.one.to.one,"","non"),
+              " one-to-one from channels ",paste0(noise.model.channels,collapse=", ")," ...")
+      noise.model <- new("ExponentialNoiseModel",env$ibspectra,one.to.one=is.one.to.one,
                          reporterTagNames=noise.model.channels,
                          min.spectra=property('noise.model.minspectra',properties.env))
       save(noise.model,file=noise.model.f,compress=TRUE)
@@ -475,10 +493,10 @@ property <- function(x, envir, null.ok=TRUE,class=NULL) {
 
     if (identical(level,"peptide"))
       ratios.for.distr.fitting <- peptideRatios(env$ibspectra,noise.model=env$noise.model,do.warn=FALSE,
-                                  cl=cl,combn.method=method,symmetry=TRUE,summarize=do.summarize)
+                                  cl=cl,combn.method=method,symmetry=isTRUE(properties.env$ratiodistr.symmetry),summarize=do.summarize)
     else
       ratios.for.distr.fitting <- proteinRatios(env$ibspectra,noise.model=env$noise.model,do.warn=FALSE,
-                                      cl=cl,combn.method=method,symmetry=TRUE,summarize=do.summarize)
+                                      cl=cl,combn.method=method,symmetry=isTRUE(properties.env$ratiodistr.symmetry),summarize=do.summarize)
 
     if (all(is.nan(ratios.for.distr.fitting$lratio)))
       stop("Cannot compute protein ratio distribution - no ratios available.\n",
@@ -592,34 +610,6 @@ property <- function(x, envir, null.ok=TRUE,class=NULL) {
       quant.tbl[,"group"] <- as.numeric(factor(quant.tbl[,"ac"],levels=unique(quant.tbl[,"ac"])))
     }
     return(quant.tbl)
-  })
-}
-
-.protein.acc <- function(prots,protein.info=NULL,ip=NULL) {
-  if (is.null(ip)) {
-    proteins <- list(prots)
-  } else {
-    proteins <- lapply(prots,function(p) {names(ip)[ip == p]})
-  }
-
-  sapply(proteins,function(prots) {
-         ## consider ACs with -[0-9]*$ as splice variants (ACs w/ more than one dash are not considered)
-         pos.splice <- grepl("^[^-]*-[0-9]*$",prots)
-         df <- data.frame(protein=prots,accession=prots,splice=0,stringsAsFactors=FALSE)
-
-         if (any(pos.splice))
-           df[pos.splice,c("accession","splice")] <- 
-             do.call(rbind,strsplit(prots[pos.splice],"-"))
-
-         res <- 
-           ddply(df,"accession",function(y) {
-                 if(sum(y$splice>0) <= 1)
-                   return(data.frame(protein=unique(y$protein)))
-                 else 
-                   return(data.frame(protein=sprintf("%s-[%s]",unique(y$accession),
-                                                     paste(sort(y[y$splice>0,'splice']),collapse=","))))
-                                 })
-         return(paste(res$protein,collapse=", "))
   })
 }
 
