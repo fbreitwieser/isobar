@@ -820,8 +820,10 @@ read.mzid <- function(f) {
 
 ## TODO: log is not returned
 .read.idfile <- function(id.file,identifications.format=NULL,header=TRUE,stringsAsFactors=FALSE,sep="\t",
-                         decode.titles=TRUE,trim.titles=FALSE,log=NULL,...) {
+                         decode.titles=TRUE,trim.titles=FALSE,log=NULL,all=FALSE,...) {
   id.data <- lapply(id.file,function(f) {
+    if (is.data.frame(f))
+      return(f)
     
     if (is.null(identifications.format)) {
       if (grepl(".mzid$",f,ignore.case=TRUE)) 
@@ -858,13 +860,22 @@ read.mzid <- function(f) {
   colnames.equal <- all(sapply(id.colnames,function(cn) identical(cn,id.colnames[[1]])))
   if (!colnames.equal) {
     message(" id file colnames are not equal:")
-    message(paste(sapply(seq_along(id.file),function(s.i) paste0(id.file[s.i],": ",paste(id.colnames[[s.i]],collapse="; "))),collapse="\n"))
-    intersect.colnames <- id.colnames[[1]]
-    for (s.i in seq(from=2,to=length(id.colnames))) {
-      intersect.colnames <- intersect(intersect.colnames,id.colnames[[s.i]])
+    message(paste(sapply(seq_along(id.file),
+                         function(s.i) paste0(s.i,": ",paste(id.colnames[[s.i]],collapse="; "))),collapse="\n"))
+    all.id.colnames <- unique(unlist(id.colnames))
+    if (isTRUE(all)) {
+      id.data <- lapply(id.fata,function(i.d) {
+        id.d[,all.id.colnames[!all.id.colnames %in% colnames(id.d)]] <- NA
+        id.d[,all.id.colnames]
+      })
+    } else {
+      intersect.colnames <- id.colnames[[1]]
+      for (s.i in seq(from=2,to=length(id.colnames))) {
+        intersect.colnames <- intersect(intersect.colnames,id.colnames[[s.i]])
+      }
+      message(" taking intersection: ",paste(intersect.colnames,collapse="; "))
+      id.data <- lapply(id.data,function(i.d) i.d[,intersect.colnames])
     }
-    message(" taking intersection: ",paste(intersect.colnames,collapse="; "))
-    id.data <- lapply(id.data,function(i.d) i.d[,intersect.colnames])
   }
   id.data <- do.call(rbind,id.data)
   .check.columns(id.data)
@@ -1191,7 +1202,7 @@ read.mzid <- function(f) {
 	  if (!.max.uniq(modif.ids))
 	    n.modif.pos.dif <<- n.modif.pos.dif + 1
 
-	  print(x)
+	  #print(x)
 	  modif <- paste(x[,.SPECTRUM.COLS['SEARCHENGINE']],x[,'modif'],sep=": ",collapse=' & ')
 	  x <- x[x[,'modif'] == .take.max(modif.ids)[1],,drop=FALSE]
 	  x[,'modif'] <- modif
@@ -1326,20 +1337,22 @@ read.mzid <- function(f) {
 ## read MSGF+ tab-separated identification files
 .read.msgfp.tsv <- function(filename,filter.rev.hits=FALSE) {
   id.data <- read.delim(filename, sep="\t", stringsAsFactors=FALSE)
-  ib.df <- data.frame(spectrum=id.data[,'Title'],.convert.msgfp.pepmodif(id.data[,'Peptide']),
-		      scan.from=id.data[,'ScanNum'],dissoc.method=tolower(id.data[,'FragMethod']),
-		      precursor.error=id.data[,'PrecursorError.ppm.'],charge=id.data[,'Charge'],
-		      search.engine="MSGF+",score=-log10(id.data[,'SpecEValue']),
-          stringsAsFactors=FALSE)
+  ib.df <- data.frame(Protein=id.data[,'Protein'],
+                      spectrum=id.data[,'Title'],.convert.msgfp.pepmodif(id.data[,'Peptide']),
+                      scan.from=id.data[,'ScanNum'],dissoc.method=tolower(id.data[,'FragMethod']),
+                      precursor.error=id.data[,'PrecursorError.ppm.'],charge=id.data[,'Charge'],
+                      search.engine="MSGF+",score=-log10(id.data[,'SpecEValue']),
+                      stringsAsFactors=FALSE)
 
   sel <- names(.MSGF.MAPPINGCOLS) %in% names(c(.SPECTRUM.COLS,.PEPTIDE.COLS))
-  data.r <- data.r[,.MSGF.MAPPINGCOLS[sel]]
+  data.r <- id.data[,.MSGF.MAPPINGCOLS[sel]]
   colnames(data.r) <- c(.SPECTRUM.COLS,.PEPTIDE.COLS)[names(.MSGF.MAPPINGCOLS)[sel]]
   
   ib.df <- cbind(ib.df,data.r)
 
-  ib.protnpep <-  .convert.msgfp.protein(id.data[,'Protein'],ib.df[,'peptide'],filter.rev.hits=filter.rev.hits)
-  merge(ib.protnpep,ib.df,by='peptide',all=TRUE)
+  ib.protnpep <-  .convert.msgfp.protein(unique(ib.df[,c('Protein','peptide')]),filter.rev.hits=filter.rev.hits)
+  id.data$Protein <- NULL
+  merge(unique(ib.protnpep),ib.df,by='peptide',all=TRUE)
 }
 
 .convert.msgfp.pepmodif <- function(peptide,modif.masses=
@@ -1378,28 +1391,26 @@ read.mzid <- function(f) {
 }
 
 
-.convert.msgfp.protein <- function(protein,peptide,filter.rev.hits=TRUE) {
+.convert.msgfp.protein <- function(protein.n.peptide,filter.rev.hits=FALSE) {
   # layout: sp|Q60848-1|HELLS_MOUSE(pre=R,post=K);sp|Q60848-2|HELLS_MOUSE(pre=R,post=K)
   # reverse hits: XXX_sp|...
   # TODO: extract pre and post AAs
 
-  protein.acs <- lapply(strsplit(protein,"[;|]"),
-                        function(y) { 
-                          acs <- y[seq(from=2,to=length(y),by=3)] 
-                          if (filter.rev.hits) {
-                            is.rev <- grepl("^XXX_",y[seq(from=1,to=length(y),by=3)])
-                            acs[!is.rev]
-                          } else
-                            acs
+  split.protein <- strsplit(protein.n.peptide[,1],"[;|]")
+  res <- lapply(seq_along(split.protein), function(i) { 
+                y <- split.protein[[i]]
+                cbind(peptide=protein.n.peptide[i,2],
+                      database=y[seq(from=1,to=length(y),by=3)],
+                      accession=y[seq(from=2,to=length(y),by=3)])
                         })
-  if (filter.rev.hits) {
-    fwd.prots <- sapply(protein.acs,length) > 0
-    protein.acs <- protein.acs[fwd.prots]
-    peptide <- peptide[fwd.prots]
-  }
+  res <- as.data.frame(do.call(rbind,res),stringsAsFactors=FALSE)
+  res$is.decoy <- grepl("^XXX_",res[,'database'])
+  print(c(is.decoy=.sum.bool(res$is.decoy)))
+  
+  if (isTRUE(filter.rev.hits))
+    res <- res[!res$is.decoy,]
 
-  as.data.frame(do.call(rbind,lapply(seq_along(peptide),
-          function(i) cbind(peptide=peptide[i],accession=protein.acs[[i]],is.decoy=grepl("^XXX_",protein.acs[[i]])) )),stringsAsFactors=FALSE)
+  return(res)
 }
 
 
