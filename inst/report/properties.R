@@ -8,8 +8,9 @@
 ## General properties
 
 ## Report type: Either 'protein' or 'peptide'
-# report.type="peptide"
-report.type="protein"
+# report.level="peptide"
+report.level="protein"
+#attr(report.level,"allowed.values") <- c("protein","peptide")
 
 ## Isobaric tagging type. Use one of the following:
 # type='iTRAQ4plexSpectra'
@@ -17,6 +18,7 @@ report.type="protein"
 # type='TMT2plexSpectra'
 # type='TMT6plexSpectra'
 type=NULL
+#attr(type,"allowed.values") <- IBSpectraTypes()
 isotope.impurities=NULL
 correct.isotope.impurities=TRUE
 

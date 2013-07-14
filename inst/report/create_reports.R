@@ -52,7 +52,6 @@ xlsx.report <- get.arg("--xlsx")
 qc.report <- get.arg("--qc")
 pdf.report <- get.arg("--pdf")
 
-
 ## TODO: parse further arguments
 
 message("started at ",date())

@@ -9,7 +9,7 @@ create.reports <- function(properties.file="properties.R",
                                       args=args,...)
     assign("properties.env",properties.env,envir=.GlobalEnv)
   }
-  options(warn=properties.env$warning.level)
+  options(warn=properties.env[["warning.level"]])
 
   if (!exists("report.env")) {
     report.env <- .GlobalEnv
@@ -38,16 +38,16 @@ create.reports <- function(properties.file="properties.R",
     }
 
     zip.files <- c(zip.files,sprintf("%s.tex",qc.name))
-    if (properties.env$compile) 
+    if (properties.env[["compile"]]) 
       zip.files <- .compile.tex(qc.name,zip.files)
   }
 
-  if(property('write.report',properties.env) && properties.env$report.type != 'peptide') {
+  if(property('write.report',properties.env) && properties.env[["report.level"]] != 'peptide') {
     message("Weaving isobar-analysis report")
-    name <- switch(properties.env$report.type,
+    name <- switch(properties.env[["report.level"]],
                    protein="isobar-analysis",
                    peptide="isobar-peptide-analysis",
-                   stop(properties.env$report.type," report type not known",
+                   stop(properties.env[["report.level"]]," report.level not known",
                         " - choose protein or peptide"))
     Sweave(system.file("report",paste(name,".Rnw",sep=""),package="isobar"))
 
@@ -60,11 +60,11 @@ create.reports <- function(properties.file="properties.R",
 
 
     zip.files <- c(zip.files,sprintf("%s.tex",name))
-    if (properties.env$compile)
+    if (properties.env[["compile"]])
       zip.files <- .compile.tex(name,zip.files)
   }
 
-  if (properties.env$zip) {
+  if (properties.env[["zip"]]) {
     zip.f <- sprintf("%s.zip",property('name',properties.env))
     zip(zip.f,zip.files)
     message("Created zip archive ",zip.f)
@@ -115,8 +115,8 @@ load.properties <- function(properties.file="properties.R",
     tryCatch(sys.source(properties.file,tmp.properties.env),
              error=function(e) stop("\nCould not read properties file:\n", e) )
     .env.copy(properties.env,tmp.properties.env)
-    properties.env$properties.file <- properties.file
-    properties.env$properties.file.content <- readLines(properties.file)
+    properties.env[["properties.file"]] <- properties.file
+    properties.env[["properties.file.content"]] <- readLines(properties.file)
   } else {
     message("  No local properties file.")
   }
@@ -142,7 +142,7 @@ load.properties <- function(properties.file="properties.R",
   }
 
   ## ... parsing
-  dotargs <- list2env(list(...))
+  dotargs <- list(...)
   if (length(dotargs) > 0) {
     mesage("parsing function arguments")
     .env.copy(properties.env,list2env(dotargs))
@@ -168,26 +168,26 @@ initialize.env <- function(env,properties.env) {
   ib.name <- sprintf("%s/ibspectra.rda",.get.property('cachedir',properties.env))
   if (file.exists(ib.name)) {
     load(ib.name)
-    env$ibspectra <- ibspectra
+    env[["ibspectra"]] <- ibspectra
   } else {
-    env$ibspectra <- .create.or.load.ibspectra(properties.env)
+    env[["ibspectra"]] <- .create.or.load.ibspectra(properties.env)
     save(list='ibspectra',envir=env,file=ib.name)
   }
 
-  env$noise.model <- .create.or.load.noise.model(env,properties.env)
-  env$ratiodistr <- .create.or.load.ratiodistr(env,properties.env)
-  if (identical(properties.env$report.type,"peptide") )
-    env$ptm.info  <- .create.or.load.ptm.info(env,properties.env)
-  env$quant.tbl <- .create.or.load.quant.table(env,properties.env)
-  if (!"ac" %in% colnames(env$quant.tbl) && "protein" %in% colnames(env$quant.tbl))
-    env$quant.tbl[,'ac'] <- env$quant.tbl$protein
+  env[["noise.model"]] <- .create.or.load.noise.model(env,properties.env)
+  env[["ratiodistr"]] <- .create.or.load.ratiodistr(env,properties.env)
+  if (identical(properties.env[["report.level"]],"peptide") )
+    env[["ptm.info"]]  <- .create.or.load.ptm.info(env,properties.env)
+  env[["quant.tbl"]] <- .create.or.load.quant.table(env,properties.env)
+  if (!"ac" %in% colnames(env[["quant.tbl"]]) && "protein" %in% colnames(env[["quant.tbl"]]))
+    env[["quant.tbl"]][,'ac'] <- env[["quant.tbl"]]$protein
 
   ## required for TeX
-  if (property('write.report',properties.env) && identical(properties.env$report.type,"protein"))
-    env$my.protein.infos <- .create.or.load.my.protein.infos(env,properties.env)
+  if (property('write.report',properties.env) && identical(properties.env[["report.level"]],"protein"))
+    env[["my.protein.infos"]] <- .create.or.load.my.protein.infos(env,properties.env)
 
   if (property('write.xls.report',properties.env))
-    env$xls.quant.tbl <- .create.or.load.xls.quant.tbl(env,properties.env)
+    env[["xls.quant.tbl"]] <- .create.or.load.xls.quant.tbl(env,properties.env)
 }
 
 #- property loading helper functions
@@ -207,7 +207,7 @@ initialize.env <- function(env,properties.env) {
   } else {
     file.name <- sprintf("%s/%s.rda",.get.property('cachedir',envir),name)
   }
-  if (file.exists(file.name) && (!envir$regen || do.load)) {
+  if (file.exists(file.name) && (!envir[["regen"]] || do.load)) {
     message(sprintf("loading %s from %s ...",msg.f, file.name))
     x <- .load.property(name,file.name)
     return(x)
@@ -260,9 +260,9 @@ property <- function(x, envir, null.ok=TRUE,class=NULL) {
     (null.ok || !is.null(.get.property(x,envir)))
 
 .check.property <- function(x,envir,inherits=FALSE,msg="",print=TRUE,valid=NULL,check.file=FALSE,...) {
-  def <- grep(x,envir$properties.file.content,value=TRUE)
+  def <- grep(x,envir[["properties.file.content"]],value=TRUE)
   if (length(def) > 0)
-    def <- paste("\n  Corresponding line in ",envir$properties.file,":\n\t",
+    def <- paste("\n  Corresponding line in ",envir[["properties.file"]],":\n\t",
                  paste(def,collapse="\n\t"),"\n\n",sep="")
 
   p <- .get.property(x,envir=envir)
@@ -319,15 +319,15 @@ property <- function(x, envir, null.ok=TRUE,class=NULL) {
           }
       }
   }
-  readIBSpectra.args$type=get.property('type')
-  readIBSpectra.args$id.file=get.property('ibspectra')
-  readIBSpectra.args$fragment.precision=get.property('fragment.precision')
-  readIBSpectra.args$fragment.outlier.prob=get.property('fragment.outlier.prob')
-  readIBSpectra.args$proteinGroupTemplate=.get.or.load('protein.group.template',properties.env,"ProteinGroup",null.ok=TRUE)
+  readIBSpectra.args[["type"]]=get.property('type')
+  readIBSpectra.args[["id.file"]]=get.property('ibspectra')
+  readIBSpectra.args[["fragment.precision"]]=get.property('fragment.precision')
+  readIBSpectra.args[["fragment.outlier.prob"]]=get.property('fragment.outlier.prob')
+  readIBSpectra.args[["proteinGroupTemplate"]]=.get.or.load('protein.group.template',properties.env,"ProteinGroup",null.ok=TRUE)
 
   if (is.data.frame(get.property('ibspectra')) || all(file.exists(get.property('ibspectra')))) {
     if (is.data.frame(get.property('ibspectra'))) {
-      readIBSpectra.args$id.file <- get.property('ibspectra')
+      readIBSpectra.args[["id.file"]] <- get.property('ibspectra')
       ibspectra <- do.call(readIBSpectra,readIBSpectra.args)
     } else if (grepl(".csv",get.property('ibspectra'))) {
         message("ibspectra ends on .csv:\n",
@@ -356,8 +356,8 @@ property <- function(x, envir, null.ok=TRUE,class=NULL) {
           ifelse(length(get.property('peaklist'))>1,"\n      ",""),
           paste(get.property('peaklist'),collapse="\n      ")))
 
-    readIBSpectra.args$id.file=get.property('identifications')
-    readIBSpectra.args$peaklist.file=get.property('peaklist')
+    readIBSpectra.args[["id.file"]]=get.property('identifications')
+    readIBSpectra.args[["peaklist.file"]]=get.property('peaklist')
 
     ibspectra <- do.call(readIBSpectra,readIBSpectra.args)
     if (grepl(".csv",get.property('ibspectra'))) {
@@ -412,7 +412,7 @@ property <- function(x, envir, null.ok=TRUE,class=NULL) {
 .create.or.load.noise.model <- function(env,properties.env) {
   noise.model.channels <- .get.property("noise.model.channels",properties.env)
   if (is.null(noise.model.channels)) 
-    noise.model.channels <- reporterTagNames(env$ibspectra)[!is.na(classLabels(env$ibspectra))]
+    noise.model.channels <- reporterTagNames(env[["ibspectra"]])[!is.na(classLabels(env[["ibspectra"]]))]
   is.one.to.one <- isTRUE(.get.property("noise.model.is.technicalreplicates",properties.env))
 
   noise.model <- .get.property("noise.model",properties.env)
@@ -421,7 +421,7 @@ property <- function(x, envir, null.ok=TRUE,class=NULL) {
     if (!file.exists(noise.model.f)) {
       message("estimating noise model as ",ifelse(is.one.to.one,"","non"),
               " one-to-one from channels ",paste0(noise.model.channels,collapse=", ")," ...")
-      noise.model <- new("ExponentialNoiseModel",env$ibspectra,one.to.one=is.one.to.one,
+      noise.model <- new("ExponentialNoiseModel",env[["ibspectra"]],one.to.one=is.one.to.one,
                          reporterTagNames=noise.model.channels,
                          min.spectra=property('noise.model.minspectra',properties.env))
       save(noise.model,file=noise.model.f,compress=TRUE)
@@ -435,23 +435,23 @@ property <- function(x, envir, null.ok=TRUE,class=NULL) {
 
 .create.or.load.ptm.info <- function(env,properties.env) {
   if (is.null(property('ptm.info.f',properties.env))) 
-    properties.env$ptm.info.f <- getPtmInfoFromNextprot
+    properties.env[["ptm.info.f"]] <- getPtmInfoFromNextprot
 
   return(.create.or.load("ptm.info",envir=properties.env,
                          f=property('ptm.info.f',properties.env),
-                         protein.group=proteinGroup(env$ibspectra)))
+                         protein.group=proteinGroup(env[["ibspectra"]])))
 }
 
-.create.or.load.ratiodistr <- function(env,properties.env,level) {
+.create.or.load.ratiodistr <- function(env,properties.env) {
   
   return(.create.or.load("ratiodistr",envir=properties.env,class="Distribution",
                          msg.f="biological variability ratio distribution",f=function(){
 
-    cl <- classLabels(env$ibspectra)
+    cl <- classLabels(env[["ibspectra"]])
     if (!is.null(property('ratiodistr.class.labels',properties.env)))
       cl <- property('ratiodistr.class.labels',properties.env)
 
-    ratios.for.distr.fitting <- .create.or.load.ratiodistr.ratios(env,properties.env,level,cl)
+    ratios.for.distr.fitting <- .create.or.load.ratiodistr.ratios(env,properties.env,cl)
 
     if (all(is.na(ratios.for.distr.fitting[,'lratio']))) 
       stop("All ratios for distr fitting are NA - are the correct class labels used?")
@@ -463,7 +463,7 @@ property <- function(x, envir, null.ok=TRUE,class=NULL) {
     ratiodistr <- .round.distr(ratiodistr,digits=5)
     attr(ratiodistr,"combn.method") <- attr(ratios.for.distr.fitting,"combn.method")
     attr(ratiodistr,"cl") <- attr(ratios.for.distr.fitting,"cl")
-    attr(ratiodistr,"tagNames") <- reporterTagNames(env$ibspectra)
+    attr(ratiodistr,"tagNames") <- reporterTagNames(env[["ibspectra"]])
     ratiodistr
   }))
 }
@@ -475,7 +475,7 @@ property <- function(x, envir, null.ok=TRUE,class=NULL) {
   distr
 }
 
-.create.or.load.ratiodistr.ratios <- function (env,properties.env,level,cl) {
+.create.or.load.ratiodistr.ratios <- function (env,properties.env,cl) {
   .create.or.load("ratios.for.distr.fitting",envir=properties.env,class="data.frame",
                   msg.f="ratios for biological variability distribution fitting",f=function() {
 
@@ -486,19 +486,19 @@ property <- function(x, envir, null.ok=TRUE,class=NULL) {
       message(" WARNING: ratiodistr will be computed based on global ratios")
       method <- "global"
     }
-    if (any(table(properties.env$class.labels)>2))
-      do.summarize <- properties.env$summarize
+    if (any(table(properties.env[["class.labels"]])>2))
+      do.summarize <- properties.env[["summarize"]]
     else
       do.summarize <- FALSE
 
-    if (identical(level,"peptide"))
-      ratios.for.distr.fitting <- peptideRatios(env$ibspectra,noise.model=env$noise.model,do.warn=FALSE,
-                                  cl=cl,combn.method=method,symmetry=isTRUE(properties.env$ratiodistr.symmetry),summarize=do.summarize)
+    if (identical(properties.env[["report.level"]],"peptide"))
+      ratios.for.distr.fitting <- peptideRatios(env[["ibspectra"]],noise.model=env[["noise.model"]],do.warn=FALSE,
+                                  cl=cl,combn.method=method,symmetry=isTRUE(properties.env[["ratiodistr.symmetry"]]),summarize=do.summarize)
     else
-      ratios.for.distr.fitting <- proteinRatios(env$ibspectra,noise.model=env$noise.model,do.warn=FALSE,
-                                      cl=cl,combn.method=method,symmetry=isTRUE(properties.env$ratiodistr.symmetry),summarize=do.summarize)
+      ratios.for.distr.fitting <- proteinRatios(env[["ibspectra"]],noise.model=env[["noise.model"]],do.warn=FALSE,
+                                      cl=cl,combn.method=method,symmetry=isTRUE(properties.env[["ratiodistr.symmetry"]]),summarize=do.summarize)
 
-    if (all(is.nan(ratios.for.distr.fitting$lratio)))
+    if (all(is.nan(ratios.for.distr.fitting[["lratio"]])))
       stop("Cannot compute protein ratio distribution - no ratios available.\n",
            "Probably due to missing reporter intensities.")
 
@@ -517,13 +517,13 @@ property <- function(x, envir, null.ok=TRUE,class=NULL) {
   x
 }
 
-.create.or.load.quant.table <- function(env,properties.env,level) {
-  protein.group <- proteinGroup(env$ibspectra)
+.create.or.load.quant.table <- function(env,properties.env) {
+  protein.group <- proteinGroup(env[["ibspectra"]])
   protein.info <- proteinInfo(protein.group)
   isoforms <- protein.group@isoformToGeneProduct
   
   .create.or.load("quant.tbl",envir=properties.env,class="data.frame",
-                  msg.f=paste("table of ratios of",level),f=function() {
+                  msg.f=paste("table of ratios of",properties.env[["report.level"]]),f=function() {
     if (!is.null(property('ratios.opts',properties.env)$summarize)) {
         message("WARNING: ratio.opts$summarize will be overwritten,",
                 " define it outside of ratio.opts!")
@@ -542,39 +542,39 @@ property <- function(x, envir, null.ok=TRUE,class=NULL) {
         ratios.opts[[name]] <<- x
     }
 
-    set.ratioopts(name="ibspectra",env$ibspectra)
-    set.ratioopts(name="noise.model",env$noise.model)
-    set.ratioopts(name="ratiodistr",env$ratiodistr)
+    set.ratioopts(name="ibspectra",env[["ibspectra"]])
+    set.ratioopts(name="noise.model",env[["noise.model"]])
+    set.ratioopts(name="ratiodistr",env[["ratiodistr"]])
     
-    if(identical(level,"peptide")){
-      pep.n.modif <- unique(apply(fData(env$ibspectra)[,c("peptide","modif")],2,cbind))
+    if(identical(properties.env[["report.level"]],"peptide")){
+      pep.n.modif <- unique(apply(fData(env[["ibspectra"]])[,c("peptide","modif")],2,cbind))
       set.ratioopts(list(peptide=pep.n.modif,
                          proteins=NULL))
 
-    } else if (identical(level,"protein")) {
+    } else if (identical(properties.env[["report.level"]],"protein")) {
       set.ratioopts(list(peptide=NULL,
-                         proteins=reporterProteins(proteinGroup(env$ibspectra)),
+                         proteins=reporterProteins(proteinGroup(env[["ibspectra"]])),
                          quant.w.grouppeptides=property('quant.w.grouppeptides',properties.env)))
     } else {
-      stop("don't known level ",level)
+      stop("don't known level ",properties.env[["report.level"]])
     }
     if (is.null(property('cmbn',properties.env)) & !is.null(property('vs.class',properties.env)))
-      properties.env$cmbn <- combn.matrix(reporterTagNames(env$ibspectra),
+      properties.env[["cmbn"]] <- combn.matrix(reporterTagNames(env[["ibspectra"]]),
 					   "versus.class",
 					   property('class.labels',properties.env),
 					   vs=property('vs.class',properties.env))
 
     set.ratioopts(list(combn.method=property('combn.method',properties.env),
-                       cl=classLabels(env$ibspectra),
+                       cl=classLabels(env[["ibspectra"]]),
                        summarize=property('summarize',properties.env),
                        cmbn=property('cmbn',properties.env),
                        use.na=property('use.na',properties.env),
-                       zscore.threshold=properties.env$zscore.threshold,
+                       zscore.threshold=properties.env[["zscore.threshold"]],
                        do.warn=FALSE))
 
     if (!is.null(property('correct.peptide.ratios.with',properties.env))) {
       protein.quant.tbl <- .get.or.load("correct.peptide.ratios.with",properties.env)
-      ratios.opts$before.summarize.f <- function(...)
+      ratios.opts[["before.summarize.f"]] <- function(...)
         correct.peptide.ratios(..., protein.quant.tbl=protein.quant.tbl,
                                correlation = property('peptide.protein.correlation',properties.env))
     }
@@ -596,12 +596,12 @@ property <- function(x, envir, null.ok=TRUE,class=NULL) {
 #      quant.tbl$sign.string[!is.sign & quant.tbl$is.preselected] <- "is significant [theirs]"
 #    }
 
-    if (identical(level,"protein")) {
+    if (identical(properties.env[["report.level"]],"protein")) {
       quant.tbl[,"gene_names"] <- sapply(quant.tbl[,"ac"], function(x) {
         if (length(protein.info) == 0) return("")
         allreporter <- indistinguishableProteins(protein.group,protein.g=x)
         acs <- unique(isoforms[allreporter,"proteinac.wo.splicevariant"])
-        paste(sort(unique(protein.info[protein.info$accession %in% acs,"gene_name"])),
+        paste(sort(unique(protein.info[protein.info[["accession"]] %in% acs,"gene_name"])),
               collapse=", ")
       })
       sort.genenames <- quant.tbl[,"gene_names"]
@@ -617,9 +617,9 @@ property <- function(x, envir, null.ok=TRUE,class=NULL) {
   .create.or.load("my.protein.infos",envir=properties.env,
                   f=function() {
 
-    protein.groupnames <-unique(env$quant.tbl[,"ac"])
+    protein.groupnames <-unique(env[["quant.tbl"]][,"ac"])
     ## if (is.null(protein.info)) { stop("protein info is null!")}                
-    my.protein.infos <- llply(protein.groupnames, .do.create.protein.info, protein.group=proteinGroup(env$ibspectra), 
+    my.protein.infos <- llply(protein.groupnames, .do.create.protein.info, protein.group=proteinGroup(env[["ibspectra"]]), 
                               .parallel=isTRUE(getOption('isobar.parallel')))
     #my.protein.infos <- lapply(protein.groupnames, .do.create.protein.info, protein.group=protein.group)
     names(my.protein.infos) <- protein.groupnames
@@ -666,11 +666,19 @@ property <- function(x, envir, null.ok=TRUE,class=NULL) {
 ## copys objects from env into parentenv.
 ## Those objects MUST exist in parentenv before.
 .env.copy <- function (parentenv,env) {
+  printval <- function(x) if(is.character(x)) capture.output(dput(x)) else toString(x)
+
   for (object in ls(envir=env)) {
     if (exists(object,envir=parentenv)) {
       ## assign object to parent env
-      assign(object, value=get(object,envir=env),
-             envir=parentenv)
+      val <- get(object,envir=env)
+      if (is.list(val)) {
+        val.s <- paste0("list(",paste(names(val),sapply(val,printval),sep=": ",collapse=";"),")")
+      } else {
+        val.s <- tryCatch(printval(val),error=function(e) capture.output(print(val)))
+      }
+      message(sprintf("%30s = %s",object,paste(val.s,collapse=paste0("\n",paste(rep(" ",35),collapse="")))))
+      assign(object, value=get(object,envir=env),envir=parentenv)
       ## remove(object,envir=env)
     } else {
       stop("Illegal property ",object,"!\n",
