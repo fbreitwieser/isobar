@@ -294,11 +294,12 @@ setGeneric("readIBSpectra", function(type,id.file,peaklist.file,...)
 
 setMethod("readIBSpectra",
           signature(type="character",id.file="character",peaklist.file="missing"),
-    function(type,id.file,stringsAsFactors=FALSE,
-             identifications.format=NULL,header=TRUE,sep="\t",decode.titles=TRUE,trim.titles=FALSE,...) {
-      new(type,identifications=.read.idfile(id.file,stringsAsFactors=stringsAsFactors,
-                                            identifications.format=identifications.format,header=header,sep=sep,
-                                            decode.titles=decode.titles,trim.titles=trim.titles),...)
+    function(type,id.file,identifications.format=NULL,
+             sep="\t",decode.titles=TRUE,trim.titles=FALSE,...) {
+      new(type,
+          identifications=.read.idfile(id.file,sep=sep,
+                                       identifications.format=identifications.format,
+                                       decode.titles=decode.titles,trim.titles=trim.titles),...)
     }
 )
 setMethod("readIBSpectra",
@@ -308,11 +309,11 @@ setMethod("readIBSpectra",
 
 setMethod("readIBSpectra",
           signature(type="character",id.file="character",peaklist.file="character"),
-    function(type,id.file,peaklist.file,header=TRUE,sep="\t",stringsAsFactors=FALSE,
+    function(type,id.file,peaklist.file,sep="\t",
              mapping.file=NULL,mapping=c(quantification.spectrum = "hcd",identification.spectrum = "cid"),
              id.file.domap=NULL,identifications.format=NULL,decode.titles=TRUE,...) {
       
-      id.data <- .read.identifications(id.file,header=header,sep=sep,stringsAsFactors=stringsAsFactors,
+      id.data <- .read.identifications(id.file,sep=sep,
                                        mapping=mapping.file,mapping.names=mapping,
                                        identifications.quant=id.file.domap,
                                        identifications.format=identifications.format,decode.titles=decode.titles)
@@ -817,67 +818,70 @@ read.mzid <- function(f) {
               spectrumtitles=spectrumtitles))
 }
 
-
-## TODO: log is not returned
-.read.idfile <- function(id.file,identifications.format=NULL,header=TRUE,stringsAsFactors=FALSE,sep="\t",
-                         decode.titles=TRUE,trim.titles=FALSE,log=NULL,all=FALSE,...) {
-  id.data <- lapply(id.file,function(f) {
+.read.idfile.df <- function(f,identifications.format,sep=sep,...) {
     if (is.data.frame(f))
       return(f)
+    if (!is.character(f))
+      stop("f should be a data.frame or character")
+    if (!file.exist(f))
+      stop("idfile ",f," defined, but does not exist")
     
-    if (is.null(identifications.format)) {
-      if (grepl(".mzid$",f,ignore.case=TRUE)) 
-        id.format.f <- "mzid"
-      else if (grepl(".peptides.csv$",f) || grepl(".peptides.txt$",f)) 
-        id.format.f <- "rockerbox"
-      else if (grepl(".msgfp.csv$",f) || grepl(".tsv$",f)) 
-        id.format.f <- "msgfp tsv"
-      else if (grepl(".csv$",f,ignore.case=TRUE))
-        id.format.f <- "ibspectra.csv"
-      else
-        stop(paste("cannot parse file ",f," - cannot deduce format based on extenstion (it is not ibspectra.csv, id.csv, peptides.txt or mzid). Please provide id.format to readIBSpectra",sep=""))
-    } else {
-      id.format.f <- identifications.format
-    }
+    is.format <- function(y,ext)
+      identical(identification.format,y) || 
+        any(sapply(ext,function(iext) grepl(paste0(iext,"$"),f)))
     
-    if (id.format.f == "ibspectra.csv") {
-      id.data <- read.table(f,header=header,stringsAsFactors=stringsAsFactors,sep=sep,...)
-      log <- rbind(log,c("identification file [id.csv]",f))
-    } else if (id.format.f == "mzid") {
-      id.data <- read.mzid(f)
-      log <- rbind(log,c("identification file [mzid]",f))
-    } else if (id.format.f == "rockerbox") {
-      id.data <- .read.rockerbox(f,...)
-    } else if (id.format.f == "msgfp tsv") {
-      id.data <- .read.msgfp.tsv(f,...)
-    } else {
-      stop(paste0("cannot parse file ",f," - format [",id.format.f,"] not known."))
-    }
-    return(id.data)
-  })
+    ext.def <- 
+    list(mzid      = list(ext=c("mzid"),f=.read.mzid),
+         rockerbox = list(ext=c("peptides.[ct]sv"),f=.read.rockerbox),
+         msgf      = list(ext=c("msgfp.csv","tsv"),f=.read.msgfp.tsv),
+         ibspectra = list(ext=c("csv"),
+                          f=function(x) read.table(x,header=TRUE,sep=sep,
+                                                   stringsAsFactors=FALSE,...)))
 
-  id.colnames <- lapply(seq_along(id.data),function(s.i) colnames(id.data[[s.i]]))
-  colnames.equal <- all(sapply(id.colnames,function(cn) identical(cn,id.colnames[[1]])))
-  if (!colnames.equal) {
-    message(" id file colnames are not equal:")
-    message(paste(sapply(seq_along(id.file),
-                         function(s.i) paste0(s.i,": ",paste(id.colnames[[s.i]],collapse="; "))),collapse="\n"))
-    all.id.colnames <- unique(unlist(id.colnames))
-    if (isTRUE(all)) {
-      id.data <- lapply(id.fata,function(i.d) {
-        id.d[,all.id.colnames[!all.id.colnames %in% colnames(id.d)]] <- NA
-        id.d[,all.id.colnames]
-      })
-    } else {
-      intersect.colnames <- id.colnames[[1]]
-      for (s.i in seq(from=2,to=length(id.colnames))) {
-        intersect.colnames <- intersect(intersect.colnames,id.colnames[[s.i]])
-      }
-      message(" taking intersection: ",paste(intersect.colnames,collapse="; "))
-      id.data <- lapply(id.data,function(i.d) i.d[,intersect.colnames])
+    for (etype in names(ext.def)) {
+      if (is.format(etype,ext.def[[etype]][["ext"]]))
+        return (ext.def[[etype]][["f"]](f))
     }
+
+    stop(paste("cannot parse file ",f," - cannot deduce format based on extension ",
+               "(it is not ibspectra.csv, id.csv, peptides.txt or mzid). ",
+               "Please provide id.format to readIBSpectra",sep=""))
+}
+
+
+## TODO: log is not returned
+.read.idfile <- function(id.file,identifications.format=NULL,sep="\t",
+                         decode.titles=TRUE,trim.titles=FALSE,log=NULL,all=FALSE,...) {
+  if (!is.data.frame(id.file)) {
+    id.data <- lapply(id.file,.read.idfile.df,
+                      identifications.format=identifications.format,...)
+  
+    id.colnames <- lapply(seq_along(id.data),function(s.i) colnames(id.data[[s.i]]))
+    colnames.equal <- all(sapply(id.colnames,
+                                 function(cn) identical(cn,id.colnames[[1]])))
+    if (!colnames.equal) {
+      message(" id file colnames are not equal:")
+      message(paste(sapply(seq_along(id.file),
+                           function(s.i) paste0("    ",s.i,": [",
+                                                paste(id.colnames[[s.i]],collapse=","),
+                                                "]",)),collapse="\n"))
+      all.id.colnames <- unique(unlist(id.colnames))
+      if (isTRUE(all)) {
+        id.data <- lapply(id.fata,function(i.d) {
+          id.d[,all.id.colnames[!all.id.colnames %in% colnames(id.d)]] <- NA
+          id.d[,all.id.colnames]
+        })
+      } else {
+        intersect.colnames <- id.colnames[[1]]
+        for (s.i in seq(from=2,to=length(id.colnames))) {
+          intersect.colnames <- intersect(intersect.colnames,id.colnames[[s.i]])
+        }
+        message(" taking intersection: ",paste(intersect.colnames,collapse="; "))
+        id.data <- lapply(id.data,function(i.d) i.d[,intersect.colnames])
+      }
+    }
+    id.data <- do.call(rbind,id.data)
   }
-  id.data <- do.call(rbind,id.data)
   .check.columns(id.data)
 
   if (!is.character(id.data[,.SPECTRUM.COLS['SPECTRUM']]))
