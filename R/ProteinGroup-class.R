@@ -129,6 +129,44 @@ readProteinGroup <- function(id.file,...,identifications.format=NULL,header=TRUE
   return(ProteinGroup(from=pp,...))
 }
 
+readProteinGroup2 <- function(id.file,...,identifications.format=NULL,
+                              sep="\t",decode.titles=TRUE,trim.titles=FALSE) {
+  identifications <- .read.idfile(id.file,sep=sep,
+                                  identifications.format=identifications.format,
+                                  decode.titles=decode.titles,trim.titles=trim.titles)
+
+  ## Check that obligatory columns are present
+  identifications <- .check.columns(identifications)
+
+  SC <- .SPECTRUM.COLS[.SPECTRUM.COLS %in% colnames(identifications)]
+  ## Substitute Isoleucins with Leucins (indistinguishable by Masspec)
+  identifications[,.PEPTIDE.COLS['REALPEPTIDE']] <- identifications[,SC['PEPTIDE']]
+  identifications[,SC['PEPTIDE']] <- gsub("I","L",identifications[,SC['PEPTIDE']])
+
+  ## Separate protein columns (focus on peptide-spectrum matches)
+  PC <- setdiff(.PEPTIDE.COLS, SC['PEPTIDE'])
+  protein.colnames <- which(colnames(identifications) %in% c(SC['PEPTIDE'],PC))
+  pept.n.prot <- unique(identifications[,protein.colnames])
+  identifications <- unique(identifications[,-which(colnames(identifications) %in% PC)])
+
+  ## Merge identifications
+  if (max(table(identifications[,SC['SPECTRUM']])) > 1) {
+    if (SC['DISSOCMETHOD'] %in% colnames(identifications) && 
+        length(unique(identifications[,SC['DISSOCMETHOD'] ]))>1) {
+      identifications <- ddply(identifications,'dissoc.method',.merge.identifications)
+      identifications <- .merge.quant.identifications(identifications)
+    } else {
+      identifications <- .merge.identifications(identifications)
+    }
+  }
+  identifications <- .remove.duplications(identifications)
+ 
+  # Create ProteinGroup
+  proteinGroup <- ProteinGroup(merge(pept.n.prot,identifications,by="peptide"),...)
+  
+  return(proteinGroup)
+}
+
 setMethod("ProteinGroup",signature(from="data.frame",template="NULL",proteinInfo="ANY"),
           function(from,template,proteinInfo) ProteinGroup(from,proteinInfo=proteinInfo))
 
