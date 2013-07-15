@@ -1,7 +1,17 @@
+CHANGES IN VERSION 1.7.4
+------------------------
+ - improved MSGF+ search result import
+ - refactored report properties: all properties can now be defined in 
+    in the properties.R
+ - speed and memory usage improvements when creating wide XLS report
+ - ratio p-value adjustment now works per comparision instead of globally
+
 CHANGES IN VERSION 1.7.3
 ------------------------
  - fix wide XLS report format
  - novel plot for ratio combinations in QC report
+    showing individual ratio distributions and 
+    significant ratios
 
 CHANGES IN VERSION 1.7.2
 ------------------------
