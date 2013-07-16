@@ -1,9 +1,9 @@
 
 create.reports <- function(properties.file="properties.R",
                            global.properties.file=system.file("report","properties.R",package="isobar"),
-                           args=NULL,...) {
+                           args=NULL,...,recreate.properties.env=TRUE,recreate.report.env=TRUE) {
   ow <- options("warn")
-  if (!exists("properties.env")) {
+  if (!exists("properties.env") || recreate.properties.env) {
     properties.env <- load.properties(properties.file,
                                       global.properties.file,
                                       args=args,...)
@@ -11,7 +11,7 @@ create.reports <- function(properties.file="properties.R",
   }
   options(warn=properties.env[["warning.level"]])
 
-  if (!exists("report.env")) {
+  if (!exists("report.env") || recreate.report.env) {
     report.env <- .GlobalEnv
     initialize.env(report.env,properties.env)
   }
@@ -144,7 +144,7 @@ load.properties <- function(properties.file="properties.R",
   ## ... parsing
   dotargs <- list(...)
   if (length(dotargs) > 0) {
-    mesage("parsing function arguments")
+    message("parsing function arguments")
     .env.copy(properties.env,list2env(dotargs))
   }
 

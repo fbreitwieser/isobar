@@ -463,9 +463,9 @@ setMethod("readIBSpectra",
 }
 
 ### READ MzID
-read.mzid <- function(f) {
+read.mzid <- function(filename) {
   library(XML)
-  doc <- xmlInternalTreeParse(f)
+  doc <- xmlInternalTreeParse(filename)
   ns <- c(x=xmlNamespace(xmlRoot(doc))[[1]])
 
   root <- ifelse (isTRUE(ns == "http://psidev.info/psi/pi/mzIdentML/1.0"), "/x:mzIdentML", "/x:MzIdentML")
@@ -818,20 +818,20 @@ read.mzid <- function(f) {
               spectrumtitles=spectrumtitles))
 }
 
-.read.idfile.df <- function(f,identifications.format,sep=sep,...) {
-    if (is.data.frame(f))
-      return(f)
-    if (!is.character(f))
-      stop("f should be a data.frame or character")
-    if (!file.exist(f))
-      stop("idfile ",f," defined, but does not exist")
+.read.idfile.df <- function(filename,identifications.format,sep,...) {
+    if (is.data.frame(filename))
+      return(filename)
+    if (!is.character(filename))
+      stop("filename should be a data.frame or character")
+    if (!file.exists(filename))
+      stop("idfile ",filename," defined, but does not exist")
     
     is.format <- function(y,ext)
-      identical(identification.format,y) || 
-        any(sapply(ext,function(iext) grepl(paste0(iext,"$"),f)))
+      identical(identifications.format,y) || 
+        any(sapply(ext,function(iext) grepl(paste0(iext,"$"),filename)))
     
     ext.def <- 
-    list(mzid      = list(ext=c("mzid"),f=.read.mzid),
+    list(mzid      = list(ext=c("mzid"),f=read.mzid),
          rockerbox = list(ext=c("peptides.[ct]sv"),f=.read.rockerbox),
          msgf      = list(ext=c("msgfp.csv","tsv"),f=.read.msgfp.tsv),
          ibspectra = list(ext=c("csv"),
@@ -839,11 +839,13 @@ read.mzid <- function(f) {
                                                    stringsAsFactors=FALSE,...)))
 
     for (etype in names(ext.def)) {
-      if (is.format(etype,ext.def[[etype]][["ext"]]))
-        return (ext.def[[etype]][["f"]](f))
+      if (is.format(etype,ext.def[[etype]][["ext"]])) {
+        message("  reading file ",filename," [type: ",etype,"]")
+        return (ext.def[[etype]][["f"]](filename))
+      }
     }
 
-    stop(paste("cannot parse file ",f," - cannot deduce format based on extension ",
+    stop(paste("cannot parse file ",filename," - cannot deduce format based on extension ",
                "(it is not ibspectra.csv, id.csv, peptides.txt or mzid). ",
                "Please provide id.format to readIBSpectra",sep=""))
 }
@@ -853,7 +855,7 @@ read.mzid <- function(f) {
 .read.idfile <- function(id.file,identifications.format=NULL,sep="\t",
                          decode.titles=TRUE,trim.titles=FALSE,log=NULL,all=FALSE,...) {
   if (!is.data.frame(id.file)) {
-    id.data <- lapply(id.file,.read.idfile.df,
+    id.data <- lapply(id.file,.read.idfile.df,sep=sep,
                       identifications.format=identifications.format,...)
   
     id.colnames <- lapply(seq_along(id.data),function(s.i) colnames(id.data[[s.i]]))
@@ -912,10 +914,10 @@ read.mzid <- function(f) {
   return(id.data)
 }
 
-.read.rockerbox <- function(f) {
-  data.r <- read.table(f,header=T,stringsAsFactors=F,sep="\t")
+.read.rockerbox <- function(filename) {
+  data.r <- read.table(filename,header=T,stringsAsFactors=F,sep="\t")
   if (!"scan.title" %in% colnames(data.r))
-    stop("no scan.title column in ",f,"; please use a Rockerbox version >= 2.0.6")
+    stop("no scan.title column in ",filename,"; please use a Rockerbox version >= 2.0.6")
 
   ## transform modification (TODO)
   data.r$modif <- data.r$modifications
