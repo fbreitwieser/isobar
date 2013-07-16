@@ -295,7 +295,7 @@ setGeneric("readIBSpectra", function(type,id.file,peaklist.file,...)
 setMethod("readIBSpectra",
           signature(type="character",id.file="character",peaklist.file="missing"),
     function(type,id.file,identifications.format=NULL,
-             sep="\t",decode.titles=TRUE,trim.titles=FALSE,...) {
+             sep="\t",decode.titles=FALSE,trim.titles=FALSE,...) {
       new(type,
           identifications=.read.idfile(id.file,sep=sep,
                                        identifications.format=identifications.format,
@@ -311,7 +311,7 @@ setMethod("readIBSpectra",
           signature(type="character",id.file="character",peaklist.file="character"),
     function(type,id.file,peaklist.file,sep="\t",
              mapping.file=NULL,mapping=c(quantification.spectrum = "hcd",identification.spectrum = "cid"),
-             id.file.domap=NULL,identifications.format=NULL,decode.titles=TRUE,...) {
+             id.file.domap=NULL,identifications.format=NULL,decode.titles=FALSE,...) {
       
       id.data <- .read.identifications(id.file,sep=sep,
                                        mapping=mapping.file,mapping.names=mapping,
@@ -853,39 +853,50 @@ read.mzid <- function(filename) {
 
 ## TODO: log is not returned
 .read.idfile <- function(id.file,identifications.format=NULL,sep="\t",
-                         decode.titles=TRUE,trim.titles=FALSE,log=NULL,all=FALSE,...) {
+                         decode.titles=FALSE,trim.titles=FALSE,log=NULL,all.cols=FALSE,...) {
   if (!is.data.frame(id.file)) {
-    id.data <- lapply(id.file,.read.idfile.df,sep=sep,
-                      identifications.format=identifications.format,...)
+    if (!(is.list(id.file) || is.character(id.file))) 
+      stop("id.file argument of .read.idfile should be a data frame, character or list")
+
+    if (all(sapply(id.file,is.character)))
+      id.data <- lapply(id.file,.read.idfile.df,sep=sep,
+                        identifications.format=identifications.format,...)
+    else if (all(sapply(id.file,is.data.frame)))
+      id.data <- id.file
+    else
+      stop()
+
+    rm(id.file)
   
     id.colnames <- lapply(seq_along(id.data),function(s.i) colnames(id.data[[s.i]]))
     colnames.equal <- all(sapply(id.colnames,
                                  function(cn) identical(cn,id.colnames[[1]])))
     if (!colnames.equal) {
       message(" id file colnames are not equal:")
-      message(paste(sapply(seq_along(id.file),
+      message(paste(sapply(seq_along(id.data),
                            function(s.i) paste0("    ",s.i,": [",
                                                 paste(id.colnames[[s.i]],collapse=","),
-                                                "]",)),collapse="\n"))
+                                                "]")),collapse="\n"))
       all.id.colnames <- unique(unlist(id.colnames))
-      if (isTRUE(all)) {
-        id.data <- lapply(id.fata,function(i.d) {
+      if (isTRUE(all.cols)) {
+        id.data <- do.call(rbind,lapply(id.data,function(i.d) {
           id.d[,all.id.colnames[!all.id.colnames %in% colnames(id.d)]] <- NA
           id.d[,all.id.colnames]
-        })
+        }))
       } else {
         intersect.colnames <- id.colnames[[1]]
         for (s.i in seq(from=2,to=length(id.colnames))) {
           intersect.colnames <- intersect(intersect.colnames,id.colnames[[s.i]])
         }
         message(" taking intersection: ",paste(intersect.colnames,collapse="; "))
-        id.data <- lapply(id.data,function(i.d) i.d[,intersect.colnames])
+        id.data <- do.call(rbind,lapply(id.data,function(i.d) i.d[,intersect.colnames]))
       }
     }
-    id.data <- do.call(rbind,id.data)
   }
+  
   .check.columns(id.data)
 
+  .check.columns(id.data)
   if (!is.character(id.data[,.SPECTRUM.COLS['SPECTRUM']]))
     id.data[,.SPECTRUM.COLS['SPECTRUM']] <- as.character(id.data[,.SPECTRUM.COLS['SPECTRUM']])
 
@@ -907,7 +918,7 @@ read.mzid <- function(filename) {
   }
 
   if (decode.titles)
-    id.data[,.SPECTRUM.COLS['SPECTRUM']] <- unlist(lapply(id.data[,.SPECTRUM.COLS['SPECTRUM']],URLdecode))
+    id.data[,.SPECTRUM.COLS['SPECTRUM']] <- sapply(id.data[,.SPECTRUM.COLS['SPECTRUM']],URLdecode)
 
   if (trim.titles)
     id.data[,.SPECTRUM.COLS['SPECTRUM']] <- .trim(id.data[,.SPECTRUM.COLS['SPECTRUM']])
