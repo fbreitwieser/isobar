@@ -143,7 +143,8 @@ setValidity("IBSpectra",.valid.IBSpectra)
                    SAMPLE="sample",FILE="file",NOTES="notes")
 
 .PEPTIDE.COLS <- c(PROTEINAC="accession",STARTPOS="start.pos",ENDPOS="end.pos",
-                  REALPEPTIDE="real.peptide",AA.BEFORE="aa.before",AA.AFTER="aa.after")
+                  REALPEPTIDE="real.peptide",ILPEPTIDE='il.peptide',
+                  AA.BEFORE="aa.before",AA.AFTER="aa.after")
 
 .PROTEIN.COLS <- c(PROTEINAC="accession",PROTEINAC_CONCISE="accessions",
                    NAME="name",PROTEIN_NAME="protein_name",DATABASE="database",
@@ -177,7 +178,8 @@ setAs("IBSpectra","data.frame",
 
       # prepare ProteinGroup data.frame
       pg.df <- as(proteinGroup(from),"data.frame")
-      pg.df <- pg.df[,c("protein","peptide","spectrum","start.pos")]
+      pg.df.cols <- c("protein","peptide","spectrum","start.pos","real.peptide")
+      pg.df <- pg.df[,pg.df.cols[pg.df.cols %in% colnames(pg.df)]]
       colnames(pg.df)[colnames(pg.df) == "protein"] <- .PROTEIN.COLS['PROTEINAC']
       colnames(pg.df)[colnames(pg.df) == "peptide"] <- .SPECTRUM.COLS['PEPTIDE']
       colnames(pg.df)[colnames(pg.df) == "spectrum"] <- .SPECTRUM.COLS['SPECTRUM']
@@ -193,6 +195,8 @@ setAs("IBSpectra","data.frame",
 
       # merge data.frames
       res <- unique(merge(pg.df,fdata.df,by=.SPECTRUM.COLS['SPECTRUM'],all.y=TRUE,sort=FALSE))
+      if (.PEPTIDE.COLS['REALPEPTIDE'] %in% colnames(res))
+        res$peptide <- res$real.peptide
 
       # return in order
       res[order(res[,.PROTEIN.COLS['PROTEINAC']],res[,.PEPTIDE.COLS['STARTPOS']],res[,.SPECTRUM.COLS['PEPTIDE']]),
