@@ -10,7 +10,7 @@
 ## Report type: Either 'protein' or 'peptide'
 # report.level="peptide"
 report.level="protein"
-#attr(report.level,"allowed.values") <- c("protein","peptide")
+attr(report.level,"allowed.values") <- c("protein","peptide")
 
 ## Isobaric tagging type. Use one of the following:
 # type='iTRAQ4plexSpectra'
@@ -18,7 +18,8 @@ report.level="protein"
 # type='TMT2plexSpectra'
 # type='TMT6plexSpectra'
 type=NULL
-#attr(type,"allowed.values") <- IBSpectraTypes()
+attr(type,"allowed.values") <- IBSpectraTypes()
+
 isotope.impurities=NULL
 correct.isotope.impurities=TRUE
 
@@ -124,12 +125,11 @@ vs.class=NULL
 
 ## Arguments given to 'proteinRatios' function. See ?proteinRatios
 ratios.opts = list(
-    sign.level.sample=0.01,
-    sign.level.rat=0.01,
+    sign.level.sample=0.05,
+    sign.level.rat=0.05,
     groupspecific.if.same.ac=TRUE)
 
-quant.w.grouppeptides=c("bcrabl","bcrabl,bcrabl_t315i",
-                        "bcrabl,bcrabl_p185,bcrabl_t315i","mgtagzhCorr")
+quant.w.grouppeptides=c()
 
 min.detect=NULL
 
@@ -256,28 +256,7 @@ sum.intensities=FALSE
 
 datbase="Uniprot"
 
-scratch=list(normalize.exclude.set = list (seppro_igy14=c(
-        "P02763",   #  Alpha1-Acid Glycoprotein
-        "P01009-1", #  Alpha1-Antitrypsin
-        "P19652",   #  Alpha1-Acid Glycoprotein
-        "P01023",   #  Alpha2-Macroglobulin
-        "P02768-1", #  Albumin
-        "P02647",   #  HDL: Apolipoprotein A1
-        "P02652",   #  HDL: Apolipoprotein A1
-        "P04114",   #  LDL: Apolipoprotein B
-        "P01024",   #  Complent C3
-        "P02671-1", #  Fibrinogen
-        "P00738",   #  Haptoglobin
-        "P01876",   #  IgA 1
-        "P01877",   #  IgA 2
-        "P01857",   #  IgG 1
-        "P01859",   #  IgG 2
-        "P01860",   #  IgG 3
-        "P01861",   #  IgG 4
-        "P01871-1", #  IgM
-        "P02787"    #  Transferrin
-        )))
-
+scratch=list()
 
 ##
 #  compile LaTeX reports into PDF files
