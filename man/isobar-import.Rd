@@ -151,7 +151,7 @@ tf <- tempfile("isobar")
 write.table(as.data.frame(ib.ceru),sep="\t",file=tf)
 
 # read it again into an IBSpectra object
-ib.ceru2 <- readIBSpectra("iTRAQ4plexSpectra",tf,identifications.format="ibspectra.csv")
+ib.ceru2 <- readIBSpectra("iTRAQ4plexSpectra",tf,identifications.format="ibspectra")
 ib.ceru2
 
 unlink(tf)

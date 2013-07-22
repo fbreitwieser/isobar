@@ -492,18 +492,43 @@ sr
 
 
 \section{Report generation}
-Analysis of reports can be analyzed with \Rpackage{isobar} by usage
-of the Rscript \texttt{create\_reports.R}. This script reads command
-line options and a \texttt{properties.R} file to allow a complete
-analysis generating \LaTeX (and thus PDF) and Excel reports containing
-all protein ratios and quality control.
+\Rpackage{isobar} provides a rich interface for creating Excel and PDF
+reports for further analysis and quality control. The main entry
+function is \texttt{create.reports}. Alternatively the Rscript
+\texttt{create\_reports.R} can be used. It is located in the
+\texttt{report} folder of the \isobar{} installation, and reads the
+properties from a file in the working directory.
 
-The \texttt{properties.R} file in the current folder overwrite the 
-settings set in the global file in the installation directory. Certain
-properties must be set (such as \texttt{type} and \texttt{ibspectra}), others specify the
-type of report to be generated. See appendix 
-\ref{sec:properties} for the available settings.
+The posible values are defined in the \texttt{report/properties.R} file in the
+isobar installation. To generate a report with standard properties the 
+following code should do the trick:
 
+<<eval=FALSE>>=
+create.reports(type="iTRAQ4plexSpectra",
+               identifications="my.id.csv",peaklist="my.mgf")
+@ 
+
+The properties can also be defined in a \texttt{properties.R} file
+which is located in the working directory. The properties are set in
+the following order:
+
+\begin{itemize}
+  \item 'global' properties in \texttt{ISOBAR-DIRECTORY/report/properties.R}\footnote{located in \texttt{system.file('report','properties.R',package='isobar')}}
+  \item 'local' properies in \texttt{WORKING-DIRECTORY/properties.R}
+  \item command line arguments to \texttt{create\_reports.R} or 
+        \texttt{create.reports} function
+\end{itemize}
+
+Appendix \ref{sec:properties} provides a syntax-highlighted version of
+the properties file supplied with isobar, which sets the default
+parameters and provides some help in the comments. The number of
+paramters which can be set may seem a lot at first, however most
+times only a few are needed. 
+
+For successful completion, \LaTeX - for the PDF reports - and Perl -
+for the Excel reports - need to be installed.
+
+\subsection{Files used for report generation}
 <<eval=FALSE>>=
 ## execute to find the path and file location in your installation.
 system.file("report",package="isobar") ## path
@@ -518,7 +543,7 @@ list.files(system.file("report",package="isobar")) ## files
   \item[isobar-qc.Rnw] Sweave file with quality control plots.
   \item[isobar-analysis.Rnw] Sweave file for generating a data analysis report
     with the list of all protein ratios and list of significantly different proteins.
-  \item[properties.conf] Default configuration for \texttt{create\_reports.R}.
+  \item[properties.R] Default configuration for \texttt{create\_reports.R}.
     It is parsed as R code.
   \item[report-utils.R] Helper R functions used in Sweave documents.
   \item[report-utils.tex] Helper \LaTeX{} functions used in Sweave documents.
