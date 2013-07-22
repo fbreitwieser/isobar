@@ -122,7 +122,7 @@ setValidity("IBSpectra",.valid.IBSpectra)
 
 .PEAKS.COLS <- c(MASSFIELD="X%s_mass",IONSFIELD="X%s_ions")
 
-.ID.COLS <- c(SEARCHENGINE="search.engine",SCORE="score",SCORE.MASCOT="score.mascot",SCORE.PHENYX="score.phenyx",SCORE.MSGF="score.msgf",
+.ID.COLS <- c(SEARCHENGINE="search.engine",SCORE="score",SCORE.MASCOT="score.mascot",SCORE.PHENYX="score.phenyx",SCORE.MSGF="score.msgf",IS.DECOY="is.decoy",
               P.VALUE="p.value",MSGF.RAWSCORE="msgf.rawscore",MSGF.DENOVOSCORE="msgf.denvoscore",MSGF.SPECEVALUE='msgf.specevalue',MSGF.EVALUE='msgf.evalue',
               MSGF.QVALUE="msgf.qvalue",MSGF.PEPQVALUE="msgf.pepqvalue",
               SCAFFOLD.PEPPROB="scaffold.pepprob",SEQUEST.XCORR="sequest.xcorr",SEQUEST.DELTACN="sequest.deltacn")

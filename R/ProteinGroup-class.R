@@ -121,11 +121,10 @@ setMethod("ProteinGroup",signature(from="data.frame",template="ProteinGroup",pro
     }
 )
 
-readProteinGroup <- function(id.file,...,identifications.format=NULL,header=TRUE,stringsAsFactors=FALSE,sep="\t",
+readProteinGroup <- function(id.file,...,identifications.format=NULL,sep="\t",
                          decode.titles=TRUE,trim.titles=FALSE) {
-  pp <- .read.idfile(id.file,identifications.format=identifications.format,header=header,
-                     stringsAsFactors=stringsAsFactors,sep=sep,
-                         decode.titles=decode.titles,trim.titles=trim.titles)
+  pp <- .read.idfile(id.file,identifications.format=identifications.format,
+                     sep=sep,decode.titles=decode.titles,trim.titles=trim.titles)
   return(ProteinGroup(from=pp,...))
 }
 

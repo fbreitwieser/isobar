@@ -894,9 +894,8 @@ read.mzid <- function(filename) {
     }
   }
   
-  .check.columns(id.data)
+  #.check.columns(id.data)
 
-  .check.columns(id.data)
   if (!is.character(id.data[,.SPECTRUM.COLS['SPECTRUM']]))
     id.data[,.SPECTRUM.COLS['SPECTRUM']] <- as.character(id.data[,.SPECTRUM.COLS['SPECTRUM']])
 
@@ -904,6 +903,7 @@ read.mzid <- function(filename) {
   uniprot.pattern.id <- "[A-Z0-9]{2,5}_[A-Z9][A-Z0-9]{2,5}"
   entrez.pattern.id <- "gi\\|[0-9]{5,15}"
 
+  if ('accession' %in% colnames(id.data)) {
   if (all(grepl(sprintf("%s\\|%s",uniprot.pattern.ac,uniprot.pattern.id),id.data[,.PROTEIN.COLS['PROTEINAC']]))) {
     split.ac <- strsplit(id.data[,.PROTEIN.COLS['PROTEINAC']],"|",fixed=TRUE)
     id.data[,.PROTEIN.COLS['PROTEINAC']] <- sapply(split.ac,function(x) x[1]) 
@@ -915,6 +915,7 @@ read.mzid <- function(filename) {
   if (all(grepl(entrez.pattern.id,id.data[,.PROTEIN.COLS['PROTEINAC']]))) {
     id.data[,.PROTEIN.COLS['PROTEINAC']] <- sapply(strsplit(id.data[,.PROTEIN.COLS['PROTEINAC']],"|",fixed=TRUE),function(x) x[2]) 
     id.data[,.PROTEIN.COLS['DATABASE']] <- 'Entrez Protein'
+  }
   }
 
   if (decode.titles)
@@ -1018,6 +1019,7 @@ read.mzid <- function(filename) {
 
   ## Columns used for merging. Typically 'spectrum' and columns which are the same regardless of search engine
   COLS.FOR.MERGING <- intersect(colnames(identifications),setdiff(.SPECTRUM.COLS,c(.ID.COLS,names(COLS.TO.CONSOLIDATE))))
+  COLS.FOR.MERGING <- c(COLS.FOR.MERGING,'is.decoy')
 
   ## Split identifications by search engine
   cn.search.engine <- which(colnames(identifications) == .SPECTRUM.COLS['SEARCHENGINE'])
@@ -1051,7 +1053,7 @@ read.mzid <- function(filename) {
   for (colname in names(COLS.TO.CONSOLIDATE)) {
     message("Consolidating ",colname, " [",date(),"]")
     ids.merged <- .resolve.conflicts(ids=ids.merged,resolve.f=COLS.TO.CONSOLIDATE[[colname]],
-  	         		     colname=colname,resolve.colnames=paste0(colname,".",clean.names),...)
+  	         		     colname=colname,resolve.colnames=paste0(colname,".",clean.names))
   }
 
   ids.merged <- unique(ids.merged)
@@ -1281,7 +1283,6 @@ read.mzid <- function(filename) {
 }
 
 .merge.identifications <- function(identifications,...) {
-  idsx <<- identifications
   SC <- .SPECTRUM.COLS[.SPECTRUM.COLS %in% colnames(identifications)]
 
   ## Merge results of different search engines / on different spectra
