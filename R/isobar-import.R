@@ -191,8 +191,8 @@
 .merge.identifications.full <- function(identifications, ...) {
   SC <- .SPECTRUM.COLS[.SPECTRUM.COLS %in% colnames(identifications)]
   ## Substitute Isoleucins with Leucins (indistinguishable by Masspec)
-  identifications[,.PEPTIDE.COLS['REALPEPTIDE']] <- identifications[,SC['PEPTIDE']]
-  identifications[,SC['PEPTIDE']] <- gsub("I","L",identifications[,SC['PEPTIDE']])
+  if (!.PEPTIDE.COLS['REAL.PEPTIDE'] %in% colnames(identifications)) 
+     identifications <- .fix.il.peptide(identifications)
 
   ## Separate protein columns (focus on peptide-spectrum matches)
   PC <- c(.PROTEIN.COLS['PROTEINAC'],.PEPTIDE.COLS['STARTPOS'],.PEPTIDE.COLS['REALPEPTIDE'])
@@ -233,8 +233,8 @@ setMethod("initialize","IBSpectra",
 
   SC <- .SPECTRUM.COLS[.SPECTRUM.COLS %in% colnames(identifications)]
   ## Substitute Isoleucins with Leucins (indistinguishable by Masspec)
-  identifications[,.PEPTIDE.COLS['REALPEPTIDE']] <- identifications[,SC['PEPTIDE']]
-  identifications[,SC['PEPTIDE']] <- gsub("I","L",identifications[,SC['PEPTIDE']])
+  if (!.PEPTIDE.COLS['REAL.PEPTIDE'] %in% colnames(identifications)) 
+     identifications <- .fix.il.peptide(identifications)
 
   ## Separate protein columns (focus on peptide-spectrum matches)
   PC <- setdiff(.PEPTIDE.COLS, SC['PEPTIDE'])
