@@ -83,7 +83,7 @@ setMethod("ProteinGroup",signature(from="data.frame",template="ProteinGroup",pro
       }
       
       ## Substitute Isoleucins with Leucins (indistinguishable by Masspec)
-      if (!.PEPTIDE.COLS['REAL.PEPTIDE'] %in% colnames(from)) 
+      if (!.PEPTIDE.COLS['REALPEPTIDE'] %in% colnames(from)) 
         from <- .fix.il.peptide(from)
 
       peptideNProtein <- peptideNProtein(template)[peptideNProtein(template)[,"peptide"] %in% from[,'peptide'],]
@@ -141,7 +141,7 @@ readProteinGroup2 <- function(id.file,...,identifications.format=NULL,
 
   SC <- .SPECTRUM.COLS[.SPECTRUM.COLS %in% colnames(identifications)]
   ## Substitute Isoleucins with Leucins (indistinguishable by Masspec)
-  if (!.PEPTIDE.COLS['REAL.PEPTIDE'] %in% colnames(identifications)) 
+  if (!.PEPTIDE.COLS['REALPEPTIDE'] %in% colnames(identifications)) 
      identifications <- .fix.il.peptide(identifications)
 
   ## Separate protein columns (focus on peptide-spectrum matches)
@@ -191,8 +191,8 @@ setMethod("ProteinGroup",signature(from="data.frame",template="missing",proteinI
       
       ## Substitute Isoleucins with Leucins (indistinguishable by Masspec)
 
-     if (!.PEPTIDE.COLS['REAL.PEPTIDE'] %in% colnames(identifications)) 
-       identifications <- .fix.il.peptide(identifications)
+     if (!.PEPTIDE.COLS['REALPEPTIDE'] %in% colnames(from)) 
+       from <- .fix.il.peptide(from)
 
       subset.s <- function(my.df,j) {
         if (is(my.df,"data.table"))

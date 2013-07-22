@@ -191,7 +191,7 @@
 .merge.identifications.full <- function(identifications, ...) {
   SC <- .SPECTRUM.COLS[.SPECTRUM.COLS %in% colnames(identifications)]
   ## Substitute Isoleucins with Leucins (indistinguishable by Masspec)
-  if (!.PEPTIDE.COLS['REAL.PEPTIDE'] %in% colnames(identifications)) 
+  if (!.PEPTIDE.COLS['REALPEPTIDE'] %in% colnames(identifications)) 
      identifications <- .fix.il.peptide(identifications)
 
   ## Separate protein columns (focus on peptide-spectrum matches)
@@ -233,7 +233,7 @@ setMethod("initialize","IBSpectra",
 
   SC <- .SPECTRUM.COLS[.SPECTRUM.COLS %in% colnames(identifications)]
   ## Substitute Isoleucins with Leucins (indistinguishable by Masspec)
-  if (!.PEPTIDE.COLS['REAL.PEPTIDE'] %in% colnames(identifications)) 
+  if (!.PEPTIDE.COLS['REALPEPTIDE'] %in% colnames(identifications)) 
      identifications <- .fix.il.peptide(identifications)
 
   ## Separate protein columns (focus on peptide-spectrum matches)
@@ -891,9 +891,11 @@ read.mzid <- function(filename) {
         message(" taking intersection: ",paste(intersect.colnames,collapse="; "))
         id.data <- do.call(rbind,lapply(id.data,function(i.d) i.d[,intersect.colnames]))
       }
+    } else {
+        id.data <- do.call(rbind,id.data)
     }
   }
-  
+
   #.check.columns(id.data)
 
   if (!is.character(id.data[,.SPECTRUM.COLS['SPECTRUM']]))
