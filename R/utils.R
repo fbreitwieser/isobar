@@ -291,3 +291,27 @@ setMethod("weightedMean",
 .sanitize.sh <- function(str) {
   gsub("[^a-zA-Z\\.0-9_\\-]","", str)
 }
+
+.concensus.il.peptide <- function(peptide) { 
+    pep <- do.call(rbind,strsplit(peptide,""))
+    paste0(apply(pep,2,function(x) {
+      xu <- unique(x)
+      if (length(xu)==1) xu
+      else "L"
+    }),collapse="")
+  }
+
+.fix.il.peptide <- function(from) {
+   if (.PEPTIDE.COLS['REALPEPTIDE'] %in% colnames(from))
+     return(from)
+   from[,.PEPTIDE.COLS['REALPEPTIDE']] <- from[,.SPECTRUM.COLS['PEPTIDE']]
+   l.peptide <- gsub("I","L",from[,.SPECTRUM.COLS['PEPTIDE']])
+   from$peptide <- tapply(from[,.SPECTRUM.COLS['PEPTIDE']],l.peptide,function(x) {
+           if (all(x == x[1])) x[1]
+           else 
+              .concensus.il.peptide(unique(x))
+   })[l.peptide]
+   return(from)
+}
+
+

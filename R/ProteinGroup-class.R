@@ -61,6 +61,7 @@ SPECIFICITIES=c(UNSPECIFIC,GROUPSPECIFIC,REPORTERSPECIFIC)
 setGeneric("ProteinGroup",function(from,template=NULL,proteinInfo=data.frame())
            standardGeneric("ProteinGroup"))
 
+
 setMethod("ProteinGroup",signature(from="data.frame",template="ProteinGroup",proteinInfo="ANY"),
           function(from,template,proteinInfo=NULL) {
       # TODO: exclude groups from beeing reporters when
@@ -82,7 +83,8 @@ setMethod("ProteinGroup",signature(from="data.frame",template="ProteinGroup",pro
       }
       
       ## Substitute Isoleucins with Leucins (indistinguishable by Masspec)
-      from$peptide <- gsub("I","L",from$peptide)
+      if (!.PEPTIDE.COLS['REAL.PEPTIDE'] %in% colnames(from)) 
+        from <- .fix.il.peptide(from)
 
       peptideNProtein <- peptideNProtein(template)[peptideNProtein(template)[,"peptide"] %in% from[,'peptide'],]
       protein.group.table <-
@@ -139,8 +141,8 @@ readProteinGroup2 <- function(id.file,...,identifications.format=NULL,
 
   SC <- .SPECTRUM.COLS[.SPECTRUM.COLS %in% colnames(identifications)]
   ## Substitute Isoleucins with Leucins (indistinguishable by Masspec)
-  identifications[,.PEPTIDE.COLS['REALPEPTIDE']] <- identifications[,SC['PEPTIDE']]
-  identifications[,SC['PEPTIDE']] <- gsub("I","L",identifications[,SC['PEPTIDE']])
+  if (!.PEPTIDE.COLS['REAL.PEPTIDE'] %in% colnames(identifications)) 
+     identifications <- .fix.il.peptide(identifications)
 
   ## Separate protein columns (focus on peptide-spectrum matches)
   PC <- setdiff(.PEPTIDE.COLS, SC['PEPTIDE'])
@@ -188,7 +190,9 @@ setMethod("ProteinGroup",signature(from="data.frame",template="missing",proteinI
       }
       
       ## Substitute Isoleucins with Leucins (indistinguishable by Masspec)
-      from$peptide <- gsub("I","L",from$peptide)
+
+     if (!.PEPTIDE.COLS['REAL.PEPTIDE'] %in% colnames(identifications)) 
+       identifications <- .fix.il.peptide(identifications)
 
       subset.s <- function(my.df,j) {
         if (is(my.df,"data.table"))
@@ -1400,6 +1404,7 @@ calc.startpos <- function(peptide.info,protein.info) {
     pep <- peptide.info[p.i,'peptide']
     if (length(seqq) > 0 && !is.na(seqq) && nchar(seqq) > 0 &&length(pep)>0 && !is.na(pep)) {
       seqq <- gsub("I","L",seqq) ## to be confomant with converted peptides
+      pep <- gsub("I","L",pep)
       str.pos <- regexpr(pep,seqq,fixed=TRUE) 
       peptide.info[p.i,'start.pos'] <- str.pos[1] # take only first position
       #peptide.info[p.i,'end.pos'] <- str.pos[1] + nchar(peptide.info[p.i,'peptide']) -1
