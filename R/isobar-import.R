@@ -1342,7 +1342,10 @@ read.mzid <- function(filename) {
 
 ## read MSGF+ tab-separated identification files
 .read.msgfp.tsv <- function(filename,filter.rev.hits=FALSE) {
-  id.data <- read.delim(filename, sep="\t", stringsAsFactors=FALSE)
+  if (is.data.frame(filename)) 
+    ib.data <- filename
+  else
+    id.data <- read.delim(filename, sep="\t", stringsAsFactors=FALSE)
   ib.df <- data.frame(Protein=id.data[,'Protein'],
                       spectrum=id.data[,'Title'],.convert.msgfp.pepmodif(id.data[,'Peptide']),
                       scan.from=id.data[,'ScanNum'],dissoc.method=tolower(id.data[,'FragMethod']),
