@@ -306,11 +306,11 @@ setMethod("weightedMean",
      return(from)
    from[,.PEPTIDE.COLS['REALPEPTIDE']] <- from[,.SPECTRUM.COLS['PEPTIDE']]
    l.peptide <- gsub("I","L",from[,.SPECTRUM.COLS['PEPTIDE']])
-   from$peptide <- tapply(from[,.SPECTRUM.COLS['PEPTIDE']],l.peptide,function(x) {
+   from$peptide <- as.vector( tapply(from[,.SPECTRUM.COLS['PEPTIDE']],l.peptide,function(x) {
            if (all(x == x[1])) x[1]
            else 
               .concensus.il.peptide(unique(x))
-   })[l.peptide]
+   })[l.peptide] )
    return(from)
 }
 
