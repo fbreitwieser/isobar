@@ -17,14 +17,14 @@ calcTwoSidedNormalProb <- function(X,mu_Y,sd_Y,...) {
   ifelse(p.values>0.5,1-p.values,p.values)
 }
 
-calcProbXGreaterThanY <- function(X,Y,n.steps=1000) {
+calcProbXGreaterThanY <- function(X,Y,min.q=10^-6,n.steps=1000) {
   # calculates an estimate of P(X>Y) + 0.5 P(X=Y)
   #  a value of 0.5 represents complete overlap
   require(distr)
   if (!is(X,"Distribution")) stop("X has to be of class Distribution")
   if (!is(Y,"Distribution")) stop("Y has to be of class Distribution")
 
-  steps.seq <- seq(from=0,to=1,length.out=n.steps)
+  steps.seq <- seq(from=min.q,to=1-min.q,length.out=n.steps)
   steps <- sort(unique(c(q(X)(steps.seq),q(Y)(steps.seq))))
   nn.steps <- length(steps)
            
