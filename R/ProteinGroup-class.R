@@ -205,7 +205,7 @@ setMethod("ProteinGroup",signature(from="data.frame",template="missing",proteinI
       ##spectrumToPeptide <- setNames(from[["peptides"]],from[["spectrum"]])
 
       spectrumId <- unique(subset.s(from,setdiff(colnames(from),c("protein","start.pos","aa.before","aa.after"))))
-      peptideInfo <- unique(subset.s(from,intersect(c("protein","peptide","start.pos","aa.before","aa.after","modif"),colnames(from))))
+      peptideInfo <- unique(subset.s(from,intersect(c("protein","peptide","start.pos","aa.before","aa.after","modif","real.peptide"),colnames(from))))
       peptideInfo <- peptideInfo[order(peptideInfo[["protein"]],
                                        peptideInfo[["start.pos"]],
                                        peptideInfo[["peptide"]]),]
