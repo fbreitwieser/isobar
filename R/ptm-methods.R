@@ -121,20 +121,20 @@ writePhosphoRSInput <-
   close(con.out)
 }
 
-calc.delta.score <- function(data) {
-  pep.n.prot <- unique(data[,c("accession","peptide","start.pos")])
-  data$accession <- NULL
-  data$start.pos <- NULL
-  data <- unique(data)
-  if (!any(by(data$score,data$spectrum, length)>1)) {
+calc.delta.score <- function(my.data) {
+  pep.n.prot <- unique(my.data[,c("accession","peptide","start.pos")])
+  my.data$accession <- NULL
+  my.data$start.pos <- NULL
+  my.data <- unique(my.data)
+  if (!any(by(my.data$score,my.data$spectrum, length)>1)) {
     stop("Cannot calculate delta score: Only one hit per spectrum available")
   }
 
-  data$delta.score <- data$score
-  data$n.pep <- 1
-  data$n.loc <- 1
+  my.data$delta.score <- my.data$score
+  my.data$n.pep <- 1
+  my.data$n.loc <- 1
 
-  res <- ddply(data,"spectrum",function(x) {
+  res <- ddply(my.data,"spectrum",function(x) {
     if (nrow(x) == 1) return(x);
     res <- x[which.max(x$score),,drop=FALSE]
     res$n.pep <- length(unique(x$peptide))
@@ -148,10 +148,36 @@ calc.delta.score <- function(data) {
     return(res);
   })
 
-  data <- merge(pep.n.prot,res,by="peptide",all.y=TRUE)
+  my.data <- merge(pep.n.prot,res,by="peptide",all.y=TRUE)
 
-  return(data[order(data[,"accession"],data[,"peptide"]),])
+  return(my.data[order(my.data[,"accession"],my.data[,"peptide"]),])
 }
+
+calc.pep.delta.score <- function(y,spectrum.col='spectrum',score.col='score',peptide.col='peptide') {
+  y$delta.score <- y$score
+  y$delta.score.pep <- y$score
+  y$delta.score.notpep <- y$score
+
+  y$n.pep <- 1
+  y$n.loc <- 1
+    
+  ddply(y,"spectrum",function(x) {
+    if (nrow(x) == 1) return(x);
+    res <- x[which.max(x$score),,drop=FALSE]
+    res$n.pep <- length(unique(x[,peptide.col]))
+    x <- x[-which.max(x$score),] # remove best hit from x
+    res$delta.score <- res[,'score'] - x[which.max(x$score),'score'] # calc delta score w/ max
+    res$delta.score.pep <- res$delta.score
+    y <- x[x$peptide == res[,'peptide'],] # only keep same peptide hits in x
+#    z <- x[x$peptide == res[,'peptide',],] # only keep different peptide hits
+
+    if (nrow(y) == 0) return(res);
+    res$delta.score.pep <- res[,'score'] - y[which.max(y$score),'score'] # calc delta score w/ max (same pep)
+    res$n.loc <- nrow(x) + 1
+    return(res);
+  })
+}
+
 
 filterSpectraDeltaScore <- function(data, min.delta.score=10, do.remove=FALSE) {
   if (!"delta.score" %in% colnames(data))

@@ -307,16 +307,21 @@ setMethod("weightedMean",
     }),collapse="")
   }
 
-.fix.il.peptide <- function(from) {
+.fix.il.peptide <- function(from,sub.il=TRUE) {
    if (.PEPTIDE.COLS['REALPEPTIDE'] %in% colnames(from))
      return(from)
+
    from[,.PEPTIDE.COLS['REALPEPTIDE']] <- from[,.SPECTRUM.COLS['PEPTIDE']]
    l.peptide <- gsub("I","L",from[,.SPECTRUM.COLS['PEPTIDE']])
-   from$peptide <- tapply(from[,.SPECTRUM.COLS['PEPTIDE']],l.peptide,function(x) {
+   if (sub.il) {
+     from$peptide <- l.peptide
+   } else {
+     from$peptide <- as.vector( tapply(from[,.SPECTRUM.COLS['PEPTIDE']],l.peptide,function(x) {
            if (all(x == x[1])) x[1]
            else 
               .concensus.il.peptide(unique(x))
-   })[l.peptide]
+     }))[l.peptide]
+   }
    return(from)
 }
 

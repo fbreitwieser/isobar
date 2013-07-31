@@ -1,7 +1,7 @@
 
 
 
-calcTwoSidedNormalProb <- function(X,mu_Y,sd_Y,...) {
+calcProbXDiffNormals <- function(X,mu_Y,sd_Y,...,alternative="greater") {
   # calculates an estimate of min(P(X>Y),P(Y>X))
   #  Y ~ N(mu_Y,sd_Y)
   require(distr)
@@ -14,7 +14,11 @@ calcTwoSidedNormalProb <- function(X,mu_Y,sd_Y,...) {
     calcProbXGreaterThanY(X,Norm(mu_Y[i],sd_Y[i]),...)
   })
 
-  ifelse(p.values>0.5,1-p.values,p.values)
+  switch(alternative,
+         greater=p.values,
+         less=1-p.values,
+         "two-sided"=ifelse(p.values>0.5,1-p.values,p.values),
+         stop("don't know alternative ",alternative))
 }
 
 calcProbXGreaterThanY <- function(X,Y,min.q=10^-6,n.steps=1000) {
