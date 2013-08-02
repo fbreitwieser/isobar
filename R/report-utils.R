@@ -177,7 +177,7 @@ initialize.env <- function(env,properties.env) {
   env[["noise.model"]] <- .create.or.load.noise.model(env,properties.env)
   env[["ratiodistr"]] <- .create.or.load.ratiodistr(env,properties.env)
   if (identical(properties.env[["report.level"]],"peptide") )
-    env[["ptm.info"]]  <- .create.or.load.ptm.info(env,properties.env)
+    env[["ptm.info"]]  <- .create.or.load.ptm.info(properties.env,proteinGroup(env[["ibspectra"]]))
   env[["quant.tbl"]] <- .create.or.load.quant.table(env,properties.env)
   if (!"ac" %in% colnames(env[["quant.tbl"]]) && "protein" %in% colnames(env[["quant.tbl"]]))
     env[["quant.tbl"]][,'ac'] <- env[["quant.tbl"]]$protein
@@ -433,13 +433,13 @@ property <- function(x, envir, null.ok=TRUE,class=NULL) {
   return(noise.model)
 }
 
-.create.or.load.ptm.info <- function(env,properties.env) {
+.create.or.load.ptm.info <- function(properties.env,protein.group) {
   if (is.null(property('ptm.info.f',properties.env))) 
     properties.env[["ptm.info.f"]] <- getPtmInfoFromNextprot
 
   return(.create.or.load("ptm.info",envir=properties.env,
                          f=property('ptm.info.f',properties.env),
-                         protein.group=proteinGroup(env[["ibspectra"]])))
+                         protein.group=protein.group))
 }
 
 .create.or.load.ratiodistr <- function(env,properties.env) {
