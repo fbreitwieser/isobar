@@ -1,3 +1,9 @@
+CHANGES IN VERSION 1.7.5
+------------------------
+ - fixed critical bugs: Excel report output had wrong ordering, ie ratios did
+   not correspond to the meta information [introduced in version 1.7.3].
+ - fix of real peptide names: Reexport I/L peptides in reports
+
 CHANGES IN VERSION 1.7.4
 ------------------------
  - improved MSGF+ search result import
