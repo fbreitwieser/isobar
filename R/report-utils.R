@@ -165,7 +165,7 @@ initialize.env <- function(env,properties.env) {
     if (!ret) stop("Error creating cachedir [",get.property('cachedir'),"]")
   }
 
-  ib.name <- file.path(.get.property('cachedir',properties.env),"ibspectra.rda",)
+  ib.name <- file.path(.get.property('cachedir',properties.env),"ibspectra.rda")
   if (file.exists(ib.name)) {
     load(ib.name)
     env[["ibspectra"]] <- ibspectra
