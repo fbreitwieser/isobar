@@ -91,7 +91,7 @@ create.reports <- function(properties.file="properties.R",
     .call.cmd(sprintf("R CMD pdflatex -halt-on-error -output-directory=%s %s.tex",dir,name),
               paste(dir,"/",basename(name),".stdout",sep=""))
     cat(" done!\n\n")
-    .call.cmd(sprintf("mv %s/%s.pdf .",dir,name))
+    file.rename(file.path(dir,paste0(name,".pdf")),file.path(getwd(),paste0(name,".pdf")))
     c(zip.files,sprintf("%s.pdf",name))
   }
  
@@ -165,7 +165,7 @@ initialize.env <- function(env,properties.env) {
     if (!ret) stop("Error creating cachedir [",get.property('cachedir'),"]")
   }
 
-  ib.name <- sprintf("%s/ibspectra.rda",.get.property('cachedir',properties.env))
+  ib.name <- file.path(.get.property('cachedir',properties.env),"ibspectra.rda",)
   if (file.exists(ib.name)) {
     load(ib.name)
     env[["ibspectra"]] <- ibspectra
