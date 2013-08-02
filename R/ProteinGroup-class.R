@@ -818,7 +818,11 @@ proteinGroup.as.concise.data.frame <-
     pep.pos <- pep.pos.n.modif
     modif <- NULL
   }
-  residue <- pepseq[pep.pos]
+  if (all(pep.pos == 0))
+    residue <- 'Nterm'
+  else
+    residue <- pepseq[pep.pos]
+
   poss <- start.pos + pep.pos - 1
   if (!is.null(ptm.info) && all(c("isoform_ac","position") %in% colnames(ptm.info))) {
     comments <- sapply(poss,function(pp) {
