@@ -122,10 +122,13 @@ setValidity("IBSpectra",.valid.IBSpectra)
 
 .PEAKS.COLS <- c(MASSFIELD="X%s_mass",IONSFIELD="X%s_ions")
 
-.ID.COLS <- c(SEARCHENGINE="search.engine",SCORE="score",SCORE.MASCOT="score.mascot",SCORE.PHENYX="score.phenyx",SCORE.MSGF="score.msgf",IS.DECOY="is.decoy",
-              P.VALUE="p.value",MSGF.RAWSCORE="msgf.rawscore",MSGF.DENOVOSCORE="msgf.denvoscore",MSGF.SPECEVALUE='msgf.specevalue',MSGF.EVALUE='msgf.evalue',
+.ID.COLS <- c(SEARCHENGINE="search.engine",SCORE="score",SCORE.MASCOT="score.mascot",
+              SCORE.PHENYX="score.phenyx",SCORE.MSGF="score.msgf",IS.DECOY="is.decoy",
+              P.VALUE="p.value",MSGF.RAWSCORE="msgf.rawscore",MSGF.DENOVOSCORE="msgf.denvoscore",
+              MSGF.SPECEVALUE='msgf.specevalue',MSGF.EVALUE='msgf.evalue',
               MSGF.QVALUE="msgf.qvalue",MSGF.PEPQVALUE="msgf.pepqvalue",
-              SCAFFOLD.PEPPROB="scaffold.pepprob",SEQUEST.XCORR="sequest.xcorr",SEQUEST.DELTACN="sequest.deltacn")
+              SCAFFOLD.PEPPROB="scaffold.pepprob",SEQUEST.XCORR="sequest.xcorr",SEQUEST.DELTACN="sequest.deltacn",
+              DELTASCORE="delta.score",DELTASCORE.PEP="delta.score.pep")
 
 .PTM.COLS <- c(SCORE.PHOSPHORS='pepscore',PROB.PHOSPHORS='pepprob',SEQPOS='seqpos',SITEPROBS='site.probs',PHOSPHO.SITES='phospho.sites')
 
@@ -138,7 +141,7 @@ setValidity("IBSpectra",.valid.IBSpectra)
                    DISSOCMETHOD="dissoc.method",
                    PRECURSOR.PURITY="precursor.purity",
                    SCANS="scans",SCANS.FROM="scan.from",SCANS.TO="scan.to",
-                   RAWFILE="raw.file",NMC="nmc",DELTASCORE="delta.score",DELTASCORE.PEP="delta.score.pep",
+                   RAWFILE="raw.file",NMC="nmc",
                    MASSDELTA.ABS="massdelta.abs",MASSDELTA.PPM="massdelta.ppm",
                    SAMPLE="sample",FILE="file",NOTES="notes")
 
