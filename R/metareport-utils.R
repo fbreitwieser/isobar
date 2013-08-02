@@ -1,4 +1,4 @@
-create.meta.reports <- function(report.type="protein",properties.file="meta-properties.R",args=NULL,compile=FALSE,zip=FALSE) {
+create.meta.reports <- function(properties.file="meta-properties.R",args=NULL) {
   require(ggplot2)
   if (!exists("properties.env")) {
     properties.env <- load.properties(properties.file,
@@ -11,22 +11,25 @@ create.meta.reports <- function(report.type="protein",properties.file="meta-prop
     load("pg.df.rda")
   } else {
     message("Creating protein group data frame ... ")
-    if (report.type=="peptide") {
+    if (properties.env[["report.level"]]=="peptide") {
+      ptm.info  <- .create.or.load.ptm.info(properties.env,protein.group)
       pg.df <- isobar:::.proteinGroupAsConciseDataFrame(protein.group,
                                                         modif.pos=properties.env$ptm,
-                                                        ptm.info=properties.env$ptm.info)
+                                                        ptm.info=properties.env$ptm.info,
+                                                        report.only.modified=TRUE)
     } else {
       acs <- reporterProteins(protein.group)
       pg.df <- data.frame(ac=acs,
                           AC=.protein.acc(acs,protein.group),
                           ID=proteinInfo(protein.group,acs,do.warn=FALSE),
                           Description=proteinInfo(protein.group,acs,select="protein_name",do.warn=FALSE),
-                          Gene=proteinInfo(protein.group,acs,select="gene_name",do.warn=FALSE))
+                          Gene=proteinInfo(protein.group,acs,select="gene_name",do.warn=FALSE),
+                          stringsAsFactors=FALSE)
 
     }
     save(pg.df,file="pg.df.rda",compress=TRUE)
   }
-  if (!is.null(properties.env$protein.info.f)) 
+  if (length(proteinInfo(protein.group)) && !is.null(properties.env$protein.info.f)) 
     proteinInfo(protein.group) <- 
       .create.or.load("protein.info",envir=properties.env,
                       f=properties.env$protein.info.f,
@@ -40,20 +43,25 @@ create.meta.reports <- function(report.type="protein",properties.file="meta-prop
   #  dnsaf <- .create.or.load("dnsaf",envir=properties.env,f=calculate.dNSAF,protein.group=protein.group)
 
   message("Merging samples ",paste(properties.env$samples,collapse=", ")," ...")
-  ac.vars <- switch(report.type,
+  ac.vars <- switch(properties.env[["report.level"]],
                     protein = "ac",
                     peptide = c("peptide","modif"),
-                    stop("report type ",report.type," unknown"))
+                    stop("properties.env$report.level ",properties.env[["report.level"]]," unknown"))
 
   merge.cols <- c("class1","class2")
   merged.table <- .get.merged.table(properties.env$samples,
                                    cols=c(ac.vars,merge.cols,"lratio","variance","p.value.rat"),
                                    merge.by=c(ac.vars,merge.cols),format="wide")
   
+  zscore.any2.5 <- apply(abs(merged.table[,grepl("zscore.indiv",colnames(merged.table))]) >= 2.5,1,any)
+  zscore.all1 <- apply(abs(merged.table[,grepl("zscore.indiv",colnames(merged.table))]) >= 1,1,all)
+
   merged.table$p.value.rat <- .combine.fisher.tblwide(merged.table)
-  merged.table$is.significant.notadj <- merged.table$p.value.rat < 0.05
+  merged.table$is.significant.notadj <- (merged.table$p.value.rat < 0.05) & zscore.any2.5 & zscore.all1
+
   merged.table$p.value.rat.fdr.adj <- p.adjust(merged.table$p.value.rat)
-  merged.table$is.significant <- merged.table$p.value.rat.fdr.adj < 0.05
+  merged.table$is.significant <- (merged.table$p.value.rat.fdr.adj < 0.05) & zscore.any2.5 & zscore.all1  
+  
   merged.table$comp <- paste(merged.table[,merge.cols[2]],sep="/",merged.table[,merge.cols[1]])
 
   
@@ -66,7 +74,9 @@ create.meta.reports <- function(report.type="protein",properties.file="meta-prop
                          function(x) c(x=Inf,y=-log10(0.05),isobar:::.sum.bool.na(x$p.value.rat < 0.05))),
               aes(x=x,y=y,label=`TRUE`),vjust=-0.5,hjust=1)
 
-  ggsave("lratio-pval.pdf",g)
+  pdf("lratio-pval.pdf")
+  print(g)
+  dev.off()
   tbl.wide <- reshape(merged.table,idvar=ac.vars,timevar="comp",direction="wide",drop=merge.cols)
 
   #rownames(pg.df) <- do.call(paste,pg.df[,ac.vars,drop=FALSE])
@@ -129,24 +139,27 @@ create.meta.reports <- function(report.type="protein",properties.file="meta-prop
 }
 
 .get.merged.table <- function(samples,quant.tbls=paste0(samples,"/cache/quant.tbl.rda"),
-                              cols=c("ac","r1","r2","lratio","variance"),merge.by=c("ac","r1","r2"),format="wide") {
+                              cols=c("ac","r1","r2","lratio","variance"),
+                              merge.by=c("ac","r1","r2"),format="wide") {
+
   quant.tables <- lapply(seq_along(samples),
                          function(idx) {
                            load(quant.tbls[idx])
                            q <- quant.tbl[,cols]
                            q <- ddply(q,c("class1","class2"),function(x) 
-                                 cbind(x,zscore=round(.calc.zscore(x[,"lratio"]),4)))
+                                 cbind(x,zscore.indiv=round(.calc.zscore(x[,"lratio"]),4)))
                            q[,"lratio"] <- round(q[,"lratio"],4)
                            q[,"variance"] <- round(q[,"variance"],4)
                            if (format=="wide") {
                              sel <- !colnames(q) %in% merge.by
-                             colnames(q)[sel] <- paste(colnames(q)[sel],samples[idx],sep=".")
+                             colnames(q)[sel] <- paste(colnames(q)[sel],gsub("[./]","",samples[idx]),sep=".")
                            } else {
                              q$sample <- samples[idx]
                            }
                            message(paste(colnames(q),collapse=":"))
                            q
                          })
+
   if (format == "wide") {
     merged.table <- quant.tables[[1]]
     for (idx in  2:length(samples))
