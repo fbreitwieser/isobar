@@ -691,10 +691,14 @@ proteinGroup.as.concise.data.frame <-
 .proteinGroupAsConciseDataFrame <- 
   function(from,only.reporters=TRUE,show.proteinInfo=TRUE,
            human.protein.acs=TRUE,show.startpos=TRUE,modif.pos=NULL,
-           ptm.info=NULL,link.url="http://www.uniprot.org/uniprot/") {
+           ptm.info=NULL,link.url="http://www.uniprot.org/uniprot/",
+           report.only.modified=FALSE) {
 
         pep.n.prot <- merge(as.data.frame(peptideNProtein(from),stringsAsFactors=FALSE),
                             from@peptideInfo,by="peptide")
+        if (!is.null(modif.pos) && isTRUE(report.only.modified))
+          pep.n.prot <- pep.n.prot[grepl(modif.pos,pep.n.prot[,'modif']),]
+
         p.ac <- .protein.acc(reporterProteins(from),from)
 
         # ip.df will contain information on
@@ -734,11 +738,13 @@ proteinGroup.as.concise.data.frame <-
                        res <- data.frame(start.pos=.unique.or.collapse(x[,'start.pos'],";"),
                                          proteins=paste(unique(x[,'proteinn']),collapse=";"),
                                          uniprot=paste0("@link=",x[1,'link'],"@x",collapse=";"),
-                                         real.peptide=.unique.or.collapse(x[,'real.peptide'],";"),
 #                                         n.acs=length(unique(x[,"proteinac.wo.splicevariant"])),
 #                                         n.variants=length(unique(x[,"protein"])),
 #                                         n.variants=length(protein.gs),
                                          stringsAsFactors=FALSE)
+                       if ('real.peptide' %in% colnames(x))
+                         res <- cbind(res,real.peptide=.unique.or.collapse(x[,'real.peptide'],";"),
+                                      stringsAsFactors=FALSE)
 
                        if (!is.null(modif.pos)) {
                          null.comments <- x[,'modif.comment'] == ""
@@ -1419,11 +1425,15 @@ calcPeptidePosition <- function(peptide.info,protein.info,calc.il.peptide) {
   last.elem <- nrow(peptide.info)
 
   for (p.i in seq_len(nrow(peptide.info))) {
-    seqq <- protein.info[protein.info[,'accession']==peptide.info[p.i,'protein'],'sequence']
+    ## WARNING: Does not yet work on protein groups which have no splice variant specified!
+    seqq <- protein.info[protein.info[,'accession']==peptide.info[p.i,'protein'],'sequence'][1]
+    pep.i <- peptide.info[p.i,]
     pep <- peptide.info[p.i,'peptide']
+    message(pep,appendLF=FALSE)
     if (is.na(pep) || nchar(pep) == 0) stop("peptide on position ",p.i," is NA or of zero length")
-    if (is.na(seqq) || nchar(seqq) == 0) {
+    if (length(seqq) == 0 || is.na(seqq) || nchar(seqq) == 0) {
       peptide.info[p.i,'real.peptide'] <- paste(pep,"(not matched, no protein sequence)")
+      message(": no prot sequence")
       next
     } 
 
@@ -1435,7 +1445,7 @@ calcPeptidePosition <- function(peptide.info,protein.info,calc.il.peptide) {
     for (m.i in seq_along(matches)) {
        if (m.i > 1) {
          last.elem <- last.elem + 1
-         peptide.info <- rbind(peptide.info,peptide.info[p.i,])
+         peptide.info <- rbind(peptide.info,pep.i)
          pp.i <- last.elem
        }
        if (matches[m.i] == -1) {
@@ -1447,6 +1457,7 @@ calcPeptidePosition <- function(peptide.info,protein.info,calc.il.peptide) {
                  substr(seqq,matches[m.i],matches[m.i]+attr(matches,"match.length")[m.i]-1)
        }
     }
+    message(" --> ",peptide.info[pp.i,'real.peptide'])
   }
   if (any(peptide.info[,'start.pos'] == -1,na.rm=TRUE)) {
     sel.bad <- !is.na(peptide.info[,'start.pos']) & peptide.info[,'start.pos'] == -1
