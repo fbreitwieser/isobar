@@ -117,7 +117,7 @@ write.xls.report <- function(properties.env,report.env,file="isobar-analysis.xls
                                   xls=system.file("pl","tab2xls.pl",package="isobar",mustWork=TRUE),
                                   stop("spreadsheet.format property must be either 'xlsx' or 'xls'."))
 
-    perl.cl <- paste(tab2spreadsheet.cmd," ",
+    perl.cl <- paste("perl \"",tab2spreadsheet.cmd,"\" ",
                      ifelse(properties.env[["use.name.for.report"]],sprintf("%s.quant",properties.env[["name"]]),"isobar-analysis"),
                      ".",properties.env[["spreadsheet.format"]],
                      " ':autofilter,freeze_col=6,name=Quantifications:",protein.quant.f,"'",
@@ -231,7 +231,7 @@ write.xls.report <- function(properties.env,report.env,file="isobar-analysis.xls
                ))
     }
     
-    tbl <- cbind(tbl,protein.intensities(ibspectra,protein.tbl[["protein"]]))
+    tbl <- cbind(tbl,protein.intensities(ibspectra,tbl[["protein"]]))
   } else {
     if (isTRUE(properties.env[["xls.report.format"]]=="long")) {
      tbl <-cbind(tbl,"Channels"=paste(input.tbl[["r2"]],"/",input.tbl[["r1"]]))
@@ -430,7 +430,8 @@ write.xls.report <- function(properties.env,report.env,file="isobar-analysis.xls
   }
   tbl <- merge(tbl.meta,tbl,by='protein.g')
   tbl[["protein.g"]] <- NULL
-  message()
+  tbl <- tbl[order(tbl[,'i']),]
+  if (!all(tbl[,'i']==input.tbl[,'i'])) stop ("problem in protein xls report ordering")
   return(list(tbl,input.tbl))
 }
 
