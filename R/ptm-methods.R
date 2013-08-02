@@ -169,11 +169,14 @@ calc.pep.delta.score <- function(y,spectrum.col='spectrum',score.col='score',pep
     res$delta.score <- res[,'score'] - x[which.max(x$score),'score'] # calc delta score w/ max
     res$delta.score.pep <- res$delta.score
     y <- x[x$peptide == res[,'peptide'],] # only keep same peptide hits in x
-#    z <- x[x$peptide == res[,'peptide',],] # only keep different peptide hits
-
-    if (nrow(y) == 0) return(res);
-    res$delta.score.pep <- res[,'score'] - y[which.max(y$score),'score'] # calc delta score w/ max (same pep)
-    res$n.loc <- nrow(x) + 1
+    if (nrow(y) > 0) {
+      res$delta.score.pep <- res[,'score'] - y[which.max(y$score),'score'] # calc delta score w/ max (same pep)
+      res$n.loc <- nrow(x) + 1
+    }
+    y <- x[x$peptide != res[,'peptide'],] # only keep different peptide hits
+    if (nrow(y) > 0) {
+      res$delta.score.notpep <- res[,'score'] - y[which.max(y$score),'score'] # calc delta score w/ max (different pep)
+    }
     return(res);
   })
 }
