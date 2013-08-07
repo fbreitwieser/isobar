@@ -69,6 +69,7 @@ write.xls.report <- function(properties.env,report.env,file="isobar-analysis.xls
 
     ## write tables to tab seperated files files:
     protein.quant.f <- paste(get.property('cachedir'),"protein_quant.csv",sep="/")
+    quant.notlocalized.f <- paste(get.property('cachedir'),"quant.notlocalized.csv",sep="/")
     protein.id.f <- paste(get.property('cachedir'),"protein_id.csv",sep="/")
     analysis.properties.f <- paste(get.property('cachedir'),"analysis_properties.csv",sep="/")
     log.f <- paste(get.property('cachedir'),"logged_operations.csv",sep="/")
@@ -99,6 +100,10 @@ write.xls.report <- function(properties.env,report.env,file="isobar-analysis.xls
       #xls.quant.tbl <- xls.quant.tbl[, c(col_idx, (1:ncol(df))[-col_idx])]
 
     }
+    if (exists("xls.quant.tbl.notlocalized",envir=report.env)) {
+      write.t(report.env[["xls.quant.tbl.notlocalized"]],file=quant.notlocalized.f)
+    }
+
     if ('notes' %in% colnames(protein.id.df)) 
       protein.id.df[,'notes'] <- gsub("[\t\n]"," ",protein.id.df[,'notes'])
     write.t(xls.quant.tbl,file=protein.quant.f)
@@ -120,7 +125,10 @@ write.xls.report <- function(properties.env,report.env,file="isobar-analysis.xls
     perl.cl <- paste("perl \"",tab2spreadsheet.cmd,"\" ",
                      ifelse(properties.env[["use.name.for.report"]],sprintf("%s.quant",properties.env[["name"]]),"isobar-analysis"),
                      ".",properties.env[["spreadsheet.format"]],
-                     " ':autofilter,freeze_col=6,name=Quantifications:",protein.quant.f,"'",
+                     " ':autofilter,freeze_col=4,name=Quantifications:",protein.quant.f,"'",
+                     ifelse(file.exists(quant.notlocalized.f),
+                            paste0(" ':autofilter,freeze_col=4,name=Quantifications (not confidently localized sites):",quant.notlocalized.f,"'"),""),
+
                      ifelse(identical(properties.env[["report.level"]],"peptide") && !is.null(modificationSites),
                             paste(" ':autofilter,freeze_col=3,name=Modification Sites:",modifsites.f,"'",sep=""),""),
                      " ':autofilter,freeze_col=3,name=Identifications:",protein.id.f,"'",
@@ -135,6 +143,8 @@ write.xls.report <- function(properties.env,report.env,file="isobar-analysis.xls
                      ifelse(properties.env[["use.name.for.report"]],sprintf("%s.quantonly",properties.env[["name"]]),"isobar-analysis-quantonly"),
                      ".",properties.env[["spreadsheet.format"]],
                      " ':autofilter,freeze_col=6,name=Quantifications:",protein.quant.f,"'",
+                     ifelse(file.exists(quant.notlocalized.f),
+                            paste0(" ':autofilter,freeze_col=4,name=Quantifications (not confidently localized sites):",quant.notlocalized.f,"'"),""),
                      ifelse(identical(properties.env[["report.level"]],"peptide") && !is.null(modificationSites),
                             paste(" ':autofilter,freeze_col=3,name=Modification Sites:",modifsites.f,"'",sep=""),""),
                      " ':name=Analysis Properties:",analysis.properties.f,"'",
@@ -148,25 +158,25 @@ write.xls.report <- function(properties.env,report.env,file="isobar-analysis.xls
 
 
 
-.create.or.load.xls.quant.tbl <- function(env,properties.env) {
-  .create.or.load("xls.quant.tbl",envir=properties.env,
-                  msg.f="protein table for Excel export",f=function() {
+.create.or.load.xls.quant.tbl <- function(env,properties.env,name="xls.quant.tbl",quant.tbl.name="quant.tbl") {
+  .create.or.load(name,envir=properties.env,
+                  msg.f=paste0("protein table for Excel export [",name,"]"),f=function() {
     message("XLS report format: ",properties.env[["xls.report.format"]])
 
-    env[["quant.tbl"]]$is.significant[is.na(env[["quant.tbl"]]$is.significant)] <- FALSE
+    env[[quant.tbl.name]]$is.significant[is.na(env[[quant.tbl.name]]$is.significant)] <- FALSE
                     
     compare.to.quant <- .get.or.load('compare.to.quant',properties.env,class="data.frame",null.ok=TRUE)
 
     # Create a 'wide' XLS table (one row per protein / peptide)
     if (isTRUE(properties.env[["xls.report.format"]]=="wide")) {
-      tbl.input  <- ratiosReshapeWide(env[["quant.tbl"]],vs.class=properties.env[["vs.class"]],
+      tbl.input  <- ratiosReshapeWide(env[[quant.tbl.name]],vs.class=properties.env[["vs.class"]],
                                       sep="###",cmbn=properties.env[["combn"]])
 
       if (!is.null(compare.to.quant))
         compare.to.quant <- lapply(compare.to.quant,ratiosReshapeWide,
                                    vs.class=properties.env[["vs.class"]],sep="###",cmbn=properties.env[["combn"]])
     } else {
-      tbl.input <- env[["quant.tbl"]]
+      tbl.input <- env[[quant.tbl.name]]
     }
 
     message(" adding protein or peptide details columns ",appendLF=FALSE)
@@ -320,15 +330,16 @@ write.xls.report <- function(properties.env,report.env,file="isobar-analysis.xls
 
   input.tbl <- merge(pnp,input.tbl,by="peptide")
   input.tbl[["i"]]  <- seq_len(nrow(input.tbl))
-  input.tbl[["Spectra"]] <- apply(input.tbl, 1, 
-                             function(x) nrow(subset(fData(ibspectra),peptide==x['peptide'] & modif==x['modif'])))
+  input.tbl[["Spectra"]] <- apply(input.tbl[,grepl('^n.spectra',colnames(input.tbl)),drop=FALSE],1,max)
+  ##input.tbl[["Spectra"]] <- apply(input.tbl,1, 
+  ##                             function(x) nrow(subset(fData(ibspectra),peptide==x['peptide'] & modif==x['modif'] & use.for.quant)))
   pg.df <- .proteinGroupAsConciseDataFrame(protein.group,modif.pos=ptm,ptm.info=ptm.info)
   #if (isTRUE(properties.env[["show.motifs"]])) {
     pep.modif.context <- getPeptideModifContext(protein.group,modif=ptm)
     pg.df <- merge(pg.df,pep.modif.context,by=c("peptide","modif"),all=TRUE)
   #}
   
-  tbl <- merge(pg.df,input.tbl[,c("peptide","modif","i","Spectra")],by=c("peptide","modif"),all.y=TRUE)
+  tbl <- merge(pg.df,input.tbl[,intersect(c("peptide","pep.siteprobs","modif","i","Spectra"),colnames(input.tbl))],by=c("peptide","modif"),all.y=TRUE)
   tbl[["peptide"]] <- .convertPeptideModif(tbl[,"peptide"],tbl[,"modif"])
   colnames(tbl)[colnames(tbl)=="peptide"] <- "Sequence"
   

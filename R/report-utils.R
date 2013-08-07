@@ -91,7 +91,8 @@ create.reports <- function(properties.file="properties.R",
     .call.cmd(sprintf("R CMD pdflatex -halt-on-error -output-directory=%s %s.tex",dir,name),
               paste(dir,"/",basename(name),".stdout",sep=""))
     cat(" done!\n\n")
-    file.rename(file.path(dir,paste0(name,".pdf")),file.path(getwd(),paste0(name,".pdf")))
+    file.copy(file.path(dir,paste0(name,".pdf")),file.path(getwd(),paste0(name,".pdf")),overwrite=TRUE)
+    file.remove(file.path(dir,paste0(name,".pdf")))
     c(zip.files,sprintf("%s.pdf",name))
   }
  
@@ -173,11 +174,20 @@ initialize.env <- function(env,properties.env) {
     env[["ibspectra"]] <- .create.or.load.ibspectra(properties.env)
     save(list='ibspectra',envir=env,file=ib.name)
   }
+  if ("site.probs" %in% colnames(fData(env[["ibspectra"]])) 
+      && ! "pep.siteprobs" %in% colnames(fData(env[["ibspectra"]])))
+    fData(env[["ibspectra"]])$pep.siteprobs <- 
+      .convertPhosphoRSPepProb(fData(env[["ibspectra"]])[,'peptide'],fData(env[["ibspectra"]])[,'site.probs'],
+                               round.to.frac=20)
+
 
   env[["noise.model"]] <- .create.or.load.noise.model(env,properties.env)
   env[["ratiodistr"]] <- .create.or.load.ratiodistr(env,properties.env)
-  if (identical(properties.env[["report.level"]],"peptide") )
+  if (identical(properties.env[["report.level"]],"peptide") ) {
     env[["ptm.info"]]  <- .create.or.load.ptm.info(properties.env,proteinGroup(env[["ibspectra"]]))
+    env[["quant.tbl.notlocalized"]] <- .create.or.load.quant.table(env,properties.env,
+                                                                   name="quant.tbl.notlocalized",type="other-sites")
+  }
   env[["quant.tbl"]] <- .create.or.load.quant.table(env,properties.env)
   if (!"ac" %in% colnames(env[["quant.tbl"]]) && "protein" %in% colnames(env[["quant.tbl"]]))
     env[["quant.tbl"]][,'ac'] <- env[["quant.tbl"]]$protein
@@ -186,8 +196,12 @@ initialize.env <- function(env,properties.env) {
   if (property('write.report',properties.env) && identical(properties.env[["report.level"]],"protein"))
     env[["my.protein.infos"]] <- .create.or.load.my.protein.infos(env,properties.env)
 
-  if (property('write.xls.report',properties.env))
+  if (property('write.xls.report',properties.env)) {
     env[["xls.quant.tbl"]] <- .create.or.load.xls.quant.tbl(env,properties.env)
+    if (exists("quant.tbl.notlocalized",envir=env))
+      env[["xls.quant.tbl.notlocalized"]] <- 
+        .create.or.load.xls.quant.tbl(env,properties.env,"xls.quant.tbl.notlocalized","quant.tbl.notlocalized")
+  }
 }
 
 #- property loading helper functions
@@ -405,6 +419,12 @@ property <- function(x, envir, null.ok=TRUE,class=NULL) {
                       x=proteinGroup(ibspectra),
                       do.load=TRUE, msg.f="protein.info",
                       error=warning,default.value=proteinInfo(proteinGroup(ibspectra)))
+
+  if ("site.probs" %in% colnames(fData(ibspectra)) 
+      && ! "pep.siteprobs" %in% colnames(fData(ibspectra)))
+     fData(ibspectra)$pep.siteprobs <- 
+        .convertPhosphoRSPepProb(fData(ibspectra)[,'peptide'],fData(ibspectra)[,'site.probs'],
+                                 round.to.frac=20)
  
   return(ibspectra)
 }
@@ -517,13 +537,13 @@ property <- function(x, envir, null.ok=TRUE,class=NULL) {
   x
 }
 
-.create.or.load.quant.table <- function(env,properties.env) {
+.create.or.load.quant.table <- function(env,properties.env,name="quant.tbl",type='confident-sites') {
   protein.group <- proteinGroup(env[["ibspectra"]])
   protein.info <- proteinInfo(protein.group)
   isoforms <- protein.group@isoformToGeneProduct
   
-  .create.or.load("quant.tbl",envir=properties.env,class="data.frame",
-                  msg.f=paste("table of ratios of",properties.env[["report.level"]]),f=function() {
+  .create.or.load(name,envir=properties.env,class="data.frame",
+                  msg.f=paste("table of ratios of",properties.env[["report.level"]],"as",name),f=function() {
     if (!is.null(property('ratios.opts',properties.env)$summarize)) {
         message("WARNING: ratio.opts$summarize will be overwritten,",
                 " define it outside of ratio.opts!")
@@ -546,8 +566,17 @@ property <- function(x, envir, null.ok=TRUE,class=NULL) {
     set.ratioopts(name="noise.model",env[["noise.model"]])
     set.ratioopts(name="ratiodistr",env[["ratiodistr"]])
     
-    if(identical(properties.env[["report.level"]],"peptide")){
-      pep.n.modif <- unique(apply(fData(env[["ibspectra"]])[,c("peptide","modif")],2,cbind))
+    if(identical(properties.env[["report.level"]],"peptide")) {
+      if (type=='confident-sites')
+        pep.n.modif <- unique(apply(fData(env[["ibspectra"]])[fData(env[["ibspectra"]])[["use.for.quant"]],
+                                    c("peptide","modif")],2,cbind))
+      else {
+        pep.n.modif <- unique(apply(fData(env[["ibspectra"]])[!fData(env[["ibspectra"]])[["use.for.quant"]],
+                                    c("peptide","modif","pep.siteprobs")],2,cbind))
+        set.ratioopts(list(use.for.quant.only=FALSE))
+      }
+
+
       set.ratioopts(list(peptide=pep.n.modif,
                          proteins=NULL))
 
