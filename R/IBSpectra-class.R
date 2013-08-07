@@ -130,7 +130,8 @@ setValidity("IBSpectra",.valid.IBSpectra)
               SCAFFOLD.PEPPROB="scaffold.pepprob",SEQUEST.XCORR="sequest.xcorr",SEQUEST.DELTACN="sequest.deltacn",
               DELTASCORE="delta.score",DELTASCORE.PEP="delta.score.pep")
 
-.PTM.COLS <- c(SCORE.PHOSPHORS='pepscore',PROB.PHOSPHORS='pepprob',SEQPOS='seqpos',SITEPROBS='site.probs',PHOSPHO.SITES='phospho.sites')
+.PTM.COLS <- c(SCORE.PHOSPHORS='pepscore',PROB.PHOSPHORS='pepprob',SEQPOS='seqpos',
+               SITEPROBS='site.probs',PHOSPHO.SITES='phospho.sites',PEP.SITEPROBS='pep.siteprobs')
 
 .SPECTRUM.COLS <- c(PEPTIDE="peptide",MODIFSTRING="modif",CHARGE="charge",
                    THEOMASS="theo.mass",EXPMASS="exp.mass",PRECURSOR.ERROR="precursor.error",
@@ -388,11 +389,16 @@ setMethod("spectrumSel",signature(x="IBSpectra",peptide="matrix",protein="missin
           warning("0L peptide provided")
           return(FALSE)
         }
-        if (ncol(peptide) != 2 && do.warn)
-          warning("don't know how to handle matrix with ",ncol(peptide)," columns! expecting 2.")
         
-        sel <- fData(x)[,.SPECTRUM.COLS['PEPTIDE']]  %in% peptide[,1] & 
-               fData(x)[,.SPECTRUM.COLS['MODIFSTRING']]  %in% peptide[,2]
+        if (is.null(colnames(peptide)))
+          stop("a matrix argument with colnames is needed for peptide")
+
+        if (!all(colnames(peptide) %in% colnames(fData(x))))
+          stop("not all colnames of peptide [",paste0(colnames(peptide)),"] in fData(x)")
+
+        sel <- rep(TRUE,nrow(fData(x)))
+        for (p.i in colnames(peptide)) 
+          sel <- sel & fData(x)[[p.i]] %in% peptide[,p.i]
 
         if (use.for.quant.only && .SPECTRUM.COLS['USEFORQUANT'] %in% colnames(fData(x)))
           sel <- sel & fData(x)[,.SPECTRUM.COLS['USEFORQUANT']] 
