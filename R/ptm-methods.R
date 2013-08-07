@@ -246,11 +246,15 @@ filterSpectraDeltaScore <- function(data, min.delta.score=10, do.remove=FALSE) {
 
 
 
-.convertPhosphoRSPepProb <- function(peptide,pepprob) {
+.convertPhosphoRSPepProb <- function(peptide,pepprob,round.to.frac=NULL) {
   mapply(function(pep,pprob) {
            pprob <- as.numeric(pprob)
            prob <- rep(-1,length(pep))
-           prob[pprob[seq(from=1,to=length(pprob),by=2)]] <- pprob[seq(from=2,to=length(pprob),by=2)]
+           pep.pos <- pprob[seq(from=1,to=length(pprob),by=2)]
+           pep.prob <- pprob[seq(from=2,to=length(pprob),by=2)]
+           if (!is.null(round.to.frac)) 
+             pep.prob <- round(pep.prob*round.to.frac)/round.to.frac
+           prob[pep.pos] <- pep.prob
 
            pep[prob>=0] <- paste0(pep[prob>=0],"(",prob[prob>=0],")")
            paste0(pep,collapse="")
