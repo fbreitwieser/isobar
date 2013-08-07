@@ -873,7 +873,8 @@ setMethod("estimateRatio",
                                 channel1,channel2,
                                 specificity=REPORTERSPECIFIC,modif=NULL,
                                 n.sample=NULL,groupspecific.if.same.ac=FALSE,
-                                use.precursor.purity=FALSE,do.warn=TRUE,...) {
+                                use.precursor.purity=FALSE,do.warn=TRUE,
+                                use.for.quant.only=TRUE,...) {
   allowed.channels <- c(reporterTagNames(ibspectra),'AVG','ALL')
   if (is.null(channel1) || is.null(channel2))
     stop("channel1 and channel2 must not be NULL, but one of [",paste(allowed.channels,collapse=", "),"] !")
@@ -886,23 +887,29 @@ setMethod("estimateRatio",
     res  <- c()
     for (c1 in channel1) {
       for (c2 in channel2) {
-        res <- rbind(res,data.frame(channel1=c1,channel2=c2,
-                                    t(as.data.frame(.call.estimateRatio(x,level,ibspectra,noise.model,channel1=c1,channel2=c2,
-                                                                        specificity=specificity,modif=modif,n.sample=n.sample,
-                                                                        groupspecific.if.same.ac=groupspecific.if.same.ac,
-                                                                        use.precursor.purity=use.precursor.purity,do.warn=do.warn,...))),
-                                    stringsAsFactors=FALSE))
+        res <- rbind(res,
+                     data.frame(channel1=c1,channel2=c2,
+                                t(as.data.frame(.call.estimateRatio(x,level,ibspectra,noise.model,channel1=c1,channel2=c2,
+                                                                    specificity=specificity,modif=modif,n.sample=n.sample,
+                                                                    groupspecific.if.same.ac=groupspecific.if.same.ac,
+                                                                    use.precursor.purity=use.precursor.purity,do.warn=do.warn,...))),
+                                 stringsAsFactors=FALSE))
       }
     }
     rownames(res) <- NULL
     return(res)
   }
 
-  if (level=="protein")
-    sel <- spectrumSel(ibspectra,protein=x,specificity=specificity,do.warn=do.warn,
-                       modif=modif,groupspecific.if.same.ac=groupspecific.if.same.ac)
-  if (level=="peptide") 
-    sel <- spectrumSel(ibspectra,peptide=x,modif=modif,do.warn=do.warn)
+  sel <- switch(level,
+                "protein"=spectrumSel(ibspectra,protein=x,specificity=specificity,do.warn=do.warn,
+                                      modif=modif,groupspecific.if.same.ac=groupspecific.if.same.ac,
+                                      use.for.quant.only=use.for.quant.only),
+                "peptide"=spectrumSel(ibspectra,peptide=x,modif=modif,do.warn=do.warn,
+                                      use.for.quant.only=use.for.quant.only),
+                "peptide-probs"=stop("not implemented yet"),
+                stop("level ",level," unknown"))
+
+  
   
   ri <- reporterIntensities(ibspectra)[sel,,drop=FALSE]
   ri.raw <- reporterData(ibspectra,element="ions_not_normalized")[sel,,drop=FALSE]
@@ -1119,8 +1126,14 @@ peptideRatios <- function(ibspectra,...,peptide=peptides(proteinGroup(ibspectra)
   proteinRatios(ibspectra,...,proteins=NULL,peptide=peptide)
 }
 
+peptideRatiosNotQuant <- function(ibspectra,...,
+                                  peptide=unique(fData(ibspectra)[!fData(ibspectra)[["use.for.quant"]],c("peptide","modif","site.probs")])) {
+  proteinRatios(ibspectra,...,proteins=NULL,peptide=peptide,use.for.quant.only=FALSE)
+}
+
+
 ratiosReshapeWide <- function(quant.tbl,vs.class=NULL,sep=".",cmbn=NULL,short.names=FALSE) {
-  id.cols <- c("group","ac","peptide","modif","gene_names")
+  id.cols <- c("group","ac","peptide","modif","gene_names","pep.siteprobs")
   id.cols <- id.cols[id.cols %in% colnames(quant.tbl)]
 
   if (!is.null(cmbn)) {
