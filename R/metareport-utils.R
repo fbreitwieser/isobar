@@ -1,9 +1,10 @@
-create.meta.reports <- function(properties.file="meta-properties.R",args=NULL) {
+create.meta.reports <- function(properties.file="meta-properties.R",
+                                global.properties.file=system.file("report","meta-properties.R",package="isobar"),
+                                args=NULL,...) {
   require(ggplot2)
   if (!exists("properties.env")) {
-    properties.env <- load.properties(properties.file,
-                                      system.file("report","meta-properties.R",package="isobar"),
-                                      args=args)
+    properties.env <- load.properties(properties.file,global.properties.file,
+                                      args=args,...)
   }
 
   protein.group <- .get.or.load("protein.group",properties.env,"protein group object","ProteinGroup")
@@ -45,71 +46,56 @@ create.meta.reports <- function(properties.file="meta-properties.R",args=NULL) {
   message("Merging samples ",paste(properties.env$samples,collapse=", ")," ...")
   ac.vars <- switch(properties.env[["report.level"]],
                     protein = "ac",
-                    peptide = c("peptide","modif"),
+                    peptide = c("peptide","modif","pep.siteprobs"),
                     stop("properties.env$report.level ",properties.env[["report.level"]]," unknown"))
 
   merge.cols <- c("class1","class2")
-  merged.table <- .get.merged.table(properties.env$samples,
-                                   cols=c(ac.vars,merge.cols,"lratio","variance","p.value.rat"),
-                                   merge.by=c(ac.vars,merge.cols),format="wide")
+
+  merged.table <- .create.or.load.merged.table(properties.env=properties.env)
+  merged.table.notlocalized <- .create.or.load.merged.table("merged.table.notlocalized","quant.tbl.notlocalized.rda",properties.env=properties.env)
   
-  zscore.any2.5 <- apply(abs(merged.table[,grepl("zscore.indiv",colnames(merged.table))]) >= 2.5,1,any)
-  zscore.all1 <- apply(abs(merged.table[,grepl("zscore.indiv",colnames(merged.table))]) >= 1,1,all)
+#  g <- ggplot(merged.table,aes(x=lratio,y=-log10(p.value.rat))) + 
+#    geom_point(aes(color=factor(comp)),alpha=0.8) + 
+#    facet_wrap(~comp,ncol=2) + 
+#    geom_rug(alpha=0.5) + 
+#    geom_hline(yintercept=-log10(0.05)) + 
+#    geom_text(data=ddply(merged.table,"comp",
+#                         function(x) c(x=Inf,y=-log10(0.05),isobar:::.sum.bool.na(x$p.value.rat < 0.05))),
+#              aes(x=x,y=y,label=`TRUE`),vjust=-0.5,hjust=1)
 
-  merged.table$p.value.rat <- .combine.fisher.tblwide(merged.table)
-  merged.table$is.significant.notadj <- (merged.table$p.value.rat < 0.05) & zscore.any2.5 & zscore.all1
-
-  merged.table$p.value.rat.fdr.adj <- p.adjust(merged.table$p.value.rat)
-  merged.table$is.significant <- (merged.table$p.value.rat.fdr.adj < 0.05) & zscore.any2.5 & zscore.all1  
-  
-  merged.table$comp <- paste(merged.table[,merge.cols[2]],sep="/",merged.table[,merge.cols[1]])
-
-  
-  g <- ggplot(merged.table,aes(x=lratio,y=-log10(p.value.rat))) + 
-    geom_point(aes(color=factor(comp)),alpha=0.8) + 
-    facet_wrap(~comp,ncol=2) + 
-    geom_rug(alpha=0.5) + 
-    geom_hline(yintercept=-log10(0.05)) + 
-    geom_text(data=ddply(merged.table,"comp",
-                         function(x) c(x=Inf,y=-log10(0.05),isobar:::.sum.bool.na(x$p.value.rat < 0.05))),
-              aes(x=x,y=y,label=`TRUE`),vjust=-0.5,hjust=1)
-
-  pdf("lratio-pval.pdf")
-  print(g)
-  dev.off()
-  tbl.wide <- reshape(merged.table,idvar=ac.vars,timevar="comp",direction="wide",drop=merge.cols)
+#  pdf("lratio-pval.pdf")
+#  print(g)
+#  dev.off()
 
   #rownames(pg.df) <- do.call(paste,pg.df[,ac.vars,drop=FALSE])
 
-  t(sapply(.grep_columns(tbl.wide,"lratio.P",value=TRUE,logical=FALSE),
-           function(i) isobar:::.sum.bool(!is.na(tbl.wide[,i]))))
-
-  tbl.pg <- merge(pg.df,tbl.wide,by=ac.vars)
-
-  sel <- apply(!is.na(tbl.pg[,grep("^lratio",colnames(tbl.pg))]),1,any)
-  tbl.pg <- tbl.pg[sel,]
-
-  tbl.pg <- tbl.pg[order(rowSums(tbl.pg[,grep("is.significant",colnames(tbl.pg))]),
-                         rowSums(tbl.pg[,grep("lratio",colnames(tbl.pg))]),
-                         decreasing=TRUE),]
-
-  if ("peptide" %in% colnames(tbl.pg)) {
-    tbl.pg$peptide <- isobar:::.convertPeptideModif(tbl.pg$peptide,tbl.pg$modif)
-    tbl.pg$modif <- NULL
+  if (file.exists("tbl.pg.rda")) {
+    load("tbl.pg.rda")
+  } else {
+    tbl.pg <- .get.tbl.pg(merged.table,pg.df,merge.cols,ac.vars)
+    save(tbl.pg,file="tbl.pg.rda",compress=TRUE)
   }
-  tbl.pg$ac <- NULL
 
+  if (file.exists("tbl.pg.nl.rda")) {
+    load("tbl.pg.nl.rda")
+  } else {
+    tbl.pg.nl <- .get.tbl.pg(merged.table.notlocalized,pg.df,merge.cols,ac.vars)
+    save(tbl.pg.nl,file="tbl.pg.nl.rda",compress=TRUE)
+  }
+
+
+  xlsxname <- paste0(properties.env$name,"-combined_report.xlsx")
   csvname <- paste0(properties.env$name,"-combined_report.csv")
-  write.table(tbl.pg,file=csvname,
-              row.names=FALSE,sep="\t")
+  csvname.nl <- paste0(properties.env$name,".not.localized-combined_report.csv")
+  write.table(tbl.pg[order(tbl.pg[,'ID'],tbl.pg[,'start.pos']),],file=csvname,row.names=FALSE,sep="\t",na="")
+  write.table(tbl.pg.nl[order(tbl.pg.nl[,'ID'],tbl.pg[,'start.pos']),],file=csvname.nl,row.names=FALSE,sep="\t",na="")
 
-  save(tbl.pg,file="tbl.pg.rda",compress=TRUE)
 
   tab2spreadsheet.cmd <- switch(properties.env$spreadsheet.format,
                                 xlsx=system.file("pl","tab2xlsx.pl",package="isobar"),
                                 xls=system.file("pl","tab2xls.pl",package="isobar"),
                                 stop("spreadsheet.format property must be either 'xlsx' or 'xls'."))
-  perl.cl <- paste(tab2spreadsheet.cmd,csvname)
+  perl.cl <- paste(tab2spreadsheet.cmd,xlsxname,csvname,csvname.nl)
 
   ## generate Excel report (using Spreadsheet::WriteExcel)
   message(perl.cl)
@@ -132,20 +118,79 @@ create.meta.reports <- function(properties.file="meta-properties.R",args=NULL) {
   #.plot.pairs(properties.env$name)
 }
 
+.get.tbl.pg <- function(merged.table,pg.df,merge.cols,ac.vars) {
+  tbl.wide <- reshape(merged.table,idvar=intersect(ac.vars,colnames(merged.table)),timevar="comp",direction="wide",drop=merge.cols)
+  tbl.pg <- merge(pg.df,tbl.wide,by=intersect(ac.vars,colnames(tbl.wide)))
+
+  sel <- apply(!is.na(tbl.pg[,grep("^lratio",colnames(tbl.pg))]),1,any)
+  tbl.pg <- tbl.pg[sel,]
+
+  tbl.pg <- tbl.pg[order(rowSums(tbl.pg[,grep("is.significant",colnames(tbl.pg))]),
+                         rowSums(tbl.pg[,grep("lratio",colnames(tbl.pg))]),
+                         decreasing=TRUE),]
+
+  if ("peptide" %in% colnames(tbl.pg)) {
+    tbl.pg$peptide <- isobar:::.convertPeptideModif(tbl.pg$peptide,tbl.pg$modif)
+    tbl.pg$modif <- NULL
+  }
+  tbl.pg$ac <- NULL
+
+  t(sapply(.grep_columns(tbl.wide,"lratio.P",value=TRUE,logical=FALSE),
+           function(i) isobar:::.sum.bool(!is.na(tbl.wide[,i]))))
+
+
+  tbl.pg
+}
+
+.create.or.load.merged.table <- function(name="merged.table",fname="quant.tbl.rda",properties.env) {
+  ac.vars <- switch(properties.env[["report.level"]],
+                    protein = "ac",
+                    peptide = c("peptide","modif","pep.siteprobs"),
+                    stop("properties.env$report.level ",properties.env[["report.level"]]," unknown"))
+
+  merge.cols <- c("class1","class2")
+
+  if (file.exists(paste0(name,".rda"))) {
+    load(paste0(name,".rda"))
+  } else {
+    merged.table <- .get.merged.table(properties.env$samples,
+                                     cols=c(ac.vars,merge.cols,"lratio","variance","p.value.rat"),
+                                     merge.by=c(ac.vars,merge.cols),format=properties.env[["xls.report.format"]])
+  
+    zscore.any2.5 <- apply(abs(merged.table[,grepl("zscore.indiv",colnames(merged.table))]) >= 2.5,1,any)
+    zscore.all1 <- apply(abs(merged.table[,grepl("zscore.indiv",colnames(merged.table))]) >= 1,1,all)
+
+    merged.table$p.value.rat <- .combine.fisher.tblwide(merged.table)
+    merged.table$is.significant.notadj <- (merged.table$p.value.rat < 0.05) & zscore.any2.5 & zscore.all1
+
+    merged.table$p.value.rat.fdr.adj <- p.adjust(merged.table$p.value.rat)
+    merged.table$is.significant <- (merged.table$p.value.rat.fdr.adj < 0.05) & zscore.any2.5 & zscore.all1  
+  
+    merged.table$comp <- paste(merged.table[,merge.cols[2]],sep="/",merged.table[,merge.cols[1]])
+    save(merged.table,file=paste0(name,".rda"))
+  }
+  merged.table$p.value.rat <- .combine.fisher.tblwide(merged.table)
+  return(merged.table)
+}
+
 .calc.zscore <- function(qq) {
   s.median <- median(qq,na.rm=TRUE)
   s.mad <- mad(qq,na.rm=TRUE)
   (qq-s.median)/s.mad
 }
 
-.get.merged.table <- function(samples,quant.tbls=paste0(samples,"/cache/quant.tbl.rda"),
+.get.merged.table <- function(samples,quant.tbls=paste0(samples,"/cache/",fname),
                               cols=c("ac","r1","r2","lratio","variance"),
-                              merge.by=c("ac","r1","r2"),format="wide") {
+                              merge.by=c("ac","r1","r2"),format="wide",fname="quant.tbl.rda") {
+  print("getting merged tables")
 
   quant.tables <- lapply(seq_along(samples),
                          function(idx) {
-                           load(quant.tbls[idx])
-                           q <- quant.tbl[,cols]
+                           message("loading ",quant.tbls[idx])
+                           env <- new.env()
+                           load(quant.tbls[idx],envir=env)
+                           quant.tbl <- get(ls(envir=env),envir=env)
+                           q <- quant.tbl[,intersect(cols,colnames(quant.tbl))]
                            q <- ddply(q,c("class1","class2"),function(x) 
                                  cbind(x,zscore.indiv=round(.calc.zscore(x[,"lratio"]),4)))
                            q[,"lratio"] <- round(q[,"lratio"],4)
@@ -162,9 +207,12 @@ create.meta.reports <- function(properties.file="meta-properties.R",args=NULL) {
 
   if (format == "wide") {
     merged.table <- quant.tables[[1]]
-    for (idx in  2:length(samples))
+    for (idx in  2:length(samples)) {
+      merge.colnames <- intersect(merge.by,colnames(quant.tables[[idx]]))
+
       merged.table <- merge(merged.table,
-                            quant.tables[[idx]],by=merge.by,all=TRUE)
+                            quant.tables[[idx]],by=merge.colnames,all=TRUE)
+    }
     merged.table$lratio <- rowMeans(merged.table[,.grep_columns(merged.table,"lratio")],na.rm=TRUE)
     merged.table$variance <- rowMeans(merged.table[,.grep_columns(merged.table,"variance")],na.rm=TRUE)
   } else {

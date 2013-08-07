@@ -280,9 +280,10 @@ setMethod("weightedMean",
 }
 
 .combine.fisher.tblwide <- function(df) {
-  lr.cols <- grep("^lratio.",colnames(df))
-  p.cols <- grep("^p.value.rat.",colnames(df))
-  if (length(lr.cols) != length(p.cols))
+  lr.cols <- grepl("^lratio.",colnames(df))
+  p.cols <- grepl("^p.value.rat.",colnames(df)) & !grepl("adj",colnames(df))
+
+  if (sum(lr.cols) != sum(p.cols))
     stop("unequal number of '^lratio.' and '^p.value.rat' columns")
 
   combined.p <- rep(1,nrow(df))

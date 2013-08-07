@@ -8,8 +8,6 @@ source("meta-properties.R")
 load("protein.group.rda")
 proteinInfo(protein.group) <- getProteinInfoFromBiomart(protein.group)
 
-source(system.file("report","meta-functions.R",package="isobar"))
-
 if (!exists("cols"))
   cols <- c()
 cols <- unique(c("ac","r1","r2","lratio","variance",cols))

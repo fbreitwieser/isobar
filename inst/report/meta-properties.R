@@ -43,4 +43,15 @@ ptm.info <- NULL
 #    getPtmInfoFromPhosphoSitePlus(...,modification=ptm)
 ptm.info.f <- getPtmInfoFromNextprot
 
+## XLS report format 'wide' or 'long '.
+
+## 'wide' format outputs ratios in separate columns of the same record
+## (i.e. one line per protein)
+## 'long' format outputs ratios in separate records (i.e. one line per
+## ratio)
+xls.report.format="wide"
+#xls.report.format="long"
+
+
+
 spreadsheet.format="xlsx"
