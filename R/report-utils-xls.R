@@ -122,7 +122,7 @@ write.xls.report <- function(properties.env,report.env,file="isobar-analysis.xls
                                   xls=system.file("pl","tab2xls.pl",package="isobar",mustWork=TRUE),
                                   stop("spreadsheet.format property must be either 'xlsx' or 'xls'."))
 
-    perl.cl <- paste("perl \"",tab2spreadsheet.cmd,"\" ",
+    perl.cl <- paste("perl ",tab2spreadsheet.cmd,
                      ifelse(properties.env[["use.name.for.report"]],sprintf("%s.quant",properties.env[["name"]]),"isobar-analysis"),
                      ".",properties.env[["spreadsheet.format"]],
                      " ':autofilter,freeze_col=4,name=Quantifications:",protein.quant.f,"'",
@@ -134,6 +134,7 @@ write.xls.report <- function(properties.env,report.env,file="isobar-analysis.xls
                      " ':autofilter,freeze_col=3,name=Identifications:",protein.id.f,"'",
                      " ':name=Analysis Properties:",analysis.properties.f,"'",
                      " ':name=Log:",log.f,"'",sep="")
+    perl.cl <- shQuote(perl.cl)
     
     ## generate Excel report (using Spreadsheet::WriteExcel)
     message(perl.cl)
@@ -149,6 +150,7 @@ write.xls.report <- function(properties.env,report.env,file="isobar-analysis.xls
                             paste(" ':autofilter,freeze_col=3,name=Modification Sites:",modifsites.f,"'",sep=""),""),
                      " ':name=Analysis Properties:",analysis.properties.f,"'",
                      " ':name=Log:",log.f,"'",sep="")
+    perl.cl <- shQuote(perl.cl)
     
     ## generate Excel report (using Spreadsheet::WriteExcel)
     message(perl.cl)

@@ -76,6 +76,7 @@ create.reports <- function(properties.file="properties.R",
 
   .compile.tex <- function(name,zip.files) {
     .call.cmd <- function(cmd,stdout.to=NULL) 
+      cmd <- shQuote(cmd)
       if (is.null(stdout.to)) {
         if (system(cmd) != 0) stop("\nError executing [",cmd,"]")
       } else {
