@@ -123,7 +123,7 @@ write.xls.report <- function(properties.env,report.env,file="isobar-analysis.xls
                                   stop("spreadsheet.format property must be either 'xlsx' or 'xls'."))
 
 
-    qq <- function(...) shQuote(paste0(...))
+    shq <- function(...) shQuote(paste0(...))
 
     .get.perlcl <- function(name,include.identifications=TRUE) {
       fname <- paste0(ifelse(properties.env[["use.name.for.report"]],
