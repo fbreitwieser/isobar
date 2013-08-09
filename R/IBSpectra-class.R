@@ -384,7 +384,8 @@ setMethod("spectrumSel",signature(x="IBSpectra",peptide="data.frame",protein="mi
     function(x,peptide,...) spectrumSel(x,as.matrix(peptide),...) )
 
 setMethod("spectrumSel",signature(x="IBSpectra",peptide="matrix",protein="missing"),
-    function(x,peptide,modif=NULL,spectrum.titles=FALSE,use.for.quant.only=TRUE,do.warn=TRUE) {
+    function(x,peptide,modif=NULL,spectrum.titles=FALSE,
+             use.for.quant.only=TRUE,do.warn=TRUE) {
         if (length(peptide) == 0) {
           warning("0L peptide provided")
           return(FALSE)
@@ -393,8 +394,10 @@ setMethod("spectrumSel",signature(x="IBSpectra",peptide="matrix",protein="missin
         if (is.null(colnames(peptide)))
           stop("a matrix argument with colnames is needed for peptide")
 
-        if (!all(colnames(peptide) %in% colnames(fData(x))))
-          stop("not all colnames of peptide [",paste0(colnames(peptide)),"] in fData(x)")
+        if (!all(colnames(peptide) %in% colnames(fData(x)))) {
+          warning("not all colnames of peptide [",paste0(colnames(peptide),collapse=";"),"] in fData(x)")
+          peptide <- peptide[,colnames(peptide) %in% colnames(fData(x))]
+        }
 
         sel <- rep(TRUE,nrow(fData(x)))
         for (p.i in colnames(peptide)) 
