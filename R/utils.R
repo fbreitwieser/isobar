@@ -299,11 +299,15 @@ setMethod("weightedMean",
 
 .call.cmd <- function(cmd,stdout.to=NULL) {
     if (is.null(stdout.to)) {
+      message("  calling system command [",cmd,"]",appendLF=FALSE)
       if (system(cmd) != 0) stop("\nError executing [",cmd,"]")
+      message(" finished.")
     } else {
+      message("  calling system command [",cmd," > ",stdout.to,"]",appendLF=FALSE)
       if (system(paste(cmd,">",stdout.to)) != 0) 
         stop("\nError executing [",cmd,"]: \n\n ...\n",
              paste(tail(readLines(stdout.to),n=10),collapse="\n"))
+      message(" finished.")
     }
 }
 
