@@ -74,15 +74,6 @@ create.reports <- function(properties.file="properties.R",
 }
 
   .compile.tex <- function(name,zip.files) {
-    .call.cmd <- function(cmd,stdout.to=NULL) 
-      cmd <- shQuote(cmd)
-      if (is.null(stdout.to)) {
-        if (system(cmd) != 0) stop("\nError executing [",cmd,"]")
-      } else {
-        if (system(paste(cmd,">",stdout.to)) != 0) 
-          stop("\nError executing [",cmd,"]: \n\n ...\n",
-               paste(tail(readLines(stdout.to),n=10),collapse="\n"))
-      }
     dir <- tempdir()
     cat("compiling ",name,".tex ...  1",sep="")
     .call.cmd(sprintf("R CMD pdflatex -halt-on-error -output-directory=%s %s.tex",dir,name),

@@ -297,6 +297,17 @@ setMethod("weightedMean",
   return(combined.p)
 }
 
+.call.cmd <- function(cmd,stdout.to=NULL) {
+    if (is.null(stdout.to)) {
+      if (system(cmd) != 0) stop("\nError executing [",cmd,"]")
+    } else {
+      if (system(paste(cmd,">",stdout.to)) != 0) 
+        stop("\nError executing [",cmd,"]: \n\n ...\n",
+             paste(tail(readLines(stdout.to),n=10),collapse="\n"))
+    }
+}
+
+
 .get.cmbn <- function(combn,tags,cl) {
   if (!all(unlist(combn) %in% cl))
     stop("incorrect combn specification")
