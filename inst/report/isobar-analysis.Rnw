@@ -39,7 +39,7 @@ load.tex.properties(.GlobalEnv) # loads environments
 
 <<echo=FALSE,results=tex>>=
 write.tex.commands() # prints analysisname, analysisauthor, and isobarthanks commands
-cat(sprintf("\\input{%s}\n",system.file("report","report-utils.tex",package="isobar")))
+cat(sprintf("\\input{\"%s\"}\n",system.file("report","report-utils.tex",package="isobar")))
 @
 
 \makeatletter
