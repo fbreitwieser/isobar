@@ -199,12 +199,28 @@ filterSpectraDeltaScore <- function(data, min.delta.score=10, do.remove=FALSE) {
 .convertModifToPhosphoRS <- function(modifstring,modifs) {
   sapply(strsplit(paste0(modifstring," "),":"),function(x) {
     x[length(x)] <- sub(" $","",x[length(x)])
-    x[x==""] <- 0
+    xx <- x
+    xx[x==""] <- 0
+    xx[x!=""] <- NA
     for (i in seq_len(nrow(modifs))) 
-      x[grep(modifs[i,1],x,fixed=TRUE)] <- modifs[i,2]
+      xx[grep(paste0("^",modifs[i,1]),x)] <- modifs[i,2]
 
-    y <- c(x[1],".",x[2:(length(x)-1)],".",x[length(x)]);
+    if(any(is.na(xx))) stop("Could not convert modifstring ",modifstring)
+
+    y <- c(xx[1],".",xx[2:(length(xx)-1)],".",xx[length(xx)]);
     paste(y,collapse="") })
+}
+
+writeHscoreData <- function(outfile,ids,massfile="defs.txt") {
+  # command line call: [python Hscorer.py --myDir .  --quantmeth itraq --massfile defs.txt]
+  modif.masses <- read.delim(text=grep("\t",readLines(massfile),value=TRUE),
+                       stringsAsFactors=FALSE)
+  modif.masses <- as.matrix(modif.masses[,c(3,1)])
+  modif.masses <- modif.masses[nchar(modif.masses[,1]) > 1,]
+  modifstring <- gsub(".","",.convertModifToPhosphoRS(ids[,'modif'],modif.masses),fixed=TRUE)
+
+  write.table(cbind(ids[,'spectrum'],ids[,'peptide'],modifstring),file=outfile,
+              col.names=FALSE,row.names=FALSE,sep="\t",quote=FALSE)
 }
 
 ## TODO:
