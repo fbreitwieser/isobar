@@ -52,6 +52,7 @@ ptm.info.f <- getPtmInfoFromNextprot
 xls.report.format="wide"
 #xls.report.format="long"
 
+zscore.threshold <- 2.5
 
 
 spreadsheet.format="xlsx"

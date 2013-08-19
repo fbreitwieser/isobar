@@ -279,25 +279,70 @@ setMethod("weightedMean",
   return(pchisq(-2*sum(log(p.values)),2*k,lower.tail=FALSE))
 }
 
-.combine.fisher.tblwide <- function(df) {
-  lr.cols <- grepl("^lratio.",colnames(df))
-  p.cols <- grepl("^p.value.rat.",colnames(df)) & !grepl("adj",colnames(df))
+.combine.fisher.tblwide <- function(my.df) {
+  lr.cols <- grepl("^lratio.",colnames(my.df))
+  p.cols <- grepl("^p.value.rat.",colnames(my.df)) & !grepl("adj",colnames(my.df))
 
   if (sum(lr.cols) != sum(p.cols))
     stop("unequal number of '^lratio.' and '^p.value.rat' columns")
 
-  combined.p <- rep(1,nrow(df))
-  signs.equal <- apply(sign(df[,lr.cols]),1,function(x) { y=x[!is.na(x)]; all(y==y[1])})
-  ks <- apply(!is.na(df[,p.cols]),1,sum)
-  logsums <- rowSums(log(df[,p.cols]),na.rm=TRUE)
+  combined.p <- rep(1,nrow(my.df))
+  signs.equal <- apply(sign(my.df[,lr.cols]),1,function(x) { y=x[!is.na(x)]; all(y==y[1])})
+  ks <- apply(!is.na(my.df[,p.cols]),1,sum)
+  logsums <- rowSums(log(my.df[,p.cols]),na.rm=TRUE)
   sel <-  ks > 1 & signs.equal
   combined.p[sel] <- pchisq(-2*logsums[sel],2*ks[sel],lower.tail=FALSE)
+
+  combined.p[ks==1] <- as.numeric(apply(my.df[ks==1,p.cols],1,function(x) { y=x[!is.na(x)]; ifelse(length(y)==0,NA,y) } ))
   return(combined.p)
 }
+
+.call.cmd <- function(cmd,stdout.to=NULL) {
+    if (is.null(stdout.to)) {
+      message("  calling system command [",cmd,"]",appendLF=FALSE)
+      if (system(cmd) != 0) stop("\nError executing [",cmd,"]")
+      message(" finished.")
+    } else {
+      message("  calling system command [",cmd," > ",stdout.to,"]",appendLF=FALSE)
+      if (system(paste(cmd,">",stdout.to)) != 0) 
+        stop("\nError executing [",cmd,"]: \n\n ...\n",
+             paste(tail(readLines(stdout.to),n=10),collapse="\n"))
+      message(" finished.")
+    }
+}
+
+
+.get.cmbn <- function(combn,tags,cl) {
+  if (!all(unlist(combn) %in% cl))
+    stop("incorrect combn specification")
+  sapply(combn,function(cc) 
+         c(tags[cl==cc[1]],
+           tags[cl==cc[2]],
+           cl[cl==cc[1]],
+           cl[cl==cc[2]]))
+}
+
 
 .sanitize.sh <- function(str) {
   gsub("[^a-zA-Z\\.0-9_\\-]","", str)
 }
+
+weighted.cor <- function( x, y, w = rep(1,length(x))) {
+  ## (c) Heather Turner, Vincent Zoonekynd at http://stackoverflow.com/questions/9460664/weighted-pearsons-correlation
+  stopifnot(length(x) == dim(y)[2] )
+  w <- w / sum(w)
+  # Center x and y, using the weighted means
+  x <- x - sum(x * w)
+  ty <- t(y - colSums(t(y) * w))
+  # Compute the variance
+  vx <- sum(w * x * x)
+  vy <- colSums(w * ty * ty)
+  # Compute the covariance
+  vxy <- colSums(ty * x * w)
+  # Compute the correlation
+  vxy / sqrt(vx * vy)
+}
+
 
 .concensus.il.peptide <- function(peptide) { 
     pep <- do.call(rbind,strsplit(peptide,""))

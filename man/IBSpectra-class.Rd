@@ -147,8 +147,8 @@
       Creates a IBSpectra object.
       \describe{
         \item{\code{type}}{Denotes the type of IBSpectra, either
-	  'iTRAQ4plexSpectra','iTRAQ8plexSpectra','TMT2plexSpectra',
-	  'TMT6plexSpectra' or 'TMT10plexSpectra'. Call IBSpectraTypes() to see a list of
+	  'iTRAQ4plexSpectra','iTRAQ8plexSpectra','TMT2plexSpectra', 'TMT6plexSpectra'
+	  or 'TMT10plexSpectra'. Call IBSpectraTypes() to see a list of
 	  the implemented types.
 	}
         \item{\code{data}}{A 'data.frame' in a ibspectra-csv format.}

@@ -24,7 +24,6 @@ create.reports <- function(properties.file="properties.R",
     write.xls.report(properties.env,report.env)
     zip.files <- c(zip.files,"isobar-analysis.xls")
   }
-  
  
   ## generate Latex/Sweave report
   if(property('write.qc.report',properties.env)) {
@@ -75,14 +74,6 @@ create.reports <- function(properties.file="properties.R",
 }
 
   .compile.tex <- function(name,zip.files) {
-    .call.cmd <- function(cmd,stdout.to=NULL) 
-      if (is.null(stdout.to)) {
-        if (system(cmd) != 0) stop("\nError executing [",cmd,"]")
-      } else {
-        if (system(paste(cmd,">",stdout.to)) != 0) 
-          stop("\nError executing [",cmd,"]: \n\n ...\n",
-               paste(tail(readLines(stdout.to),n=10),collapse="\n"))
-      }
     dir <- tempdir()
     cat("compiling ",name,".tex ...  1",sep="")
     .call.cmd(sprintf("R CMD pdflatex -halt-on-error -output-directory=%s %s.tex",dir,name),
@@ -197,10 +188,14 @@ initialize.env <- function(env,properties.env) {
     env[["my.protein.infos"]] <- .create.or.load.my.protein.infos(env,properties.env)
 
   if (property('write.xls.report',properties.env)) {
-    env[["xls.quant.tbl"]] <- .create.or.load.xls.quant.tbl(env,properties.env)
-    if (exists("quant.tbl.notlocalized",envir=env))
+    xls.table.name <- paste0("xls.quant.tbl.",properties.env[["xls.report.format"]])
+    env[["xls.quant.tbl"]] <- 
+      .create.or.load.xls.quant.tbl(env,properties.env,xls.table.name,"quant.tbl")
+    if (exists("quant.tbl.notlocalized",envir=env)) {
+      xls.ntable.name <- paste0("xls.quant.tbl.notlocalized.",properties.env[["xls.report.format"]])
       env[["xls.quant.tbl.notlocalized"]] <- 
-        .create.or.load.xls.quant.tbl(env,properties.env,"xls.quant.tbl.notlocalized","quant.tbl.notlocalized")
+        .create.or.load.xls.quant.tbl(env,properties.env,xls.ntable.name,"quant.tbl.notlocalized")
+    }
   }
 }
 
@@ -222,8 +217,9 @@ initialize.env <- function(env,properties.env) {
     file.name <- sprintf("%s/%s.rda",.get.property('cachedir',envir),name)
   }
   if (file.exists(file.name) && (!envir[["regen"]] || do.load)) {
-    message(sprintf("loading %s from %s ...",msg.f, file.name))
+    message(sprintf("  loading %s from %s ... ",msg.f, file.name),appendLF=FALSE)
     x <- .load.property(name,file.name)
+    message("done")
     return(x)
   } else {
     stop("Cannot get or load property [",name,"] - would expect it in [",file.name,"], but file does not exist.")
@@ -233,12 +229,15 @@ initialize.env <- function(env,properties.env) {
 .create.or.load <- function(name,envir,f,msg.f=name,do.load=FALSE,class=NULL,error=stop,default.value=NULL,...) {
   x <- tryCatch(.get.or.load(name,envir,msg.f,class,do.load=do.load),error=function(e) .DOES.NOT.EXIST)
   if (identical(x,.DOES.NOT.EXIST)) {
-    message(paste("creating",msg.f,"..."))
+    message(paste("  creating",msg.f,"... "),appendLF=FALSE)
     tryCatch({
       x <- f(...)
       assign(name,x)
       file.name <- sprintf("%s/%s.rda",.get.property('cachedir',envir),name)
+      message("done ",appendLF=FALSE)
       save(list=c(name),file=file.name)
+      message("& saved to ",file.name)
+
     },error=error)
 
     if (!exists(name,inherits=FALSE)) {
@@ -446,7 +445,7 @@ property <- function(x, envir, null.ok=TRUE,class=NULL) {
                          min.spectra=property('noise.model.minspectra',properties.env))
       save(noise.model,file=noise.model.f,compress=TRUE)
     } else {
-      message(sprintf("loading noise model from %s ...",noise.model.f))
+      message(sprintf("  loading noise model from %s ...",noise.model.f))
       noise.model <- .load.property("noise.model",noise.model.f)
     }
   }

@@ -122,37 +122,35 @@ write.xls.report <- function(properties.env,report.env,file="isobar-analysis.xls
                                   xls=system.file("pl","tab2xls.pl",package="isobar",mustWork=TRUE),
                                   stop("spreadsheet.format property must be either 'xlsx' or 'xls'."))
 
-    perl.cl <- paste("perl \"",tab2spreadsheet.cmd,"\" ",
-                     ifelse(properties.env[["use.name.for.report"]],sprintf("%s.quant",properties.env[["name"]]),"isobar-analysis"),
-                     ".",properties.env[["spreadsheet.format"]],
-                     " ':autofilter,freeze_col=4,name=Quantifications:",protein.quant.f,"'",
-                     ifelse(file.exists(quant.notlocalized.f),
-                            paste0(" ':autofilter,freeze_col=4,name=Quantifications (not confidently localized sites):",quant.notlocalized.f,"'"),""),
 
-                     ifelse(identical(properties.env[["report.level"]],"peptide") && !is.null(modificationSites),
-                            paste(" ':autofilter,freeze_col=3,name=Modification Sites:",modifsites.f,"'",sep=""),""),
-                     " ':autofilter,freeze_col=3,name=Identifications:",protein.id.f,"'",
-                     " ':name=Analysis Properties:",analysis.properties.f,"'",
-                     " ':name=Log:",log.f,"'",sep="")
+    shq <- function(...) shQuote(paste0(...))
+
+    .get.perlcl <- function(name,include.identifications=TRUE) {
+      fname <- paste0(ifelse(properties.env[["use.name.for.report"]],
+                             sprintf("%s.%s",name,properties.env[["name"]]),"isobar-analysis"),
+                       ".",properties.env[["spreadsheet.format"]])
+
+      perl.cl <- paste("perl",tab2spreadsheet.cmd,shQuote(fname),
+                       shq(":autofilter,freeze_col=4,name=Quantifications:",protein.quant.f))
+      
+      if (file.exists(quant.notlocalized.f))
+        perl.cl <- paste(perl.cl,shq(":autofilter,freeze_col=4,name=Quantifications (not confidently localized sites):",
+                            quant.notlocalized.f))
+      
+      if (identical(properties.env[["report.level"]],"peptide") && !is.null(modificationSites))
+        perl.cl <- paste(perl.cl,shq(":autofilter,freeze_col=3,name=Modification Sites:",modifsites.f))
+
+      if (include.identifications)
+        perl.cl <- paste(perl.cl,shq(":autofilter,freeze_col=3,name=Identifications:",protein.id.f))
+
+      perl.cl <- paste(perl.cl,shq(":name=Analysis Properties:",analysis.properties.f),
+                                  shq(":name=Log:",log.f))
+      perl.cl
+    }
     
     ## generate Excel report (using Spreadsheet::WriteExcel)
-    message(perl.cl)
-    system(perl.cl)
-
-    perl.cl <- paste(tab2spreadsheet.cmd," ",
-                     ifelse(properties.env[["use.name.for.report"]],sprintf("%s.quantonly",properties.env[["name"]]),"isobar-analysis-quantonly"),
-                     ".",properties.env[["spreadsheet.format"]],
-                     " ':autofilter,freeze_col=6,name=Quantifications:",protein.quant.f,"'",
-                     ifelse(file.exists(quant.notlocalized.f),
-                            paste0(" ':autofilter,freeze_col=4,name=Quantifications (not confidently localized sites):",quant.notlocalized.f,"'"),""),
-                     ifelse(identical(properties.env[["report.level"]],"peptide") && !is.null(modificationSites),
-                            paste(" ':autofilter,freeze_col=3,name=Modification Sites:",modifsites.f,"'",sep=""),""),
-                     " ':name=Analysis Properties:",analysis.properties.f,"'",
-                     " ':name=Log:",log.f,"'",sep="")
-    
-    ## generate Excel report (using Spreadsheet::WriteExcel)
-    message(perl.cl)
-    system(perl.cl)
+    .call.cmd(.get.perlcl("quant"))
+    .call.cmd(.get.perlcl("quantonly",FALSE))
 
 }
 

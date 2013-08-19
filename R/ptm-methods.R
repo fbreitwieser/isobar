@@ -12,7 +12,7 @@ getPhosphoRSProbabilities <- function(
                       id.file,mgf.file,massTolerance,activationType,
                       mapping.file,mapping,pepmodif.sep)
   
-  system(paste(phosphors.cmd,infile,outfile))
+  system(paste(phosphors.cmd,shQuote(infile),shQuote(outfile)))
   readPhosphoRSOutput(outfile,simplify=simplify,pepmodif.sep=pepmodif.sep,besthit.only=besthit.only)
 }
 
