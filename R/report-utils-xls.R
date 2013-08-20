@@ -118,8 +118,8 @@ write.xls.report <- function(properties.env,report.env,file="isobar-analysis.xls
 
     ## generate perl command line:
     tab2spreadsheet.cmd <- switch(properties.env[["spreadsheet.format"]],
-                                  xlsx=system.file("pl","tab2xlsx.pl",package="isobar",mustWork=TRUE),
-                                  xls=system.file("pl","tab2xls.pl",package="isobar",mustWork=TRUE),
+                                  xlsx=system.file("pl","tab2xlsx.pl",package="isobar"),
+                                  xls=system.file("pl","tab2xls.pl",package="isobar"),
                                   stop("spreadsheet.format property must be either 'xlsx' or 'xls'."))
 
 
