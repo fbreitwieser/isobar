@@ -1,3 +1,13 @@
+CHANGES IN VERSION 1.7.6
+------------------------
+ - added TMT 10plex (contribution from Florent Gluck)
+ - fixed bugs with system.file not working on R < 2.11 (contribution from Florent Gluck)
+ - fixed bug in isobar-qc which was not working without normalize=TRUE
+ - added writeHscoreData for usage with Hscorer.py (MM Savitski, 2010)
+ - shQuote commands correctly - should fix issues running report generation on Windows
+ - added calculations and XLS tab for peptides with unsure localization of the modification site
+ - updated scripts for creating multi-sample reports (create.meta.reports)
+
 CHANGES IN VERSION 1.7.5
 ------------------------
  - fixed critical bugs: Excel report output had wrong ordering, ie ratios did
