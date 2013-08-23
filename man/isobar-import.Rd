@@ -44,7 +44,7 @@
   \item{type}{
     Name of class of new IBSpectra object: 
     \code{\link{iTRAQ4plexSpectra}}, \code{\link{iTRAQ8plexSpectra}},
-    \code{\link{TMT2plexSpectra}}, or \code{\link{TMT6plexSpectra}}
+    \code{\link{TMT2plexSpectra}}, \code{\link{TMT6plexSpectra}}, or \code{\link{TMT10plexSpectra}}
   }
   \item{id.file}{
     Database search results file in \code{ibspectra.csv} or

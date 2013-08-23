@@ -61,8 +61,8 @@ peptide level identifications to protein identifications.
 \Robject{IBSpectra} is a virtual class. Currently used isobaric
 tagging kits iTRAQ 4plex and 8plex, and TMT 2plex and 6plex are
 implemented in the \Robject{iTRAQ4plexSpectra},
-\Robject{iTRAQ8plexSpectra}, \Robject{TMT2plexSpectra}, and
-\Robject{TMT6plexSpectr}, respectively. These are subclasses of
+\Robject{iTRAQ8plexSpectra}, \Robject{TMT2plexSpectra},
+\Robject{TMT6plexSpectr} and \Robject{TMT10plexSpectr}, respectively. These are subclasses of
 \Robject{iTRAQSpectra} and \Robject{TMTSpectra}, resp.\, which in turn
 are virtual subclasses of \Robject{IBSpectra}.
 
