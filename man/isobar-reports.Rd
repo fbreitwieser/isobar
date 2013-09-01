@@ -16,6 +16,8 @@
 \alias{print_longtablehdr_peptide}
 \alias{transform_pepmodif}
 \alias{property}
+\alias{write.tex.commands}
+\alias{load.tex.properties}
 
 \title{Isobar reports}
 
@@ -31,16 +33,14 @@
 \usage{
 create.reports(properties.file = "properties.R", 
                global.properties.file = system.file("report","properties.R", package = "isobar"),
-               args = NULL,
-               report.type = "protein",
-               compile = FALSE, zip = FALSE,
-               warn = 1)
+               args = NULL, ...,
+               recreate.properties.env = TRUE, recreate.report.env = TRUE)
 
 load.properties(properties.file = "properties.R",
                 global.properties.file = system.file("report","properties.R",package="isobar"),
-                args = NULL)
+                args = NULL, ...)
 
-initialize.env(env, report.type = "protein", properties.env)
+initialize.env(env, properties.env)
 
 }
 
@@ -55,15 +55,11 @@ initialize.env(env, report.type = "protein", properties.env)
     \code{system.file("report","properties.R",package="isobar")}}
   \item{args}{Additional (command line) arguments which overrids those
     in \code{properties.file}. }
-  \item{report.type}{Currently, only protein is implemented.}
-  \item{compile}{Compile LaTeX source to PDF? Requires pdflatex to be
-    present. \code{R CMD pdflatex} will be executed twice on the
-    Sweave result tex file.}
-  \item{zip}{If true, tex, xls, and pdf files of all created reports
-    and the properties.file are archived in a file named
-    \code{name.zip} (name as defined as property) using
-    \code{\link{zip}.}}
-  \item{warn}{Warning level, see \code{\link{options}}.}
+  \item{...}{Additional properties.}
+  \item{recreate.properties.env}{Whether a properties.env existing in the global
+  environment should be used, or it should be recreated.}
+  \item{recreate.report.env}{Whether a report.env existing in the global
+  environment should be used, or it should be recreated.}
   \item{env}{Item to be initialized.}
   \item{properties.env}{Environment into which properties are read.}
 }

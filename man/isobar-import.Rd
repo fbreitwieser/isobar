@@ -26,18 +26,18 @@
 
 # reads id file
 \S4method{readIBSpectra}{character,character,character}(
-                type, id.file, peaklist.file, header = TRUE, sep =
-                 "\t", stringsAsFactors = FALSE, mapping.file = NULL,
-                 mapping = c(quantification.spectrum="hcd",identification.spectrum="cid"),
-                 id.file.domap = NULL, identifications.format = NULL,
-                 decode.titles = TRUE, ...)
+                 type, id.file, peaklist.file, sep = "\t", mapping.file
+                 = NULL, mapping = c(quantification.spectrum = "hcd",
+                 identification.spectrum = "cid"), id.file.domap =
+                 NULL, identifications.format = NULL, decode.titles =
+                 FALSE, ...)
 
 # reads peaklist file
 \S4method{readIBSpectra}{character,data.frame,character}(
-             type, id.file, peaklist.file, proteinGroupTemplate = NULL,
-             annotate.spectra.f = NULL, peaklist.format = NULL,
-             scan.lines = 0, fragment.precision = NULL,
-             fragment.outlier.prob = NULL, ...)
+                 type, id.file, peaklist.file, annotate.spectra.f =
+                 NULL, peaklist.format = NULL, scan.lines = 0,
+                 fragment.precision = NULL, fragment.outlier.prob =
+                 NULL, ...)
 }
 
 \arguments{
