@@ -6,7 +6,6 @@
 \title{Calculate Delta Score from Ion Score}
 \usage{
 calc.delta.score(my.data)
-calc.pep.delta.score(my.data)
 filterSpectraDeltaScore(my.data, min.delta.score=10, do.remove=FALSE)
 }
 

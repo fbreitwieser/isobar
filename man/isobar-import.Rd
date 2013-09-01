@@ -56,12 +56,12 @@
     Peaklist file, typically in MGF format, see \code{peaklist.format}.
     MGF must be centroid!
   }
-  \item{proteinGroupTemplate}{
-    When having technical or biological repeats: First a template
-    protein group is created which uses information from all runs,
-    then this template is applied.
-    It should increase comparability across runs.
-  }
+%  \item{proteinGroupTemplate}{
+%    When having technical or biological repeats: First a template
+%    protein group is created which uses information from all runs,
+%    then this template is applied.
+%    It should increase comparability across runs.
+%  }
   \item{mapping.file}{
     If defined, spectum titles from the peaklist file are linked to
     the identifications via this file. This can be used when running HCD
@@ -119,8 +119,6 @@
     Read files sequentially scan.lines lines at a time. Can help in
     case of memory issues, set to 10000 or higher, for example.
   }
-  \item{header}{header argument of read.table}
-  \item{stringsAsFactors}{stringsAsFactors argument of read.table}
   \item{sep}{sep argument of read.table}
   \item{\dots}{
     Further arguments handed down to \code{initialize}.

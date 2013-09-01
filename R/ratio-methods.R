@@ -1133,7 +1133,8 @@ peptideRatiosNotQuant <- function(ibspectra,...,
 
 
 ratiosReshapeWide <- function(quant.tbl,vs.class=NULL,sep=".",cmbn=NULL,short.names=FALSE) {
-  id.cols <- c("group","ac","peptide","modif","gene_names","pep.siteprobs")
+  id.cols <- c("group","ac","peptide","modif","gene_names","pep.siteprobs",
+               "ID","Description","Gene","gene_names.x","gene_names.y","swissprot.ac")
   id.cols <- id.cols[id.cols %in% colnames(quant.tbl)]
 
   if (!is.null(cmbn)) {

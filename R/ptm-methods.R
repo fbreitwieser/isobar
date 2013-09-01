@@ -182,17 +182,17 @@ calc.pep.delta.score <- function(y,spectrum.col='spectrum',score.col='score',pep
 }
 
 
-filterSpectraDeltaScore <- function(data, min.delta.score=10, do.remove=FALSE) {
-  if (!"delta.score" %in% colnames(data))
-    data <- calc.delta.score(data)
+filterSpectraDeltaScore <- function(my.data, min.delta.score=10, do.remove=FALSE) {
+  if (!"delta.score" %in% colnames(my.data))
+    my.data <- calc.delta.score(my.data)
   
   if (!is.null(min.delta.score)) {
-    sel.mindeltascore <- data[,"delta.score"] >= min.delta.score
-    data[,"use.for.quant"] <- data[,"use.for.quant"] & sel.mindeltascore
+    sel.mindeltascore <- my.data[,"delta.score"] >= min.delta.score
+    my.data[,"use.for.quant"] <- my.data[,"use.for.quant"] & sel.mindeltascore
     if (isTRUE(do.remove))
-      data <- data[,sel.mindeltascore]
+      my.data <- my.data[,sel.mindeltascore]
   }
-  return(data)
+  return(my.data)
 }
 
 

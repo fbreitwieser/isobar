@@ -12,6 +12,7 @@
 \alias{ProteinGroup,data.frame,NULL-method}
 \alias{ProteinGroup,data.frame,ProteinGroup-method}
 \alias{readProteinGroup}
+\alias{readProteinGroup2}
 
 % Coercion methods:
 \alias{coerce,data.frame,ProteinGroup-method}

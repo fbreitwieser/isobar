@@ -1,5 +1,6 @@
 \name{distr-methods}
 \alias{distrprint}
+\alias{twodistr.plot}
 \alias{calcProbXGreaterThanY}
 \alias{calcProbXDiffNormals}
 \title{Functions for distribution calculations
