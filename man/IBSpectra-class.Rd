@@ -15,7 +15,11 @@
 \alias{TMT2plexSpectra-class}
 \alias{TMT2plexSpectra}
 \alias{TMT6plexSpectra-class}
+\alias{TMT6plexSpectra2-class}
 \alias{TMT6plexSpectra}
+\alias{TMT6plexSpectra2}
+\alias{TMT10plexSpectra-class}
+\alias{TMT10plexSpectra}
 \alias{IBSpectra}
 
 % Constructor and readIBSpectra function:
@@ -25,6 +29,7 @@
 % Coercion methods:
 \alias{coerce,IBSpectra,data.frame-method}
 \alias{as.data.frame,IBSpectra-method}
+\alias{as.data.frame.IBSpectra}
 
 % Accessor-like methods:
 \alias{proteinGroup}
@@ -81,7 +86,7 @@
   experiment labeled using Isobaric tags (iTRAQ, TMT). \code{IBSpectra}
   is a abstract class which is implemented in the
   \code{\link{IBSpectraTypes}} classes \code{iTRAQ4plexSpectra},
-  \code{iTRAQ8plexSpectra}, \code{TMT2plexSpectra} and \code{TMT6plexSpectra}.
+  \code{iTRAQ8plexSpectra}, \code{TMT2plexSpectra}, \code{TMT6plexSpectra} and \code{TMT10plexSpectra}.
     
   It contains per-spectrum meassurements of the reporter tag intensity and 
   m/z in assayData, and protein grouping in proteinGroup.
@@ -145,8 +150,8 @@
       Creates a IBSpectra object.
       \describe{
         \item{\code{type}}{Denotes the type of IBSpectra, either
-	  'iTRAQ4plexSpectra','iTRAQ8plexSpectra','TMT2plexSpectra' or
-	  'TMT6plexSpectra'. Call IBSpectraTypes() to see a list of
+	  'iTRAQ4plexSpectra','iTRAQ8plexSpectra','TMT2plexSpectra', 'TMT6plexSpectra'
+	  or 'TMT10plexSpectra'. Call IBSpectraTypes() to see a list of
 	  the implemented types.
 	}
         \item{\code{data}}{A 'data.frame' in a ibspectra-csv format.}

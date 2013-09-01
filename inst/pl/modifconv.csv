@@ -9,6 +9,7 @@ Carbamyl (K)				CAM_core
 Carbamyl (N-term)			CAM_nterm
 Carboxymethyl (C)			Cys_CM
 Deamidation (NQ)			DEAMID
+Deamidated (NQ)		   DEAMID
 GlyGly (K)					GlyGly
 Guanidination (K)			Guanidination
 ICAT_light					ICAT_light
@@ -44,3 +45,7 @@ TMT6plex (K)				TMTsixplex_K
 TMT6plex (N-term)			TMTsixplex_Nterm
 Ubiquination I (K)		Ubiquitin_0mc
 Ubiquitination II (K)	Ubiquitin_1mc
+Sulfo-NHS-SS-Biotin (K) (K)		SULFO_Biotin_K
+Sulfo-NHS-SS-Biotin (N-term) (N-term)		SULFO_Biotin_Nterm
+Sulfo-NHS-SS-Biotin (N-term) after reduction (N-term		SULFO_Biotin_DTT_Nterm
+Sulfo-NHS-SS-Biotin (K) after reduction (K)		SULFO_Biotin_DTT_K

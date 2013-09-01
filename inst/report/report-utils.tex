@@ -1,19 +1,52 @@
 \newcommand{\minitab}[2][l]{\begin{tabular}{#1}#2\end{tabular}}
 \newcommand{\minipagec}[2][l]{\begin{minipage}{#1}#2\end{minipage}}
+\newcommand{\uniprotlink}[1]{\href{http://www.uniprot.org/uniprot/#1}{#1}}
+
+\newcommand{\rr}{\raggedright}
+\newcommand{\tn}{\tabularnewline}
+\newcommand{\rh}[1]{\begin{rotate}{65}\textbf{#1}\end{rotate}}
+\newcommand{\rth}[1]{\begin{turn}{65}\textbf{#1}\end{turn}}
+\newcommand{\mboxc}[2]{#2}
+\newcommand{\secsubtitle}[1]{\begin{flushright}\small\textit{#1}\end{flushright}}
+
+
 \newcommand{\boxplot}[7]{
   \begin{tikzpicture}[x=2cm,line width=0.5pt,node distance=0.1]
       \tikzboxplot{#1}{#2}{#3}{#4}{#5}{#6}{#7}
   \end{tikzpicture}
 }
 
+% information in protein group
+%  - rows: proteins
+%    - gene name / protein name?
+%  - columns: peptides
+%    - peptide type: reporter specific, group specific, unspecific
 
-\newcommand{\isobarthanks}{\thanks{This report was 
-  generated using the \texttt{isobar} R package. If you use it in published work, 
-  please cite 'Breitwieser FP \textit{et~al.}: General statistical 
-  modeling of data from protein relative expression isobaric tags, 
-  \textit{Journal of Proteome Research} 2011'}}
+% parameters:
+%  #1: protein position
+%  #2: protein AC
+\newcommand{\proteincol}[5]{
+  \node [anchor=east,draw,minimum size=0.2cm] (prot#1) at (-3,#1) {#2};
+  \node [minimum size=0.2cm] at (-2,#1) {#3};
+  \node [minimum size=0.2cm] at (-1,#1) {#4};
+  \node [minimum size=0.2cm] at (0,#1) {#5};
+}
 
-\newcommand{\uniprotlink}[1]{\href{http://www.uniprot.org/uniprot/#1}{#1}}
+% parameters:
+%  #1: protein position
+%  #2: style / parameters for node
+%  #3: peptide numbers
+%  #4: node text
+\newcommand{\proteinrow}[3]{
+    \foreach \x/\style in {#2}{
+    \node (prot#1 pep\x) at (\x,#1) [\style] {#3};
+  }
+}
+
+\renewcommand{\ll}{0.25}
+\newcounter{nplot}
+
+
 \tikzset{
   pentagon/.style = {
     regular polygon,regular polygon sides=5
@@ -55,35 +88,6 @@
 %colors <- c("red","green","blue","cyan","magenta","yellow")
 }
 
-% information in protein group
-%  - rows: proteins
-%    - gene name / protein name?
-%  - columns: peptides
-%    - peptide type: reporter specific, group specific, unspecific
-
-% parameters:
-%  #1: protein position
-%  #2: protein AC
-\newcommand{\proteincol}[5]{
-  \node [anchor=east,draw,minimum size=0.2cm] (prot#1) at (-3,#1) {#2};
-  \node [minimum size=0.2cm] at (-2,#1) {#3};
-  \node [minimum size=0.2cm] at (-1,#1) {#4};
-  \node [minimum size=0.2cm] at (0,#1) {#5};
-}
-
-% parameters:
-%  #1: protein position
-%  #2: style / parameters for node
-%  #3: peptide numbers
-%  #4: node text
-\newcommand{\proteinrow}[3]{
-    \foreach \x/\style in {#2}{
-    \node (prot#1 pep\x) at (\x,#1) [\style] {#3};
-  }
-}
-
-\renewcommand{\ll}{0.25}
-\newcounter{nplot}
 
 \newcommand{\sdboxplot}[6]
 {

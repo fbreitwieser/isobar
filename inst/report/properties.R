@@ -7,19 +7,33 @@
 #####################################################################
 ## General properties
 
+## Report type: Either 'protein' or 'peptide'
+# report.level="peptide"
+report.level="protein"
+#attr(report.level,"allowed.values") <- c("protein","peptide")
+
 ## Isobaric tagging type. Use one of the following:
 # type='iTRAQ4plexSpectra'
 # type='iTRAQ8plexSpectra'
 # type='TMT2plexSpectra'
 # type='TMT6plexSpectra'
 type=NULL
+#attr(type,"allowed.values") <- IBSpectraTypes()
+
 isotope.impurities=NULL
 correct.isotope.impurities=TRUE
 
 ## Name of project, by default the name of working directory
 ## Will be title and author of the analysis reports.
 name=basename(getwd())
-author="isobar R package"
+author=paste0("isobar R package v",packageDescription("isobar")$Version)
+
+## specifes the IBSpectra file or object
+##   - can be a data.frame (e.g. ibspectra=as.data.frame(ibspiked_set1) )
+##   - if it is a character string, it is assumed to be a file
+##     - if it ends on .rda, then it is assumed to be a R data object
+##     - if it does not exists, then it is may generated based on 
+##        the peaklist and identifications properties
 ibspectra=paste(name,"ibspectra.csv",sep=".")
 
 ## When replicates or 'samples belonging together' are analyzed, a
@@ -84,11 +98,15 @@ noise.model=noise.model.hcd
 ## the file
 # noise.model="noise.model.rda"
 
-## Certain channels can be defined for creation of a noise model
-## e.g. if the first and second channel are technical repeats If NULL,
-## all channel combinations are taken into account when creating a
-## noise model.
+## Define channels for creation of a noise model, ideally a set of 
+##  channels which are technical replicates. 
 noise.model.channels=NULL
+
+## If noise.model.is.technicalreplicates is FALSE, the intensities
+##   are normalized for protein means, creating artifical technical
+##   replicates. For this procedure, only proteins with more than
+##   noise.model.minspectra are considered.
+noise.model.is.technicalreplicates=FALSE
 noise.model.minspectra=50
 
 summarize=FALSE
@@ -107,12 +125,11 @@ vs.class=NULL
 
 ## Arguments given to 'proteinRatios' function. See ?proteinRatios
 ratios.opts = list(
-    sign.level.sample=0.01,
-    sign.level.rat=0.01,
+    sign.level.sample=0.05,
+    sign.level.rat=0.05,
     groupspecific.if.same.ac=TRUE)
 
-quant.w.grouppeptides=c("bcrabl","bcrabl,bcrabl_t315i",
-                        "bcrabl,bcrabl_p185,bcrabl_t315i","mgtagzhCorr")
+quant.w.grouppeptides=c()
 
 min.detect=NULL
 
@@ -135,6 +152,10 @@ ratiodistr.class.labels=NULL
 
 ## Function for fitting. Available: fitCauchy, fitTlsd
 ratiodistr.fitting.f=fitCauchy
+
+## Use symetrical ratios - i.e. for every ratio r add a ratio -r
+##   prior to fitting of a distribution
+ratiodistr.symmetry=TRUE
 
 ## If defined, use z-score instead of ratio distribution
 # zscore.threshold=2.5
@@ -235,24 +256,14 @@ sum.intensities=FALSE
 
 datbase="Uniprot"
 
-scratch=list(normalize.exclude.set = list (seppro_igy14=c(
-        "P02763",   #  Alpha1-Acid Glycoprotein
-        "P01009-1", #  Alpha1-Antitrypsin
-        "P19652",   #  Alpha1-Acid Glycoprotein
-        "P01023",   #  Alpha2-Macroglobulin
-        "P02768-1", #  Albumin
-        "P02647",   #  HDL: Apolipoprotein A1
-        "P02652",   #  HDL: Apolipoprotein A1
-        "P04114",   #  LDL: Apolipoprotein B
-        "P01024",   #  Complent C3
-        "P02671-1", #  Fibrinogen
-        "P00738",   #  Haptoglobin
-        "P01876",   #  IgA 1
-        "P01877",   #  IgA 2
-        "P01857",   #  IgG 1
-        "P01859",   #  IgG 2
-        "P01860",   #  IgG 3
-        "P01861",   #  IgG 4
-        "P01871-1", #  IgM
-        "P02787"    #  Transferrin
-        )))
+scratch=list()
+
+##
+#  compile LaTeX reports into PDF files
+compile=TRUE
+
+# zip final report files into archive
+zip=FALSE
+
+# warning level (see 'warn' in ?options)
+warning.level=1

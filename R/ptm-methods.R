@@ -2,7 +2,7 @@
 getPhosphoRSProbabilities <- function(
   id.file,mgf.file,massTolerance,activationType,simplify=FALSE,
   mapping.file=NULL,mapping=c(peaklist="even",id="odd"),pepmodif.sep="##.##",besthit.only=TRUE,
-  phosphors.cmd=paste("java -jar",system.file("phosphors","phosphoRS.jar",package="isobar",mustWork=TRUE)),
+  phosphors.cmd=paste("java -jar",system.file("phosphors","phosphoRS.jar",package="isobar")),
   file.basename=tempfile("phosphors.")) {
 
   infile <- paste0(file.basename,".in.xml")
@@ -12,7 +12,7 @@ getPhosphoRSProbabilities <- function(
                       id.file,mgf.file,massTolerance,activationType,
                       mapping.file,mapping,pepmodif.sep)
   
-  system(paste(phosphors.cmd,infile,outfile))
+  system(paste(phosphors.cmd,shQuote(infile),shQuote(outfile)))
   readPhosphoRSOutput(outfile,simplify=simplify,pepmodif.sep=pepmodif.sep,besthit.only=besthit.only)
 }
 
@@ -20,6 +20,7 @@ getPhosphoRSProbabilities <- function(
 .iTRAQ8.mass = c(monoisotopic = 304.2, average = 304.308)
 .CysCAM.mass = c(monoisotopic = 57.021464, average =  57.0513)
 .OxidationM.mass = c(monoisotopic = 15.994915, average =  15.9994)
+.TMT6.mass = c(monoisotopic = 229.162932, average = 229.2634)
   
 writePhosphoRSInput <- 
   function(phosphoRS.infile,id.file,mgf.file,massTolerance,activationType,
@@ -29,8 +30,9 @@ writePhosphoRSInput <-
                  c("Oxidation_M","2","2:Oxidation:Oxidation:15.994919:null:0:M"),
                  c("Cys_CAM",    "3","3:Carbamidomethylation:Carbamidomethylation:57.021464:null:0:C"),
                  c("iTRAQ4plex", "4","4:iTRAQ4:iTRAQ4:144.1544:null:0:KX"),
-                 c("iTRAQ8plex", "5","5:iTRAQ8:iTRAQ8:304.308:null:0:KX"))
-) {
+                 c("iTRAQ8plex", "5","5:iTRAQ8:iTRAQ8:304.308:null:0:KX"),
+                 c("TMT6plex",   "7","7:TMT6:TMT6:229.162932:null:0:KX"),
+                 c("TMTsixplex",   "6","6:TMT6:TMT6:229.162932:null:0:KX"))) {
 
   if (is.data.frame(id.file)) 
     ids <- id.file
@@ -88,23 +90,25 @@ writePhosphoRSInput <-
     spectrum <- input[begin_ions[spectrum_i]:end_ions[spectrum_i]]
     ## read header
     header <- .strsplit_vector(spectrum[grep("^[A-Z]",spectrum)],"=")
-    
-    cat.f("    <Spectrum ID='",URLencode(header["TITLE"],reserved=TRUE),"'",
-          " PrecursorCharge='",sub("+","",header["CHARGE"],fixed=TRUE),"'",
-          " ActivationTypes='",activationType,"'>")
-    
     peaks <- gsub(" ?","",spectrum[grep("^[0-9]",spectrum)],fixed=TRUE)
-    cat.f("    <Peaks>",paste(gsub("\\s+",":",peaks),collapse=","),"</Peaks>")
 
-    for (id_i in which(ids$spectrum==title)) {
-      pepid <- pepid + 1
-      cat.f("      <IdentifiedPhosphorPeptides>")
-      cat.f("        <Peptide ID='",ids[id_i,"peptide"],pepmodif.sep,ids[id_i,"modif"],"'",
-            " Sequence='",ids[id_i,"peptide"],"'",
-            " ModificationInfo='",ids[id_i,"modifrs"],"' />")
-      cat.f("      </IdentifiedPhosphorPeptides>")
+    if (length(peaks) > 0) {
+      cat.f("    <Spectrum ID='",URLencode(header["TITLE"],reserved=TRUE),"'",
+            " PrecursorCharge='",sub("+","",header["CHARGE"],fixed=TRUE),"'",
+            " ActivationTypes='",activationType,"'>")
+    
+      cat.f("    <Peaks>",paste(gsub("\\s+",":",peaks),collapse=","),"</Peaks>")
+
+      for (id_i in which(ids$spectrum==title)) {
+        pepid <- pepid + 1
+        cat.f("      <IdentifiedPhosphorPeptides>")
+        cat.f("        <Peptide ID='",ids[id_i,"peptide"],pepmodif.sep,ids[id_i,"modif"],"'",
+              " Sequence='",ids[id_i,"peptide"],"'",
+              " ModificationInfo='",ids[id_i,"modifrs"],"' />")
+        cat.f("      </IdentifiedPhosphorPeptides>")
+      }
+      cat.f("    </Spectrum>")
     }
-    cat.f("    </Spectrum>")
   }
 
   cat.f("  </Spectra>")
@@ -117,20 +121,20 @@ writePhosphoRSInput <-
   close(con.out)
 }
 
-calc.delta.score <- function(data) {
-  pep.n.prot <- unique(data[,c("accession","peptide","start.pos")])
-  data$accession <- NULL
-  data$start.pos <- NULL
-  data <- unique(data)
-  if (!any(by(data$score,data$spectrum, length)>1)) {
+calc.delta.score <- function(my.data) {
+  pep.n.prot <- unique(my.data[,c("accession","peptide","start.pos")])
+  my.data$accession <- NULL
+  my.data$start.pos <- NULL
+  my.data <- unique(my.data)
+  if (!any(by(my.data$score,my.data$spectrum, length)>1)) {
     stop("Cannot calculate delta score: Only one hit per spectrum available")
   }
 
-  data$delta.score <- data$score
-  data$n.pep <- 1
-  data$n.loc <- 1
+  my.data$delta.score <- my.data$score
+  my.data$n.pep <- 1
+  my.data$n.loc <- 1
 
-  res <- ddply(data,"spectrum",function(x) {
+  res <- ddply(my.data,"spectrum",function(x) {
     if (nrow(x) == 1) return(x);
     res <- x[which.max(x$score),,drop=FALSE]
     res$n.pep <- length(unique(x$peptide))
@@ -144,34 +148,79 @@ calc.delta.score <- function(data) {
     return(res);
   })
 
-  data <- merge(pep.n.prot,res,by="peptide",all.y=TRUE)
+  my.data <- merge(pep.n.prot,res,by="peptide",all.y=TRUE)
 
-  return(data[order(data[,"accession"],data[,"peptide"]),])
+  return(my.data[order(my.data[,"accession"],my.data[,"peptide"]),])
 }
 
-filterSpectraDeltaScore <- function(data, min.delta.score=10, do.remove=FALSE) {
-  if (!"delta.score" %in% colnames(data))
-    data <- calc.delta.score(data)
+calc.pep.delta.score <- function(y,spectrum.col='spectrum',score.col='score',peptide.col='peptide') {
+  y$delta.score <- y$score
+  y$delta.score.pep <- y$score
+  y$delta.score.notpep <- y$score
+
+  y$n.pep <- 1
+  y$n.loc <- 1
+    
+  ddply(y,"spectrum",function(x) {
+    if (nrow(x) == 1) return(x);
+    res <- x[which.max(x$score),,drop=FALSE]
+    res$n.pep <- length(unique(x[,peptide.col]))
+    x <- x[-which.max(x$score),] # remove best hit from x
+    res$delta.score <- res[,'score'] - x[which.max(x$score),'score'] # calc delta score w/ max
+    res$delta.score.pep <- res$delta.score
+    y <- x[x$peptide == res[,'peptide'],] # only keep same peptide hits in x
+    if (nrow(y) > 0) {
+      res$delta.score.pep <- res[,'score'] - y[which.max(y$score),'score'] # calc delta score w/ max (same pep)
+      res$n.loc <- nrow(x) + 1
+    }
+    y <- x[x$peptide != res[,'peptide'],] # only keep different peptide hits
+    if (nrow(y) > 0) {
+      res$delta.score.notpep <- res[,'score'] - y[which.max(y$score),'score'] # calc delta score w/ max (different pep)
+    }
+    return(res);
+  })
+}
+
+
+filterSpectraDeltaScore <- function(my.data, min.delta.score=10, do.remove=FALSE) {
+  if (!"delta.score" %in% colnames(my.data))
+    my.data <- calc.delta.score(my.data)
   
   if (!is.null(min.delta.score)) {
-    sel.mindeltascore <- data[,"delta.score"] >= min.delta.score
-    data[,"use.for.quant"] <- data[,"use.for.quant"] & sel.mindeltascore
+    sel.mindeltascore <- my.data[,"delta.score"] >= min.delta.score
+    my.data[,"use.for.quant"] <- my.data[,"use.for.quant"] & sel.mindeltascore
     if (isTRUE(do.remove))
-      data <- data[,sel.mindeltascore]
+      my.data <- my.data[,sel.mindeltascore]
   }
-  return(data)
+  return(my.data)
 }
 
 
 .convertModifToPhosphoRS <- function(modifstring,modifs) {
   sapply(strsplit(paste0(modifstring," "),":"),function(x) {
     x[length(x)] <- sub(" $","",x[length(x)])
-    x[x==""] <- 0
+    xx <- x
+    xx[x==""] <- 0
+    xx[x!=""] <- NA
     for (i in seq_len(nrow(modifs))) 
-      x[grep(modifs[i,1],x,fixed=TRUE)] <- modifs[i,2]
+      xx[grep(paste0("^",modifs[i,1]),x)] <- modifs[i,2]
 
-    y <- c(x[1],".",x[2:(length(x)-1)],".",x[length(x)]);
+    if(any(is.na(xx))) stop("Could not convert modifstring ",modifstring)
+
+    y <- c(xx[1],".",xx[2:(length(xx)-1)],".",xx[length(xx)]);
     paste(y,collapse="") })
+}
+
+writeHscoreData <- function(outfile,ids,massfile="defs.txt") {
+  # command line call: [python Hscorer.py --myDir .  --quantmeth itraq --massfile defs.txt]
+  modif.masses <- read.delim(text=grep("\t",readLines(massfile),value=TRUE),
+                       stringsAsFactors=FALSE)
+  modif.masses <- as.matrix(modif.masses[,c(3,1)])
+  modif.masses <- modif.masses[nchar(modif.masses[,1]) > 1,]
+  modifstring <- gsub(".","",.convertModifToPhosphoRS(ids[,'modif'],modif.masses),fixed=TRUE)
+
+  write.table(cbind(ids[,'spectrum'],ids[,'peptide'],modifstring),file=outfile,
+              col.names=FALSE,row.names=FALSE,sep="\t",quote=FALSE)
 }
 
 ## TODO:
@@ -213,11 +262,15 @@ filterSpectraDeltaScore <- function(data, min.delta.score=10, do.remove=FALSE) {
 
 
 
-.convertPhosphoRSPepProb <- function(peptide,pepprob) {
+.convertPhosphoRSPepProb <- function(peptide,pepprob,round.to.frac=NULL) {
   mapply(function(pep,pprob) {
            pprob <- as.numeric(pprob)
            prob <- rep(-1,length(pep))
-           prob[pprob[seq(from=1,to=length(pprob),by=2)]] <- pprob[seq(from=2,to=length(pprob),by=2)]
+           pep.pos <- pprob[seq(from=1,to=length(pprob),by=2)]
+           pep.prob <- pprob[seq(from=2,to=length(pprob),by=2)]
+           if (!is.null(round.to.frac)) 
+             pep.prob <- round(pep.prob*round.to.frac)/round.to.frac
+           prob[pep.pos] <- pep.prob
 
            pep[prob>=0] <- paste0(pep[prob>=0],"(",prob[prob>=0],")")
            paste0(pep,collapse="")
@@ -320,6 +373,14 @@ filterSpectraPhosphoRS <- function(id.file,mgf.file,...,min.prob=NULL, do.remove
   ## probs excludes non-PHOS peptides - we do filter them for now? (about 8-10%)
   id.file$peptide <- NULL
   id.file$modif <- NULL
+
+  colnames.both <- intersect(colnames(id.file),colnames(probs))
+  if (length(colnames.both) > 1) {
+    stop("id.file includes colnames which are added by the function filterSpectraPhosphoRS: \n",
+         "\t",paste(sort(colnames.both[colnames.both != 'spectrum']),collapse=", "),
+         "\nRemove them prior to calling filterSpectraPhosphoRS.")
+  }
+
   id.file <- merge(id.file,probs,by="spectrum")
   if (!is.null(min.prob)) {
     if (!'use.for.quant' %in% colnames(id.file)) id.file$use.for.quant <- TRUE

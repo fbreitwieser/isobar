@@ -1,3 +1,5 @@
+report.level="protein"
+compile=TRUE
 
 ## report name
 name  <- basename(getwd())
@@ -14,6 +16,8 @@ regen <- FALSE
 ## identifiers are the same
 protein.group <- "protein.group.rda"
 
+significance.method='p.value'
+
 ## Via database or internet connection, informations on proteins 
 ## (such as gene names and length) can be gathered. protein.info.f
 ## defines the function which takes a ProteinGroup object as argument
@@ -23,7 +27,32 @@ protein.info.f <- getProteinInfoFromUniprot
 # cachedir="cache"
 cachedir="."
 
-spreadsheet.format="xlsx"
+## Modification to track. Use 'PHOS' for phosphorylation.
+# ptm <- c('ACET','METH','UBI','SUMO', 'PHOS')
+ptm <- NULL
 
-ptm=NULL
-ptm.info=NULL
+## file name of rda or data.frame with known modification sites
+## gathered with ptm.info.f.  defaults to 'cachedir/ptm.info.rda'
+ptm.info <- NULL
+
+## Function to get PTM modification sites from public datasets
+# ptm.info.f <- getPtmInfoFromNextprot
+# ptm.info.f <- function(...)
+#    getPtmInfoFromPhosphoSitePlus(...,modification="PHOS")
+# ptm.info.f <- function(...)
+#    getPtmInfoFromPhosphoSitePlus(...,modification=ptm)
+ptm.info.f <- getPtmInfoFromNextprot
+
+## XLS report format 'wide' or 'long '.
+
+## 'wide' format outputs ratios in separate columns of the same record
+## (i.e. one line per protein)
+## 'long' format outputs ratios in separate records (i.e. one line per
+## ratio)
+xls.report.format="wide"
+#xls.report.format="long"
+
+zscore.threshold <- 2.5
+
+
+spreadsheet.format="xlsx"

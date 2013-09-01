@@ -15,15 +15,19 @@
   \code{readPhosphoRSOutput}.
 }
 \usage{
-  getPhosphoRSProbabilities(id.file, mgf.file, massTolerance, activationType, simplify = FALSE,
-                            mapping.file = NULL, mapping = c(peaklist = "even", id = "odd"), 
-                            pepmodif.sep = "##.##", besthit.only = TRUE,
-                            phosphors.cmd = paste("java -jar",system.file("phosphors","phosphoRS.jar",package="isobar",mustWork=TRUE)),
-                            file.basename = tempfile("phosphors."))
+  getPhosphoRSProbabilities(id.file, mgf.file, massTolerance, activationType,
+                 simplify = FALSE, mapping.file = NULL, mapping =
+                 c(peaklist = "even", id = "odd"), pepmodif.sep =
+                 "##.##", besthit.only = TRUE, phosphors.cmd =
+                 paste("java -jar", system.file("phosphors",
+                 "phosphoRS.jar", package = "isobar")), file.basename =
+                 tempfile("phosphors."))
 
-  writePhosphoRSInput(phosphoRS.infile, id.file, mgf.file, massTolerance, activationType, 
-                      mapping.file = NULL, mapping = c(peaklist = "even", id = "odd"),
-                      pepmodif.sep = "##.##", modif.masses = rbind(c("PHOS", "1",
+
+  writePhosphoRSInput(phosphoRS.infile, id.file, mgf.file, massTolerance,
+                 activationType, mapping.file = NULL, mapping =
+                 c(peaklist = "even", id = "odd"), pepmodif.sep =
+                 "##.##", modif.masses = rbind(c("PHOS", "1",
                  "1:Phospho:Phospho:79.966331:PhosphoLoss:97.976896:STY"),
                  c("Oxidation_M", "2",
                  "2:Oxidation:Oxidation:15.994919:null:0:M"),
@@ -31,7 +35,11 @@
                  "3:Carbamidomethylation:Carbamidomethylation:57.021464:null:0:C"),
                  c("iTRAQ4plex", "4",
                  "4:iTRAQ4:iTRAQ4:144.1544:null:0:KX"), c("iTRAQ8plex",
-                 "5", "5:iTRAQ8:iTRAQ8:304.308:null:0:KX")))
+                 "5", "5:iTRAQ8:iTRAQ8:304.308:null:0:KX"),
+                 c("TMT6plex", "7",
+                 "7:TMT6:TMT6:229.162932:null:0:KX"), c("TMTsixplex",
+                 "6", "6:TMT6:TMT6:229.162932:null:0:KX")))
+
 
   readPhosphoRSOutput(phosphoRS.outfile, simplify = FALSE, pepmodif.sep = "##.##", besthit.only = TRUE)
 

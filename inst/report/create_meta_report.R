@@ -3,13 +3,10 @@ suppressPackageStartupMessages(library(gplots))
 suppressPackageStartupMessages(library(boot))
 suppressPackageStartupMessages(library(RColorBrewer))
 suppressPackageStartupMessages(library(isobar))
-suppressPackageStartupMessages(library(seqinr))
 
 source("meta-properties.R")
 load("protein.group.rda")
 proteinInfo(protein.group) <- getProteinInfoFromBiomart(protein.group)
-
-source(system.file("report","meta-functions.R",package="isobar"))
 
 if (!exists("cols"))
   cols <- c()

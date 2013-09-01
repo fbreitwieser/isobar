@@ -42,8 +42,8 @@ setClass("iTRAQ8plexSpectra",
     contains = "iTRAQSpectra",
     prototype = prototype(
       reporterTagNames = as.character(c(113:119,121)),
-      reporterTagMasses = c(113.1078,114.1112,115.1082,116.1116,
-                         117.1149,118.1120,119.1153,121.1220),
+      reporterTagMasses = c(113.10787,114.11123,115.10826,116.11162,
+                            117.11497,118.11201,119.1153 ,121.1220),
       isotopeImpurities = diag(nrow=8)
     )
 )
@@ -72,6 +72,27 @@ setClass("TMT6plexSpectra",
        )
     )
 
+setClass("TMT6plexSpectra2",
+    contains = "TMTSpectra",
+    prototype = prototype(
+      reporterTagNames = as.character(126:131),
+      reporterTagMasses = c(126.127725,127.124760,128.134433,
+                            129.131468,130.141141,131.138176),
+       isotopeImpurities = diag(nrow=6)
+       )
+    )
+
+setClass("TMT10plexSpectra",
+    contains = "TMTSpectra",
+    prototype = prototype(
+      reporterTagNames = c("126","127N","127C","128N","128C","129N","129C","130N","130C","131N"),
+      reporterTagMasses = c(126.1277261,127.1310809,127.124761,
+                            128.1344357,128.1281158,129.1377905,
+                            129.1314706,130.1411453,130.1348254,
+                            131.1381802),
+       isotopeImpurities = diag(nrow=10)
+       )
+    )
 
 ### - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 ### Validity.
@@ -111,10 +132,16 @@ setValidity("IBSpectra",.valid.IBSpectra)
 
 .PEAKS.COLS <- c(MASSFIELD="X%s_mass",IONSFIELD="X%s_ions")
 
-.ID.COLS <- c(SEARCHENGINE="search.engine",SCORE="score",SCORE.MASCOT="score.mascot",SCORE.PHENYX="score.phenyx",SCORE.MSGF="score.msgf",
-              SCAFFOLD.PEPPROB="scaffold.pepprob",SEQUEST.XCORR="sequest.xcorr",SEQUEST.DELTACN="sequest.deltacn")
+.ID.COLS <- c(SEARCHENGINE="search.engine",SCORE="score",SCORE.MASCOT="score.mascot",
+              SCORE.PHENYX="score.phenyx",SCORE.MSGF="score.msgf",IS.DECOY="is.decoy",
+              P.VALUE="p.value",MSGF.RAWSCORE="msgf.rawscore",MSGF.DENOVOSCORE="msgf.denvoscore",
+              MSGF.SPECEVALUE='msgf.specevalue',MSGF.EVALUE='msgf.evalue',
+              MSGF.QVALUE="msgf.qvalue",MSGF.PEPQVALUE="msgf.pepqvalue",
+              SCAFFOLD.PEPPROB="scaffold.pepprob",SEQUEST.XCORR="sequest.xcorr",SEQUEST.DELTACN="sequest.deltacn",
+              DELTASCORE="delta.score",DELTASCORE.PEP="delta.score.pep")
 
-.PTM.COLS <- c(SCORE.PHOSPHORS='pepscore',PROB.PHOSPHORS='pepprob',SEQPOS='seqpos',SITEPROBS='site.probs',PHOSPHO.SITES='phospho.sites')
+.PTM.COLS <- c(SCORE.PHOSPHORS='pepscore',PROB.PHOSPHORS='pepprob',SEQPOS='seqpos',
+               SITEPROBS='site.probs',PHOSPHO.SITES='phospho.sites',PEP.SITEPROBS='pep.siteprobs')
 
 .SPECTRUM.COLS <- c(PEPTIDE="peptide",MODIFSTRING="modif",CHARGE="charge",
                    THEOMASS="theo.mass",EXPMASS="exp.mass",PRECURSOR.ERROR="precursor.error",
@@ -125,18 +152,24 @@ setValidity("IBSpectra",.valid.IBSpectra)
                    DISSOCMETHOD="dissoc.method",
                    PRECURSOR.PURITY="precursor.purity",
                    SCANS="scans",SCANS.FROM="scan.from",SCANS.TO="scan.to",
-                   RAWFILE="raw.file",NMC="nmc",DELTASCORE="delta.score",DELTASCORE.PEP="delta.score.pep",
+                   RAWFILE="raw.file",NMC="nmc",
                    MASSDELTA.ABS="massdelta.abs",MASSDELTA.PPM="massdelta.ppm",
                    SAMPLE="sample",FILE="file",NOTES="notes")
 
 .PEPTIDE.COLS <- c(PROTEINAC="accession",STARTPOS="start.pos",ENDPOS="end.pos",
-                  REALPEPTIDE="real.peptide",AA.BEFORE="aa.before",AA.AFTER="aa.after")
+                  REALPEPTIDE="real.peptide",ILPEPTIDE='il.peptide',
+                  AA.BEFORE="aa.before",AA.AFTER="aa.after")
 
 .PROTEIN.COLS <- c(PROTEINAC="accession",PROTEINAC_CONCISE="accessions",
-                   NAME="name",PROTEIN_NAME="protein_name",
+                   NAME="name",PROTEIN_NAME="protein_name",DATABASE="database",
                    GENE_NAME="gene_name",ORGANISM="organism")
 
-.ROCKERBOX.COLS <- c(PROTEINAC="accession",STARTPOS="start.pos",MODIFSTRING="modif",
+## for mapping
+.MSGF.MAPPINGCOLS <- c(MSGF.RAWSCORE="MSGFScore",MSGF.DENOVOSCORE="DeNovoScore",
+                       MSGF.SPECEVALUE='SpecEValue',MSGF.EVALUE='EValue',
+                       MSGF.QVALUE="QValue",MSGF.PEPQVALUE="PepQValue")
+
+.ROCKERBOX.MAPPING.COLS <- c(PROTEINAC="accession",STARTPOS="start.pos",MODIFSTRING="modif",
                      QN="mascot.query.number",RANK="rank",SCANS="scan.number.s.",RT="retention.time",
                      RAWFILE="raw.file",PEPTIDE="sequence", "phosphosequence",NMC="miscleavages",
                      SCORE="score",DELTASCORE="deltascore",PHOSPHO.DELTASCORE.PEP="phospho_deltascore",
@@ -159,7 +192,8 @@ setAs("IBSpectra","data.frame",
 
       # prepare ProteinGroup data.frame
       pg.df <- as(proteinGroup(from),"data.frame")
-      pg.df <- pg.df[,c("protein","peptide","spectrum","start.pos")]
+      pg.df.cols <- c("protein","peptide","spectrum","start.pos","real.peptide")
+      pg.df <- pg.df[,pg.df.cols[pg.df.cols %in% colnames(pg.df)]]
       colnames(pg.df)[colnames(pg.df) == "protein"] <- .PROTEIN.COLS['PROTEINAC']
       colnames(pg.df)[colnames(pg.df) == "peptide"] <- .SPECTRUM.COLS['PEPTIDE']
       colnames(pg.df)[colnames(pg.df) == "spectrum"] <- .SPECTRUM.COLS['SPECTRUM']
@@ -175,6 +209,8 @@ setAs("IBSpectra","data.frame",
 
       # merge data.frames
       res <- unique(merge(pg.df,fdata.df,by=.SPECTRUM.COLS['SPECTRUM'],all.y=TRUE,sort=FALSE))
+      if (.PEPTIDE.COLS['REALPEPTIDE'] %in% colnames(res))
+        res$peptide <- res$real.peptide
 
       # return in order
       res[order(res[,.PROTEIN.COLS['PROTEINAC']],res[,.PEPTIDE.COLS['STARTPOS']],res[,.SPECTRUM.COLS['PEPTIDE']]),
@@ -231,7 +267,7 @@ ibSpectra.as.concise.data.frame  <- function(from) {
   }
   res.nice <- cbind(res.nice,
                     Modification=res$modif,
-                    AC=.protein.acc(res[,"accession"],ip=indist.proteins),
+                    AC=.protein.acc(res[,"accession"],proteinGroup(from)),
                     ID=proteinInfo(protein.group,res[,"accession"],do.warn=FALSE),
                     n=sapply(res[,"accession"],function(p) {length(names(indist.proteins)[indist.proteins == p])}))
   res <- res[,!.grep_columns(res,c("peptide","modif","accession"))]
@@ -358,16 +394,24 @@ setMethod("spectrumSel",signature(x="IBSpectra",peptide="data.frame",protein="mi
     function(x,peptide,...) spectrumSel(x,as.matrix(peptide),...) )
 
 setMethod("spectrumSel",signature(x="IBSpectra",peptide="matrix",protein="missing"),
-    function(x,peptide,modif=NULL,spectrum.titles=FALSE,use.for.quant.only=TRUE,do.warn=TRUE) {
+    function(x,peptide,modif=NULL,spectrum.titles=FALSE,
+             use.for.quant.only=TRUE,do.warn=TRUE) {
         if (length(peptide) == 0) {
           warning("0L peptide provided")
           return(FALSE)
         }
-        if (ncol(peptide) != 2 && do.warn)
-          warning("don't know how to handle matrix with ",ncol(peptide)," columns! expecting 2.")
         
-        sel <- fData(x)[,.SPECTRUM.COLS['PEPTIDE']]  %in% peptide[,1] & 
-               fData(x)[,.SPECTRUM.COLS['MODIFSTRING']]  %in% peptide[,2]
+        if (is.null(colnames(peptide)))
+          stop("a matrix argument with colnames is needed for peptide")
+
+        if (!all(colnames(peptide) %in% colnames(fData(x)))) {
+          warning("not all colnames of peptide [",paste0(colnames(peptide),collapse=";"),"] in fData(x)")
+          peptide <- peptide[,colnames(peptide) %in% colnames(fData(x))]
+        }
+
+        sel <- rep(TRUE,nrow(fData(x)))
+        for (p.i in colnames(peptide)) 
+          sel <- sel & fData(x)[[p.i]] %in% peptide[,p.i]
 
         if (use.for.quant.only && .SPECTRUM.COLS['USEFORQUANT'] %in% colnames(fData(x)))
           sel <- sel & fData(x)[,.SPECTRUM.COLS['USEFORQUANT']] 
