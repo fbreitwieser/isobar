@@ -216,17 +216,18 @@ setMethod("ProteinGroup",signature(from="data.frame",template="missing",proteinI
       from$protn <- as.integer(as.factor(from[["protein"]]))
       
       # with which peptide-combination are proteins detected?
-      combn.peptides <- ddply(from,"protein",
-                              function(s) c(peptides=paste0(sort(unique(s[,'peptn'])),
-                                                            collapse="-")))
+      combn.peptides <- tapply(from[["peptn"]],from[["protein"]],
+                               function(s) paste0(sort(unique(s)),collapse="-"))
       
       # group proteins with same peptide combinations together
       # - those are indistiguishable
-      combn.proteins <- ddply(combn.peptides,'peptides',
-            function(x) c(protein.g=paste0(x[,'protein'],collapse=",")))
+      combn.proteins <- tapply(names(combn.peptides),combn.peptides,
+                               function(x) paste0(x,collapse=","))
       
       # merge data frames
-      from <- merge(from,merge(combn.peptides,combn.proteins,by='peptides'),by='protein')
+      f.peptides <- combn.peptides[ from[["protein"]] ]
+      from[["protein.g"]] <- combn.proteins[ f.peptides ]
+                                                
       pep.n.prots <- unique(subset(from,,c("peptide","protein.g")))
       all.protein.g <- table(pep.n.prots[['protein.g']])
       prots.to.prot <- as.matrix(unique(subset.s(from,c("protein.g","protein"))))
