@@ -158,7 +158,7 @@ write.xls.report <- function(properties.env,report.env,file="isobar-analysis.xls
 
 .create.or.load.xls.quant.tbl <- function(env,properties.env,name="xls.quant.tbl",quant.tbl.name="quant.tbl") {
   .create.or.load(name,envir=properties.env,
-                  msg.f=paste0("protein table for Excel export [",name,"]"),f=function() {
+                  msg.f=paste0("table for Excel export [",name,"]"),f=function() {
     message("XLS report format: ",properties.env[["xls.report.format"]])
 
     env[[quant.tbl.name]]$is.significant[is.na(env[[quant.tbl.name]]$is.significant)] <- FALSE
@@ -177,14 +177,14 @@ write.xls.report <- function(properties.env,report.env,file="isobar-analysis.xls
       tbl.input <- env[[quant.tbl.name]]
     }
 
-    message(" adding protein or peptide details columns ",appendLF=FALSE)
+    message("   adding identification columns ",appendLF=FALSE)
     if (identical(properties.env[["report.level"]],"protein"))
       res.tbl <- .create.xls.protein.quant.tbl(tbl.input,proteinGroup(env[["ibspectra"]]))
     else
       res.tbl <- .create.xls.peptide.quant.tbl(tbl.input,env[["ibspectra"]],
                                            properties.env[["ptm"]],env[["ptm.info"]])
  
-    message(" adding quantification columns")   
+    message("   adding quantification columns")   
     tbl <- .add.quant.to.xls.tbl(env,properties.env,res.tbl[[1]],res.tbl[[2]],compare.to.quant)
     
     #order.c <- if(isTRUE(properties.env[["xls.report.format"]]=="long"),"Channels",NULL)
