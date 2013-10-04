@@ -327,9 +327,16 @@ setMethod("weightedMean",
   gsub("[^a-zA-Z\\.0-9_\\-]","", str)
 }
 
-weighted.cor <- function( x, y, w = rep(1,length(x))) {
+weighted.cor <- function( x, y, w = rep(1,length(x)),use='complete.obs') {
   ## (c) Heather Turner, Vincent Zoonekynd at http://stackoverflow.com/questions/9460664/weighted-pearsons-correlation
   stopifnot(length(x) == dim(y)[2] )
+  if (use=='complete.obs') {
+    sel <- !is.na(x) & !is.na(y) & !is.na(w)
+    x <- x[sel]
+    y <- y[sel]
+    w <- w[sel]
+  }
+
   w <- w / sum(w)
   # Center x and y, using the weighted means
   x <- x - sum(x * w)
