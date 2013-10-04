@@ -127,7 +127,7 @@ write.xls.report <- function(properties.env,report.env,file="isobar-analysis.xls
 
     .get.perlcl <- function(name,include.identifications=TRUE) {
       fname <- paste0(ifelse(properties.env[["use.name.for.report"]],
-                             sprintf("%s.%s",name,properties.env[["name"]]),"isobar-analysis"),
+                             sprintf("%s.%s",properties.env[["name"]],name),"isobar-analysis"),
                        ".",properties.env[["spreadsheet.format"]])
 
       perl.cl <- paste("perl",tab2spreadsheet.cmd,shQuote(fname),
