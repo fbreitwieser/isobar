@@ -50,14 +50,41 @@ write.tex.commands() # prints analysisname, analysisauthor, and isobarthanks com
 \maketitle
 
 \subsection*{Reporter mass precision}
-Histogram representing the distribution of the delta mass (in \emph{m/z}) for each reporter tag between theoretical and observed mass. Reporter tag ions were extracted from MS2 fragment spectra at $\pm$ \Sexpr{properties.env$fragment.precision/2} $m/z$ around the theoretical masses.
+Histogram representing the distribution of the delta mass (in
+\emph{m/z}) for each reporter tag between theoretical and observed
+mass. Reporter tag ions were extracted from MS2 fragment spectra at
+$\pm$ \Sexpr{properties.env$fragment.precision/2} $m/z$ around the
+theoretical masses.
 
 <<fig-reporterMassPrecisionv,fig=T,echo=F,width=6.5,height=2.5,results=hide>>=
  print(reporterMassPrecision(ibspectra))
 @
 
 \subsection*{Reporter intensities and Normalization}
-Box-plot of the reporter intensities before and after the normalization process. Isobar applies a normalization factor to impose equal median or summed intensity in each channel. Some channels may be excluded, as defined in \texttt{properties.R}.
+
+<<echo=FALSE,results=tex>>=
+reporter.tags <- reporterTagNames(ibspectra)
+n.factors <- setNames(rep("n.n.", length(reporter.tags)),reporter.tags)
+nn.factors <- ibspectra@log[grep("normalization.multiplicative.factor",
+                                 rownames(ibspectra@log)),"Message"]
+names(nn.factors) <- sub(".* channel ","",names(nn.factors))
+n.factors[names(nn.factors)] <- nn.factors
+
+ri <- reporterIntensities(ibspectra)
+ri.nn <- reporterData(ibspectra,element="ions_not_normalized") # null if not normalized
+if (is.null(ri.nn)) {
+    cat("Box-plot of the reporter intensities per labeled channel. No normalization was performed.
+        
+        ")
+} else {
+  cat("Box-plot of the reporter intensities before and after the
+       normalization process. Isobar applies a normalization factor to impose
+       equal median or summed intensity in each channel. Some channels may be
+       excluded from normalization, as defined in \texttt{properties.R}.
+       
+       ")
+}
+@ 
 
 \begin{minipage}[c]{0.4\textwidth}
 <<fig-reporterIntensityPlot,fig=T,echo=F,width=2.5,height=2.3,results=hide>>=
@@ -68,17 +95,25 @@ Box-plot of the reporter intensities before and after the normalization process.
 \begin{minipage}[c]{0.6\textwidth}
 \vspace{0pt} \small
 <<normalization factors,echo=FALSE,results=tex,strip.white=false>>=
-reporter.tags <- reporterTagNames(ibspectra)
-n.factors <- setNames(rep("n.n.", length(reporter.tags)),reporter.tags)
-nn.factors <- ibspectra@log[grep("normalization.multiplicative.factor",
-                                 rownames(ibspectra@log)),"Message"]
-names(nn.factors) <- sub(".* channel ","",names(nn.factors))
-n.factors[names(nn.factors)] <- nn.factors
+if (is.null(ri.nn)) { 
+   cat("\\begin{tabular}{rrrr}\n",
+       paste("","",
+             "\\multicolumn{2}{c}{intensites}",sep=" & "),"\\\\",
+       paste("tag",
+             "NA \\%\\footnote{Percentage of spectra with no quantitative information}",
+             "mean",
+             "median",
+             sep=" & "),
+       " \\\\ \\hline",
+       paste(names(n.factors),
+             sprintf("%.2f",100*colSums(is.na(ri))/nrow(ri)),
+             sprintf("%.2f",apply(ri,2,median,na.rm=TRUE)),
+             sprintf("%.2f",colMeans(ri,na.rm=TRUE)),             
+             sep=" & ",collapse="\\\\ \n"),
+       "\\end{tabular}",sep="\n")
 
-ri <- reporterIntensities(ibspectra)
-ri.nn <- reporterData(ibspectra,element="ions_not_normalized") # null if not normalized
-
-   cat("\\begin{tabular}{rrrrrrr}",
+} else {
+    cat("\\begin{tabular}{rrrrrrr}\n",
        paste("","",
              "\\multicolumn{2}{c}{before norm.}",
              "\\multicolumn{2}{c}{after norm.}",
@@ -93,13 +128,15 @@ ri.nn <- reporterData(ibspectra,element="ions_not_normalized") # null if not nor
              "factor\\footnote{n.n. \\ldots~excluded from normalization}",sep=" & "),
        " \\\\ \\hline",
        paste(names(n.factors),
-             sprintf("%.2f",100*colSums(is.na(ri))/nrow(ri)),
+             sprintf("%.2f",100*colSums(is.na(ri.nn))/nrow(ri.nn)),
              sprintf("%.2f",colMeans(ri.nn,na.rm=TRUE)),
              sprintf("%.2f",apply(ri.nn,2,median,na.rm=TRUE)),
              sprintf("%.2f",colMeans(ri,na.rm=TRUE)),             
              sprintf("%.2f",apply(ri,2,median,na.rm=TRUE)),
              n.factors,sep=" & ",collapse="\\\\ \n"),
        "\\end{tabular}",sep="\n")
+   
+}
 @
 \normalsize
 \end{minipage}

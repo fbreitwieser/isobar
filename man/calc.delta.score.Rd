@@ -1,11 +1,12 @@
 \name{calc.delta.score}
 \alias{calc.delta.score}
+\alias{calc.pep.delta.score}
 \alias{filterSpectraDeltaScore}
 
 \title{Calculate Delta Score from Ion Score}
 \usage{
-calc.delta.score(data)
-filterSpectraDeltaScore(data, min.delta.score=10, do.remove=FALSE)
+calc.delta.score(my.data)
+filterSpectraDeltaScore(my.data, min.delta.score=10, do.remove=FALSE)
 }
 
 \description{
@@ -14,7 +15,7 @@ filterSpectraDeltaScore(data, min.delta.score=10, do.remove=FALSE)
   filterSpectraDeltaScore calls \code{calc.delta.score} and filters spectra below a minum delta score.}
 
 \arguments{
-  \item{data}{IBSpectra data frame.}
+  \item{my.data}{IBSpectra data frame.}
   \item{min.delta.score}{Minimum delta score.}
   \item{do.remove}{If TRUE, spectra below the min.prob threshold are not just set as 'use.for.quant=FALSE' but removed.}
 }

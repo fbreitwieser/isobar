@@ -1142,7 +1142,8 @@ peptideRatiosNotQuant <- function(ibspectra,...,
 
 
 ratiosReshapeWide <- function(quant.tbl,vs.class=NULL,sep=".",cmbn=NULL,short.names=FALSE) {
-  id.cols <- c("group","ac","peptide","modif","gene_names","pep.siteprobs","ac.x","ac.y","modification")
+  id.cols <- c("group","ac","peptide","modif","gene_names","pep.siteprobs",
+               "ID","Description","Gene","gene_names.x","gene_names.y","swissprot.ac","modification")
   id.cols <- id.cols[id.cols %in% colnames(quant.tbl)]
 
   # remove unneccasry column [should not be present anyway in quant.tbl created with a  current version]

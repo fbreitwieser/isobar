@@ -13,6 +13,7 @@ setAs("MSnSet","IBSpectra",function(from) {
                      iTRAQ8.113 = "iTRAQ8plexSpectra",
                      TMT2.126 = "TMT2plexSpectra",
                      TMT6.126 = "TMT6plexSpectra",
+                     TMT10.126 = "TMT10plexSpectra",
                      "unknown")
   if (identical(my.class,"unknown"))
     stop("I do not know how to map MSnSet w/ columns [",paste(colnames(ions),collapse=","),"] to an IBSpectra object.")
@@ -57,6 +58,8 @@ setAs("IBSpectra","MSnSet",function(from) {
     reporters <- iTRAQ8
   } else if (is(from,"TMT6plexSpectra")) {
     reporters <- TMT6
+  } else if (is(from,"TMT10plexSpectra")) {
+    reporters <- TMT10
   } else {
     stop("Cannot convert object")
   }

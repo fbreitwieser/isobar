@@ -1,6 +1,7 @@
-\name{ratio-summ}
+\name{Protein and peptide ratio calculation and summarization}
 \alias{proteinRatios}
 \alias{peptideRatios}
+\alias{peptideRatiosNotQuant}
 \alias{combn.matrix}
 \alias{combn.protein.tbl}
 \alias{summarize.ratios}
@@ -31,6 +32,9 @@ proteinRatios(ibspectra, noise.model, reporterTagNames = NULL,
                  NULL, variance.function = "maxi", combine = FALSE,
                  p.adjust = NULL, reverse = FALSE, cmbn = NULL,
                  before.summarize.f = NULL, ...)
+
+peptideRatiosNotQuant(ibspectra, ..., peptide = unique(fData(ibspectra)[!fData(ibspectra)[["use.for.quant"]], c("peptide", "modif", "site.probs")]))
+peptideRatios(ibspectra, ..., peptide = peptides(proteinGroup(ibspectra), columns = c("peptide", "modif")))
               
 combn.matrix(x, method = "global", cl = NULL, vs = NULL)
 

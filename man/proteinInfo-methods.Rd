@@ -2,6 +2,7 @@
 \alias{getProteinInfoFromBiomart}
 \alias{getProteinInfoFromUniprot}
 \alias{getProteinInfoFromNextProt}
+\alias{getProteinInfoFromEntrez}
 \alias{getProteinInfoFromBioDb}
 \alias{proteinInfoIsOnSpliceVariants}
 \alias{proteinInfo}
@@ -46,6 +47,7 @@
 
   getProteinInfoFromBioDb(x, ..., con = NULL)
 
+  getProteinInfoFromEntrez(x, splice.by = 200)
 }
 \arguments{
   \item{x}{ProteinGroup object}

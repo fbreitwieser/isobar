@@ -49,8 +49,8 @@ Proteome Research 2011.
 \Rpackage{isobar} allows analyzing iTRAQ 4plex and 8plex, and TMT
 2plex and 6plex experiments representing them as \Robject{IBSpectra}
 objects. The respective classes are \Robject{iTRAQ4plexSpectra},
-\Robject{iTRAQ8plexSpectra}, \Robject{TMT2plexSpectra}, and
-\Robject{TMT6plexSpectra}.
+\Robject{iTRAQ8plexSpectra}, \Robject{TMT2plexSpectra},
+\Robject{TMT6plexSpectra} and \Robject{TMT10plexSpectra}.
 
 The first thing you need to do is load the package.
 <<load-isobar,results=hide>>=
@@ -81,7 +81,7 @@ mantainer in case of problems.
 \Robject{readIBSpectra} is the primary function to generate a
 \Robject{IBSpectra} object. The first argument is one of {\small
   iTRAQ4plexSpectra}, {\small iTRAQ8plexSpectra}, {\small
-  TMT2plexSpectra} and {\small TMT6plexSpectra} and denotes the tag
+  TMT2plexSpectra}, {\small TMT6plexSpectra} and {\small TMT10plexSpectra} denotes the tag
 type and therefore class. 
 
 <<echo=TRUE,eval=FALSE>>=
