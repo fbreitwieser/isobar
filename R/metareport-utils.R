@@ -103,7 +103,7 @@ create.meta.reports <- function(properties.file="meta-properties.R",
   
   if (include.not.localized) {
     csvname.nl <- paste0(properties.env$name,".not.localized-combined_report.csv")
-    write.table(tbl.pg.nl[order(tbl.pg.nl[,'ID'],tbl.pg[,'start.pos']),],file=csvname.nl,row.names=FALSE,sep="\t",na="")
+    write.table(tbl.pg.nl[order(tbl.pg.nl[,'ID'],tbl.pg.nl[,'start.pos']),],file=csvname.nl,row.names=FALSE,sep="\t",na="")
     perl.cl <- paste(perl.cl,shQuote(csvname.nl))
   }
   ## generate Excel report (using Spreadsheet::WriteExcel)
