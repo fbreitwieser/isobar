@@ -324,23 +324,19 @@ write.xls.report <- function(properties.env,report.env,file="isobar-analysis.xls
   if ("METH" %in% ptm) my.ptm="Methylation"
 
   input.tbl[,'ac']  <- NULL
-  #t <- table(pnp[["peptide"]])
-  #pnp <- pnp[pnp[["peptide"]] %in% names(t)[t==1],]
-  #colnames(pnp)  <- c("peptide","ac")
-  pnp <- ddply(pnp,'peptide',function(x) c(peptide=x[1,1],ac=paste(x[,2],collapse=";")))
+  pnp <- ddply(pnp,'peptide',function(x) c(peptide=x[1,'peptide'],ac=paste(x[,'protein.g'],collapse=";")))
 
   input.tbl <- merge(pnp,input.tbl,by="peptide")
   input.tbl[["i"]]  <- seq_len(nrow(input.tbl))
   input.tbl[["Spectra"]] <- apply(input.tbl[,grepl('^n.spectra',colnames(input.tbl)),drop=FALSE],1,max)
-  ##input.tbl[["Spectra"]] <- apply(input.tbl,1, 
-  ##                             function(x) nrow(subset(fData(ibspectra),peptide==x['peptide'] & modif==x['modif'] & use.for.quant)))
   pg.df <- .proteinGroupAsConciseDataFrame(protein.group,modif.pos=ptm,ptm.info=ptm.info)
-  #if (isTRUE(properties.env[["show.motifs"]])) {
-    pep.modif.context <- getPeptideModifContext(protein.group,modif=ptm)
-    pg.df <- merge(pg.df,pep.modif.context,by=c("peptide","modif"),all=TRUE)
-  #}
+
+  # show peptide modification context
+  pep.modif.context <- getPeptideModifContext(protein.group,modif=ptm)
+  pg.df <- merge(pg.df,pep.modif.context,by=c("peptide","modif"),all=TRUE)
   
-  tbl <- merge(pg.df,input.tbl[,intersect(c("peptide","pep.siteprobs","modif","i","Spectra"),colnames(input.tbl))],by=c("peptide","modif"),all.y=TRUE)
+  tbl <- merge(pg.df,input.tbl[,intersect(c("peptide","pep.siteprobs","modif","i","Spectra"),colnames(input.tbl))],
+               by=c("peptide","modif"),all.y=TRUE)
   tbl[["peptide"]] <- .convertPeptideModif(tbl[,"peptide"],tbl[,"modif"])
   colnames(tbl)[colnames(tbl)=="peptide"] <- "Sequence"
   
