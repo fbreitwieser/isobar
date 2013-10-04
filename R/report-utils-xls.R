@@ -242,7 +242,10 @@ write.xls.report <- function(properties.env,report.env,file="isobar-analysis.xls
     tbl <- cbind(tbl,protein.intensities(ibspectra,tbl[["protein"]]))
   } else {
     if (isTRUE(properties.env[["xls.report.format"]]=="long")) {
-     tbl <-cbind(tbl,"Channels"=paste(input.tbl[["r2"]],"/",input.tbl[["r1"]]))
+     tbl <-cbind(tbl,"Classes"=paste(input.tbl[["class2"]],"/",input.tbl[["class1"]]))
+     if (!all(input.tbl[['r2']]==input.tbl[['class2']])) {
+       tbl <-cbind(tbl,"Channels"=paste(input.tbl[["r2"]],"/",input.tbl[["r1"]]))
+      }
     }
 
     if ("zscore" %in% properties.env[["xls.report.columns"]]) {
