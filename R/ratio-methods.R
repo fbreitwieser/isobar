@@ -1358,7 +1358,7 @@ summarize.ratios <-
           ac.sel <- !is.na(ratios.subset$lratio) & ratios.subset$class1 == class1 & ratios.subset$class2 == class2
 
           if (!any(ac.sel)) { ## no data for AC and classes
-            return(data.frame(ratios.subset[1,by.column],lratio=NA,variance=NA,n.spectra=0,n.pos=0,n.neg=0,
+            return(data.frame(lratio=NA,variance=NA,n.spectra=0,n.pos=0,n.neg=0,
                               p.value.rat=1,p.value.sample=1,is.significant=FALSE,r1=class1,r2=class2,
                               class1=class1,class2=class2,stringsAsFactors=FALSE))
           }
@@ -1405,7 +1405,7 @@ summarize.ratios <-
             (sum(ac.sel) >= min.detect.c) &&
             (is.pos | is.neg)
 
-          return(data.frame(ratios.subset[1,by.column],lratio=lratio,variance=variance,
+          return(data.frame(lratio=lratio,variance=variance,
                             n.spectra=min(ratios$n.spectra[ac.sel]),n.pos=n.pos,n.neg=n.neg,
                             p.value.rat=p.value.rat,p.value.sample=p.value.sample,
                             is.significant=is.significant,r1=class1,r2=class2,
