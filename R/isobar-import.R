@@ -133,6 +133,7 @@
       CHARGE='peptide charge state',
       THEOMASS='theoretical peptide mass',
       EXPMASS='experimental peptide mass',
+      EXPMOZ='experimental mass-to-charge ratio',
 	    PRECURSOR.ERROR='precursor error',
       PARENTINTENS='parent ion intensity',
       RT='retention time',
@@ -802,9 +803,9 @@ read.mzid <- function(filename) {
   ##  convert to list
   if (is.matrix(all.spectra)) 
     all.spectra <- split(all.spectra,col(all.spectra))
-  
+
   ## extract information from each spectrum
-  result <- ldply(all.spectra,function(x) {
+  result <- llply(all.spectra,function(x) {
     header <- .strsplit_vector(x[grep("^[A-Z]",x)],"=")
     numbers <- do.call(rbind,strsplit(x[grep("^1..\\.",x)],"\\s"))
     mzi.mass <- as.numeric(numbers[,1])
@@ -830,6 +831,9 @@ read.mzid <- function(filename) {
     }
     return(rr)
   },.parallel=isTRUE(getOption('isobar.parallel')))
+
+  result <- do.call(rbind,result)
+
   rm(all.spectra)
   if (length(result) == 0 || nrow(result) == 0) {
     stop("error reading MGF file - could not parse masses and intensities.\n",
@@ -864,6 +868,11 @@ read.mzid <- function(filename) {
   mass <- mass[sel,,drop=FALSE]
  
   spectrumtitles <- .trim(result[sel,1])
+
+  if (ncol(ions) != length(reporterNames) || ncol(mass) != length(reporterNames)) {
+    stop("ions or mass matrix have wrong dimension.")
+  }
+
   dimnames(ions) <- list(spectrumtitles,reporterNames)
   dimnames(mass) <- list(spectrumtitles,reporterNames)
   rm(result)
