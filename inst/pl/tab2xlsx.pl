@@ -1,6 +1,6 @@
 #!/usr/bin/perl
 # Creation date : 2010-09-29
-# Last modified : Fri 08 Feb 2013 03:58:24 PM CET
+# Last modified : Thu 15 Aug 2013 11:41:48 PM CEST
 
 # Module        : tab2xls.pl
 # Purpose       : converts csv files to XLS format
@@ -239,6 +239,7 @@ sub write_col {
     return (1,$field);
   } 
   if ($field eq 'TRUE') { $format=colorfmt('green'); }
+  elsif ($field eq 'FALSE') { $format=colorfmt('lightgray'); }
   elsif ($field eq '0') { $format=colorfmt('gray'); }
 
   $field = getname($field) if ($row == 0);

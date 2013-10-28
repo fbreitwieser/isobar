@@ -176,8 +176,9 @@ initialize.env <- function(env,properties.env) {
   env[["ratiodistr"]] <- .create.or.load.ratiodistr(env,properties.env)
   if (identical(properties.env[["report.level"]],"peptide") ) {
     env[["ptm.info"]]  <- .create.or.load.ptm.info(properties.env,proteinGroup(env[["ibspectra"]]))
-    env[["quant.tbl.notlocalized"]] <- .create.or.load.quant.table(env,properties.env,
-                                                                   name="quant.tbl.notlocalized",type="other-sites")
+    if (all(c('use.for.quant','pep.siteprobs') %in% colnames(fData(env[['ibspectra']]))) && !all(fData(env[['ibspectra']])[['use.for.quant']]))
+      env[["quant.tbl.notlocalized"]] <- 
+        .create.or.load.quant.table(env,properties.env,name="quant.tbl.notlocalized",type="other-sites")
   }
   env[["quant.tbl"]] <- .create.or.load.quant.table(env,properties.env)
   if (!"ac" %in% colnames(env[["quant.tbl"]]) && "protein" %in% colnames(env[["quant.tbl"]]))
@@ -566,6 +567,8 @@ property <- function(x, envir, null.ok=TRUE,class=NULL) {
     set.ratioopts(name="ratiodistr",env[["ratiodistr"]])
     
     if(identical(properties.env[["report.level"]],"peptide")) {
+      if (!"use.for.quant" %in% colnames(fData(env[["ibspectra"]])))
+        fData(env[["ibspectra"]])[["use.for.quant"]] <- TRUE
       if (type=='confident-sites')
         pep.n.modif <- unique(apply(fData(env[["ibspectra"]])[fData(env[["ibspectra"]])[["use.for.quant"]],
                                     c("peptide","modif")],2,cbind))
