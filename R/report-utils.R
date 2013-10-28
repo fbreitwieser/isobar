@@ -602,8 +602,10 @@ property <- function(x, envir, null.ok=TRUE,class=NULL) {
 
     if (!is.null(property('correct.peptide.ratios.with',properties.env))) {
       protein.quant.tbl <- .get.or.load("correct.peptide.ratios.with",properties.env)
+      correct.protein.group <- .get.or.load("correct.peptide.ratios.with_protein.group",properties.env)
       ratios.opts[["before.summarize.f"]] <- function(...)
         correct.peptide.ratios(..., protein.quant.tbl=protein.quant.tbl,
+                               protein.group = correct.protein.group,
                                correlation = property('peptide.protein.correlation',properties.env))
     }
 
