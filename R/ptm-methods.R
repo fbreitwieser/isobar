@@ -196,6 +196,21 @@ filterSpectraDeltaScore <- function(my.data, min.delta.score=10, do.remove=FALSE
 }
 
 
+.getModifOnPosition <- function(modifstring,pos=NULL) {
+  splitmodif <- strsplit(paste0(modifstring," "),":")
+  sapply(seq_along(splitmodif),function(i) {
+    x <- splitmodif[[i]]
+    x[length(x)] <- sub(" $","",x[length(x)])
+    if (!is.null(pos))
+      if (length(pos)==1)
+        x[pos+1]
+      else
+        x[pos[i]+1]
+    else
+      x[seq(from=2,to=length(x)-1)]
+  })
+}
+
 .convertModifToPhosphoRS <- function(modifstring,modifs) {
   sapply(strsplit(paste0(modifstring," "),":"),function(x) {
     x[length(x)] <- sub(" $","",x[length(x)])
