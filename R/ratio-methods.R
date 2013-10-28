@@ -399,10 +399,10 @@ correct.peptide.ratios <- function(ibspectra, peptide.quant.tbl, protein.quant.t
     stop("Ratio correction should be done before summarization! Use proteinRatio with argument before.summarize.f!")
 
   # map from peptides to protein group identifier
-  pnp <- peptideNProtein(protein.group)
   pi <- protein.group@peptideInfo
-  #pnp <- pnp[pnp[,'protein.g'] %in% reporterProteins(protein.group) & ,]
   all.q.prots <- unique(protein.quant.tbl$ac)
+  # TODO: It probably is a better idea to use the protein with the highest spectral count
+  #   as represantative
   n.quant <- table(protein.quant.tbl[!is.na(protein.quant.tbl[,'lratio']),'ac'])
   q.protein.acs <- strsplit(all.q.prots,",")
   pep.to.ac <- sapply(unique(peptide.quant.tbl$peptide),function(pep) {
@@ -414,12 +414,11 @@ correct.peptide.ratios <- function(ibspectra, peptide.quant.tbl, protein.quant.t
                               } else if (sum(prots.ok) > 1) {
                                 n.quant.acs <- n.quant[all.q.prots[prots.ok]]
                                 ac <- names(n.quant.acs)[which.max(n.quant.acs)]
-                                message(pep," matches to multiple ACs: ", paste(all.q.prots[prots.ok],collapse=" & ")," [Using ",ac," with ",n.quant.acs[ac],"quantifications]")
+                                message(pep," matches to multiple ACs: ", paste(all.q.prots[prots.ok],collapse=" & ")," [Using ",ac," with ",n.quant.acs[ac]," quantifications]")
                               } else {
                                 ac <- all.q.prots[prots.ok]
                               }
                               return(ac)
-
   })
   peptide.quant.tbl[,'ac'] <- pep.to.ac[peptide.quant.tbl[,'peptide']]
 
