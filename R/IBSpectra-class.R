@@ -144,7 +144,9 @@ setValidity("IBSpectra",.valid.IBSpectra)
                SITEPROBS='site.probs',PHOSPHO.SITES='phospho.sites',PEP.SITEPROBS='pep.siteprobs')
 
 .SPECTRUM.COLS <- c(PEPTIDE="peptide",MODIFSTRING="modif",CHARGE="charge",
-                   THEOMASS="theo.mass",EXPMASS="exp.mass",PRECURSOR.ERROR="precursor.error",
+                   THEOMASS="theo.mass",EXPMASS="exp.mass",
+                   EXPMOZ="exp.moz",
+                   PRECURSOR.ERROR="precursor.error",
                    PARENTINTENS="parent.intens",RT="retention.time",
                    SPECTRUM="spectrum",SPECTRUM.QUANT="spectrum.quant",
                    .ID.COLS,USEFORQUANT="use.for.quant",

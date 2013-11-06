@@ -66,6 +66,7 @@ setMethod("ProteinGroup",signature(from="data.frame",template="ProteinGroup",pro
           function(from,template,proteinInfo=NULL) {
       # TODO: exclude groups from beeing reporters when
       #       there's no reporter-specific peptide ?
+      message("Creating ProteinGroup from template")
 
       from <- .factor.as.character(from)
       if ('accession' %in% colnames(from)) 
@@ -173,6 +174,7 @@ setMethod("ProteinGroup",signature(from="data.frame",template="NULL",proteinInfo
 
 setMethod("ProteinGroup",signature(from="data.frame",template="missing",proteinInfo="ANY"),
           function(from,proteinInfo) {
+      message("Creating ProteinGroup")
 
       from <- .factor.as.character(from)
       if ('accession' %in% colnames(from)) 
@@ -216,17 +218,18 @@ setMethod("ProteinGroup",signature(from="data.frame",template="missing",proteinI
       from$protn <- as.integer(as.factor(from[["protein"]]))
       
       # with which peptide-combination are proteins detected?
-      combn.peptides <- ddply(from,"protein",
-                              function(s) c(peptides=paste0(sort(unique(s[,'peptn'])),
-                                                            collapse="-")))
+      combn.peptides <- tapply(from[["peptn"]],from[["protein"]],
+                               function(s) paste0(sort(unique(s)),collapse="-"))
       
       # group proteins with same peptide combinations together
       # - those are indistiguishable
-      combn.proteins <- ddply(combn.peptides,'peptides',
-            function(x) c(protein.g=paste0(x[,'protein'],collapse=",")))
+      combn.proteins <- tapply(names(combn.peptides),combn.peptides,
+                               function(x) paste0(x,collapse=","))
       
       # merge data frames
-      from <- merge(from,merge(combn.peptides,combn.proteins,by='peptides'),by='protein')
+      f.peptides <- combn.peptides[ from[["protein"]] ]
+      from[["protein.g"]] <- combn.proteins[ f.peptides ]
+                                                
       pep.n.prots <- unique(subset(from,,c("peptide","protein.g")))
       all.protein.g <- table(pep.n.prots[['protein.g']])
       prots.to.prot <- as.matrix(unique(subset.s(from,c("protein.g","protein"))))
@@ -693,6 +696,7 @@ proteinGroup.as.concise.data.frame <-
            human.protein.acs=TRUE,show.startpos=TRUE,modif.pos=NULL,
            ptm.info=NULL,link.url="http://www.uniprot.org/uniprot/",
            report.only.modified=FALSE) {
+        i = 0
 
         pep.n.prot <- merge(as.data.frame(peptideNProtein(from),stringsAsFactors=FALSE),
                             from@peptideInfo,by="peptide")
@@ -715,13 +719,17 @@ proteinGroup.as.concise.data.frame <-
 
         in.df <- ddply(ipp.df, c("reporter.protein"),
           function(x) {
-            # for each 'protein AC' (no splice variant), summarize the splice variants (eg P123-[1-3,5])
-            merged.splicevariants <- ddply(x,"proteinac.wo.splicevariant",.summarize.splice.variants,link.url=link.url)
-
+            ## for each 'protein AC' (no splice variant), 
+            ##  summarize the splice variants (eg P123-[1-3,5])
+            merged.splicevariants <- 
+              ddply(x,"proteinac.wo.splicevariant",
+                    .summarize.splice.variants,link.url=link.url)
             # for each modified peptide, get one record summarizing its information
-            merged.pepmodifs <- ddply(x,c("peptide","modif"),.summarize.pepmodif,modif.pos=modif.pos,ptm.info=ptm.info,from=from)
+            merged.pepmodifs <- ddply(x,c("peptide","modif"),.summarize.pepmodif,
+                                      modif.pos=modif.pos,ptm.info=ptm.info,from=from)
             data.frame(proteinn=paste(merged.splicevariants[,'ac'],collapse=","),
-                       link=merged.splicevariants[1,'link'],merged.pepmodifs,stringsAsFactors=FALSE)
+                       link=merged.splicevariants[1,'link'],
+                       merged.pepmodifs,stringsAsFactors=FALSE)
         },.parallel=isTRUE(getOption('isobar.parallel')))
 
         cols <- c("proteinn","link","start.pos","real.peptide","modif","modif.pos","modif.comment")
@@ -749,9 +757,10 @@ proteinGroup.as.concise.data.frame <-
                        if (!is.null(modif.pos)) {
                          null.comments <- x[,'modif.comment'] == ""
                          comment <- ifelse(all(null.comments),"",
-                                           paste0("@comment=",paste(x[,'modif.comment'][!null.comments],collapse="\n"),"@"))
-                         modif.pos <- ifelse(!any(x[,'modif.pos']!=0),"",
-                                             paste0(comment,paste(x[,'modif.pos'],collapse=";")))
+                                           paste(x[,'modif.comment'][!null.comments],collapse="\n"))
+                         #modif.pos <- ifelse(!any(x[,'modif.pos']!=0),"",
+                         #                    paste0('@comment=',comment,'@',paste(x[,'modif.pos'],collapse=";")))
+                         modif.pos <- ifelse(!any(x[,'modif.pos']!=0),"",paste(x[,'modif.pos'],collapse=";"))
 
                          res <- cbind(res,modif.pos=modif.pos,comment=comment,stringsAsFactors=FALSE)
                        }
@@ -770,8 +779,10 @@ proteinGroup.as.concise.data.frame <-
 
 .summarize.pepmodif <- function(x,modif.pos,ptm.info,from) {
   res <- data.frame(peptide=x$peptide[1],start.pos=paste(x$start.pos,collapse=";"),
-                    real.peptide=.unique.or.collapse(x[,'real.peptide']),
                     stringsAsFactors=FALSE)
+  if ('real.peptide' %in% colnames(x)) 
+    res <- cbind(res,real.peptide=.unique.or.collapse(x[,'real.peptide']),stringsAsFactors=FALSE)
+  
   if (!is.null(modif.pos)) 
     res <- cbind(res,.get.modif.pos(x,modif.pos,ptm.info,from))
   
@@ -793,7 +804,9 @@ proteinGroup.as.concise.data.frame <-
 .get.modif.pos <- function(x,modif.pos,ptm.info,from) {
    pepseq <- strsplit(x$peptide[1],"")[[1]]
    # get modification position foreach protein (in peptide) from modification string
-   modification.positions.foreach.protein <- .convertModifToPos(x$modif,modif.pos,collapse=NULL,simplify=FALSE,and.name=!is.null(names(modif.pos)))
+   modification.positions.foreach.protein <- 
+     .convertModifToPos(x$modif,modif.pos,collapse=NULL,simplify=FALSE,and.name=!is.null(names(modif.pos)))
+
    modif.posi <- t(mapply(.get.modif.pos.for.ac,x$protein,x$splicevariant,modification.positions.foreach.protein,x$start.pos,
                           MoreArgs=list(from=from,pepseq=pepseq,ptm.info=ptm.info)))
 
@@ -855,12 +868,12 @@ proteinGroup.as.concise.data.frame <-
   }
   null.comments <- is.na(comments)
 
+  if (!is.null(modif))
+    poss <- paste0(poss,modif)
   if (sum(known.pos) > 0)
     poss[known.pos] <- paste0(residue[known.pos],poss[known.pos],"*")
   poss[!known.pos] <- paste0(residue[!known.pos],poss[!known.pos])
 
-  if (!is.null(modif))
-    poss <- paste0(poss,modif)
 
   c(paste(poss,collapse="&"),
     ifelse(all(null.comments),NA,paste(comments[!null.comments],collapse="\n")),
@@ -1423,7 +1436,7 @@ calcPeptidePosition <- function(peptide.info,protein.info,calc.il.peptide) {
   peptide.info[,'start.pos'] <- NA
   if (missing(calc.il.peptide)) 
     calc.il.peptide <- !('real.peptide' %in% colnames(peptide.info) && !all(is.na(peptide.info[,'real.peptide'])))
-  if (calc.il.peptide) 
+  if (isTRUE(calc.il.peptide)) 
     peptide.info[,'real.peptide'] <- NA
   peptide.info <- unique(peptide.info)
   last.elem <- nrow(peptide.info)

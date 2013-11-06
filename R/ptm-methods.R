@@ -196,6 +196,21 @@ filterSpectraDeltaScore <- function(my.data, min.delta.score=10, do.remove=FALSE
 }
 
 
+.getModifOnPosition <- function(modifstring,pos=NULL) {
+  splitmodif <- strsplit(paste0(modifstring," "),":")
+  sapply(seq_along(splitmodif),function(i) {
+    x <- splitmodif[[i]]
+    x[length(x)] <- sub(" $","",x[length(x)])
+    if (!is.null(pos))
+      if (length(pos)==1)
+        x[pos+1]
+      else
+        x[pos[i]+1]
+    else
+      x[seq(from=2,to=length(x)-1)]
+  })
+}
+
 .convertModifToPhosphoRS <- function(modifstring,modifs) {
   sapply(strsplit(paste0(modifstring," "),":"),function(x) {
     x[length(x)] <- sub(" $","",x[length(x)])
@@ -205,7 +220,7 @@ filterSpectraDeltaScore <- function(my.data, min.delta.score=10, do.remove=FALSE
     for (i in seq_len(nrow(modifs))) 
       xx[grep(paste0("^",modifs[i,1]),x)] <- modifs[i,2]
 
-    if(any(is.na(xx))) stop("Could not convert modifstring ",modifstring)
+    if(any(is.na(xx))) stop("Could not convert [",paste0(x[is.na(xx)],collapse=" and "),"] modifstring ",modifstring)
 
     y <- c(xx[1],".",xx[2:(length(xx)-1)],".",xx[length(xx)]);
     paste(y,collapse="") })
@@ -499,10 +514,13 @@ observedKnownSites <- function(protein.group,protein.g,ptm.info,modif,modificati
 }
 
 
-getPeptideModifContext <- function(protein.group,modif,n.aa.up=5,n.aa.down=5) {
+getPeptideModifContext <- function(protein.group,modif,n.aa.up=7,n.aa.down=7) {
   
-  peptide.info <- unique(peptideInfo(protein.group)[,c('modif','protein','peptide')])
-  protein.sequences <- paste0(paste0(rep("_",n.aa.down),collapse=""),gsub("I","L",proteinInfo(protein.group)[,'sequence']),paste0(rep("_",n.aa.up),collapse="")) # enlarge sequence in case peptide starts in the beginning / end
+  peptide.info <- unique(peptideInfo(protein.group)[,c('modif','protein','peptide','real.peptide')])
+  protein.sequences <- paste0(paste0(rep("_",n.aa.down),collapse=""),
+                              #gsub("I","L",proteinInfo(protein.group)[,'sequence']),
+                              proteinInfo(protein.group)[,'sequence'],
+                              paste0(rep("_",n.aa.up),collapse="")) # enlarge sequence in case peptide starts in the beginning / end
   names(protein.sequences) <- proteinInfo(protein.group)[,'accession']
   
   pep.modif.context <- mapply(function(pepmodifs,protein.ac,pep) {
@@ -534,13 +552,14 @@ getPeptideModifContext <- function(protein.group,modif,n.aa.up=5,n.aa.down=5) {
     }),collapse=",")
   },strsplit(paste0(peptide.info[,'modif']," "),":"),
     peptide.info[,'protein'], 
-    peptide.info[,'peptide'])
+    peptide.info[,'real.peptide'])
 
   # get pep-modif context
   context.df <- unique(data.frame(peptide=peptide.info[,'peptide'],modif=peptide.info[,'modif'],context=pep.modif.context,stringsAsFactors=FALSE))
-  print(head(context.df))
   ddply(context.df,
         c("peptide","modif"),
-        function(x) data.frame(peptide=x[1,'peptide'],modif=x[1,'modif'],context=paste(x[,'context'],collapse=";"),stringsAsFactors=FALSE))
+        function(x) 
+          data.frame(peptide=x[1,'peptide'],modif=x[1,'modif'],
+                     context=paste(x[,'context'],collapse=";"),stringsAsFactors=FALSE))
 
 }

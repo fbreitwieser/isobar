@@ -402,25 +402,34 @@ correct.peptide.ratios <- function(ibspectra, peptide.quant.tbl, protein.quant.t
   pnp <- peptideNProtein(protein.group)
   pi <- protein.group@peptideInfo
   #pnp <- pnp[pnp[,'protein.g'] %in% reporterProteins(protein.group) & ,]
-  all.q.prots <- unique(protein.quant.tbl$ac)
+  all.q.prots <- unique(protein.quant.tbl[,'ac'])
   n.quant <- table(protein.quant.tbl[!is.na(protein.quant.tbl[,'lratio']),'ac'])
   q.protein.acs <- strsplit(all.q.prots,",")
-  pep.to.ac <- sapply(unique(peptide.quant.tbl$peptide),function(pep) {
-                              pep.prots <- pi[pi[,'peptide'] == pep,'protein']
-                              prots.ok <- sapply(q.protein.acs,function(q.prots) any(pep.prots %in% q.prots))
-                              if (sum(prots.ok) == 0) {
-                                message("could not map peptide ",pep,"!")
-                                ac <- "NA"
-                              } else if (sum(prots.ok) > 1) {
-                                n.quant.acs <- n.quant[all.q.prots[prots.ok]]
-                                ac <- names(n.quant.acs)[which.max(n.quant.acs)]
-                                message(pep," matches to multiple ACs: ", paste(all.q.prots[prots.ok],collapse=" & ")," [Using ",ac," with ",n.quant.acs[ac],"quantifications]")
-                              } else {
-                                ac <- all.q.prots[prots.ok]
-                              }
-                              return(ac)
 
-  })
+  pi <- merge(pi,as.data.frame(isobar:::.as.matrix(protein.group@indistinguishableProteins,
+                                                   colnames=c("protein","protein.g")),
+                               stringsAsFactors=FALSE))
+  pep.to.ac <- isobar:::.as.vect(unique(pi[,c('peptide','protein.g')]))
+
+#  pep.to.ac <- sapply(unique(peptide.quant.tbl$peptide),function(pep) {
+#                              pep.prots <- pi[pi[,'peptide'] == pep,'protein']
+#                              prots.ok <- sapply(q.protein.acs,function(q.prots) any(pep.prots %in% q.prots))
+#                              if (sum(prots.ok) == 0) {
+#                                message("could not map peptide ",pep,"!")
+#                                ac <- "NA"
+#                              } else if (sum(prots.ok) > 1) {
+#                                n.quant.acs <- n.quant[all.q.prots[prots.ok]]
+#                                ac <- names(n.quant.acs)[which.max(n.quant.acs)]
+#                                message(pep," matches to multiple ACs: ", 
+#                                        paste(all.q.prots[prots.ok],collapse=" & "),
+#                                        " [Using ",ac," with ",n.quant.acs[ac]," quantifications]")
+#                              } else {
+#                                message(".",appendLF=FALSE)
+#                                ac <- all.q.prots[prots.ok]
+#                              }
+#                              return(ac)
+#  })
+
   peptide.quant.tbl[,'ac'] <- pep.to.ac[peptide.quant.tbl[,'peptide']]
 
   # merged peptide and protein quant table
@@ -1134,8 +1143,11 @@ peptideRatiosNotQuant <- function(ibspectra,...,
 
 ratiosReshapeWide <- function(quant.tbl,vs.class=NULL,sep=".",cmbn=NULL,short.names=FALSE) {
   id.cols <- c("group","ac","peptide","modif","gene_names","pep.siteprobs",
-               "ID","Description","Gene","gene_names.x","gene_names.y","swissprot.ac")
+               "ID","Description","Gene","gene_names.x","gene_names.y","swissprot.ac","modification")
   id.cols <- id.cols[id.cols %in% colnames(quant.tbl)]
+
+  # remove unneccasry column [should not be present anyway in quant.tbl created with a  current version]
+  quant.tbl$ratios.subset.1..by.column. <- NULL
 
   if (!is.null(cmbn)) {
     sel <- paste(quant.tbl$r1,quant.tbl$r2) %in% paste(cmbn[1,],cmbn[2,])
@@ -1174,7 +1186,7 @@ ratiosReshapeWide <- function(quant.tbl,vs.class=NULL,sep=".",cmbn=NULL,short.na
 
   q.coltypes <- sapply(quant.tbl.num,class)
   logical.cols <- q.coltypes == 'logical'
-  if (!all(q.coltypes %in% c("numeric","logical"))) {
+  if (!all(q.coltypes %in% c("numeric","logical","integer"))) {
     bad.cols <- q.coltypes[!q.coltypes %in% c("numeric","logical")]
     stop("quantification table reshape does not work - ",
          " columns ",paste0(names(bad.cols),collapse=","),
@@ -1197,11 +1209,9 @@ ratiosReshapeWide <- function(quant.tbl,vs.class=NULL,sep=".",cmbn=NULL,short.na
     stop("quantification table reshape did not work - columns should be numeric")
   q2 <- as.data.frame(q2)
   if (any(logical.cols)) {
-    col.n <- seq((which(logical.cols)-1)*length(ccomp)+1,length.out=length(ccomp))
+    col.n <- unlist(lapply((which(logical.cols)-1)*length(ccomp)+1,function(x) seq(x,length.out=length(ccomp))))
     q2[,col.n] <- sapply(q2[,col.n],as.logical)
   }
-
-
 
   qq <- cbind(q1,q2)
   rownames(qq) <- NULL
@@ -1349,7 +1359,7 @@ summarize.ratios <-
           ac.sel <- !is.na(ratios.subset$lratio) & ratios.subset$class1 == class1 & ratios.subset$class2 == class2
 
           if (!any(ac.sel)) { ## no data for AC and classes
-            return(data.frame(ratios.subset[1,by.column],lratio=NA,variance=NA,n.spectra=0,n.pos=0,n.neg=0,
+            return(data.frame(lratio=NA,variance=NA,n.spectra=0,n.pos=0,n.neg=0,
                               p.value.rat=1,p.value.sample=1,is.significant=FALSE,r1=class1,r2=class2,
                               class1=class1,class2=class2,stringsAsFactors=FALSE))
           }
@@ -1396,7 +1406,7 @@ summarize.ratios <-
             (sum(ac.sel) >= min.detect.c) &&
             (is.pos | is.neg)
 
-          return(data.frame(ratios.subset[1,by.column],lratio=lratio,variance=variance,
+          return(data.frame(lratio=lratio,variance=variance,
                             n.spectra=min(ratios$n.spectra[ac.sel]),n.pos=n.pos,n.neg=n.neg,
                             p.value.rat=p.value.rat,p.value.sample=p.value.sample,
                             is.significant=is.significant,r1=class1,r2=class2,
