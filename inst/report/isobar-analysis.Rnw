@@ -86,9 +86,9 @@ cmbn.class <- sanitize(t(unique(quant.tbl[,c("class1","class2")])))
 is.single.comparision <- ncol(cmbn) ==1
 
 if (is.single.comparision) {
-  name.w <- "8cm"
-  coldef <- "@{}rp{8cm}rrrrr@{}r@{}r@{}"
-  coldef.s <- "@{}rp{8cm}rrrrr@{}r@{}"
+  name.w <- "9.5cm"
+  coldef <- "@{}rp{9.5cm}rrrrr@{}r@{}r@{}"
+  coldef.s <- "@{}rp{9.5cm}rrrrr@{}r@{}"
   ncol.p <- 9
   mr <- function(text,width=NULL) text  
 } else {
@@ -127,7 +127,7 @@ if (!is.null(cl)) {
 @
 \quad
 \begin{tabular}{rp{7.5cm}}
-\multicolumn{2}{c}{Column Description} \bigstrut  \\
+\multicolumn{2}{c}{Column Descriptions} \\ \hline \bigstrut[t]
 \emph{protein} & Protein Identification information.  \\
 \emph{peptides} & Number of peptides for protein. \\
 \emph{spectra} & Number of idenfitied spectra  for protein. \\
@@ -380,7 +380,7 @@ message("Writing protein group details ")
 
 colors <- c("blue","red","green","cyan","magenta","yellow")
 prot_i <- 1
-cat("{\\small\\setlength{\\tabcolsep}{3pt} \n")
+cat("{\\small \n")
 cat("\\begin{longtable}{rl@{}llp{5cm}l}\n")
 for (reporter.protein.g in proteins) {
 #  protein.name.i <- unique(quant.tbl$latex.protein.name.2[quant.tbl$protein==protein])
@@ -399,6 +399,7 @@ for (reporter.protein.g in proteins) {
   #            sanitize(group.section.name,dash=F)))
   #cat(sprintf("\\label{protein.%s}\n",prot_i))
   draw.proteingroup.row(sprintf("\\label{protein.%s} %s",prot_i,prot_i),protein.group,reporter.protein.g)
+  cat("\\bigstrut[b]\n")
   if (prot_i%%100 == 0) message(".",appendLF=FALSE);
   prot_i <- prot_i + 1
   
