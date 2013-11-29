@@ -2,7 +2,7 @@
 ### plotting methods.
 ###
 
-setGeneric("reporterMassPrecision", function(x,plot)
+setGeneric("reporterMassPrecision", function(x,plot,...)
            standardGeneric("reporterMassPrecision"))
 setGeneric("maplot",function(x,channel1,channel2,...) standardGeneric("maplot"))
 setGeneric("plotRatio",function(x,channel1,channel2,protein,...)
@@ -21,7 +21,7 @@ setGeneric("reporterIntensityPlot",function(x) standardGeneric("reporterIntensit
 # Calculates and displays the deviation from the 'true' tag mass 
 # - as specified in the IBSpectra object - of each channel.
 setMethod("reporterMassPrecision", signature=c(x="IBSpectra",plot="logical"),
-    function(x,plot=TRUE) {
+    function(x,plot=TRUE,nrow=NULL) {
       masses <- reporterMasses(x)
       melt.masses <- data.frame(reporter=rep(colnames(masses),each=nrow(masses)),
                                 reporter.tag.mass=rep(reporterTagMasses(x),each=nrow(masses)),
@@ -41,10 +41,13 @@ setMethod("reporterMassPrecision", signature=c(x="IBSpectra",plot="logical"),
        } else {
         opts.f <- theme; text.f <- element_text;
        }
+       if (is.null(nrow))
+         nrow <- ceiling(ncol(masses)/5)
+
        ggplot(melt.masses,aes(x=mass.difference)) + geom_vline(xintercept=0,alpha=0.8) +
           geom_histogram(fill="white",aes(colour=factor(reporter)),alpha=0.8,
                          binwidth=1/20*(max(melt.masses$mass.difference,na.rm=TRUE)-min(melt.masses$mass.difference,na.rm=TRUE))) + 
-            facet_wrap(~reporter,scales="fixed",nrow=1) + 
+            facet_wrap(~reporter,scales="fixed",nrow=nrow) + 
             theme_bw(base_size=10) + xlab("mass difference theoretical vs observed reporter tag mass") +
               opts.f(legend.position="none",
                    axis.text.x = text.f(angle=330,hjust=0,vjust=1,colour="grey50",size=7))
