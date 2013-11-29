@@ -1407,7 +1407,7 @@ summarize.ratios <-
             (is.pos | is.neg)
 
           return(data.frame(lratio=lratio,variance=variance,
-                            n.spectra=min(ratios$n.spectra[ac.sel]),n.pos=n.pos,n.neg=n.neg,
+                            n.spectra=min(ratios.subset$n.spectra[good.sel],na.rm=TRUE),n.pos=n.pos,n.neg=n.neg,
                             p.value.rat=p.value.rat,p.value.sample=p.value.sample,
                             is.significant=is.significant,r1=class1,r2=class2,
                             class1=class1,class2=class2,stringsAsFactors=FALSE))
