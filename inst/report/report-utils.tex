@@ -39,7 +39,7 @@
 %  #4: node text
 \newcommand{\proteinrow}[3]{
     \foreach \x/\style in {#2}{
-    \node (prot#1 pep\x) at (\x,#1) [\style] {#3};
+    \node (prot#1 pep\x) at (\x+1,#1*0.75+0.75) [\style] {#3};
   }
 }
 

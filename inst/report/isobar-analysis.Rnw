@@ -380,8 +380,8 @@ message("Writing protein group details ")
 
 colors <- c("blue","red","green","cyan","magenta","yellow")
 prot_i <- 1
-cat("\\small")
-cat("\\begin{longtable}{ll@{}llp{5cm}l}\n")
+cat("{\\small\\setlength{\\tabcolsep}{3pt} \n")
+cat("\\begin{longtable}{rl@{}llp{5cm}l}\n")
 for (reporter.protein.g in proteins) {
 #  protein.name.i <- unique(quant.tbl$latex.protein.name.2[quant.tbl$protein==protein])
   #group.section.name <- my.protein.infos[[reporter.protein.g]]$gene.name
@@ -404,7 +404,7 @@ for (reporter.protein.g in proteins) {
   
 }
 cat("\\end{longtable}\n")
-cat("\\normalsize")
+cat("}")
 }
 @
 

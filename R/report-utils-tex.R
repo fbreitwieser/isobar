@@ -140,20 +140,21 @@ draw.proteingroup.row <- function(name,protein.group,reporter.protein.g) {
   pgt <- proteinGroupTable(protein.group)
 
   n.multirow <- length(unique(protein.ac(protein.group,pgt[pgt$reporter.protein==reporter.protein.g,"protein.g"])))
-  cat("\\multirow{",n.multirow ,"}{*}{",name,"} & \n",sep="")
+  cat(name,"&",sep=" ")
   n.row <- 1
   show.pos <- FALSE
   for (protein.i in seq_len(ncol(gmp$group.member.peptides))) {
     x = colnames(gmp$group.member.peptides)[protein.i]
 
     my.protein.info <- my.protein.info(protein.group,x)
-    for (ac in unique(my.protein.info$accession)) {
+    my.acs <- unique(my.protein.info$accession)
+    for (ac.i in seq_along(my.acs)) {
       if (n.row > 1) cat(" & ") 
-      sel <- my.protein.info$accession == ac
+      sel <- my.protein.info$accession == my.acs[ac.i]
       var.string <- number.ranges(my.protein.info$splicevariant[sel])
       #cat(protein.i,"&")
       if (show.pos) cat(protein.i,"&")
-      cat(paste(sprintf("\\uniprotlink{%s}",sanitize(ac,dash=FALSE)),
+      cat(paste(sprintf("\\uniprotlink{%s}",sanitize(my.acs[ac.i],dash=FALSE)),
           ifelse(is.na(var.string),"",var.string)[1],
           sanitize(unique(my.protein.info$gene_name[sel]))[1],
           sanitize(unique(my.protein.info$protein_name[sel]))[1],
@@ -297,7 +298,7 @@ tikz.proteingroup <- function(protein.group,reporter.protein.g,show.pos,show.hea
        connect.nodes(-protein.i,which((reporter.sp.sel | group.sp.sel | unspecific.sel | quant.sel)&gmp$group.member.peptides[,protein.i]))
      }
   }
-  cat(sprintf("\\node{%s/%s/%s};\n",protein.peptides.df[protein.i,"rs"],
+  cat(sprintf("\\node at (0,0) {%s/%s/%s};\n",protein.peptides.df[protein.i,"rs"],
       protein.peptides.df[protein.i,"gs"],
       protein.peptides.df[protein.i,"us"]))
 
