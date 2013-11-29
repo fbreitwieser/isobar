@@ -35,6 +35,7 @@ load.tex.properties(.GlobalEnv) # loads environments
 \usepackage{multirow}
 \usepackage{ctable} % for midrule, etc
 %\setlength{\tabcolsep}{5pt} %default value: 6pt
+\usepackage{varwidth} %for the varwidth minipage environment
 \newcolumntype{x}[1]{>{\raggedright}p{#1}}
 
 <<echo=FALSE,results=tex>>=
@@ -102,25 +103,26 @@ if (is.single.comparision) {
 
 <<echo=FALSE,results=tex>>=
 cl <- attr(quant.tbl,"classLabels")
-cl[is.na(cl)] <- ""
 if (!is.null(cl)) {
-  if (is.null(names(cl))) {
-    cat("\\begin{tabular}{rp{3cm}}\n")
-    cat("\\multicolumn{2}{c}{Class Labels} \\bigstrut \\\\ \n")
-    cat("channel & class \\\\ \\hline \\bigstrut[t]\n")
-    cl <- paste("\\emph{",cl,"}",sep="")
-  } else {
-    cat("\\begin{tabular}{rrp{3cm}}\n")
-    cat("\\multicolumn{3}{c}{Class Labels} \\bigstrut \\\\ \n")
-    cat("channel & class & description \\\\ \\hline \\bigstrut[t]\n")
-    cl <- paste(paste("\\emph{",cl,"} & "),names(cl),sep="")
+  cl[is.na(cl)] <- ""
+  if (!is.null(cl)) {
+    if (is.null(names(cl))) {
+      cat("\\begin{tabular}{rV{4cm}}\n")
+      cat("channel & class \\\\ \\hline \\bigstrut[t]\n")
+      cl <- paste("\\emph{",cl,"}",sep="")
+    } else {
+      cat("\\begin{tabular}{rrM}\n")
+      cat("\\multicolumn{3}{c}{Class Labels} \\bigstrut \\\\ \n")
+      cat("channel & class & description \\\\ \\hline \\bigstrut[t]\n")
+      cl <- paste(paste("\\emph{",cl,"} & "),names(cl),sep="")
+    }
+    for (i in seq_along(reporterTagNames(ibspectra))) {
+      cat(reporterTagNames(ibspectra)[i]," & ",
+          cl[i],
+          "\\\\ \n")
+    }
+    cat("\\end{tabular}\n")
   }
-  for (i in seq_along(reporterTagNames(ibspectra))) {
-    cat(reporterTagNames(ibspectra)[i]," & ",
-        cl[i],
-        "\\\\ \n")
-  }
-  cat("\\end{tabular}\n")
 }
 @
 \quad
