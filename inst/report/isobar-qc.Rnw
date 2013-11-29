@@ -22,7 +22,7 @@ n.tags <- length(reporterTagNames(ibspectra))
 \usepackage{float}
 \usepackage{verbatim}
 \usepackage{fancyhdr}
-\setlength{\headheight}{13.6pt}
+\renewcommand{\headrulewidth}{0pt}
 \pagestyle{fancy}
 \lfoot{\today}
 \cfoot{\thepage}
@@ -38,6 +38,8 @@ write.tex.commands() # prints analysisname, analysisauthor, and isobarthanks com
   colorlinks=true,
   pdfauthor=\analysisauthor
 }
+\usepackage{titling}
+\setlength{\droptitle}{-5em}   % less space for title
 
 \title{Isobar QC Report \analysisname\isobarthanks}
 \author{\analysisauthor}
