@@ -1422,6 +1422,8 @@ summarize.ratios <-
                                   min.detect=min.detect,
                                   orient.div=orient.div))
 
+      attributes(result) = c(attributes(result),
+                             attributes(ratios)[!names(attributes(ratios)) %in% names(attributes(result))])
       return(result)
       
     } else if (summarize.method=="mean") {
