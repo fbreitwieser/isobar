@@ -82,7 +82,7 @@ setMethod("reporterIntensityPlot",
             intensities.nn <- reporterData(x,element="ions_not_normalized") # null if not normalized
             
             melt.intensities <- data.frame(tag=rep(colnames(intensities),each=nrow(intensities)),
-                       normalized=ifelse(is.null(intensities.nn),"no","2. after normalization"),
+                       normalized=ifelse(is.null(intensities.nn),"","2. after normalization"),
                        intensity=as.numeric(intensities),
                        stringsAsFactors=FALSE)
 
@@ -98,7 +98,8 @@ setMethod("reporterIntensityPlot",
               geom_boxplot(aes(color=factor(normalized)),size=0.5,alpha=0.6,
                            outlier.size=0.5,position=position_dodge(width=0.25)) + 
               xlab("isobaric reporter tag") +
-              scale_y_log10() + theme_bw(base_size=10) + scale_color_hue("") 
+              scale_y_log10() + theme_bw(base_size=10) + scale_color_hue("") +
+              opts(axis.text.x=theme_text(angle=90, hjust=1))
           }
 )
 
