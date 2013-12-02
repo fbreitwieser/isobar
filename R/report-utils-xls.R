@@ -190,7 +190,7 @@ write.xls.report <- function(properties.env,report.env,file="isobar-analysis.xls
     #order.c <- if(isTRUE(properties.env[["xls.report.format"]]=="long"),"Channels",NULL)
     if (identical(properties.env[["report.level"]],"protein"))
       tbl <- tbl[order(tbl[,"group"]),]
-    else 
+    else if (all(c("ID","Sequence") %in% colnames(tbl)))
       tbl <- tbl[order(tbl[,"ID"],tbl[,"Sequence"]),]
 
     tbl
@@ -375,9 +375,11 @@ write.xls.report <- function(properties.env,report.env,file="isobar-analysis.xls
   message(".",appendLF=FALSE)
   indist.proteins <- .vector.as.data.frame(indistinguishableProteins(protein.group),colnames=c("protein","protein.g"))
   indist.proteins <- indist.proteins[indist.proteins[,'protein.g'] %in% protein.gs,]
-  protein.info.tbl <- proteinInfo(protein.group,protein.g=protein.gs,select=c("name","protein_name","gene_name"))
-  colnames(protein.info.tbl) <- c("ID","Description","Gene")
-  tbl <- cbind(tbl,protein.info.tbl)
+  if (proteinInfo.ok) {
+    protein.info.tbl <- proteinInfo(protein.group,protein.g=protein.gs,select=c("name","protein_name","gene_name"))
+    colnames(protein.info.tbl) <- c("ID","Description","Gene")
+    tbl <- cbind(tbl,protein.info.tbl)
+  }
 
   message(".",appendLF=FALSE)
   # spectra and peptide counts
@@ -440,6 +442,7 @@ write.xls.report <- function(properties.env,report.env,file="isobar-analysis.xls
   tbl[["protein.g"]] <- NULL
   tbl <- tbl[order(tbl[,'i']),]
   if (!all(tbl[,'i']==input.tbl[,'i'])) stop ("problem in protein xls report ordering")
+
   return(list(tbl,input.tbl))
 }
 

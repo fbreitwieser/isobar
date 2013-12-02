@@ -413,12 +413,14 @@ property <- function(x, envir, null.ok=TRUE,class=NULL) {
   classLabels(ibspectra) <- class.labels
 
   if (!is.null(property('protein.info.f',properties.env)))
+    tryCatch({
     proteinInfo(proteinGroup(ibspectra)) <- 
       .create.or.load("protein.info",envir=properties.env,
                       f=property('protein.info.f',properties.env),
                       x=proteinGroup(ibspectra),
                       do.load=TRUE, msg.f="protein.info",
                       error=warning,default.value=proteinInfo(proteinGroup(ibspectra)))
+    },error=function(e) message("Error creating proteinInfo using function defined in [protein.info.f]."))
 
   if ("site.probs" %in% colnames(fData(ibspectra)) 
       && ! "pep.siteprobs" %in% colnames(fData(ibspectra)))
@@ -642,6 +644,10 @@ property <- function(x, envir, null.ok=TRUE,class=NULL) {
       quant.tbl <- quant.tbl[order(sort.genenames,quant.tbl[,"r1"],quant.tbl[,"r2"]),]
       quant.tbl[,"group"] <- as.numeric(factor(quant.tbl[,"ac"],levels=unique(quant.tbl[,"ac"])))
     }
+  
+    if (all(is.na(quant.tbl[["lratio"]])))
+      stop("All ratios are NA")
+
     return(quant.tbl)
   })
 }
