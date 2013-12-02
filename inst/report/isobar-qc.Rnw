@@ -102,7 +102,7 @@ if (is.null(ri.nn)) {
        paste("","",
              "\\multicolumn{2}{c}{intensites}",sep=" & "),"\\\\",
        paste("tag",
-             "\\%NA\\footnote{Percentage of spectra with no quantitative information}",
+             "NA\\footnote{Percentage of spectra with no quantitative information}",
              "mean",
              "median",
              sep=" & "),
@@ -115,14 +115,14 @@ if (is.null(ri.nn)) {
        "\\end{tabular}",sep="\n")
 
 } else {
-    cat("\\begin{tabular}{rrrrrrr}\n",
+    cat("\\begin{tabular}{r@{\\hspace{1em}}rr@{\\hspace{1em}}rr@{\\hspace{1em}}rr}\n",
        paste("","",
              "\\multicolumn{2}{c}{before norm.}",
              "\\multicolumn{2}{c}{after norm.}",
 #"\\multicolumn{2}{c}{after n.\\footnote{Intensities before and after normalization}}",
              "",sep=" & "),"\\\\",
        paste("tag",
-             "NA \\%\\footnote{Percentage of spectra with no quantitative information}",
+             "NA\\footnote{Percentage of spectra with no quantitative information}",
              "mean",
              "median",
              "mean",
@@ -131,10 +131,10 @@ if (is.null(ri.nn)) {
        " \\\\ \\hline",
        paste(names(n.factors),
              sprintf("%.2f",100*colSums(is.na(ri.nn))/nrow(ri.nn)),
-             sprintf("%.2f",colMeans(ri.nn,na.rm=TRUE)),
-             sprintf("%.2f",apply(ri.nn,2,median,na.rm=TRUE)),
-             sprintf("%.2f",colMeans(ri,na.rm=TRUE)),             
-             sprintf("%.2f",apply(ri,2,median,na.rm=TRUE)),
+             sprintf("%.1f",colMeans(ri.nn,na.rm=TRUE)),
+             sprintf("%.1f",apply(ri.nn,2,median,na.rm=TRUE)),
+             sprintf("%.1f",colMeans(ri,na.rm=TRUE)),             
+             sprintf("%.1f",apply(ri,2,median,na.rm=TRUE)),
              n.factors,sep=" & ",collapse="\\\\ \n"),
        "\\end{tabular}",sep="\n")
    
@@ -145,7 +145,7 @@ if (is.null(ri.nn)) {
 
 \subsection*{Ratio Distribution}
 Distribution of the computed protein ratios (bars) and the probability density function of 
-a Cauchy distribution (solid line) fitted as described below.
+a \Sexpr{class(ratiodistr)}  distribution (solid line) fitted as described below.
 
 \begin{minipage}{0.45\textwidth}
 <<fig-ratiodistribution,fig=TRUE,echo=FALSE,width=3,height=2>>=
@@ -239,7 +239,6 @@ if (!is.null(ratiodistr)) {
   curve.distr <- data.frame(x=limits,y=d(ratiodistr)(limits))
   g <- g + geom_line(data=curve.distr,aes(x=x,y=y),colour="black",alpha=.5)
 }
-
 
 gg <- grid.arrange(g,
 tableGrob(ddply(quant.tbl,c('channels','class2','class1')[c('channels','class2','class1') %in% colnames(quant.tbl)],
