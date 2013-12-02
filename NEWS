@@ -1,3 +1,11 @@
+CHANGES IN VERSION 1.9.2
+------------------------
+ - fix issue of NA in 'n.spectra' when calculating summarized ratios
+ - various report improvements:
+   - use column of variable width to display class labels
+   - add attributes of quant table to summarized result table
+   - improved placement of tikz peptide group pictures
+
 CHANGES IN VERSION 1.7.6
 ------------------------
  - added TMT 10plex (contribution from Florent Gluck)
