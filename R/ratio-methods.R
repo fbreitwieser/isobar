@@ -1273,13 +1273,19 @@ proteinRatios <-
 
 
   if (summarize) {
+    message("summarizing ratios ...")
     if (combn.method=="global")
       stop("summarization not meaningful with combn.method='global'. ",
            "Use combn.method='intraclass' or combn.method='interclass' to use ratios in or between classes.")
 
     ## calculate the number of combinations for each class-combination
-    n.combination <- table(cmbn["class1",],cmbn["class2",])
-    if (nrow(n.combination)==1 & ncol(n.combination)==1) n.combination <- as.numeric(n.combination)
+    if (reverse)
+      n.combination <- table(cmbn["class2",],cmbn["class1",])
+    else
+      n.combination <- table(cmbn["class1",],cmbn["class2",])
+
+    if (nrow(n.combination)==1 & ncol(n.combination)==1) 
+      n.combination <- as.numeric(n.combination)
     if (max(n.combination) < 2)
       stop("Summarize=TRUE makes no sense with only one combination, set summarize to FALSE or class labels differently.")
 
@@ -1323,13 +1329,16 @@ proteinRatios <-
 } # end proteinRatios
 
 summarize.ratios <-
-  function(ratios,by.column="ac",summarize.method="mult.pval",min.detect=NULL,n.combination=NULL,
+  function(ratios,by.column="ac",summarize.method="mult.pval",min.detect=NULL,
+           n.combination=NULL,
            strict.sample.pval=TRUE,strict.ratio.pval=TRUE,orient.div=0,
            sign.level=0.05,sign.level.rat=sign.level,sign.level.sample=sign.level,
            variance.function="maxi",ratiodistr=NULL) {
 
     if (!summarize.method  %in% c("mult.pval","mean"))
-      stop("Implemented summarize.methods: mult.pval, mean. Please choose one of them instead of ",summarize.method,".")
+      stop("Implemented summarize.methods: mult.pval, mean. ",
+           "Please choose one of them instead of ",summarize.method,".")
+
     if (!all(c("class1","class2") %in% colnames(ratios)))
       stop("'ratios' argument must specify classes w/ columns class1 and class2!")
 
@@ -1338,7 +1347,8 @@ summarize.ratios <-
     if (is.null(n.combination)) {
       cc <- unique(ratios[,c("r1","r2","class1","class2")])
       n.combination <- table(cc[,"class1"],cc[,"class2"])
-      if (nrow(n.combination)==1 & ncol(n.combination)==1) n.combination <- as.numeric(n.combination)
+      if (nrow(n.combination)==1 & ncol(n.combination)==1) 
+        n.combination <- as.numeric(n.combination)
     }
     if (is.null(min.detect))
       min.detect <- n.combination
@@ -1355,8 +1365,14 @@ summarize.ratios <-
 
           class1 <- classes[class_i,1]
           class2 <- classes[class_i,2]
-          n.combination.c <- ifelse(is.matrix(n.combination),n.combination[class1,class2],n.combination)
-          ac.sel <- !is.na(ratios.subset$lratio) & ratios.subset$class1 == class1 & ratios.subset$class2 == class2
+
+          n.combination.c <- ifelse(is.matrix(n.combination),
+                                    n.combination[class1,class2],
+                                    n.combination)
+
+          ac.sel <- !is.na(ratios.subset$lratio) & 
+                      ratios.subset$class1 == class1 & 
+                      ratios.subset$class2 == class2
 
           if (!any(ac.sel)) { ## no data for AC and classes
             return(data.frame(lratio=NA,variance=NA,n.spectra=0,n.pos=0,n.neg=0,
