@@ -1,5 +1,6 @@
 CHANGES IN VERSION 1.9.2
 ------------------------
+ - allow the use of a combination matrix in NoiseModel reporterTagNames
  - fix issue of NA in 'n.spectra' when calculating summarized ratios
  - various report improvements:
    - use column of variable width to display class labels

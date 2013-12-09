@@ -106,9 +106,19 @@ setMethod("initialize","NoiseModel",
       if (!is.null(ibspectra))
       {
         if (is.null(reporterTagNames)) reporterTagNames <- reporterTagNames(ibspectra)
+        if (!is.character(reporterTagNames))
+          stop("reporterTagNames has to be of class character.")
         
-        ri <- reporterIntensities(ibspectra,na.rm=FALSE)  
-        reporterTagNames.combn <- combn(reporterTagNames,2)
+        if (is.matrix(reporterTagNames)) {
+          # a combination matrix is supplied
+          if (nrow(reporterTagNames) != 2)
+            stop("reporterTagNames has to be either a vector or a combination matrix (with two rows).")
+          reporterTagNames.combn <- reporterTagNames
+        } else {
+          reporterTagNames.combn <- combn(reporterTagNames,2)
+        }
+
+        ri <- reporterIntensities(ibspectra,na.rm=FALSE)
         
         if (plot & !pool)
           par(mfrow=rep(ceiling(sqrt(ncol(reporterTagNames.combn))),2))
