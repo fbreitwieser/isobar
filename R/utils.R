@@ -14,6 +14,12 @@ if(!isGeneric("as.data.frame")) setGeneric("as.data.frame", useAsDefault=as.data
   x[ , y ]
 }
 
+# are 'most' (default: 90%) of the values in x TRUE?
+.most <- function(x,fraction=0.9) {
+  if (is.null(dim(x)) || !is.logical(x)) stop(".most function works on logical vectors")
+  sum(x)/length(x) > fraction
+}
+
 .check.isfunction <- function(f) {
   if (!is.function(f))
     stop(paste(deparse(substitute(f)),"must be a function!"))

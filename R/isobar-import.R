@@ -972,9 +972,6 @@ read.mzid <- function(filename) {
       id.data[,.PROTEIN.COLS['PROTEINAC']] <- sapply(split.ac,function(x) x[1]) 
       id.data[,.PROTEIN.COLS['NAME']] <- sapply(split.ac,function(x) ifelse(length(x) == 2, x[2], NA))
     }
-
-    id.data[,c(.PROTEIN.COLS['PROTEINAC'],.PROTEIN.COLS['DATABASE'])] <- 
-      .set.database(id.data[,.PROTEIN.COLS['PROTEINAC']])
   }
 
   if (decode.titles)
@@ -983,29 +980,6 @@ read.mzid <- function(filename) {
   if (trim.titles)
     id.data[,.SPECTRUM.COLS['SPECTRUM']] <- .trim(id.data[,.SPECTRUM.COLS['SPECTRUM']])
   return(id.data)
-}
-
-.uniprot.pattern.ac <- "^[A-Z][0-9][A-Z0-9][A-Z0-9][A-Z0-9][0-9]-?[0-9]*$"
-.uniprot.pattern.id <- "^[A-Z0-9]{2,5}_[A-Z9][A-Z0-9]{2,5}$"
-.entrez.pattern.id <- "^gi\\|[0-9]{5,15}$"
-.numeric.pattern.ac <- "^[0-9]{5,15}$"
-
-.set.database <- function(acs) {
-  res <- cbind(acs,NA)
-  sel.uniprot <- grepl(.uniprot.pattern.ac,acs)
-  sel.entrez <- grepl(.entrez.pattern.id,acs)
-  sel.numeric <- grepl(.numeric.pattern.ac,acs)
-
-  if (any(sel.uniprot))
-    res[sel.uniprot,2] <- "UniprotKB"
-
-  if (any(sel.entrez))
-    res[sel.entrez,] <- cbind(sapply(strsplit(acs[sel.entrez],"|",fixed=TRUE),function(x) x[2]),"Entrez Protein")
-
-  if (any(sel.numeric))
-    res[sel.numeric,2] <- "numeric"
-
-  return(res)  
 }
 
 .read.rockerbox <- function(filename) {

@@ -44,7 +44,7 @@ protein.group.template=NULL
 ## Via database or internet connection, informations on proteins (such
 ## as gene names and length) can be gathered. protein.info.f defines
 ## the function which takes a ProteinGroup object as argument
-protein.info.f=getProteinInfoFromUniprot
+protein.info.f=getProteinInfoFromTheInternet
 
 ## Where should cached files be saved? Will be created if it does not
 ## exist

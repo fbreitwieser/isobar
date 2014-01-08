@@ -19,7 +19,7 @@ setClass("ProteinGroup",
                    peptideInfo = "data.frame"
     ),
     prototype = prototype(
-        new("VersionedBiobase",versions=c(ProteinGroups="1.0.0")),
+        new("VersionedBiobase",versions=c(ProteinGroup="1.0.0")),
         peptideSpecificity = data.frame(peptide=c(),specificity=c())
     )
 )
@@ -304,10 +304,13 @@ setMethod("ProteinGroup",signature(from="data.frame",template="missing",proteinI
 
       # isoforms (handled for Uniprot only, ATM)
       proteins <- as.character(sort(unique(prots.to.prot[,"protein"])))
-      isoforms <- data.frame(proteinac.w.splicevariant = proteins,
+      isoforms <- data.frame(database = .get.database(proteins),
+                             proteinac.w.splicevariant = proteins,
                              proteinac.wo.splicevariant = proteins,
                              splicevariant = NA,stringsAsFactors=FALSE)
-      pos.isoforms <- grep("^[^-]*-[0-9]*$",proteins)
+      
+      sel.uniprot <- isoforms$database == .UNIPROTDATABASE
+      pos.isoforms <- sel.uniprot & grep("^[^-]*-[0-9]*$",proteins)
       isoforms$proteinac.wo.splicevariant[pos.isoforms] <- 
          sub("-[^-]*$","",proteins[pos.isoforms])
       isoforms$splicevariant[pos.isoforms] <- sub(".*-","",proteins[pos.isoforms])
@@ -329,6 +332,36 @@ setMethod("ProteinGroup",signature(from="data.frame",template="missing",proteinI
       
     }
 )
+
+
+.uniprot.pattern.ac <- "^[A-Z][0-9][A-Z0-9][A-Z0-9][A-Z0-9][0-9]-?[0-9]*$"
+.uniprot.pattern.id <- "^[A-Z0-9]{2,5}_[A-Z9][A-Z0-9]{2,5}$"
+.entrez.pattern.id <- "^gi\\|[0-9]{5,15}$"
+.numeric.pattern.ac <- "^[0-9]{5,15}$"
+
+.UNIPROTDATABASE <- "UniprotKB"
+.UNIPROTDATABASE_ID <- "UniprotKB IDs" # Maybe: add support to get Protein Info for Uniprot IDs, as some people use them (but they are not stable, see http://www.uniprot.org/faq/6)
+.ENTREZDATABASE <- "Entrez Protein"
+
+.get.database <- function(acs) {
+  res <- rep("unknown",length(acs))
+  sel.uniprot <- grepl(.uniprot.pattern.ac,acs)
+  sel.entrez <- grepl(.entrez.pattern.id,acs)
+  sel.numeric <- grepl(.numeric.pattern.ac,acs)
+
+  if (any(sel.uniprot))
+    res[sel.uniprot] <- .UNIPROTDATABASE
+
+  if (any(sel.entrez))
+    res[sel.entrez] <- .ENTREZDATABASE 
+
+  if (any(sel.numeric))
+    res[sel.numeric] <- "numeric"
+
+  return(res)  
+}
+
+
 
 
 .build.protein.group <- function(pgt,reporter.protein) {
@@ -395,9 +428,38 @@ getProteinInfoFromBiomart <- function(x,database="Uniprot") {
 
 # for NCBI protein: http://eutils.ncbi.nlm.nih.gov/entrez/eutils/efetch.fcgi?db=protein&id=115298678
 
-getProteinInfoFromUniprot <- function(x,splice.by=200, 
-                                      fields = c(accession="id",name="entry%20name",protein_name="protein%20names",
-                                                 gene_name="genes",organism="organism", length="length",sequence="sequence")) {
+getProteinInfoFromTheInternet <- function(x) {
+  if (is.character(x)) {
+    protein.acs <- x
+  } else {
+    my.df <- x@isoformToGeneProduct
+    protein.acs <- unique(my.df[sel.uniprot,"proteinac.wo.splicevariant"])
+    if ("database" %in% colnames(my.df)) {
+      sel.uniprot <- my.df[["database"]] == .UNIPROTDATABASE
+      sel.entrez <- my.df[["database"]] == .ENTREZDATABASE
+    }
+  }
+
+  if (!exists("sel.uniprot")) {
+    sel.uniprot <- grepl(.uniprot.pattern.ac,protein.acs)
+    sel.entrez <- grepl(.entrez.pattern.id,protein.acs)
+  }
+
+  res <- data.frame()
+  if (any(sel.uniprot)) 
+    res <- getProteinInfoFromUniprot(protein.acs[sel.uniprot])
+
+  if (any(sel.entrez))
+    res <- rbind.fill(res,getProteinInfoFromEntrez(protein.acs[sel.entrez]))
+
+  return(res)
+}
+
+getProteinInfoFromUniprot <- 
+  function(x,splice.by=200, 
+           fields = c(accession="id",name="entry%20name",protein_name="protein%20names",
+                      gene_name="genes",organism="organism", length="length",
+                      sequence="sequence")) {
  
   if (is.character(x))
     protein.acs <- x
@@ -406,18 +468,18 @@ getProteinInfoFromUniprot <- function(x,splice.by=200,
   protein.acs <- gsub("%","",protein.acs)
   protein.info <- c()
   i <- 1
-  while (i < length(protein.acs)) {
+  while (i <= length(protein.acs)) {
     cat(".")
     uniprot.url <- paste0("http://www.uniprot.org/uniprot/?query=",
                  paste0("accession:",protein.acs[seq(from=i,to=min(length(protein.acs),i+splice.by-1))],collapse="+OR+"),
                  "&format=tab&compress=no&columns=",
                  paste0(fields,collapse=","))
-    #if (isTRUE(opts_isobar$verbose))
-    #  message("fetching protein info from ",uniprot.url)
+    if (isTRUE(getOption('isobar.verbose')))
+      message("fetching protein info from ",uniprot.url)
     protein.info <- rbind(protein.info,read.delim(url(uniprot.url),stringsAsFactors=FALSE,col.names=names(fields)))
     i <- i + splice.by
   }
-  if (nrow(protein.info) > 0) {
+  if (!is.null(protein.info) && nrow(protein.info) > 0) {
     protein.info$protein_name <- sapply(strsplit(protein.info$protein_name," (",fixed=TRUE),function(x) x[1])
     protein.info$gene_name <- sapply(strsplit(protein.info$gene_name," "),function(x) x[1])
     protein.info$sequence <- gsub(" ","",protein.info$sequence)
@@ -436,12 +498,19 @@ getProteinInfoFromEntrez <- function(x,splice.by=200) {
   else  
     protein.acs <- x@isoformToGeneProduct[names(indistinguishableProteins(x)),"proteinac.wo.splicevariant"]
 
+  if (all(grepl("^gi|",protein.acs))) {
+    new.protein.acs <- sapply(strsplit(acs[sel.entrez],"|",fixed=TRUE),function(x) x[2]) # strip ^gi| 
+    protein.conv <- setNames(protein.acs,new.protein.acs)
+    protein.acs <- new.protein.acs
+  }
+
   protein.info <- c()
   i <- 1
   while (i < length(protein.acs)) {
     cat(".")
 
-    res <- xmlToList(paste0(eutils.url,paste(protein.acs[seq(from=i,to=min(length(protein.acs),i+splice.by-1))],collapse=",")))
+    full.url <- paste0(eutils.url,paste(as.character(protein.acs[seq(from=i,to=min(length(protein.acs),i+splice.by-1))]),collapse=","))
+    res <- xmlToList(full.url)
     res.l <- lapply(res, function(x) {
       unlist(setNames(lapply(x[names(x) != 'Id'], function(y) 
         if ('.attrs' %in% names(y) && y$.attrs['Name'] != 'Comment') 
@@ -450,7 +519,7 @@ getProteinInfoFromEntrez <- function(x,splice.by=200) {
 
     res.l <- res.l[!sapply(res.l,is.null)]
   
-    enames.to.isobar <- c(Gi="accession",Caption="name",Title="protein_name")
+    enames.to.isobar <- c(Gi="gi_accession",Caption="name",Title="protein_name")
     res.df <- ldply(res.l, function(x) { 
                     setNames(x[names(enames.to.isobar)],enames.to.isobar)
     })
@@ -462,6 +531,7 @@ getProteinInfoFromEntrez <- function(x,splice.by=200) {
  
   protein.info$gene_name <- NA
   protein.info$.id <- NULL
+  protein.info$accession <- protein.conv[protein.info$gi_accession]
   protein.info
 }
 
