@@ -315,11 +315,15 @@ setMethod("weightedMean",
 .get.cmbn <- function(combn,tags,cl) {
   if (!all(unlist(combn) %in% cl))
     stop("incorrect combn specification")
-  sapply(combn,function(cc) 
-         c(tags[cl==cc[1]],
-           tags[cl==cc[2]],
-           cl[cl==cc[1]],
-           cl[cl==cc[2]]))
+
+  res <- c()
+  for (cc in combn)
+    for (tag1 in tags[cl==cc[1]&!is.na(cl)]) 
+      for (tag2 in tags[cl==cc[2]&!is.na(cl)])
+        res <- cbind(res,c(r1=tag1,r2=tag2,
+                     class1=cc[1],
+                     class2=cc[2]))
+  res
 }
 
 
