@@ -36,11 +36,6 @@ setMethod("reporterMassPrecision", signature=c(x="IBSpectra",plot="logical"),
                  labels=sprintf("%s: m/z %.2f",
                    reporterTagNames(x),reporterTagMasses(x)))
        
-       if (compareVersion(packageDescription("ggplot2")$Version,"0.9.1") <= 0) {
-        opts.f <- opts; text.f <- theme_text;
-       } else {
-        opts.f <- theme; text.f <- element_text;
-       }
        if (is.null(nrow))
          nrow <- ceiling(ncol(masses)/5)
 
@@ -49,8 +44,8 @@ setMethod("reporterMassPrecision", signature=c(x="IBSpectra",plot="logical"),
                          binwidth=1/20*(max(melt.masses$mass.difference,na.rm=TRUE)-min(melt.masses$mass.difference,na.rm=TRUE))) + 
             facet_wrap(~reporter,scales="fixed",nrow=nrow) + 
             theme_bw(base_size=10) + xlab("mass difference theoretical vs observed reporter tag mass") +
-              opts.f(legend.position="none",
-                   axis.text.x = text.f(angle=330,hjust=0,vjust=1,colour="grey50",size=7))
+              .gg_theme(legend.position="none",
+                   axis.text.x = .gg_element_text(angle=330,hjust=0,vjust=1,colour="grey50",size=7))
       } else {
         res <- ddply(melt.masses,'reporter',function(x) {
           c('true reporter mass'=x$reporter.tag.mass[1],
@@ -99,7 +94,7 @@ setMethod("reporterIntensityPlot",
                            outlier.size=0.5,position=position_dodge(width=0.25)) + 
               xlab("isobaric reporter tag") +
               scale_y_log10() + theme_bw(base_size=10) + scale_color_hue("") +
-              opts(axis.text.x=theme_text(angle=90, hjust=1))
+              .gg_theme(axis.text.x=.gg_element_text(angle=90, hjust=1))
           }
 )
 

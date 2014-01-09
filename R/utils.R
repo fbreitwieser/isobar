@@ -14,6 +14,21 @@ if(!isGeneric("as.data.frame")) setGeneric("as.data.frame", useAsDefault=as.data
   x[ , y ]
 }
 
+.gg_theme <- function(...) {
+  if ( compareVersion(packageDescription("ggplot2")$Version,"0.9.1") > 0 )
+    theme(...)
+  else
+    opts(...)
+}
+
+.gg_element_text <- function(...) {
+  if ( compareVersion(packageDescription("ggplot2")$Version,"0.9.1") > 0 )
+    element_text(...)
+  else
+    theme_text(...)
+}
+
+
 # are 'most' (default: 90%) of the values in x TRUE?
 .most <- function(x,fraction=0.9) {
   if (is.null(dim(x)) || !is.logical(x)) stop(".most function works on logical vectors")
