@@ -204,7 +204,7 @@ if (any(quant.tbl[["is.significant"]] == 1,na.rm=TRUE)) {
         protein.names <- prot.info[["collapsed.gene_name"]][["protein_name"]]
         gene.names <- isobar:::.tex.combinenames(protein.names,is.single.comparision)
 
-        cat(" \t",sprintf("\\hyperref[protein.%s]{%s}",
+        cat(" ",sprintf("\\hyperref[protein.%s]{%s}",
                           protein.row[,"group"],prot_i),
             " & ",paste0(prot.info[["table.name"]],": ",
                          paste(gene.names,collapse=", ")),

@@ -1,6 +1,14 @@
-CHANGES IN VERSION 1.9.2
+CHANGES IN VERSION 1.9.3
 ------------------------
  - allow the use of a combination matrix in NoiseModel reporterTagNames
+ - added function getProteinInfoFromTheInternet which automatically recognizes Uniprot and Entrez ACs. Set now as default 'protein.info.f' in the report configuration.
+ - Overhauled isobar-analysis.Rnw
+   - use of ltxtables to allow optimal column widths (longer runtime, however)
+   - use [[ instead of $  for accession of lists
+   - better column and grouping description
+
+CHANGES IN VERSION 1.9.2
+------------------------
  - fix issue of NA in 'n.spectra' when calculating summarized ratios
  - various report improvements:
    - use column of variable width to display class labels
