@@ -11,6 +11,21 @@ options(encoding="UTF-8")
 
 load.tex.properties(.GlobalEnv) # loads environments 
 
+start.file <- function(fname,use.sink=FALSE) {
+  ## sink() does not work with Sweave 
+  if (isTRUE(use.sink))
+    sink(fname)
+  else
+    cat(sprintf("\\begin{filecontents}{%s}\n",fname))
+}
+
+end.file <- function(use.sink=FALSE) {
+  if (isTRUE(use.sink))
+    sink()
+  else
+    cat(sprintf("\\end{filecontents}\n"))
+}
+
 @
 \documentclass[10pt,oneside]{article}
 \usepackage[margin=2cm]{geometry}
@@ -26,11 +41,14 @@ load.tex.properties(.GlobalEnv) # loads environments
 
 % hyper reference
 \usepackage{hyperref}
-\definecolor{darkblue}{rgb}{0,0,.5}
+\definecolor{darkblue}{rgb}{0,0,.35}
+\definecolor{darkred}{rgb}{0.25,0,0}
+\definecolor{darkgreen}{rgb}{0,0.25,0}
 \hypersetup{pdftex=true, colorlinks=true, breaklinks=true, linkcolor=darkblue, menucolor=darkblue, pagecolor=darkblue, urlcolor=darkblue}
 
 % tables
-\usepackage{longtable}
+\usepackage{ltxtable}
+\usepackage{filecontents}
 \usepackage{bigstrut}
 \usepackage{multirow}
 \usepackage{ctable} % for midrule, etc
@@ -38,9 +56,13 @@ load.tex.properties(.GlobalEnv) # loads environments
 \usepackage{varwidth} %for the varwidth minipage environment
 \newcolumntype{x}[1]{>{\raggedright}p{#1}}
 
-<<echo=FALSE,results=tex>>=
+<<echo=FALSE,results=tex,strip.white=FALSE>>=
 write.tex.commands() # prints analysisname, analysisauthor, and isobarthanks commands
-cat(sprintf("\\input{\"%s\"}\n",system.file("report","report-utils.tex",package="isobar")))
+my.file <- system.file("report","report-utils.tex",package="isobar")
+if (my.file == "")
+ stop("Could not find file ISOBARDIR/report/report-utils.tex")
+
+cat(readLines(my.file),sep="\n")
 @
 
 \makeatletter
@@ -79,22 +101,20 @@ bnd <- round(log10(bndt),1)
 cat(sprintf("\\newcommand{\\bnd}{%s}",bnd),"\n")
 cat(sprintf("\\newcommand{\\bndt}{%s}\n",bndt),"\n")
 
-if (!"class1" %in% colnames(quant.tbl)) quant.tbl$class1 <- quant.tbl$r1
-if (!"class2" %in% colnames(quant.tbl)) quant.tbl$class2 <- quant.tbl$r2
+if (!"class1" %in% colnames(quant.tbl)) quant.tbl[["class1"]] <- quant.tbl[["r1"]]
+if (!"class2" %in% colnames(quant.tbl)) quant.tbl[["class2"]] <- quant.tbl[["r2"]]
 cmbn <- t(unique(quant.tbl[,c("r1","r2")]))
 cmbn.class <- sanitize(t(unique(quant.tbl[,c("class1","class2")])))
 is.single.comparision <- ncol(cmbn) ==1
 
 if (is.single.comparision) {
-  name.w <- "9.5cm"
-  coldef <- "@{}rp{9.5cm}rrrrr@{}r@{}r@{}"
-  coldef.s <- "@{}rp{9.5cm}rrrrr@{}r@{}"
+  coldef <- "@{}rXfrrrr@{}r@{}r@{}"
+  coldef.s <- "@{}rXfrrrr@{}r@{}"
   ncol.p <- 9
   mr <- function(text,width=NULL) text  
 } else {
-  name.w <- "5cm"
-  coldef <- "@{}rp{5cm}rrrrrrrr@{}r@{}"
-  coldef.s <- "@{}rp{5cm}rrrrrrrr@{}"
+  coldef <- "@{}rXfrrrrrrr@{}r@{}"
+  coldef.s <- "@{}rXfrrrrrrr@{}"
   ncol.p <- 11
   mr <- function(text,width="*")
     sprintf("\\multirow{%s}{%s}{%s}",ncol(cmbn),width,text)  
@@ -108,12 +128,12 @@ if (!is.null(cl)) {
   if (!is.null(cl)) {
     if (is.null(names(cl))) {
       cat("\\begin{tabular}{rV{4cm}}\n")
-      cat("channel & class \\\\ \\hline \\bigstrut[t]\n")
+      cat("Channel & Class \\\\ \\hline \\bigstrut[t]\n")
       cl <- paste("\\emph{",cl,"}",sep="")
     } else {
       cat("\\begin{tabular}{rrM}\n")
       cat("\\multicolumn{3}{c}{Class Labels} \\bigstrut \\\\ \n")
-      cat("channel & class & description \\\\ \\hline \\bigstrut[t]\n")
+      cat("Channel & Class & Description \\\\ \\hline \\bigstrut[t]\n")
       cl <- paste(paste("\\emph{",cl,"} & "),names(cl),sep="")
     }
     for (i in seq_along(reporterTagNames(ibspectra))) {
@@ -126,9 +146,10 @@ if (!is.null(cl)) {
 }
 @
 \quad
-\begin{tabular}{rp{7.5cm}}
+\begin{tabular}{rp{8.5cm}}
 \multicolumn{2}{c}{Column Descriptions} \\ \hline \bigstrut[t]
-\emph{protein} & Protein Identification information.  \\
+\emph{protein} & Protein name, accession code, and description.  \\
+\emph{group}   & Protein group size, only displayed if it is not '1/1'. First number: Number of group reporters; second number: group size. See \hyperref[sec:proteingroups]{Protein Group Details} for details. \\
 \emph{peptides} & Number of peptides for protein. \\
 \emph{spectra} & Number of idenfitied spectra  for protein. \\
 \emph{quant} & Number of spectra with quantitative information for \textit{ch2} versus \textit{ch1}. \\
@@ -136,27 +157,34 @@ if (!is.null(cl)) {
 \emph{*} & Significance of protein ratio in sample. \\
 \end{tabular}
 
+\renewcommand*{\arraystretch}{1.25}
+
 <<significantly.dfferent.proteins,echo=FALSE,results=tex>>=
-if (properties.env$show.significant.proteins) { 
+print_groupsize <- function (r,t) {
+  if (r>1 || t>1)
+    paste0(r,"/",t)
+}
+
+if (properties.env[["show.significant.proteins"]]) { 
 
 if (is.single.comparision) {
   cat("\\section{Significantly Regulated Proteins ",cmbn.class[2,1],"/",cmbn.class[1,1],"}\n\n")
 } else {
   cat("\\section{Significantly Regulated Proteins}\n\n")
 }
-n.quant <- ddply(quant.tbl,c("class1","class2"),function(x) sum(!is.na(x$lratio) & x$is.significant))
-cat("\\secsubtitle{Number of significant proteins: ",paste(sprintf("%s/%s: %s",sanitize(n.quant$class2),sanitize(n.quant$class1),n.quant$V1),collapse="; "),"}\n" )
+n.quant <- ddply(quant.tbl,c("class1","class2"),function(x) sum(!is.na(x[["lratio"]]) & x[["is.significant"]]))
+cat("\\secsubtitle{Number of significant proteins: ",paste(sprintf("%s/%s: %s",sanitize(n.quant[["class2"]]),sanitize(n.quant[["class1"]]),n.quant[["V1"]]),collapse="; "),"}\n" )
 
 
-if (any(quant.tbl$is.significant == 1,na.rm=TRUE)) {  
-  cat("\\small")
+if (any(quant.tbl[["is.significant"]] == 1,na.rm=TRUE)) {  
+  start.file("sign-proteins.tex")
   print_longtablehdr("protein",coldef.s,!is.single.comparision,ncol.p-1,FALSE)
   draw.hline <- FALSE
   
   for (cmb_i in seq_len(ncol(cmbn))) {
-    sel <- quant.tbl$r1==cmbn[1,cmb_i] &
-           quant.tbl$r2==cmbn[2,cmb_i] &
-           quant.tbl$is.significant == 1
+    sel <- quant.tbl[["r1"]]==cmbn[1,cmb_i] &
+           quant.tbl[["r2"]]==cmbn[2,cmb_i] &
+           quant.tbl[["is.significant"]] == 1
     sel[is.na(sel)] <- FALSE
     if (any(sel)) {
       if (draw.hline) {
@@ -169,14 +197,18 @@ if (any(quant.tbl$is.significant == 1,na.rm=TRUE)) {
       proteins <- quant.tbl[sel,"ac"][order(quant.tbl[sel,"lratio"])]
       for (protein in proteins) {
         prot.info <- my.protein.infos[[protein]]
-        protein.row <- quant.tbl[quant.tbl$ac==protein & sel,,drop=FALSE]
+        protein.row <- quant.tbl[quant.tbl[["ac"]]==protein & sel,,drop=FALSE]
         reporter.peptides <- peptides(protein.group,protein=protein)
         n.spectra <- length(names(spectrumToPeptide(protein.group))[spectrumToPeptide(protein.group)%in%reporter.peptides])
-        cat("\n")
+
+        protein.names <- prot.info[["collapsed.gene_name"]][["protein_name"]]
+        gene.names <- isobar:::.tex.combinenames(protein.names,is.single.comparision)
+
         cat(" \t",sprintf("\\hyperref[protein.%s]{%s}",
                           protein.row[,"group"],prot_i),
-            " & ",sprintf("\\parbox{4cm}{%s}",prot.info$table.name),
-            " & {\\footnotesize",paste(prot.info$n.reporter,prot.info$n.groupmember,sep="/"),"}",
+            " & ",paste0(prot.info[["table.name"]],": ",
+                         paste(gene.names,collapse=", ")),
+            " & ",print_groupsize(prot.info[["n.reporter"]],prot.info[["n.groupmember"]]),
             " & ",length(reporter.peptides),
             " & ",n.spectra)
         if (!is.single.comparision) {
@@ -193,7 +225,11 @@ if (any(quant.tbl$is.significant == 1,na.rm=TRUE)) {
     }
   }
   cat("\\end{longtable}\n")
-  cat("\\normalsize")
+  end.file()
+
+  cat("\\small\n")
+  cat("\\LTXtable{\\textwidth}{sign-proteins.tex}\n")
+  cat("\\normalsize\n")
   
 } else {
   cat ("No significantly regulated proteins present in sample.")
@@ -212,7 +248,7 @@ if (is.single.comparision) {
 <<allproteins.init,echo=FALSE,results=hide>>=
 
 proteins.n.group <- unique(quant.tbl[,c('ac','group')])
-proteins <- proteins.n.group[order(proteins.n.group$group),"ac"]
+proteins <- proteins.n.group[order(proteins.n.group[["group"]]),"ac"]
 
 @
 
@@ -224,18 +260,18 @@ proteins <- proteins.n.group[order(proteins.n.group$group),"ac"]
  \setlength{\extrarowheight}{1.5pt}
 
 <<proteintbl,echo=FALSE,results=tex>>=
-n.quant <- ddply(quant.tbl,c("class1","class2"),function(x) sum(!is.na(x$lratio)))
-cat("\\secsubtitle{Number of quantified proteins: ",paste(sprintf("%s/%s: %s",sanitize(n.quant$class2),sanitize(n.quant$class1),n.quant$V1),collapse="; "),"}\n")
-cat("\\small\n\n")
+n.quant <- ddply(quant.tbl,c("class1","class2"),function(x) sum(!is.na(x[["lratio"]])))
+cat("\\secsubtitle{Number of quantified proteins: ",paste(sprintf("%s/%s: %s",sanitize(n.quant[["class2"]]),sanitize(n.quant[["class1"]]),n.quant[["V1"]]),collapse="; "),"}\n")
 
+start.file("protein-quant.tex")
 print_longtablehdr("protein",coldef,!is.single.comparision,ncol.p,TRUE)
 
 proteins.notquantified <- c()
 
 message("Writing protein quantifications table ...")
 for (protein in proteins) {
-  protein.rows <- quant.tbl[quant.tbl$ac==protein,,drop=FALSE]
-  protein.rows <- protein.rows[order(protein.rows$r1,protein.rows$r2),,drop=FALSE]
+  protein.rows <- quant.tbl[quant.tbl[["ac"]]==protein,,drop=FALSE]
+  protein.rows <- protein.rows[order(protein.rows[["r1"]],protein.rows[["r2"]]),,drop=FALSE]
   protein.groupnumber <- protein.rows[1,"group"]
   prot.info <- my.protein.infos[[protein]]
 
@@ -246,29 +282,16 @@ for (protein in proteins) {
     proteins.notquantified <- c(proteins.notquantified,protein)
     next
   }
-  protein.names <- prot.info$collapsed.gene_name$protein_name
-  gene.names <- c()
-  for (prot.gene.name in prot.info$collapsed.gene_name$protein_name) {
-    if (is.na(prot.gene.name)) next;
-    prot.gene.name <- ifelse(nchar(prot.gene.name)>80,
-                             paste(sanitize(substr(prot.gene.name,0,76)),"\\dots"),
-                             sanitize(prot.gene.name))
-    gene.names <- c(gene.names,prot.gene.name)
-    
-  }
-  if (!is.single.comparision) {
-    if (length(gene.names) > ncol(cmbn) - 1) {
-      gene.names <- gene.names[seq_len(ncol(cmbn)-1)]
-      gene.names[length(gene.names)] <- paste(gene.names[length(gene.names)],", \\dots",sep="")
-    }
-  }
+
+  protein.names <- prot.info[["collapsed.gene_name"]][["protein_name"]]
+  gene.names <- isobar:::.tex.combinenames(protein.names,is.single.comparision)
+
   cat(mr(sprintf(" \\hyperref[protein.%s]{\\textbf{%s}}",
                  protein.groupnumber,protein.groupnumber)),
-      " & ",mr(paste0("\\mboxc{",name.w,"}{",prot.info$table.name,". ",
-               paste(gene.names,collapse=",\\newline ")
-               ,"}"),name.w),
-    #  " & ",mr(paste(prot.info$n.reporter,prot.info$n.groupmember,sep="/")),
-      " & ",mr(paste0("{\\footnotesize ",prot.info$n.reporter,"/",prot.info$n.groupmember,"}")),
+      " & ",mr(paste0(prot.info[["table.name"]],": ",
+               paste(gene.names,collapse=", "))),
+    #  " & ",mr(paste(prot.info[["n.reporter"]],prot.info[["n.groupmember"]],sep="/")),
+      " & ",mr(print_groupsize(prot.info[["n.reporter"]],prot.info[["n.groupmember"]])),
       " & ",mr(length(reporter.peptides)),
       " & ",mr(length(spectra)),sep=" ")
 
@@ -296,17 +319,24 @@ for (protein in proteins) {
   }
 }
 cat("\\end{longtable}\n")
-cat("\\normalsize")
+end.file()
+
+cat("\\small\n")
+cat("\\LTXtable{\\textwidth}{protein-quant.tex}\n")
+cat("\\normalsize\n")
+
 @
 }
 
 <<not.quantified,echo=FALSE,results=tex>>=
 if (length(proteins.notquantified) > 0) {
 cat("\\subsection{Not Quantified Proteins}\n")
-n.quant <- ddply(quant.tbl,c("class1","class2"),function(x) sum(is.na(x$lratio)))
-cat("\\secsubtitle{Number of identified but not quantified proteins: ",paste(sprintf("%s/%s: %s",sanitize(n.quant$class2),sanitize(n.quant$class1),n.quant$V1),collapse="; "),"}")
-cat("\\small")
-cat("\\begin{longtable}{rp{12cm}rrr}",
+n.quant <- ddply(quant.tbl,c("class1","class2"),function(x) sum(is.na(x[["lratio"]])))
+cat("\\secsubtitle{Number of identified but not quantified proteins: ",paste(sprintf("%s/%s: %s",sanitize(n.quant[["class2"]]),sanitize(n.quant[["class1"]]),n.quant[["V1"]]),collapse="; "),"}")
+
+
+start.file("protein-notquant.tex")
+cat("\\begin{longtable}{rXrrr}",
 "  \\#",
 "  & \\textbf{protein}",
 "  & \\rh{group}",
@@ -315,58 +345,52 @@ cat("\\begin{longtable}{rp{12cm}rrr}",
 "\\endhead",sep="\n")
 
 for (protein in proteins.notquantified) {
-  protein.rows <- quant.tbl[quant.tbl$ac==protein,,drop=FALSE]
-  protein.rows <- protein.rows[order(protein.rows$r1,protein.rows$r2),,drop=FALSE]
+  protein.rows <- quant.tbl[quant.tbl[["ac"]]==protein,,drop=FALSE]
+  protein.rows <- protein.rows[order(protein.rows[["r1"]],protein.rows[["r2"]]),,drop=FALSE]
   protein.groupnumber <- protein.rows[1,"group"]
   prot.info <- my.protein.infos[[protein]]
 
   reporter.peptides <- peptides(protein.group,protein=protein)
   spectra <- names(spectrumToPeptide(protein.group))[spectrumToPeptide(protein.group)%in%reporter.peptides]
 
-  protein.names <- prot.info$collapsed.gene_name$protein_name
-  gene.names <- c()
-  for (prot.gene.name in prot.info$collapsed.gene_name$protein_name) {
-    if (is.na(prot.gene.name)) next;
-    prot.gene.name <- ifelse(nchar(prot.gene.name)>80,
-                             paste(sanitize(substr(prot.gene.name,0,76)),"\\dots"),
-                             sanitize(prot.gene.name))
-    gene.names <- c(gene.names,prot.gene.name)
-    
-  }
+  protein.names <- prot.info[["collapsed.gene_name"]][["protein_name"]]
+  gene.names <- isobar:::.tex.combinenames(protein.names,is.single.comparision)
 
   cat(sprintf(" \\hyperref[protein.%s]{%s}",
                  protein.groupnumber,protein.groupnumber),
-      " & ",paste0("\\mboxc{",name.w,"}{",prot.info$table.name,". ",
-               paste(gene.names,collapse=",\\newline ")
-               ,"}"),
-     # " & ",paste(prot.info$n.reporter,prot.info$n.groupmember,sep="/"),
-      " & {\\footnotesize",paste(prot.info$n.reporter,prot.info$n.groupmember,sep="/"),"}",
+      " & ",paste0(prot.info[["table.name"]],": ",
+               paste(gene.names,collapse=", ")),
+      " & ",print_groupsize(prot.info[["n.reporter"]],prot.info[["n.groupmember"]]),
       " & ",length(reporter.peptides),
       " & ",length(spectra),"\\\\ \n",sep=" ")
 }
 cat("\\end{longtable}\n")
-cat("\\normalsize")
+end.file()
+
+cat("\\small\n")
+cat("\\LTXtable{\\textwidth}{protein-notquant.tex}\n")
+cat("\\normalsize\n")
 }
 @
-
 
 
 % Protein Details
 %%%%%%%%%%%%%%%%%%
 
 <<proteindetails,echo=FALSE,results=tex>>=
-if (properties.env$show.protein.details) {
-cat("\\section{Protein Group Details}\n")
-cat("Protein groups are created by ")
-cat("\\begin{enumerate}
-  \\item putting all proteins together which are seen with the same peptides - 
-         they are indistinguishable based on available MS data.
-  \\item When proteins have peptides unique to them, they are promoted to \\textit{reporters}.
-  \\item All proteins without unique peptides are grouped to those reporters which
-         contain their peptides.
-\\end{enumerate}
+if (properties.env[["show.protein.details"]]) {
+cat("
+\\section{Protein Group Details} \\label{sec:proteingroups}
 
-Peptide types:
+Protein groups are created by grouping according to mass spectrometry evidence:
+
+\\begin{tabularx}{\\textwidth}{rX}
+1. & Proteins which are detected with the exact same set of peptides are clustered - they are indistinguishable based on available MS data. Very often these are splice variants. In the following text, proteins are clustered proteins (cluster size one if they have specific peptides).  \\\\ 
+2. & Proteins, which have unique peptides (\\emph{i.\\,e.}~peptides not present in other detected proteins) are promoted to \\emph{reporters}. \\\\ 
+3. & Remaining proteins are grouped to those reporters which have a superset of the peptides they have. These proteins are termed \\emph{group members} \\\\ 
+\\end{tabularx}
+
+Peptides are characterized based on their specificity to one or more proteins, and one or more protein groups:
 \\begin{center}
 \\begin{tabular}{rll}
 \\emph{reporter specific} rs &  \\tikz \\node[rs,minimum size=0.2cm] {};  & Number of peptides specific to reporter. \\\\
@@ -378,34 +402,23 @@ Peptide types:
 
 message("Writing protein group details ")
 
-colors <- c("blue","red","green","cyan","magenta","yellow")
-prot_i <- 1
-cat("{\\small \n")
-cat("\\begin{longtable}{rl@{}llp{5cm}l}\n")
-for (reporter.protein.g in proteins) {
-#  protein.name.i <- unique(quant.tbl$latex.protein.name.2[quant.tbl$protein==protein])
-  #group.section.name <- my.protein.infos[[reporter.protein.g]]$gene.name
-  #gene.name <- my.protein.infos[[reporter.protein.g]]$gene.name
-  #if (length(gene.name) == 0 || is.null(gene.name) || 
-  #    is.na(gene.name) || nchar(gene.name)==0) {
-  #  group.section.name <- paste(my.protein.infos[[reporter.protein.g]]$collapsed.gene_name$ac_nolink,collapse=",")
-  #  gene.name <- group.section.name
-  #}
 
-  #cat(sprintf("\\paragraph[%s]{%s}\n",
-  #            sanitize(ifelse(nchar(gene.name)>40,
-  #                     paste(substring(gene.name,1,36),"..."),
-  #                     gene.name),dash=F),
-  #            sanitize(group.section.name,dash=F)))
-  #cat(sprintf("\\label{protein.%s}\n",prot_i))
+start.file("protein-groups.tex")
+cat("\\begin{longtable}{rl@{}llXl}\n")
+prot_i <- 1
+for (reporter.protein.g in proteins) {
   draw.proteingroup.row(sprintf("\\label{protein.%s} %s",prot_i,prot_i),protein.group,reporter.protein.g)
   cat("\\bigstrut\n")
   if (prot_i%%100 == 0) message(".",appendLF=FALSE);
   prot_i <- prot_i + 1
-  
 }
 cat("\\end{longtable}\n")
-cat("}")
+end.file()
+
+cat("\\small\n")
+cat("\\LTXtable{\\textwidth}{protein-groups.tex}\n")
+cat("\\normalsize\n")
+
 }
 @
 

@@ -26,7 +26,9 @@ write.tex.commands <- function() {
     ". If you use it in published work, please cite ",
     "'Breitwieser FP \\textit{et~al.}: General statistical ",
     " modeling of data from protein relative expression isobaric tags, ",
-    " \\textit{Journal of Proteome Research} 2011'}}\n",sep="")
+    " \\textit{Journal of Proteome Research} 2011' and ",
+    "'Breitwieser FP and Colinge J: isobarPTM: A software tool for the quantitative analysis of post-translationally modified proteins,",
+    "\\textit{Journal of Proteomics} 2013","'}}\n",sep="")
 }
 
 print_longtablehdr <- function(level,coldef,draw.channels,ncol.p,draw.signcol) {
@@ -214,7 +216,8 @@ draw.protein.group <- function(protein.group,reporter.protein.g) {
 
 }
 
-tikz.proteingroup <- function(protein.group,reporter.protein.g,show.pos,show.header=TRUE) {
+tikz.proteingroup <- function(protein.group,reporter.protein.g,show.pos,show.header=TRUE,
+                              colors=c("blue","red","green","cyan","magenta","yellow")) {
 
   gmp <- groupMemberPeptides(protein.group,reporter.protein.g,TRUE)
   reporter.sp.sel <- gmp$peptide.info$specificity == "reporter-specific"
@@ -232,7 +235,7 @@ tikz.proteingroup <- function(protein.group,reporter.protein.g,show.pos,show.hea
   for (quant.prot.g in names(gd.proteins)[gd.proteins]) {
     if (quant.prot.g != reporter.protein.g) {
       quant.p.sel <- quant.sel & gmp$group.member.peptides[,quant.prot.g]
-      peptide.styles[quant.p.sel] <- sprintf("quant peptide %s",colors[col.i])
+      peptide.styles[quant.p.sel] <- sprintf("gs %s",colors[col.i])
       if (col.i == length(colors)) {
         col.i <- 1
       } else {
@@ -317,6 +320,24 @@ tikz.proteingroup <- function(protein.group,reporter.protein.g,show.pos,show.hea
   }
   cat("\\end{tikzpicture}\n")
 
+}
+
+.tex.combinenames <- function(protein_name,is.single.comparision) {
+  gene.names <- c()
+  for (prot.gene.name in protein_name) {
+    if (is.na(prot.gene.name)) next;
+    prot.gene.name <- ifelse(nchar(prot.gene.name)>80,
+                             paste(sanitize(substr(prot.gene.name,0,76)),"\\dots"),
+                             sanitize(prot.gene.name))
+    gene.names <- c(gene.names,prot.gene.name)
+  }
+  if (!is.single.comparision) {
+    if (length(gene.names) > ncol(cmbn) - 1) {
+      gene.names <- gene.names[seq_len(ncol(cmbn)-1)]
+      gene.names[length(gene.names)] <- paste(gene.names[length(gene.names)],", \\dots",sep="")
+    }
+  }
+  return(gene.names)
 }
 
 .print.proteinrow <- function(protein.idx,peptides.sel) {
