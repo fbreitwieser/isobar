@@ -310,7 +310,7 @@ setMethod("ProteinGroup",signature(from="data.frame",template="missing",proteinI
                              splicevariant = NA,stringsAsFactors=FALSE)
       
       sel.uniprot <- isoforms$database == .UNIPROTDATABASE
-      pos.isoforms <- sel.uniprot & grep("^[^-]*-[0-9]*$",proteins)
+      pos.isoforms <- sel.uniprot & grepl("^[^-]*\\-[0-9]*$",proteins)
       isoforms$proteinac.wo.splicevariant[pos.isoforms] <- 
          sub("-[^-]*$","",proteins[pos.isoforms])
       isoforms$splicevariant[pos.isoforms] <- sub(".*-","",proteins[pos.isoforms])
