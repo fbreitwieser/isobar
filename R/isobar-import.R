@@ -201,8 +201,17 @@
 
   if ('SEARCHENGINE' %in% names(SC)) {
     message("  Identification details:")
-    tt <- table(identifications[,SC['SEARCHENGINE']])
-    print(data.frame(perc=sprintf("%.2f %%",tt[order(tt)]/sum(tt)*100),n=sort(tt)))
+    tt <- sort(table(identifications[,SC['SEARCHENGINE']]))
+    stats <- data.frame(perc=sprintf("%.2f %%",tt/sum(tt)*100),n=tt)
+    if ('SCORE' %in% names(SC)) {
+      scores <- identifications[,SC['SCORE']]
+      score.stats <- do.call(rbind,lapply(names(tt),function (se) {
+        my.scores <- scores[identifications[,SC['SEARCHENGINE']]==se]
+        summary(my.scores,na.rm=TRUE)}))
+      stats <- cbind(stats,score.stats)
+    } 
+    print(stats)
+    
   }
   identifications
 }
