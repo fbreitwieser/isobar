@@ -28,6 +28,18 @@ if(!isGeneric("as.data.frame")) setGeneric("as.data.frame", useAsDefault=as.data
     theme_text(...)
 }
 
+.abbrev <- function(strings,n=4,collapse=NULL) {
+  ll <- length(strings)
+  if (ll > n) {
+    strings <- strings[seq_len(n-1)]
+    strings[n] <- sprintf("... (%s in total)",ll)
+  }
+  if (!is.null(collapse))
+    paste(strings,collapse=collapse)
+  else
+    strings
+}
+
 
 # are 'most' (default: 90%) of the values in x TRUE?
 .most <- function(x,fraction=0.9) {
