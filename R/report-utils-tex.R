@@ -16,7 +16,7 @@ load.tex.properties <- function(env) {
 }
 
 write.tex.commands <- function() {
-  cat("\\newcommand{\\analysisname}{",sanitize(get.property('name')),"}\n")
+  cat("\\newcommand{\\analysisname}{",sanitize(get.property('name'),dash=FALSE),"}\n")
   cat("\\newcommand{\\analysisauthor}{",sanitize(get.property('author')),"}\n")
 
   cat("\\newcommand{\\isobarthanks}{\\thanks{This report was 

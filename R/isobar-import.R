@@ -119,8 +119,8 @@
 
   assayDataElements$ions[which(assayDataElements$ions==0)] <- NA
   assayDataElements$mass[which(assayDataElements$mass==0)] <- NA
-  if (all(apply(is.na(assayDataElements$mass),2,all))) stop("all masses are NA")
-  if (all(apply(is.na(assayDataElements$ions),2,all))) stop("all intensities are NA")
+  if (all(apply(is.na(assayDataElements$mass),2,all))) stop("Unable to extract any reporter m/z values. Try setting 'fragment.precision' higher (current value: ",fragment.precision,"), or to NULL if no filtering is desired.")
+  if (all(apply(is.na(assayDataElements$ions),2,all))) stop("Unable to extract any reporter intensities.")
 
   return(assayDataElements)
 }
@@ -280,7 +280,6 @@ setMethod("initialize","IBSpectra",
  
   # Create ProteinGroup
   proteinGroup <- ProteinGroup(merge(pept.n.prot,identifications,by="peptide"),template=proteinGroupTemplate)
-  message("done creating protein group")
   
   ## Get intensities and masses in assayDataElements
   if (is.null(data.ions))
