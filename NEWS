@@ -6,6 +6,8 @@ CHANGES IN VERSION 1.9.3
    - use of ltxtables to allow optimal column widths (longer runtime, however)
    - use [[ instead of $  for accession of lists
    - better column and grouping description
+ - allow report generation without a proteinInfo object
+ - set report cache directory to 'cache' (instead of '.') by default
 
 CHANGES IN VERSION 1.9.2
 ------------------------
