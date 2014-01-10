@@ -48,8 +48,8 @@ protein.info.f=getProteinInfoFromTheInternet
 
 ## Where should cached files be saved? Will be created if it does not
 ## exist
-# cachedir="cache"
-cachedir="."
+# cachedir="."
+cachedir="cache"
 ## Regenerate cache files? By default, chache files are used.
 regen=FALSE
 
