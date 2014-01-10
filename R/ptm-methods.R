@@ -463,7 +463,7 @@ observedKnownSites <- function(protein.group,protein.g,ptm.info,modif,modificati
 
   protein.length <- as.numeric(proteinInfo(protein.group,protein.ac=isoform.ac,select="length") )
   if(all(is.na(protein.length))) 
-    stop("no protein info for ",isoform.ac,"; need protein length an sequence")
+    stop("no protein info for ",isoform.ac,"; need protein length and sequence")
 
  
   obs.peptides <- observable.peptides(proteinInfo(protein.group,protein.ac=isoform.ac,select="sequence"),nmc=2)
@@ -515,7 +515,9 @@ observedKnownSites <- function(protein.group,protein.g,ptm.info,modif,modificati
 
 
 getPeptideModifContext <- function(protein.group,modif,n.aa.up=7,n.aa.down=7) {
-  
+  if (length(proteinInfo(protein.group)) == 0)
+    stop("no protein info attached to protein.group: see ?getProteinInfoFromUniprot on how to get it.")
+
   peptide.info <- unique(peptideInfo(protein.group)[,c('modif','protein','peptide','real.peptide')])
   protein.sequences <- paste0(paste0(rep("_",n.aa.down),collapse=""),
                               #gsub("I","L",proteinInfo(protein.group)[,'sequence']),

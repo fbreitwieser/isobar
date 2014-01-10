@@ -420,7 +420,7 @@ property <- function(x, envir, null.ok=TRUE,class=NULL) {
                       x=proteinGroup(ibspectra),
                       do.load=TRUE, msg.f="protein.info",
                       error=warning,default.value=proteinInfo(proteinGroup(ibspectra)))
-    },error=function(e) message("Error creating proteinInfo using function defined in [protein.info.f]."))
+    },error=function(e) stop("Error creating proteinInfo using function defined in [protein.info.f]: ",e,"Set protein.info.f to NULL if you want to create a report anyway."))
 
   if ("site.probs" %in% colnames(fData(ibspectra)) 
       && ! "pep.siteprobs" %in% colnames(fData(ibspectra)))
