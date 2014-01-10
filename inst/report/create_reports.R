@@ -58,21 +58,18 @@ message("started at ",date())
 message("Loading package isobar v",packageDescription("isobar")$Version," ...")
 suppressPackageStartupMessages(library(isobar))
 
-if (!exists("properties.env",inherits=FALSE)) {
-  properties.env <- load.properties(properties.file,
-                                    system.file("report",properties.file,package="isobar"),
-                                    args=args)
-}
+create.reports.args <- list(properties.file=properties.file,
+                            args=args)
 
 if (xls.report || xlsx.report || qc.report || pdf.report) {
-  properties.env$write.xls.report <- (xls.report || xlsx.report)
-  if (properties.env$write.xls.report) {
-    if (xls.report) properties.env$spreadsheet.format <- 'xls'
-    if (xlsx.report) properties.env$spreadsheet.format <- 'xlsx'
+  create.reports.args$write.xls.report <- (xls.report || xlsx.report)
+  if (create.reports.args$write.xls.report) {
+    if (xls.report) create.reports.args$spreadsheet.format <- 'xls'
+    if (xlsx.report) create.reports.args$spreadsheet.format <- 'xlsx'
   }
 
-  properties.env$write.qc.report <- qc.report
-  properties.env$write.report <- pdf.report
+  create.reports.args$write.qc.report <- qc.report
+  create.reports.args$write.report <- pdf.report
   do.compile <- TRUE
 }
 
@@ -80,7 +77,8 @@ if (xls.report || xlsx.report || qc.report || pdf.report) {
 tryCatch({
   if (meta.report) create.reports.f <- create.meta.reports
   else create.reports.f <- create.reports
-  create.reports.f()},
+
+  do.call(create.reports.f,create.reports.args)},
          error=function(e) {
            save.image(file="isobar.fail.rda")
            stop("create.reports exited with an error - saving session to isobar.fail.rda.\n\n  Message: ",
