@@ -8,6 +8,11 @@ CHANGES IN VERSION 1.9.3
    - better column and grouping description
  - allow report generation without a proteinInfo object
  - set report cache directory to 'cache' (instead of '.') by default
+ - 1.9.3.2:
+   - mascotParser2.pl: allow to skip modif-conversion with -no-modiconv
+   - mascotParser2.pl: set --lightXML as default
+   - report generation: set combn.method="versus.channel", which computes the ratios against the first channel
+   - various PDF report improvements
 
 CHANGES IN VERSION 1.9.2
 ------------------------
