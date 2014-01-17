@@ -411,7 +411,7 @@ message("Writing protein group details ")
 
 
 start.file("protein-groups.tex")
-cat("\\begin{longtable}{rlXp{6cm}}\n")
+cat("\\begin{longtable}{rcXp{6cm}}\n")
 prot_i <- 1
 for (reporter.protein.g in proteins) {
   draw.proteingroup.row(sprintf("\\label{protein.%s} %s",prot_i,prot_i),protein.group,reporter.protein.g)

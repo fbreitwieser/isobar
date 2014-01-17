@@ -157,7 +157,7 @@ draw.proteingroup.row <- function(name,protein.group,reporter.protein.g) {
         if (ac.i == 1)
           cat("{\\small (",protein.i,")}",sep="")
         else
-          cat ("{\\small \\vdots}")
+          cat ("$\\mathord{\\cdot}$")
       }
 
       cat(" & ")
