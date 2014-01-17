@@ -1024,8 +1024,11 @@ combn.matrix <- function(x,method="global",cl=NULL,vs=NULL) {
 
   # Create a combn matrix with all combinations of channels to consider 
   if (method == "versus.class" || method == "versus.channel") {
-    if (is.null(vs)) stop("vs argument may not be null when method is versus")
     if (method == "versus.channel") {
+      if (is.null(vs)) {
+        vs = x[1]
+        warning("vs argument is null, but method is versus.channel. Using channel '",vs,"'")
+      }
       if (!vs %in% x) stop("vs argument must be one of [",paste(x,collapse=", "),"]")
       pos <- which(x==vs)
       cmbn <- rbind(vs,x[-pos])
@@ -1035,6 +1038,11 @@ combn.matrix <- function(x,method="global",cl=NULL,vs=NULL) {
       }
     }
     if (method == "versus.class") {
+      if (is.null(vs)) {
+        vs = cl[1]
+        warning("vs argument is null, but method is versus.channel. Using channel '",vs,"'")
+      }
+
       if (!all(vs %in% cl)) stop("vs argument must be one of [",paste(cl,collapse=", "),"]")
       if (is.null(cl)) stop("class labels must be given with method versus.class")
       pos <- which(cl==vs)
