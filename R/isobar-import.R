@@ -77,7 +77,10 @@
     id.not.quant <- setdiff(spectra.ids,rownames(data.mass))
     quant.not.id <- setdiff(rownames(data.mass),spectra.ids)
 
-    if (length(id.n.quant)==0) stop("No spectra could be matched between identification and quantifications")
+    if (length(id.n.quant)==0) stop("No spectra could be matched between identification and quantifications.",
+                                    "If the search was preformed with Mascot, set readIBSpectra argument decode.titles=TRUE,\n",
+                                    " or in the properties file for report generation:\n",
+                                    "   readIBSpectra.args=list(decode.titles=TRUE)")
     
     if (length(quant.not.id) > 0)
       message(" for ",length(quant.not.id)," spectra ",
@@ -801,7 +804,7 @@ read.mzid <- function(filename) {
   }
   bnd$recordNo = seq_len(nrow(bnd))
   nSpectra <- nrow(bnd)
-  message(nSpectra," spectra")
+  message("  ",nSpectra," spectra in MGF file.")
 
   ## create list with all spectra (header+mass list) as entries
   all.spectra <- apply(bnd,1,function(x) input[x[1]:x[2]])
@@ -868,7 +871,7 @@ read.mzid <- function(filename) {
 
     ions[sel.prob] <- NA
     mass[sel.prob] <- NA
-    message("mass boundaries:\n\t",
+    message("\tmass boundaries:\n\t",
             paste(colnames(mass),sprintf("%.5f : %.5f",bnd[1,],bnd[2,]),sep="\t",collapse="\n\t"))
   }
 
