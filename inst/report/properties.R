@@ -70,8 +70,12 @@ fragment.precision=0.01
 ## filter mass outliers
 fragment.outlier.prob=0.001
 
+## Additional arguments of readIBSpectra can be set here
+##  decode.titles should be set to TRUE for Mascot search results
+##  as Mascot encodes the spectrum title (e.g. space -> %20)
 readIBSpectra.args = list(
-    mapping.file=NULL
+    mapping.file=NULL,
+    decode.titles=FALSE
 )
 
 #####################################################################
@@ -110,7 +114,7 @@ noise.model.is.technicalreplicates=FALSE
 noise.model.minspectra=50
 
 summarize=FALSE
-combn.method="interclass"
+combn.method="versus.channel"
 ## class labels. Must by of type character and of same length as
 ## number of channels I. e. 4 for iTRAQ 4plex, 6 for TMT 6plex Example
 ## for iTRAQ 4plex:
