@@ -1,51 +1,59 @@
-# Modifications conversion (Macot mod_file to InSilicoSpectro insilicodef.xml names)
-Acetyl (K)					ACET_core
-Acetyl (N-term)			ACET_nterm
-Amide (C-term)				AMID
-Biotin (K)					BIOT
-Biotin (N-term)			BIOT_nterm
-Carbamidomethyl (C)		Cys_CAM
-Carbamyl (K)				CAM_core
-Carbamyl (N-term)			CAM_nterm
-Carboxymethyl (C)			Cys_CM
-Deamidation (NQ)			DEAMID
-Deamidated (NQ)		   DEAMID
-GlyGly (K)					GlyGly
-Guanidination (K)			Guanidination
-ICAT_light					ICAT_light
-ICAT_heavy					ICAT_heavy  
-iTRAQ (K)					iTRAQ4plex_K
-iTRAQ (N-term)				iTRAQ4plex_Nterm
-iTRAQ (Y)					iTRAQ4plex_Y   
-iTRAQ4plex (K)				iTRAQ4plex_K
-iTRAQ4plex (N-term)		iTRAQ4plex_Nterm
-iTRAQ4plex (Y)				iTRAQ4plex_Y
-iTRAQ8plex (K)				iTRAQ8plex_K
-iTRAQ8plex (N-term)		iTRAQ8plex_Nterm
-iTRAQ8plex (Y)				iTRAQ8plex_Y
-LeuArgGlyGly (K)			LeuArgGlyGly
-Methylthio (C)				Cys_Methylthio
+# Definition of InsilicoSpectro equivalents for Mascot modification names
+#   (Macot mod_file to InSilicoSpectro insilicodef.xml names)
+#
+# Especially important when using multiple search engines to have a common
+# standard for the modification code.
+# PTM-specific functions in isobar use per default the InsilicoSpectro
+# names (e.g. PHOS for phosphorylation, and ACET_core). 
+
+# MASCOT    INSILICO [separated by one tab-stop]
+Acetyl (K)	ACET_core
+Acetyl (N-term)	ACET_nterm
+Amide (C-term)	AMID
+Biotin (K)	BIOT
+Biotin (N-term)	BIOT_nterm
+Carbamidomethyl (C)	Cys_CAM
+Carbamyl (K)	CAM_core
+Carbamyl (N-term)	CAM_nterm
+Carboxymethyl (C)	Cys_CM
+Deamidation (NQ)	DEAMID
+Deamidated (NQ)	   DEAMID
+GlyGly (K)	GlyGly
+Guanidination (K)	Guanidination
+ICAT_light	ICAT_light
+ICAT_heavy	ICAT_heavy  
+iTRAQ (K)	iTRAQ4plex_K
+iTRAQ (N-term)	iTRAQ4plex_Nterm
+iTRAQ (Y)	iTRAQ4plex_Y   
+iTRAQ4plex (K)	iTRAQ4plex_K
+iTRAQ4plex (N-term)	iTRAQ4plex_Nterm
+iTRAQ4plex (Y)	iTRAQ4plex_Y
+iTRAQ8plex (K)	iTRAQ8plex_K
+iTRAQ8plex (N-term)	iTRAQ8plex_Nterm
+iTRAQ8plex (Y)	iTRAQ8plex_Y
+LeuArgGlyGly (K)	LeuArgGlyGly
+Methylthio (C)	Cys_Methylthio
 N-Acetyl (Protein)	   ACET_nterm
 N-Formyl (Protein)	   FORM
-O18 (C-term)				O18
-Oxidation (M)				Oxidation_M 
-Oxidation (HW)				Oxidation_HW
-Phospho (STY)				PHOS
-Phospho (ST)				PHOS
-Phospho (Y)					PHOS
-Propionamide (C)			Cys_PAM
-Pyro-glu (N-term Q)		 PYRR  
-S-pyridylethyl (C)		Cys_PE
-Sulfation (Y)				SULF_core
-Sulfation (S)				SULF_core
-Sulfation (T)				SULF_core
-TMT2plex (K)				TMTduplex_K
-TMT2plex (N-term)			TMTduplex_Nterm
-TMT6plex (K)				TMTsixplex_K
-TMT6plex (N-term)			TMTsixplex_Nterm
-Ubiquination I (K)		Ubiquitin_0mc
+O18 (C-term)	O18
+Oxidation (M)	Oxidation_M 
+Oxidation (HW)	Oxidation_HW
+Phospho (STY)	PHOS
+Phospho (ST)	PHOS
+Phospho (Y)	PHOS
+Propionamide (C)	Cys_PAM
+Pyro-glu (N-term Q)	 PYRR  
+S-pyridylethyl (C)	Cys_PE
+Sulfation (Y)	SULF_core
+Sulfation (S)	SULF_core
+Sulfation (T)	SULF_core
+TMT2plex (K)	TMTduplex_K
+TMT2plex (N-term)	TMTduplex_Nterm
+TMT6plex (K)	TMTsixplex_K
+TMT6plex (N-term)	TMTsixplex_Nterm
+Ubiquination I (K)	Ubiquitin_0mc
 Ubiquitination II (K)	Ubiquitin_1mc
-Sulfo-NHS-SS-Biotin (K) (K)		SULFO_Biotin_K
-Sulfo-NHS-SS-Biotin (N-term) (N-term)		SULFO_Biotin_Nterm
-Sulfo-NHS-SS-Biotin (N-term) after reduction (N-term		SULFO_Biotin_DTT_Nterm
-Sulfo-NHS-SS-Biotin (K) after reduction (K)		SULFO_Biotin_DTT_K
+Sulfo-NHS-SS-Biotin (K) (K)	SULFO_Biotin_K
+Sulfo-NHS-SS-Biotin (N-term) (N-term)	SULFO_Biotin_Nterm
+Sulfo-NHS-SS-Biotin (N-term) after reduction (N-term	SULFO_Biotin_DTT_Nterm
+Sulfo-NHS-SS-Biotin (K) after reduction (K)	SULFO_Biotin_DTT_K
