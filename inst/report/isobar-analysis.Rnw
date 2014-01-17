@@ -55,6 +55,7 @@ end.file <- function(use.sink=FALSE) {
 %\setlength{\tabcolsep}{5pt} %default value: 6pt
 \usepackage{varwidth} %for the varwidth minipage environment
 \newcolumntype{x}[1]{>{\raggedright}p{#1}}
+\newcolumntype{f}{>{\footnotesize}r} 
 
 <<echo=FALSE,results=tex,strip.white=FALSE>>=
 write.tex.commands() # prints analysisname, analysisauthor, and isobarthanks commands
@@ -112,13 +113,19 @@ if (is.single.comparision) {
   coldef.s <- "@{}rXfrrrr@{}r@{}"
   ncol.p <- 9
   mr <- function(text,width=NULL) text  
+  mrp <- function(text,width=NULL) text  
 } else {
   coldef <- "@{}rXfrrrrrrr@{}r@{}"
   coldef.s <- "@{}rXfrrrrrrr@{}"
   ncol.p <- 11
-  mr <- function(text,width="*")
-    sprintf("\\multirow{%s}{%s}{%s}",ncol(cmbn),width,text)  
+  cat(sprintf("\\newcommand{\\mr}[1]{\\multirow{%s}{*}{#1}}\n",ncol(cmbn)))
+  cat(sprintf("\\newcommand{\\mrp}[1]{\\multirow{%s}{*}{\\parbox{\\linewidth}{#1}}}\n",ncol(cmbn)))
+
+  mr <- function(text) sprintf("\\mr{%s}",text)
+  mrp <- function(text) sprintf("\\mrp{%s}",text)
 }
+
+
 @
 
 <<echo=FALSE,results=tex>>=
@@ -173,7 +180,7 @@ if (is.single.comparision) {
   cat("\\section{Significantly Regulated Proteins}\n\n")
 }
 n.quant <- ddply(quant.tbl,c("class1","class2"),function(x) sum(!is.na(x[["lratio"]]) & x[["is.significant"]]))
-cat("\\secsubtitle{Number of significant proteins: ",paste(sprintf("%s/%s: %s",sanitize(n.quant[["class2"]]),sanitize(n.quant[["class1"]]),n.quant[["V1"]]),collapse="; "),"}\n" )
+cat("\\secsubtitle{Number of significant proteins: ",paste(sprintf("%s/%s: %s",sanitize(n.quant[["class2"]]),sanitize(n.quant[["class1"]]),n.quant[["V1"]]),collapse="; "),"}\\vspace{.5cm}\n" )
 
 
 if (any(quant.tbl[["is.significant"]] == 1,na.rm=TRUE)) {  
@@ -261,7 +268,7 @@ proteins <- proteins.n.group[order(proteins.n.group[["group"]]),"ac"]
 
 <<proteintbl,echo=FALSE,results=tex>>=
 n.quant <- ddply(quant.tbl,c("class1","class2"),function(x) sum(!is.na(x[["lratio"]])))
-cat("\\secsubtitle{Number of quantified proteins: ",paste(sprintf("%s/%s: %s",sanitize(n.quant[["class2"]]),sanitize(n.quant[["class1"]]),n.quant[["V1"]]),collapse="; "),"}\n")
+cat("\\secsubtitle{Number of quantified proteins: ",paste(sprintf("%s/%s: %s",sanitize(n.quant[["class2"]]),sanitize(n.quant[["class1"]]),n.quant[["V1"]]),collapse="; "),"}\\vspace{.5cm}\n")
 
 start.file("protein-quant.tex")
 print_longtablehdr("protein",coldef,!is.single.comparision,ncol.p,TRUE)
@@ -288,7 +295,7 @@ for (protein in proteins) {
 
   cat(mr(sprintf(" \\hyperref[protein.%s]{\\textbf{%s}}",
                  protein.groupnumber,protein.groupnumber)),
-      " & ",mr(paste0(prot.info[["table.name"]],": ",
+      " & ",mrp(paste0(prot.info[["table.name"]],ifelse(length(gene.names)>0,": ",""),
                paste(gene.names,collapse=", "))),
     #  " & ",mr(paste(prot.info[["n.reporter"]],prot.info[["n.groupmember"]],sep="/")),
       " & ",mr(print_groupsize(prot.info[["n.reporter"]],prot.info[["n.groupmember"]])),
@@ -332,7 +339,7 @@ cat("\\normalsize\n")
 if (length(proteins.notquantified) > 0) {
 cat("\\subsection{Not Quantified Proteins}\n")
 n.quant <- ddply(quant.tbl,c("class1","class2"),function(x) sum(is.na(x[["lratio"]])))
-cat("\\secsubtitle{Number of identified but not quantified proteins: ",paste(sprintf("%s/%s: %s",sanitize(n.quant[["class2"]]),sanitize(n.quant[["class1"]]),n.quant[["V1"]]),collapse="; "),"}")
+cat("\\secsubtitle{Number of identified but not quantified proteins: ",paste(sprintf("%s/%s: %s",sanitize(n.quant[["class2"]]),sanitize(n.quant[["class1"]]),n.quant[["V1"]]),collapse="; "),"}\\vspace{.5cm}")
 
 
 start.file("protein-notquant.tex")
@@ -404,7 +411,7 @@ message("Writing protein group details ")
 
 
 start.file("protein-groups.tex")
-cat("\\begin{longtable}{rl@{}llXl}\n")
+cat("\\begin{longtable}{rlXp{6cm}}\n")
 prot_i <- 1
 for (reporter.protein.g in proteins) {
   draw.proteingroup.row(sprintf("\\label{protein.%s} %s",prot_i,prot_i),protein.group,reporter.protein.g)

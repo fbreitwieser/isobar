@@ -85,20 +85,18 @@ draw.boxplot <- function(lratio,sd,bnd) {
   if (is.na(lratio) || is.na(sd) || !is.finite(lratio) || !is.finite(sd)) {
     return("")
   }
-  col <- "black!60"
 
   ratio.smaller.bnd <- lratio - sd < -bnd
   ratio.bigger.bnd  <- lratio + sd > bnd
 
-  return(sprintf("\\boxplot{%.2f}{%.2f}{%s!%s}{%s}{%s}{%.0f}{%s}\n",
+  return(sprintf("\\boxplot{%.2f}{%.2f}{%s!%s}{%s}{%s}{%.0f}\n",
                   lratio,
                   sd,
                   ifelse(lratio > 0,"green","red"),
                   min(floor(abs(lratio)/bnd*100),100),
                   ifelse(ratio.smaller.bnd, "\\divcol", "black!1"),
                   ifelse(ratio.bigger.bnd,  "\\divcol", "black!1"),
-                  sd,
-                  col))
+                  sd))
 }
 
 transform_pepmodif <- function(pep.n.modif) {
@@ -144,7 +142,7 @@ draw.proteingroup.row <- function(name,protein.group,reporter.protein.g) {
   n.multirow <- length(unique(protein.ac(protein.group,pgt[pgt$reporter.protein==reporter.protein.g,"protein.g"])))
   cat(name,"&",sep=" ")
   n.row <- 1
-  show.pos <- FALSE
+  show.pos <- TRUE
   for (protein.i in seq_len(ncol(gmp$group.member.peptides))) {
     x = colnames(gmp$group.member.peptides)[protein.i]
 
@@ -155,18 +153,26 @@ draw.proteingroup.row <- function(name,protein.group,reporter.protein.g) {
       sel <- my.protein.info$accession == my.acs[ac.i]
       var.string <- number.ranges(my.protein.info$splicevariant[sel])
       #cat(protein.i,"&")
-      if (show.pos) cat(protein.i,"&")
-      cat(paste(sprintf("\\uniprotlink{%s}",sanitize(my.acs[ac.i],dash=FALSE)),
-          ifelse(is.na(var.string),"",var.string)[1],
+      if (show.pos && ncol(gmp$group.member.peptides)>1) {
+        if (ac.i == 1)
+          cat("{\\small (",protein.i,")}",sep="")
+        else
+          cat ("{\\small \\vdots}")
+      }
+
+      cat(" & ")
+      cat(sprintf("\\uniprotlink{%s}%s",sanitize(my.acs[ac.i],dash=FALSE),ifelse(is.na(var.string),"",paste0("-",var.string)[1])),
           sanitize(unique(my.protein.info$gene_name[sel]))[1],
           sanitize(unique(my.protein.info$protein_name[sel]))[1],
-          sep=" & "))
+          sep=", ")
 
       if (n.row==1) {
         # PEPTIDE GROUPING
-        cat(" & \\multirow{",n.multirow ,"}{*}{%\n",sep="")
+        cat(" & ")
+        if (n.multirow > 1) cat(" \\multirow{",n.multirow ,"}{*}{%\n",sep="")
         tikz.proteingroup(protein.group,reporter.protein.g,show.pos,show.header=FALSE)
-        cat("} \\\\ \n")
+        if (n.multirow > 1) cat(" }")
+        cat(" \\\\ \n")
       } else {
         cat(" & \\\\ \n")
       }
@@ -247,7 +253,7 @@ tikz.proteingroup <- function(protein.group,reporter.protein.g,show.pos,show.hea
   n.peptides <- length(reporter.sp.sel)
   max.n.peptides <- 10
   tikz.y <- 0.5
-  tikz.x <- 0.5
+  tikz.x <- 0.4
   tikz.minnodesize <- 0.2
 
   if (n.peptides > max.n.peptides) {
@@ -301,9 +307,11 @@ tikz.proteingroup <- function(protein.group,reporter.protein.g,show.pos,show.hea
        connect.nodes(-protein.i,which((reporter.sp.sel | group.sp.sel | unspecific.sel | quant.sel)&gmp$group.member.peptides[,protein.i]))
      }
   }
-  cat(sprintf("\\node at (0,0) {%s/%s/%s};\n",protein.peptides.df[protein.i,"rs"],
-      protein.peptides.df[protein.i,"gs"],
-      protein.peptides.df[protein.i,"us"]))
+
+  cat(sprintf("\\node [left=.25cm of prot-1 pep1] {%s/%s/%s};\n",
+              sum(reporter.sp.sel),
+              sum(group.sp.sel),
+              sum(unspecific.sel)))
 
 
   if (show.header) {

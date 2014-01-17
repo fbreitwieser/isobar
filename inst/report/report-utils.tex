@@ -8,11 +8,9 @@
 \newcommand{\rth}[1]{\begin{turn}{65}\textbf{#1}\end{turn}}
 \newcommand{\secsubtitle}[1]{\textit{#1}}
 
-\newcolumntype{f}{>{\footnotesize}r} 
-
-\newcommand{\boxplot}[7]{
+\newcommand{\boxplot}[6]{
   \begin{tikzpicture}[x=2cm,line width=0.5pt,node distance=0.1,baseline=3.8ex]
-      \tikzboxplot{#1}{#2}{#3}{#4}{#5}{#6}{#7}
+      \tikzboxplot{#1}{#2}{#3}{#4}{#5}{#6}{black!60}
   \end{tikzpicture}
 }
 
