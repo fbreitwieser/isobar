@@ -390,45 +390,23 @@ adjust.ratio.pvalue <- function(quant.tbl,p.adjust,sign.level.rat,globally=FALSE
   quant.tbl
 }
 
-correct.peptide.ratios <- function(ibspectra, peptide.quant.tbl, protein.quant.tbl,  
+correct.peptide.ratios <- function(ibspectra, peptide.quant.tbl, protein.quant.tbl, protein.group.combined,
                                    adjust.variance=TRUE, correlation=0, recalculate.pvalue = TRUE) {
 
   attrs <- attributes(peptide.quant.tbl)
-  protein.group <- proteinGroup(ibspectra)
   if (isTRUE(attr(peptide.quant.tbl,'summarize')) || isTRUE(attr(protein.quant.tbl,'summarize')))
     stop("Ratio correction should be done before summarization! Use proteinRatio with argument before.summarize.f!")
 
   # map from peptides to protein group identifier
-  pnp <- peptideNProtein(protein.group)
-  pi <- protein.group@peptideInfo
-  #pnp <- pnp[pnp[,'protein.g'] %in% reporterProteins(protein.group) & ,]
   all.q.prots <- unique(protein.quant.tbl[,'ac'])
   n.quant <- table(protein.quant.tbl[!is.na(protein.quant.tbl[,'lratio']),'ac'])
   q.protein.acs <- strsplit(all.q.prots,",")
 
-  pi <- merge(pi,as.data.frame(isobar:::.as.matrix(protein.group@indistinguishableProteins,
+  pi <- protein.group.combined@peptideInfo
+  pi <- merge(pi,as.data.frame(isobar:::.as.matrix(protein.group.combined@indistinguishableProteins,
                                                    colnames=c("protein","protein.g")),
                                stringsAsFactors=FALSE))
   pep.to.ac <- isobar:::.as.vect(unique(pi[,c('peptide','protein.g')]))
-
-#  pep.to.ac <- sapply(unique(peptide.quant.tbl$peptide),function(pep) {
-#                              pep.prots <- pi[pi[,'peptide'] == pep,'protein']
-#                              prots.ok <- sapply(q.protein.acs,function(q.prots) any(pep.prots %in% q.prots))
-#                              if (sum(prots.ok) == 0) {
-#                                message("could not map peptide ",pep,"!")
-#                                ac <- "NA"
-#                              } else if (sum(prots.ok) > 1) {
-#                                n.quant.acs <- n.quant[all.q.prots[prots.ok]]
-#                                ac <- names(n.quant.acs)[which.max(n.quant.acs)]
-#                                message(pep," matches to multiple ACs: ", 
-#                                        paste(all.q.prots[prots.ok],collapse=" & "),
-#                                        " [Using ",ac," with ",n.quant.acs[ac]," quantifications]")
-#                              } else {
-#                                message(".",appendLF=FALSE)
-#                                ac <- all.q.prots[prots.ok]
-#                              }
-#                              return(ac)
-#  })
 
   peptide.quant.tbl[,'ac'] <- pep.to.ac[peptide.quant.tbl[,'peptide']]
 
@@ -1234,7 +1212,8 @@ ratiosReshapeWide <- function(quant.tbl,vs.class=NULL,sep=".",cmbn=NULL,short.na
 proteinRatios <-
   function(ibspectra, noise.model, reporterTagNames=NULL,
            proteins=reporterProteins(proteinGroup(ibspectra)),peptide=NULL,
-           cl=classLabels(ibspectra), combn.method="global",symmetry=FALSE,
+           cl=classLabels(ibspectra), combn.method="global",combn.vs=NULL,
+	   symmetry=FALSE,
            summarize=FALSE,summarize.method="mult.pval",
            min.detect=NULL,strict.sample.pval=TRUE,strict.ratio.pval=TRUE,orient.div=0,
            sign.level=0.05,sign.level.rat=sign.level,sign.level.sample=sign.level,
@@ -1253,7 +1232,7 @@ proteinRatios <-
   if (is.null(cl) && is.null(cmbn)) stop("please supply class labels as argument cl or a cmbn matrix")
 
   if (is.null(cmbn))
-    cmbn <- combn.matrix(reporterTagNames,combn.method,cl)
+    cmbn <- combn.matrix(reporterTagNames,combn.method,cl,vs=combn.vs)
 
   if (ncol(cmbn) < 1) 
     stop("No possible combination for reporters [",paste(reporterTagNames,sep=","),"]",
