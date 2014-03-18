@@ -406,6 +406,7 @@ correct.peptide.ratios <- function(ibspectra, peptide.quant.tbl, protein.quant.t
   pi <- merge(pi,as.data.frame(isobar:::.as.matrix(protein.group.combined@indistinguishableProteins,
                                                    colnames=c("protein","protein.g")),
                                stringsAsFactors=FALSE))
+  pi <- pi[pi[["protein.g"]] %in% reporterProteins(protein.group.combined),]
   pep.to.ac <- isobar:::.as.vect(unique(pi[,c('peptide','protein.g')]))
 
   peptide.quant.tbl[,'ac'] <- pep.to.ac[peptide.quant.tbl[,'peptide']]

@@ -99,7 +99,7 @@ setMethod("ProteinGroup",signature(from="data.frame",template="ProteinGroup",pro
                      names(spectrumToPeptide(template)) %in% from[,"spectrum"]]
       
       isoforms <-template@isoformToGeneProduct[names(indistinguishableProteins),]
-      peptideInfo <- subset(template@peptideInfo,peptide %in% from[,'peptide'])
+      peptideInfo <- subset(template@peptideInfo,peptide %in% from[,'peptide'] & modif %in% from[,"modif"])
       ## TODO: overlappingProteins are missing
 
       if (length(proteinInfo) == 0 && length(template@proteinInfo) > 0) {
