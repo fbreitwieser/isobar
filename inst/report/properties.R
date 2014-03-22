@@ -115,6 +115,7 @@ noise.model.minspectra=50
 
 summarize=FALSE
 combn.method="versus.channel"
+
 ## class labels. Must by of type character and of same length as
 ## number of channels I. e. 4 for iTRAQ 4plex, 6 for TMT 6plex Example
 ## for iTRAQ 4plex:
@@ -138,7 +139,6 @@ quant.w.grouppeptides=c()
 min.detect=NULL
 
 preselected=c()
-
 
 ### Biological Variability Ratio Distribution options
 ## ratiodistr can be set to a file or a 'Distribution object. ' If

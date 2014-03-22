@@ -13,7 +13,7 @@
 fitWeightedNorm <- function(x,weights) {
   new("Norm",
       mean=weightedMean(data=x,weights=weights),
-      sd=sqrt(weightedVariance(data=x,weights=weights))
+      sd=sqrt(weightedVariance(data=x,weights=weights)[1])
   )
 }
 
@@ -174,7 +174,8 @@ setMethod("estimateRatioNumeric",signature(channel1="numeric",channel2="numeric"
       
       if (length(channel1)==0) {
         if (is.method("isobar"))
-          return(c(lratio=NA,variance=NA,n.spectra=NA,n.na1=NA,n.na2=NA,
+          return(c(lratio=NA,variance=NA,var_hat_vk=NA,
+                   n.spectra=NA,n.na1=NA,n.na2=NA,
                    p.value.rat=NA,p.value.sample=NA,is.significant=FALSE))
         if (is.method("isobar-combn"))
           return(c(lratio=NA,variance=NA,n.spectra=NA,n.na1=NA,n.na2=NA,
@@ -228,6 +229,8 @@ setMethod("estimateRatioNumeric",signature(channel1="numeric",channel2="numeric"
       i2 <- i2[sel]
       log.ratios <- log.ratios[sel]
       var.i <- var.i[sel]
+
+      center.val <-  ifelse(is.null(ratiodistr), 0 , distr::q(ratiodistr)(0.5))
     
       ## linear regression estimation
       if (is.a.method("lm")) {
@@ -246,12 +249,31 @@ setMethod("estimateRatioNumeric",signature(channel1="numeric",channel2="numeric"
         .calc.weighted.ratio(log.ratios,var.i,variance.function,preweights[sel])
       
       if (is.a.method("ttest")) {
-        if (length(log.ratios) < 2) p.value <- 1  else p.value <- t.test(log.ratios)$p.value
-        res.ttest <- c(
-                       lratio=lratio.n.var['lratio'],variance=NA,n.spectra=length(log.ratios),
-            p.value=p.value,is.significant=p.value<sign.level)
+        if (length(log.ratios) < 2) 
+          p.value <- 1  
+        else 
+          p.value <- t.test(log.ratios)$p.value
+
+        res.ttest <- c(lratio=lratio.n.var['lratio'],
+                       variance=NA,n.spectra=length(log.ratios),
+                       p.value=p.value,is.significant=p.value<sign.level)
         if (is.method("ttest")) return(res.ttest)
       }
+      if (is.a.method("ttest2")) {
+
+        p.value <- .ttest.pval(mu=center.var,
+                               xbar=lratio.n.var['lratio'],
+                               s=sqrt(lratio.n.var['sample.variance']),
+                               n=length(log.ratios))
+
+        res.ttest2 <- c(lratio=lratio.n.var['lratio'],
+                        variance=lratio.n.var['sample.variance'],
+                        p.value = p.value,
+                        is.significant=p.value<sign.level)
+        if (is.method("ttest2"))
+          return(res.ttest2)
+      }
+        
 #if (method == "wttest" || method == "compare.all") {
 #        p.value <- (length(log.ratios) < 2)? 1 : weighted.t.test(log.ratios,w=weights,weighted.ratio)$p.value
 #        res.wttest <- c(
@@ -283,6 +305,7 @@ setMethod("estimateRatioNumeric",signature(channel1="numeric",channel2="numeric"
 
         res.isobar <- 
           c(lratio=weighted.ratio, variance=calc.variance,
+            var_hat_vk=as.numeric(lratio.n.var['var_hat_vk']),
             n.spectra=length(log.ratios),
             n.na1=sum(sel.ch1na),n.na2=sum(sel.ch2na),
             p.value.rat=calculate.ratio.pvalue(weighted.ratio, calc.variance, ratiodistr),
@@ -344,7 +367,8 @@ setMethod("estimateRatioNumeric",signature(channel1="numeric",channel2="numeric"
 calculate.ratio.pvalue <- function(lratio, variance, ratiodistr = NULL) {
   center.val <-  ifelse(is.null(ratiodistr), 0 , distr::q(ratiodistr)(0.5))
   sapply(seq_along(lratio),function(r.i) 
-    pnorm(lratio[r.i],mean=center.val,sd=sqrt(variance[r.i]),lower.tail=lratio[r.i]<center.val)
+    pnorm(lratio[r.i],mean=center.val,sd=sqrt(variance[r.i]),
+          lower.tail=lratio[r.i]<center.val)
   )
 }
 
@@ -630,14 +654,17 @@ correct.peptide.ratios <- function(ibspectra, peptide.quant.tbl, protein.quant.t
 
   # variance calculation
   estimator.variance <- 1/sum.weights
+  var_hat_vk = Inf
   if (length(log.ratio) == 1)
     sample.variance <- estimator.variance^0.75
-  else
+  else {
+    wvar <- weightedVariance(log.ratio,weights,weighted.ratio)
+    var_hat_vk = wvar[2]
     if (length(log.ratio) == 2)
-      sample.variance <- max(c(weightedVariance(log.ratio,weights,weighted.ratio),
-                               estimator.variance^0.75))
+      sample.variance <- max(c(wvar[1],estimator.variance^0.75))
     else
-      sample.variance <- weightedVariance(log.ratio,weights,weighted.ratio)
+      sample.variance <- wvar[1]
+  }
 
   calc.variance <- switch(variance.function,
       maxi = max(estimator.variance,sample.variance,na.rm=T),
@@ -649,7 +676,9 @@ correct.peptide.ratios <- function(ibspectra, peptide.quant.tbl, protein.quant.t
   return(c(lratio=weighted.ratio,
            estimator.variance=estimator.variance,
            sample.variance=sample.variance,
-           calc.variance=calc.variance))
+           calc.variance=calc.variance,
+           var_hat_vk = var_hat_vk
+        ))
 }
 
 estimateRatioForProtein <- function(protein,ibspectra,noise.model,channel1,channel2,
@@ -691,7 +720,7 @@ estimateRatioForProtein <- function(protein,ibspectra,noise.model,channel1,chann
               variance=var(peptide.ratios$lratio)))
           }
 
-        } else if (method %in% c("isobar","lm","ttest","fc","compare.all")) {
+        } else if (method %in% c("isobar","lm","ttest","ttest2","fc","compare.all")) {
           .call.estimateRatio(protein,"protein",ibspectra,
                              noise.model,channel1,channel2,method=method,
                              specificity=specificity,...)
@@ -945,56 +974,82 @@ setMethod("estimateRatio",
     }
 )
 
+.NULLstring <- function(x) {
+  if(is.null(x))
+    return("NULL")
+  return(x)
+}
+
 ### Helper function to estimateRatioNumeric
 .call.estimateRatio <- function(x,level,ibspectra,noise.model,
                                 channel1,channel2,
                                 specificity=REPORTERSPECIFIC,modif=NULL,
                                 n.sample=NULL,groupspecific.if.same.ac=FALSE,
                                 use.precursor.purity=FALSE,do.warn=TRUE,
-                                use.for.quant.only=TRUE,...) {
+                                use.for.quant.only=TRUE,
+                                use.vsn.transform=FALSE,...) {
+
   allowed.channels <- c(reporterTagNames(ibspectra),'AVG','ALL')
-  if (is.null(channel1) || is.null(channel2))
-    stop("channel1 and channel2 must not be NULL, but one of [",paste(allowed.channels,collapse=", "),"] !")
-  #if (length(channel1) == 0 || length(channel1) > 1 || length(channel2) == 0 || length(channel2) > 1)
-  #  stop("channel1 and channel2 must be of length one! Lengths: [",length(channel1),",",length(channel2),"]")
-  if (!all(channel1 %in% allowed.channels) || !all(channel2 %in% allowed.channels))
-    stop("channel1 and channel2 must be one of the reporter names: \n\t",paste(allowed.channels,collapse=", "),".")
+  allowed.channels.p <- paste(allowed.channels, collapse=", ")
+
+  if (is.null(channel1) || !all(channel1 %in% allowed.channels))
+    stop("channel 1 is ",.NULLstring(channel1),",",
+         " but it should be one of ",allowed.channels.p,".")
+
+  if (is.null(channel2) || !all(channel2 %in% allowed.channels))
+    stop("channel 2 is ",.NULLstring(channel2),",",
+         " but it should be one of ",allowed.channels.p,".")
   
+  ## when more than one channel value is given, calculate the combination matrix
   if (length(channel1) > 1 || length(channel2) > 1) {
+
+    ## using match.call to get the call with all arguments
+    ecall <- match.call(expand.dots = TRUE)
+
     res  <- c()
     for (c1 in channel1) {
       for (c2 in channel2) {
+        my.ecall <- ecall
+        my.ecall[["channel1"]] <- c1
+        my.ecall[["channel2"]] <- c2
+
+        ## using eval() on my.ecall for recursive calling of this function
         res <- rbind(res,
-                     data.frame(channel1=c1,channel2=c2,
-                                t(as.data.frame(.call.estimateRatio(x,level,ibspectra,noise.model,channel1=c1,channel2=c2,
-                                                                    specificity=specificity,modif=modif,n.sample=n.sample,
-                                                                    groupspecific.if.same.ac=groupspecific.if.same.ac,
-                                                                    use.precursor.purity=use.precursor.purity,do.warn=do.warn,...))),
-                                 stringsAsFactors=FALSE))
+                data.frame(channel1=c1,channel2=c2,
+                           t(eval(my.ecall,parent.frame())),
+                           stringsAsFactors=FALSE))
       }
     }
     rownames(res) <- NULL
     return(res)
   }
 
+  ## select spectra based on quantification level
   sel <- switch(level,
-                "protein"=spectrumSel(ibspectra,protein=x,specificity=specificity,do.warn=do.warn,
-                                      modif=modif,groupspecific.if.same.ac=groupspecific.if.same.ac,
+                "protein"=spectrumSel(ibspectra,protein=x,specificity=specificity,
+                                      do.warn=do.warn,modif=modif,
+                                      groupspecific.if.same.ac=groupspecific.if.same.ac,
                                       use.for.quant.only=use.for.quant.only),
                 "peptide"=spectrumSel(ibspectra,peptide=x,modif=modif,do.warn=do.warn,
                                       use.for.quant.only=use.for.quant.only),
                 "peptide-probs"=stop("not implemented yet"),
                 stop("level ",level," unknown"))
 
-  
-  
+  ## get reporter intensities from ibspectra
   ri <- reporterIntensities(ibspectra)[sel,,drop=FALSE]
-  ri.raw <- reporterData(ibspectra,element="ions_not_normalized")[sel,,drop=FALSE]
-  if (use.precursor.purity && .SPECTRUM.COLS['PRECURSOR.PURITY'] %in% colnames(fData(ibspectra)))
-    precursor.purity <- fData(ibspectra)[sel,"precursor.purity"]
-  else
-    precursor.purity <- NULL
 
+  ## get raw intensities (prior to normalization) for estimation of noise level
+  ri.raw <- reporterData(ibspectra,element="ions_not_normalized")[sel,,drop=FALSE]
+
+  ## use vsn transformed data (see apply.vsn() in IBSpectra-class.R
+  if (use.vsn.transform) {
+    if (!"ions_vsn_normalized" %in% assayDataElementNames(ibspectra))
+      stop("Use apply.vsn() to calculate variance-stabilizing transformation, first")
+
+    ri <- reporterData(ibspectra,element="ions_vsn_normalized")[sel,,drop=FALSE]
+  }
+
+  ## get reporter intensities
   i1 <- .get.ri(ri,channel1)
   i2 <- .get.ri(ri,channel2)
   i1.raw <- .get.ri(ri.raw,channel1)
@@ -1014,6 +1069,16 @@ setMethod("estimateRatio",
     else
       i1 <- i2 <- i1.raw <- i2.raw <- numeric()
    }
+
+  ## use precursor purity for spectra weighting
+  if (isTRUE(use.precursor.purity)) {
+   if (!.SPECTRUM.COLS['PRECURSOR.PURITY'] %in% colnames(fData(ibspectra)))
+    stop("Argument use.precusor.purity is TRUE, but no column '",
+         .SPECTRUM.COLS['PRECURSOR.PURITY'],"' in data.")
+    precursor.purity <- fData(ibspectra)[sel,"precursor.purity"]
+  } else {
+    precursor.purity <- NULL
+  }
 
    estimateRatioNumeric(channel1=i1,channel2=i2,noise.model=noise.model,...,
                         preweights=precursor.purity,
