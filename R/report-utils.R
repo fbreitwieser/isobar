@@ -591,7 +591,9 @@ property <- function(x, envir, null.ok=TRUE,class=NULL) {
     } else {
       stop("don't known level ",properties.env[["report.level"]])
     }
-    if (is.null(property('cmbn',properties.env)) & !is.null(property('vs.class',properties.env)))
+
+    if (is.null(property('cmbn',properties.env)) & 
+	!is.null(property('vs.class',properties.env)))
       properties.env[["cmbn"]] <- combn.matrix(reporterTagNames(env[["ibspectra"]]),
 					   "versus.class",
 					   property('class.labels',properties.env),
@@ -610,7 +612,7 @@ property <- function(x, envir, null.ok=TRUE,class=NULL) {
       correct.protein.group <- .get.or.load("correct.peptide.ratios.with_protein.group",properties.env)
       ratios.opts[["before.summarize.f"]] <- function(...)
         correct.peptide.ratios(..., protein.quant.tbl=protein.quant.tbl,
-                               protein.group = correct.protein.group,
+                               protein.group.combined = correct.protein.group,
                                correlation = property('peptide.protein.correlation',properties.env))
     }
 

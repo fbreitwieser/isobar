@@ -9,7 +9,7 @@ Description: isobar provides methods for preprocessing, normalization, and
   Include modules for validating and integrating data focussing on
   post-translational protein modifications (isobar-PTM).
 
-Version: 1.9.3.2
+Version: 1.9.3.3
 
 Authors: Florian P Breitwieser <fbreitwieser@cemm.oeaw.ac.at>, 
    Jacques Colinge <jcolinge@cemm.oeaw.ac.at>, with contributions from
@@ -22,7 +22,6 @@ Florian P. Breitwieser, André Müller, Loïc Dayon, Thomas Köcher, Alexandre H
 Mechtler, Keiryn L. Bennett, and Jacques Colinge (June 2011). “General statistical
 modeling of data from protein relative expression isobaric tags.” In: J Proteome Res
 10.6, pp. 2758–2766
-
 
 Florian P. Breitwieser and Jacques Colinge (Sept. 2013). “Isobar(PTM): a software
 tool for the quantitative analysis of post-translationally modified proteins.” eng. 

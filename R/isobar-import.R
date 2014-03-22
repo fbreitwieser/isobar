@@ -691,40 +691,6 @@ read.mzid <- function(filename) {
         protein.mapping1,by="peptide.ev.ref")
 }
 
-## read.mgf
-.parse.spectrum <- function(input,reporterMasses,fragment.precision,recordNo) { 
-  firstChar = substr(input,1,1);
-  sel.numeric = firstChar == 1 & substr(input,4,4) == ".";
-  sel.alpha = firstChar %in% c("P","T")
-      
-  d <- unlist(strsplit(input[sel.alpha],"="))
-  d1 <- d[seq(2,length(d),by=2)]
-  names(d1) <-d[seq(1,length(d),by=2)]
-      
-  spectrumTitles[recordNo,] <<- d1[c("TITLE","PEPMASS")]
-# TODO: do not take closest but most intense peak?
-      
-  if (any(sel.numeric)) {
-    mzi <- do.call("rbind",strsplit(input[sel.numeric],"\\s"))[,1:2]
-    if (!is.null(nrow(mzi))) {
-      mzi.mass <- as.numeric(mzi[,1])
-      mzi.ions <- as.numeric(mzi[,2])
-      if (length(mzi.mass)>0) {
-        lapply(seq_along(reporterMasses),
-               function(i) {
-                 m <- abs(mzi.mass-reporterMasses[i])
-                 pos <- which(m == min(m))
-                 if (length(pos) > 0 & m[pos] < fragment.precision/2) {
-                   observedMasses[recordNo,i] <<- mzi.mass[pos]
-                   observedIntensities[recordNo,i] <<- mzi.ions[pos]
-                 }
-               }
-               )
-      }
-    }
-  }
-}
-
 ##' .read.mgf: read isobaric reporter tag masses and intensities from MGFs
 ##'
 ##' MGF files list m/z and intensities for each spectrum. .read.mgf
@@ -832,8 +798,13 @@ read.mzid <- function(filename) {
         m <- abs(y-mzi.mass)
         pos <- which(m == min(m))
       
-        if (length(pos) > 0 & m[pos] < fragment.precision/2)
-          return(c(mzi.mass[pos],mzi.ions[pos]))
+        if (sum(pos) > 0 & m[pos][1] < fragment.precision/2) {
+	  # take most intense if two oins have same distance
+	  posi <- 1
+	  if (sum(pos)>1) 
+	    posi <- which.max(mzi.ions[pos])[1]
+          return(c(mzi.mass[pos][posi],mzi.ions[pos][posi]))
+	}
         else
           return(c(NA,NA))
       }))) 

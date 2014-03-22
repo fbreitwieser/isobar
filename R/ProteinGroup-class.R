@@ -63,7 +63,7 @@ setGeneric("ProteinGroup",function(from,template=NULL,proteinInfo=data.frame())
 
 
 setMethod("ProteinGroup",signature(from="data.frame",template="ProteinGroup",proteinInfo="ANY"),
-          function(from,template,proteinInfo=NULL) {
+          function(from,template,proteinInfo=data.frame()) {
       # TODO: exclude groups from beeing reporters when
       #       there's no reporter-specific peptide ?
       message("Creating ProteinGroup from template ... ",appendLF=FALSE)
@@ -99,10 +99,10 @@ setMethod("ProteinGroup",signature(from="data.frame",template="ProteinGroup",pro
                      names(spectrumToPeptide(template)) %in% from[,"spectrum"]]
       
       isoforms <-template@isoformToGeneProduct[names(indistinguishableProteins),]
-      peptideInfo <- subset(template@peptideInfo,peptide %in% from[,'peptide'])
+      peptideInfo <- subset(template@peptideInfo,peptide %in% from[,'peptide'] & modif %in% from[,"modif"])
       ## TODO: overlappingProteins are missing
 
-      if (is.null(proteinInfo) && length(template@proteinInfo) > 0) {
+      if (length(proteinInfo) == 0 && length(template@proteinInfo) > 0) {
         if (proteinInfoIsOnSpliceVariants(template@proteinInfo))
           proteinInfo <- subset(template@proteinInfo,accession %in% from$protein)
         else

@@ -113,20 +113,36 @@ noise.model.channels=NULL
 noise.model.is.technicalreplicates=FALSE
 noise.model.minspectra=50
 
-summarize=FALSE
-combn.method="versus.channel"
-
 ## class labels. Must by of type character and of same length as
 ## number of channels I. e. 4 for iTRAQ 4plex, 6 for TMT 6plex Example
 ## for iTRAQ 4plex:
+## Class definitions of the isobaric tag channels. 
+## A character vector with the same length as channels 
+##   (e.g. 4 for iTRAQ 4plex, 6 for TMT 6plex)
+## Example for iTRAQ 4plex:
 # class.labels=as.character(c(1,0,0,0))
 # class.labels=c("Treatment","Treatment","Control","Control")
 ## Also names are possible - these serves as description in the report
 ##  and less space is used in the rows
 # class.labels=c("Treatment"="T","Treatment"="T","Control"="C","Control"="C")
 class.labels=NULL
-cmbn=NULL
+
+## The following definitions define which ratios are calculated.
+
+## summarize ratios with equal class labels, set to TRUE when replicates are used
+summarize=FALSE
+
+## combn.method defines which ratios are calculated - versus a channel or a class,
+##   all the ratios within or across classes, or all possible combinatioins.
+## When summarize=TRUE is set, use "interclass", "versus.class", or "intraclass"
+# combn.method="global"
+# combn.method="versus.class"
+# combn.method="intraclass"
+# combn.method="interclass"
+combn.method="versus.channel"
 vs.class=NULL
+
+cmbn=NULL
 
 ## Arguments given to 'proteinRatios' function. See ?proteinRatios
 ratios.opts = list(
