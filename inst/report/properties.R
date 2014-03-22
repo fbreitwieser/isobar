@@ -271,3 +271,10 @@ zip=FALSE
 
 # warning level (see 'warn' in ?options)
 warning.level=1
+
+
+###########################################################
+## Novel options
+
+shrink.mean=TRUE
+use.t.stat=TRUE

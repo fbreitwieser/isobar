@@ -737,6 +737,74 @@ estimateRatioForPeptide <- function(peptide,ibspectra,noise.model,channel1,chann
       return(r)
 }
 
+## shrink ratios towards zero using Rgbp
+shrinkMeans <- function(protein.ratios) {
+  require(Rgbp)
+  protein.ratios$se <- sqrt(protein.ratios$variance) / sqrt(protein.ratios$n.spectra)
+  sel=!is.na(protein.ratios$lratio) & is.finite(protein.ratios$se)
+
+  y <- protein.ratios[sel,"lratio"]
+  se <- protein.ratios[sel,"se"]
+  g <- gbp(y,se,model="gaussian",mean.PriorDist=0)
+
+  protein.ratios$post.mean[sel] <- g$post.mean
+  protein.ratios$post.sd[sel] <- g$post.sd
+
+  protein.ratios
+}
+
+# Calculate a T pvalue
+.ttest.pval <- function(mu,xbar,s,n=2,conf.level=0.95) {
+  t <- (xbar-mu)/ (s/sqrt(n))
+  df <- ifelse(n==1,0.5,n-1)  ## using 0.5 df when n=1 (has no theoretical justification)
+  p.value <- pt(t,df)
+  p.value <- ifelse(p.value<0.5,p.value,1-p.value) # two-sided
+  p.value <- p.value*2 ## correct for two-sided test
+  tc <- pt(conf.level,df)/2
+
+  if (length(xbar)>1) {cf <- cbind} else {cf <- c}
+  return(cf(t.stat=t,p.value,
+             ci.lower=xbar-tc*s/sqrt(n),
+             ci.upper=xbar+tc*s/sqrt(n)))
+}
+
+.ttest.pval.se <- function(mu,xbar,se,n=2,conf.level=0.95) {
+  t <- (xbar-mu)/ se
+  df <- ifelse(n==1,0.5,n-1)  ## using 0.5 df when n=1
+  p.value <- pt(t,df)
+  p.value <- ifelse(p.value<0.5,p.value,1-p.value) # two-sided
+  p.value <- p.value*2 ## correct for two-sided test
+  if (length(xbar)>1) {cf <- cbind} else {cf <- c}
+  tc <- pt(conf.level,df)/2
+  return(cf(t.stat=t,p.value,
+             ci.lower=xbar-tc*se,
+             ci.upper=xbar+tc*se))
+}
+
+
+
+
+
+## calculate ratio p-value based on t-statistic posthoc
+calculateRatioTStat <- function(protein.ratios) {
+  .ttest.pval(mu=0,
+              xbar=protein.ratios[["lratio"]],
+              s=sqrt(protein.ratios[["variance"]]),
+              n=2)
+              #n=protein.ratios[["n.spectra"]])
+
+}
+
+calculatePostRatioTStat <- function(protein.ratios) {
+  .ttest.pval.se(mu=0,
+              xbar=protein.ratios[["post.mean"]],
+              se=protein.ratios[["post.sd"]],
+              n=2)
+#              n=protein.ratios[["n.spectra"]])
+}
+
+
+
 
 ### Handling NULL protein or peptide argument
 setMethod("estimateRatio",
@@ -1240,7 +1308,7 @@ proteinRatios <-
            sign.level=0.05,sign.level.rat=sign.level,sign.level.sample=sign.level,
            ratiodistr=NULL,zscore.threshold=NULL,variance.function="maxi",
            combine=FALSE,p.adjust=NULL,reverse=FALSE,
-           cmbn=NULL,before.summarize.f=NULL,...) {
+           cmbn=NULL,before.summarize.f=NULL,shrink.ratios=FALSE,...) {
 
   if ((!is.null(proteins) && !is.null(peptide)) ||
       (is.null(proteins) && is.null(peptide)))
@@ -1320,10 +1388,6 @@ proteinRatios <-
   if (!is.null(zscore.threshold))
     ratios[,'is.significant'] <- ratios[,'p.value.rat'] < sign.level.rat & abs(ratios[,'zscore']) > zscore.threshold
 
-
-  if (!is.null(p.adjust)) 
-    ratios <- adjust.ratio.pvalue(ratios,p.adjust,sign.level.rat)
-
   if (symmetry) {
     ratios.inv <- ratios
     ratios.inv[,'lratio'] <- -ratios.inv[,'lratio']
@@ -1333,8 +1397,107 @@ proteinRatios <-
     ratios <- rbind(ratios,ratios.inv)
   }
 
+  if (shrink.ratios) {
+    message("shrinking mean [does not influence p-value calculation, yet!]")
+    ratios <- shrink.ratios(ratios)
+    ratios$p.value <- calcProbXDiffNormals(ratiodistr,
+                                           ratios$lratio,sqrt(ratios$variance/ratios$n.spectra),
+                                           alternative="two-sided")
+    ratios$is.significant <- ratios$p.value < 0.05
+
+    ## adjust p-value
+    comp.cols <- c("r1","r2","class1","class2")
+    comp.cols <- comp.cols[comp.cols %in% colnames(ratios)]
+    ratios <- ddply(ratios,comp.cols,function(x) {
+      x[,'p.value.adjusted'] <- p.adjust(x[,'p.value'], "fdr")
+      x[,'is.significant'] <- x[,'p.value.adjusted'] < 0.05
+      x
+    })
+  }
+
+  if (!is.null(p.adjust)) 
+    ratios <- adjust.ratio.pvalue(ratios,p.adjust,sign.level.rat)
+
   return(ratios)
 } # end proteinRatios
+
+shrink.ratios <- function(pr,do.plot=FALSE,nrand=10000) {
+  require(MASS)
+  require(LaplacesDemon)
+
+  ## fit inverse gamma distribution on sample variance (used as prior)
+  x <- pr$variance[!is.na(pr$variance)&pr$n.spectra>2]
+  (fit.gamma <- fitdistr(1/x,"gamma"))
+  
+  var.ks <- ks.test(1/x,pgamma,
+          shape=fit.gamma$estimate['shape'],
+          rate=fit.gamma$estimate['rate'])
+  message("fitting inverse gamma on variance (two-sided ks D=%.2f, p-value=%.3f)",
+          var.ks$statistic,var.ks$p.value)
+
+  ## calculate posterior variance
+  prior.alpha <- fit.gamma$estimate[1]
+  prior.beta <- fit.gamma$estimate[2]
+  sample.n <- pr$n.spectra
+  sample.var <- pr$variance
+
+  post.shape <- prior.alpha+sample.n/2-1/2
+  post.scale <- prior.beta+1/2*sample.var*pr$n.spectra
+  sel <- !is.na(pr$variance) 
+  post.var <- sapply(seq_len(nrand),function(i)
+       rinvgamma(sum(sel),post.shape[sel],post.scale[sel]))
+
+  if (do.plot) {
+    par(mfrow=c(2,2))
+    plot(density(x),"variance prior")
+    seqi <- seq(from=0,to=max(x),length.out=1000)
+    lines(seqi,dinvgamma(seqi,
+                      shape=fit.gamma$estimate['shape'],
+                      scale=fit.gamma$estimate['rate']),
+            col="red",type="l")
+    plot(pr$variance[sel],rowMeans(post.var),
+         cex=sqrt(pr$n.spectra[sel])/10,
+         log="xy",col="#000000A0",main="sample vs posterior variance")
+    abline(0,1,col="red")
+  }
+  
+  ## fit normal distribution on sample mu (used as prior)
+  prior.mu.mu <- median(pr$lratio[sel])
+  prior.mu.var <- mad(pr$lratio[sel])**2
+
+  mu.ks <- ks.test(pr$lratio[sel],"dnorm",
+                   prior.mu.mu,sqrt(prior.mu.var))
+
+  message("fitting normal on mean (two-sided ks D=%.2f, p-value=%.3f)",
+          mu.ks$statistic,mu.ks$p.value)
+
+  ## calculate posterior mu
+  post.mu <- sapply(seq_len(nrand),function(i) {
+      mu.post.mu <- (prior.mu.mu+pr$n.spectra[sel]*pr$lratio[sel])/
+                     (pr$n.spectra[sel] + 1)
+      mu.post.var <- post.var[,i]/(pr$n.spectra[sel]+1)
+      rnorm(sum(sel),mu.post.mu,sqrt(mu.post.var))
+  })
+
+
+  if (do.plot) {
+    plot(density(pr$lratio[sel]),main="mean prior")
+    seqi <- seq(from=-max(abs(pr$lratio[sel])),
+                            to=max(abs(pr$lratio[sel])),length.out=10000)
+    lines(seqi,dnorm(seqi,prior.mu.mu,sqrt(prior.mu.var)),
+                col="red",type="l")
+
+    plot(pr$lratio[sel],rowMeans(post.mu),
+         cex=sqrt(pr$n.spectra[sel])/10,
+         log="xy",col="#000000A0",main="sample vs posterior mean")
+    abline(0,1,col="red")
+  }
+ 
+  pr$lratio[sel] <- rowMeans(post.mu)
+  pr$variance[sel] <- rowMeans(post.var)
+
+  pr
+}
 
 summarize.ratios <-
   function(ratios,by.column="ac",summarize.method="mult.pval",min.detect=NULL,
@@ -1471,3 +1634,76 @@ summarize.ratios <-
   s.mad <- mad(lratio,na.rm=TRUE)
   (lratio-s.median)/s.mad
 }
+
+### - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+### weightedVariance and weightedMean generics and functions
+### replace by Hmisc functions?
+
+setGeneric("weightedMean", function(data, weights,trim=0) standardGeneric("weightedMean"))
+setGeneric("weightedVariance", function(data, weights, mean.estimate,trim=0) standardGeneric("weightedVariance"))
+
+setMethod("weightedVariance",
+    signature(data = "numeric", weights = "numeric", mean.estimate = "missing"),
+    function(data, weights, trim=0) {
+      mean.estimate <- weightedMean(data,weights,trim=trim)
+      weightedVariance(data,weights=weights,mean.estimate=mean.estimate,trim=trim)
+    }
+)
+
+setMethod("weightedVariance",
+    signature(data = "numeric", weights = "numeric", mean.estimate = "numeric"),
+    function(data, weights, mean.estimate, trim=0) {
+      # Validation? if (length(data)==1) { return(0); }
+      # Should we rescale the weights? weights=1/sum(weights)
+      
+      # weighted sample variance - for not normally distributed data
+      # see http://www.gnu.org/software/gsl/manual/html_node/Weighted-Samples.html and
+      # http://en.wikipedia.org/wiki/Weighted_mean#Weighted_sample_variance
+      sel <- !is.na(data) & !is.na(weights)
+      weights <- weights[sel]
+      data <- data[sel]
+
+      if (trim < 0 || trim > 0.5)
+        stop("trim has to be between 0 and 0,5")
+
+      if (trim > 0) {
+        sel <- data > quantile(data,trim) & data < quantile(data,1-trim)
+        weights <- weights[sel]
+        data <- data[sel]
+      }
+      
+      V1 <- sum(weights)
+      V2 <- sum(weights**2)
+      variance <- ( V1 / (V1**2 - V2) ) * sum(weights*(data-mean.estimate)**2)
+
+      n = length(data)
+      wik = (data-mean.estimate)**2
+      w_bar_k = mean((data-mean.estimate)**2)
+      var_hat_vk = median((wik-w_bar_k)**2)  ## for shrinkage..
+      
+      return(c(variance,var_hat_vk))
+    }
+)
+
+setMethod("weightedMean",
+    signature(data = "numeric", weights = "numeric"),
+    function(data, weights, trim = 0) {
+      sel <- !is.na(data) & !is.na(weights)
+      weights <- weights[sel]
+      data <- data[sel]
+
+      if (trim < 0 | trim > 0.5)
+        stop("trim has to be between 0 and 0,5")
+
+      if (trim > 0) {
+        sel <- data > quantile(data,trim) & data < quantile(data,1-trim)
+        weights <- weights[sel]
+        data <- data[sel]
+      }
+ 
+      return(
+          sum(data * weights) / sum(weights)
+      )
+    })
+
+
