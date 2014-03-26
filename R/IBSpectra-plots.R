@@ -23,7 +23,7 @@ setGeneric("reporterIntensityPlot",function(x) standardGeneric("reporterIntensit
 setMethod("reporterMassPrecision", signature=c(x="IBSpectra",plot="logical"),
     function(x,plot=TRUE,nrow=NULL) {
       masses <- reporterMasses(x)
-      melt.masses <- data.frame(reporter=rep(colnames(masses),each=nrow(masses)),
+      melt.masses <- data.frame(reporter=factor(rep(colnames(masses),each=nrow(masses))),
                                 reporter.tag.mass=rep(reporterTagMasses(x),each=nrow(masses)),
                                 observed.moz=as.numeric(masses),stringsAsFactors=FALSE)
       melt.masses$mass.difference <-
@@ -39,8 +39,8 @@ setMethod("reporterMassPrecision", signature=c(x="IBSpectra",plot="logical"),
        if (is.null(nrow))
          nrow <- ceiling(ncol(masses)/5)
 
-       ggplot(melt.masses,aes(x=mass.difference)) + geom_vline(xintercept=0,alpha=0.8) +
-          geom_histogram(fill="white",aes(colour=factor(reporter)),alpha=0.8,
+       ggplot(melt.masses,aes_string(x="mass.difference")) + geom_vline(xintercept=0,alpha=0.8) +
+          geom_histogram(fill="white",aes_string(colour="reporter"),alpha=0.8,
                          binwidth=1/20*(max(melt.masses$mass.difference,na.rm=TRUE)-min(melt.masses$mass.difference,na.rm=TRUE))) + 
             facet_wrap(~reporter,scales="fixed",nrow=nrow) + 
             theme_bw(base_size=10) + xlab("mass difference theoretical vs observed reporter tag mass") +
@@ -77,7 +77,7 @@ setMethod("reporterIntensityPlot",
             intensities.nn <- reporterData(x,element="ions_not_normalized") # null if not normalized
             
             melt.intensities <- data.frame(tag=rep(colnames(intensities),each=nrow(intensities)),
-                       normalized=ifelse(is.null(intensities.nn),"","2. after normalization"),
+                       normalized=factor(ifelse(is.null(intensities.nn),"","2. after normalization")),
                        intensity=as.numeric(intensities),
                        stringsAsFactors=FALSE)
 
@@ -89,8 +89,8 @@ setMethod("reporterIntensityPlot",
                              stringsAsFactors=FALSE))
             }
             
-            ggplot(melt.intensities,aes(x=tag,y=intensity)) +
-              geom_boxplot(aes(color=factor(normalized)),size=0.5,alpha=0.6,
+            ggplot(melt.intensities,aes_string(x="tag",y="intensity")) +
+              geom_boxplot(aes_string(color="normalized"),size=0.5,alpha=0.6,
                            outlier.size=0.5,position=position_dodge(width=0.25)) + 
               xlab("isobaric reporter tag") +
               scale_y_log10() + theme_bw(base_size=10) + scale_color_hue("") +

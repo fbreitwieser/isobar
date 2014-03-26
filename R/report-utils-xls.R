@@ -34,7 +34,7 @@ write.xls.report <- function(properties.env,report.env,file="isobar-analysis.xls
                                       read.delim,sep="\t",header=TRUE,skip=3,stringsAsFactors=FALSE))
         colnames(sites)[colnames(sites)=="ACC."]  <- "accession"
         colnames(sites) <- tolower(colnames(sites))
-        modificationSites <- subset(sites,accession %in% proteins)
+        modificationSites <- sites[sites$accession %in% proteins,]
       }
       proteins <- c(names(indistinguishableProteins(protein.group)),protein.ac(protein.group))
     }
@@ -239,7 +239,7 @@ write.xls.report <- function(properties.env,report.env,file="isobar-analysis.xls
                ))
     }
     
-    tbl <- cbind(tbl,protein.intensities(ibspectra,tbl[["protein"]]))
+    tbl <- cbind(tbl,protein.intensities(env[["ibspectra"]],tbl[["protein"]]))
   } else {
     if (isTRUE(properties.env[["xls.report.format"]]=="long")) {
      tbl <-cbind(tbl,"Classes"=paste(input.tbl[["class2"]],"/",input.tbl[["class1"]]))

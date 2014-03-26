@@ -554,7 +554,7 @@ read.mzid <- function(filename) {
     modparams <- getNodeSet(modif,"x:ModParam",namespaces=ns)
     return (switch(as.character(length(modparams)),
             "0" = c(res,xmlAttrs(modif[['cvParam']])),
-            "1" = c(res,xmlAttrs(modParams[[1]]),xmlAttrs(modParams[[1]][['cvParam']])),
+            "1" = c(res,xmlAttrs(modparams[[1]]),xmlAttrs(modparams[[1]][['cvParam']])),
             stop("Expecting zero or one ModParam Node in ",
                  "/mzIdentML/AnalysisProtocolCollection/SpectrumIdentificationProtocol/ModificationParams/SearchModification")))
   },namespaces=ns)))

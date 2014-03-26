@@ -2,7 +2,7 @@
 ## Helper Functions for LaTeX Report Generation
 
 load.tex.properties <- function(env) {
-  get.property <- function(name) { get(name,properties.env,inherits=FALSE) }
+  get.property <- function(name) { get(name,env$properties.env,inherits=FALSE) }
   if (!exists("properties.env",envir=env)) {
     warning("No properties.env - loading properties")
     assign("properties.env",load.properties(),envir=env)
@@ -10,12 +10,13 @@ load.tex.properties <- function(env) {
   needed.objects <- c('ibspectra','noise.model','quant.tbl','ratiodistr')
   if (!all(needed.objects %in% objects(envir=env))) {
     warning("Not all necessary objects present - calling initialize.env")
-    initialize.env(env,"protein",properties.env) # TOFIX: protein report-type is hard-coded
+    initialize.env(env,env$properties.env) 
   }
   assign("get.property",get.property,envir=env)
 }
 
 write.tex.commands <- function() {
+  get.property <- get("get.property")
   cat("\\newcommand{\\analysisname}{",sanitize(get.property('name'),dash=FALSE),"}\n")
   cat("\\newcommand{\\analysisauthor}{",sanitize(get.property('author')),"}\n")
 
@@ -352,7 +353,7 @@ tikz.proteingroup <- function(protein.group,reporter.protein.g,show.pos,show.hea
   return(res)
 }
 
-.tex.combinenames <- function(protein_name,is.single.comparision) {
+.tex.combinenames <- function(protein_name,is.single.comparision,cmbn) {
   gene.names <- c()
   for (prot.gene.name in protein_name) {
     if (is.na(prot.gene.name)) next;
@@ -416,7 +417,7 @@ sanitize <- function(str,dash=TRUE) {
 }
 
 
-print_sign_proteins_tbl <- function(file,cmbn,protein.group,quant.tbl,my.protein.infos) {
+print_sign_proteins_tbl <- function(file,cmbn,protein.group,quant.tbl,my.protein.infos,bnd) {
 
   is.single.comparision <- ncol(cmbn) ==1
   mycat <- function(...,append=TRUE,sep="") 
@@ -446,7 +447,7 @@ print_sign_proteins_tbl <- function(file,cmbn,protein.group,quant.tbl,my.protein
         n.spectra <- length(names(spectrumToPeptide(protein.group))[spectrumToPeptide(protein.group)%in%reporter.peptides])
 
         protein.names <- prot.info[["collapsed.gene_name"]][["protein_name"]]
-        gene.names <- isobar:::.tex.combinenames(protein.names,is.single.comparision)
+        gene.names <- .tex.combinenames(protein.names,is.single.comparision,cmbn)
 
         mycat(" ",sprintf("\\hyperref[protein.%s]{%s}",
                           protein.row[,"group"],prot_i),
@@ -498,7 +499,8 @@ get_n_proteins <- function(quant.tbl,sign=FALSE,is.na=FALSE) {
 print_protein_quant_tbl <- function(file="",
                                     cmbn,protein.group,
                                     quant.tbl,
-                                    my.protein.infos) {
+                                    my.protein.infos,
+                                    bnd) {
 
   message("Writing protein quantifications table ... ",append.lf=FALSE)
 
@@ -506,13 +508,8 @@ print_protein_quant_tbl <- function(file="",
   mycat <- function(...,append=TRUE,sep="") 
     cat(...,file=file,append=append,sep=sep)
 
-  if (is.single.comparision) {
-    mr <- function(text,width=NULL) text  
-    mrp <- function(text,width=NULL) text  
-  } else {
-    mr <- function(text) sprintf("\\mr{%s}",text)
-    mrp <- function(text) sprintf("\\mrp{%s}",text)
-  }
+  mr <- function(text,...) ifelse(is.single.comparision,text,sprintf("\\mr{%s}",text))
+  mrp <- function(text,...) ifelse(is.single.comparision,text,sprintf("\\mrp{%s}",text))
 
   print_longtablehdr("protein",is.single.comparision,TRUE,file=file)
 
@@ -533,7 +530,7 @@ print_protein_quant_tbl <- function(file="",
     }
   
     protein.names <- prot.info[["collapsed.gene_name"]][["protein_name"]]
-    gene.names <- isobar:::.tex.combinenames(protein.names,is.single.comparision)
+    gene.names <- .tex.combinenames(protein.names,is.single.comparision,cmbn)
   
     mycat(mr(sprintf(" \\hyperref[protein.%s]{\\textbf{%s}}",
                    protein.groupnumber,protein.groupnumber)),
@@ -572,7 +569,6 @@ print_protein_quant_tbl <- function(file="",
 }
 
 print_classlabels_tbl <- function(cl,reporterTagNames) {
-  cl <- attr(quant.tbl,"classLabels")
   if (!is.null(cl)) {
     cl[is.na(cl)] <- ""
     if (!is.null(cl)) {
@@ -627,7 +623,7 @@ print_protein_notquant_tbl <- function(file="",
     spectra <- names(spectrumToPeptide(protein.group))[spectrumToPeptide(protein.group)%in%reporter.peptides]
   
     protein.names <- prot.info[["collapsed.gene_name"]][["protein_name"]]
-    gene.names <- isobar:::.tex.combinenames(protein.names,is.single.comparision)
+    gene.names <- .tex.combinenames(protein.names,is.single.comparision,cmbn)
   
     mycat(sprintf(" \\hyperref[protein.%s]{%s}",
                    protein.groupnumber,protein.groupnumber),

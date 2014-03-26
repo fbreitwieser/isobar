@@ -160,7 +160,7 @@ initialize.env <- function(env,properties.env) {
   ib.name <- file.path(.get.property('cachedir',properties.env),"ibspectra.rda")
   if (file.exists(ib.name)) {
     load(ib.name)
-    env[["ibspectra"]] <- ibspectra
+    env[["ibspectra"]] <- get("ibspectra")
   } else {
     env[["ibspectra"]] <- .create.or.load.ibspectra(properties.env)
     save(list='ibspectra',envir=env,file=ib.name)

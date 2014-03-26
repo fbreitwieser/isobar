@@ -37,8 +37,8 @@ setAs("MSnSet","IBSpectra",function(from) {
 })
 
 setAs("IBSpectra","MSnSet",function(from) {
+  library(MSnbase)
   ## based on quantify.MSnExp from MSnbase
-  from <- ibspiked_set1
   
   elems <- assayDataElementNames(from)
   exprs <- reporterIntensities(from)
@@ -59,7 +59,8 @@ setAs("IBSpectra","MSnSet",function(from) {
   } else if (is(from,"TMT6plexSpectra")) {
     reporters <- TMT6
   } else if (is(from,"TMT10plexSpectra")) {
-    reporters <- TMT10
+    stop("conversion for TMT10plexSpectra not supported yet")
+    #reporters <- TMT10
   } else {
     stop("Cannot convert object")
   }

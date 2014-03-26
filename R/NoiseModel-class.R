@@ -279,101 +279,6 @@ setMethod("NoiseModel",signature(ibspectra="IBSpectra"),
   }
 )
 
-## voom/limma noise modeling (function voom.R)
-# created by Gordon Smyth and Charity Law, modified for isobar
-# licensed under GPL >= 2
-fitSqrtStdDevNoiseModel <- function(ri,design=NULL,normalize.method="none",plot=TRUE) {
-	out <- list()
-
-  sel.na <- apply(is.na(ri),1,any)
-  if (any(sel.na)) {
-    warning("removing ",sum(sel.na)," spectra with NA values")
-    ri <- ri[!sel.na,]
-  }
-
-
-#	Check design
-	if(is.null(design)) {
-		design <- matrix(1,ncol(ri),1)
-		rownames(design) <- colnames(ri)
-		colnames(design) <- "GrandMean"
-	}
-
-#	Check lib.size
-	lib.size <- colSums(ri)
-
-#	Fit linear model to log2-ri-per-million
-	y <- t(log10(t(ri)/(lib.size+1)))
-	y <- limma:::normalizeBetweenArrays(y,method=normalize.method)
-	fit <- limma:::lmFit(y,design,...)
-	if(is.null(fit$Amean)) fit$Amean <- rowMeans(y,na.rm=TRUE)
-
-#	Fit lowess trend to sqrt-standard-deviations by log-count-size
-	sx <- fit$Amean+mean(log10(lib.size+1))
-	sy <- sqrt(fit$sigma)
-	allzero <- rowSums(ri,na.rm=TRUE)==0
-	if(any(allzero)) {
-		sx <- sx[!allzero]
-		sy <- sy[!allzero]
-	}
-	l <- lowess(sx,sy,f=span)
-
-  exp.fun <- function(par,sx) par[1] + par[2] * exp(-par[3]*sx)
-  optim.res <- nlminb(c(0.1,5,1),function(par) {
-                      sqd.dev <- sort((sy-exp.fun(par,sx))^2)
-                      #trim.val <- floor(length(sqd.dev)/5)
-                      trim.val <- 0
-                      sum(sqd.dev[seq(from=trim.val,
-                                      to=length(sqd.dev-trim.val+1))])
-                      },
-                      lower=c(0,1e-10,1e-10))
- 
-	if(plot) {
-		plot(sx,sy,xlab="log10( reporter intensities )",
-         ylab="Sqrt( standard deviation )",pch=16,cex=0.25)
-		title("limma/voom: Mean-variance trend")
-    lines(sort(sx),exp.fun(optim.res$par,sort(sx)),col="blue")
-		lines(l,col="red")
-	}
-
-#	Make interpolating rule
-#	Special treatment of zero ri is now removed;
-#	instead zero ri get same variance as smallest gene average.
-#	l$x <- c(0.5^0.25, l$x)
-#	l$x <- c(log2(0.5), l$x)
-#	var0 <- var(log2(0.5*1e6/(lib.size+0.5)))^0.25
-#	var0 <- max(var0,1e-6)
-#	l$y <- c(var0, l$y)
-	f <- approxfun(l, rule=2)
-
-#	Find individual quarter-root fitted ri
-	if(fit$rank < ncol(design)) {
-		j <- fit$pivot[1:fit$rank]
-		fitted.values <- fit$coef[,j,drop=FALSE] %*% t(fit$design[,j,drop=FALSE])
-	} else {
-		fitted.values <- fit$coef %*% t(fit$design)
-	}
-	fitted.cpm <- 10^fitted.values
-	fitted.count <- t(t(fitted.cpm)*(lib.size+1))
-	fitted.logcount <- log10(fitted.count)
-
-#	Apply trend to individual observations
-	w <- 1/f(fitted.logcount)^4
-	dim(w) <- dim(fitted.logcount)
-
-#	Output
-	out$E <- y
-	out$weights <- w
-	out$design <- design
-	if(is.null(out$targets))
-		out$targets <- data.frame(lib.size=lib.size)
-	else
-		out$targets$lib.size <- lib.size
-	new("EList",out)
-
-}
-
-
 ### - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 ### .fitNoiseFunction and .averageParameters.
 ### (called by initialize)
@@ -544,9 +449,11 @@ setMethod("show",signature(object="NoiseModel"),
 )
 
 
-plot.NoiseModel <- function(x,y=NULL,min.x=2,max.x=10) {
-  ss <- seq(from=min.x,to=max.x,length.out=100)
-  nm.sd <- 1.96*sqrt(variance(noise.model,ss))
-  plot(ss,10^nm.sd,ylim=c(10^-max(nm.sd),10^max(nm.sd)),col="red",lwd=2,type="l",log="y",xlab="log10 intensity",ylab="ratio")
+plot.NoiseModel <- function(x,y=NULL,...) {
+  args = list(...)
+  if (is.null(args$xlim)) args$xlim = c(2,10)
+  ss <- seq(from=args$xlim[0],to=args$xlim[1],length.out=100)
+  nm.sd <- 1.96*sqrt(variance(x,ss))
+  plot(ss,10^nm.sd,ylim=c(10^-max(nm.sd),10^max(nm.sd)),col="red",lwd=2,type="l",log="y",xlab="log10 intensity",ylab="ratio",...)
   lines(ss,10^(-nm.sd),col="red",lwd=2)
 }

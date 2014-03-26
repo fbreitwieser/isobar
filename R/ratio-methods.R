@@ -32,18 +32,6 @@ fitNorm <- function(x,portion=0.75) {
   )
 }
 
-fitGumbel <- function(x) {
-  gumbel.fit <- function(theta,x){
-    -sum(d(Gumbel(loc=theta[1],scale=theta[2]))(x,log=TRUE),na.rm=T)
-  }
-  good <- !is.na(x) & !is.nan(x)
-  theta.start <- c(median(x[good]),IQR(x[good])/2)
-  res <- nlminb(theta.start,gumbel.fit,x=x[good])
-#                lower=c(-10,1e-20),upper=c(10,10)) 
-  new("Gumbel",loc=res$par[1],scale=res$par[2])
-}
-
-
 fitCauchy <- function(x) {
   cauchy.fit <- function(theta,x){
     -sum(dcauchy(x,location=theta[1],scale=theta[2],log=TRUE),na.rm=T)
@@ -299,8 +287,7 @@ setMethod("estimateRatioNumeric",signature(channel1="numeric",channel2="numeric"
         sel.ch2na <- is.na(channel2) & !is.na(channel1)
 
         if (use.na) {
-          # TODO: stub
-          .calc.w.na()
+          stop("use.na currently not functional")
         } # use.na
 
         res.isobar <- 
@@ -516,48 +503,6 @@ correct.peptide.ratios <- function(ibspectra, peptide.quant.tbl, protein.quant.t
   res.lm
 }
 
-
-
-.calc.w.na <- function() {
-  # Require channel intensity to be outside of the 'NA region'
-  sel.ch1na <- sel.ch1na & i2 > quantile(naRegion(noise.model),prob=0.99)
-  sel.ch2na <- sel.ch2na & i1 > quantile(naRegion(noise.model),prob=0.99)
-
-  # Set the value of that channel to a rather high one
-  val <- quantile(naRegion(noise.model),prob=0.5)
-
-  # Require the ratio to be higher than the previously observed one
-  # TODO: handle case when we have no ratio
-  if (!is.na(lratio.n.var['lratio'])) {
-    if (lratio.n.var['lratio'] < 0) {
-      
-      sel.ch1na <- sel.ch1na & i2 - val < lratio.n.var['lratio']
-      sel.ch2na <- sel.ch2na & val - i1 < lratio.n.var['lratio']
-    } else {
-      sel.ch1na <- sel.ch1na & i2 - val > lratio.n.var['lratio']
-      sel.ch2na <- sel.ch2na & val - i1 > lratio.n.var['lratio']
-    }
-  }
-
-#  i1[sel.ch1na] <- max(val,i2[sel.ch1na]-10)
-#  i2[sel.ch2na] <- max(val,i1[sel.ch2na]-10)
-#  i1.raw[sel.ch1na] <- max(val,i2[sel.ch1na]-10)
-#  i2.raw[sel.ch2na] <- max(val,i1[sel.ch2na]-10)
-  
-  i1[sel.ch1na] <- val
-  i2[sel.ch2na] <- val
-  i1.raw[sel.ch1na] <- i2.raw[sel.ch1na]
-  i2.raw[sel.ch2na] <- i1.raw[sel.ch2na]
-
-  sel <- sel.notna | sel.ch1na | sel.ch2na
-#  message("ch1na: ",sum(sel.ch1na),"; ch2na: ",sum(sel.ch2na))
-
-  # calculate final ratio
-  lratio.n.var <- 
-    .calc.weighted.ratio(sel,i1,i2,var.i,
-                         remove.outliers,outliers.coef,outliers.trim,
-                         variance.function,preweights)
-}
 
 .get.ri <- function(ri,ch) {
   if (is.null(ri))
@@ -1285,7 +1230,7 @@ ratiosReshapeWide <- function(quant.tbl,vs.class=NULL,sep=".",cmbn=NULL,short.na
     else 
       quant.tbl[,'comp']<- paste(quant.tbl$class2,quant.tbl$class1,sep="/")
 
-    quant.tbl <- subset(quant.tbl,class1 %in% vs.class)
+    quant.tbl <- quant.tbl[quant.tbl[["class1"]] %in% vs.class,]
   } else {
     if (classes.unique) {
       quant.tbl[,'comp']<- paste(quant.tbl$class2,quant.tbl$class1,sep="/")
@@ -1496,7 +1441,7 @@ shrink.ratios <- function(pr,do.plot=FALSE,nrand=10000) {
     par(mfrow=c(2,2))
     plot(density(x),"variance prior")
     seqi <- seq(from=0,to=max(x),length.out=1000)
-    lines(seqi,dinvgamma(seqi,
+    lines(seqi,LaplacesDemon::dinvgamma(seqi,
                       shape=fit.gamma$estimate['shape'],
                       scale=fit.gamma$estimate['rate']),
             col="red",type="l")

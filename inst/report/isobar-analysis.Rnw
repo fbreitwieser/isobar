@@ -128,7 +128,7 @@ if (properties.env[["show.significant.proteins"]]) {
     print_sign_proteins_tbl(file="sign-proteins.tex",
                         cmbn,protein.group,
                         quant.tbl,
-                        my.protein.infos)
+                        my.protein.infos,bnd)
   
     cat("\\small\n")
     cat("\\noindent\\LTXtable{\\textwidth}{sign-proteins.tex}\n")
@@ -157,7 +157,7 @@ cat("\\secsubtitle{Number of quantified proteins: ",
 print_protein_quant_tbl(file="protein-quant.tex",
                     cmbn,protein.group,
                     quant.tbl,
-                    my.protein.infos)
+                    my.protein.infos,bnd)
 
 cat("\\small\n")
 cat("\\noindent\\LTXtable{\\textwidth}{protein-quant.tex}\n")

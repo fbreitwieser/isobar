@@ -245,6 +245,8 @@ ibSpectra.as.concise.data.frame  <- function(from) {
     }
 
 .IBSpectraAsConciseDataFrameNew <- function(from,show.phospho.position=FALSE) {
+  protein.group <- protein.group(from)
+
   # prepare ProteinGroup data.frame
   indist.proteins <- indistinguishableProteins(proteinGroup(from))
       pg.df <- proteinGroup.as.concise.data.frame(from)

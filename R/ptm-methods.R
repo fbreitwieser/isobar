@@ -74,7 +74,7 @@ writePhosphoRSInput <-
   titles <- gsub("TITLE=","",grep("TITLE",input,value=TRUE),fixed=TRUE)
   if (!all(ids$spectrum %in% titles))
     stop("Not all id spectrum titles are in MGF titles!\n",
-         sum.bool.c(ids$spectrum %in% titles))
+         .sum.bool.c(ids$spectrum %in% titles))
   
   if (length(begin_ions) != length(end_ions))
     stop("mgf file is errorneous, non-matching number",
