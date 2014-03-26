@@ -4,7 +4,7 @@
 \description{Gets neighboring amino acids around modification which can be used to find enriched motifs.
 }
 \usage{
-getPeptideModifContext(protein.group, modif, n.aa.up = 5, n.aa.down = 5)
+getPeptideModifContext(protein.group, modif, n.aa.up = 7, n.aa.down = 7)
 }
 \arguments{
   \item{protein.group}{ProteinGroup object.}

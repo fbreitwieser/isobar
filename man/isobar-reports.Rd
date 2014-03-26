@@ -19,6 +19,15 @@
 \alias{write.tex.commands}
 \alias{load.tex.properties}
 
+\alias{get_n_proteins}
+\alias{print_classlabels_tbl}
+\alias{print_groupsize}
+\alias{print_protein_grp_info}
+\alias{print_protein_grp_tbl}
+\alias{print_protein_notquant_tbl}
+\alias{print_protein_quant_tbl}
+\alias{print_sign_proteins_tbl}
+
 \title{Isobar reports}
 
 \description{

@@ -34,7 +34,7 @@ write.xls.report <- function(properties.env,report.env,file="isobar-analysis.xls
                                       read.delim,sep="\t",header=TRUE,skip=3,stringsAsFactors=FALSE))
         colnames(sites)[colnames(sites)=="ACC."]  <- "accession"
         colnames(sites) <- tolower(colnames(sites))
-        modificationSites <- subset(sites,accession %in% proteins)
+        modificationSites <- sites[sites$accession %in% proteins,]
       }
       proteins <- c(names(indistinguishableProteins(protein.group)),protein.ac(protein.group))
     }
@@ -190,7 +190,7 @@ write.xls.report <- function(properties.env,report.env,file="isobar-analysis.xls
     #order.c <- if(isTRUE(properties.env[["xls.report.format"]]=="long"),"Channels",NULL)
     if (identical(properties.env[["report.level"]],"protein"))
       tbl <- tbl[order(tbl[,"group"]),]
-    else 
+    else if (all(c("ID","Sequence") %in% colnames(tbl)))
       tbl <- tbl[order(tbl[,"ID"],tbl[,"Sequence"]),]
 
     tbl
@@ -239,7 +239,7 @@ write.xls.report <- function(properties.env,report.env,file="isobar-analysis.xls
                ))
     }
     
-    tbl <- cbind(tbl,protein.intensities(ibspectra,tbl[["protein"]]))
+    tbl <- cbind(tbl,protein.intensities(env[["ibspectra"]],tbl[["protein"]]))
   } else {
     if (isTRUE(properties.env[["xls.report.format"]]=="long")) {
      tbl <-cbind(tbl,"Classes"=paste(input.tbl[["class2"]],"/",input.tbl[["class1"]]))
@@ -281,6 +281,8 @@ write.xls.report <- function(properties.env,report.env,file="isobar-analysis.xls
             is.significant = .append.xls.tbl("is.significant"),
             n.na1 =          .append.xls.tbl("n.na1"),
             n.na2 =          .append.xls.tbl("n.na2"),
+            p.value =        .append.xls.tbl("p.value"),
+            p.value.adjusted = .append.xls.tbl("p.value.adjusted"),
             p.value.ratio =  .append.xls.tbl("p.value.rat"),
             p.value.ratio.adjusted =  .append.xls.tbl("p.value.rat.adjusted"),
             p.value.sample = .append.xls.tbl("p.value.sample"),
@@ -332,8 +334,10 @@ write.xls.report <- function(properties.env,report.env,file="isobar-analysis.xls
   pg.df <- .proteinGroupAsConciseDataFrame(protein.group,modif.pos=ptm,ptm.info=ptm.info)
 
   # show peptide modification context
-  pep.modif.context <- getPeptideModifContext(protein.group,modif=ptm)
-  pg.df <- merge(pg.df,pep.modif.context,by=c("peptide","modif"),all=TRUE)
+  if (.proteinInfo.ok(protein.group)) {
+    pep.modif.context <- getPeptideModifContext(protein.group,modif=ptm)
+    pg.df <- merge(pg.df,pep.modif.context,by=c("peptide","modif"),all=TRUE)
+  }
   
   tbl <- merge(pg.df,input.tbl[,intersect(c("peptide","pep.siteprobs","modif","i","Spectra"),colnames(input.tbl))],
                by=c("peptide","modif"),all.y=TRUE)
@@ -355,13 +359,15 @@ write.xls.report <- function(properties.env,report.env,file="isobar-analysis.xls
   return(list(tbl,input.tbl))
 } 
 
+.proteinInfo.ok <- function(protein.group)
+  is.data.frame(proteinInfo(protein.group)) && 
+  length(proteinInfo(protein.group)) > 0
+
 .create.xls.protein.quant.tbl <- function(input.tbl,protein.group,
                                           specificity=c(GROUPSPECIFIC,REPORTERSPECIFIC)) {
 
   message(".",appendLF=FALSE)
   input.tbl[["i"]]  <- seq_len(nrow(input.tbl))
-  proteinInfo.ok <- is.data.frame(proteinInfo(protein.group)) && 
-                      length(proteinInfo(protein.group)) > 0
 
   tbl.meta <- data.frame(i=input.tbl[["i"]], group=input.tbl[,"group"],protein.g=input.tbl[,'ac'],
                          stringsAsFactors=FALSE)
@@ -375,9 +381,11 @@ write.xls.report <- function(properties.env,report.env,file="isobar-analysis.xls
   message(".",appendLF=FALSE)
   indist.proteins <- .vector.as.data.frame(indistinguishableProteins(protein.group),colnames=c("protein","protein.g"))
   indist.proteins <- indist.proteins[indist.proteins[,'protein.g'] %in% protein.gs,]
-  protein.info.tbl <- proteinInfo(protein.group,protein.g=protein.gs,select=c("name","protein_name","gene_name"))
-  colnames(protein.info.tbl) <- c("ID","Description","Gene")
-  tbl <- cbind(tbl,protein.info.tbl)
+  if (.proteinInfo.ok(protein.group)) {
+    protein.info.tbl <- proteinInfo(protein.group,protein.g=protein.gs,select=c("name","protein_name","gene_name"))
+    colnames(protein.info.tbl) <- c("ID","Description","Gene")
+    tbl <- cbind(tbl,protein.info.tbl)
+  }
 
   message(".",appendLF=FALSE)
   # spectra and peptide counts
@@ -398,7 +406,7 @@ write.xls.report <- function(properties.env,report.env,file="isobar-analysis.xls
 
   message(".",appendLF=FALSE)
   # sequence coverage
-  if (proteinInfo.ok && "sequence" %in% colnames(proteinInfo(protein.group))) {
+  if (.proteinInfo.ok(protein.group) && "sequence" %in% colnames(proteinInfo(protein.group))) {
     peptide.info <- unique(peptideInfo(protein.group)[,c("protein","peptide","start.pos")])
     peptide.info[,'end.pos'] <- peptide.info[,'start.pos'] + nchar(peptide.info[,'peptide']) - 1
     peptide.info <- peptide.info[peptide.info[,'protein'] %in% indist.proteins[,'protein'],]
@@ -440,6 +448,7 @@ write.xls.report <- function(properties.env,report.env,file="isobar-analysis.xls
   tbl[["protein.g"]] <- NULL
   tbl <- tbl[order(tbl[,'i']),]
   if (!all(tbl[,'i']==input.tbl[,'i'])) stop ("problem in protein xls report ordering")
+
   return(list(tbl,input.tbl))
 }
 

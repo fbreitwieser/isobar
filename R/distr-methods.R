@@ -72,7 +72,7 @@ twodistr.plot <- function(X,Y,n.steps=1000,min.q=10^-3) {
   steps <- sort(unique(c(q(X)(steps.seq),q(Y)(steps.seq))))
   ggplot(rbind(data.frame(x=steps,Distribution=paste0("X ~ ",distrprint(X)),density=d(X)(steps)),
                data.frame(x=steps,Distribution=paste0("Y ~ ",distrprint(Y)),density=d(Y)(steps)))) + 
-    geom_line(aes(x=x,y=density,color=Distribution)) +
+    geom_line(aes_string(x="x",y="density",color="Distribution")) +
     ggtitle(paste0(".5 P(X=Y) + P(X>Y) = ",round(calcProbXGreaterThanY(X,Y,n.steps=n.steps),7)))
  
 }

@@ -77,7 +77,10 @@
     id.not.quant <- setdiff(spectra.ids,rownames(data.mass))
     quant.not.id <- setdiff(rownames(data.mass),spectra.ids)
 
-    if (length(id.n.quant)==0) stop("No spectra could be matched between identification and quantifications")
+    if (length(id.n.quant)==0) stop("No spectra could be matched between identification and quantifications.",
+                                    "If the search was preformed with Mascot, set readIBSpectra argument decode.titles=TRUE,\n",
+                                    " or in the properties file for report generation:\n",
+                                    "   readIBSpectra.args=list(decode.titles=TRUE)")
     
     if (length(quant.not.id) > 0)
       message(" for ",length(quant.not.id)," spectra ",
@@ -119,8 +122,8 @@
 
   assayDataElements$ions[which(assayDataElements$ions==0)] <- NA
   assayDataElements$mass[which(assayDataElements$mass==0)] <- NA
-  if (all(apply(is.na(assayDataElements$mass),2,all))) stop("all masses are NA")
-  if (all(apply(is.na(assayDataElements$ions),2,all))) stop("all intensities are NA")
+  if (all(apply(is.na(assayDataElements$mass),2,all))) stop("Unable to extract any reporter m/z values. Try setting 'fragment.precision' higher (current value: ",fragment.precision,"), or to NULL if no filtering is desired.")
+  if (all(apply(is.na(assayDataElements$ions),2,all))) stop("Unable to extract any reporter intensities.")
 
   return(assayDataElements)
 }
@@ -201,8 +204,17 @@
 
   if ('SEARCHENGINE' %in% names(SC)) {
     message("  Identification details:")
-    tt <- table(identifications[,SC['SEARCHENGINE']])
-    print(data.frame(perc=sprintf("%.2f %%",tt[order(tt)]/sum(tt)*100),n=sort(tt)))
+    tt <- sort(table(identifications[,SC['SEARCHENGINE']]))
+    stats <- data.frame(perc=sprintf("%.2f %%",tt/sum(tt)*100),n=tt)
+    if ('SCORE' %in% names(SC)) {
+      scores <- identifications[,SC['SCORE']]
+      score.stats <- do.call(rbind,lapply(names(tt),function (se) {
+        my.scores <- scores[identifications[,SC['SEARCHENGINE']]==se]
+        summary(my.scores,na.rm=TRUE)}))
+      stats <- cbind(stats,score.stats)
+    } 
+    print(stats)
+    
   }
   identifications
 }
@@ -280,7 +292,6 @@ setMethod("initialize","IBSpectra",
  
   # Create ProteinGroup
   proteinGroup <- ProteinGroup(merge(pept.n.prot,identifications,by="peptide"),template=proteinGroupTemplate)
-  message("done creating protein group")
   
   ## Get intensities and masses in assayDataElements
   if (is.null(data.ions))
@@ -543,7 +554,7 @@ read.mzid <- function(filename) {
     modparams <- getNodeSet(modif,"x:ModParam",namespaces=ns)
     return (switch(as.character(length(modparams)),
             "0" = c(res,xmlAttrs(modif[['cvParam']])),
-            "1" = c(res,xmlAttrs(modParams[[1]]),xmlAttrs(modParams[[1]][['cvParam']])),
+            "1" = c(res,xmlAttrs(modparams[[1]]),xmlAttrs(modparams[[1]][['cvParam']])),
             stop("Expecting zero or one ModParam Node in ",
                  "/mzIdentML/AnalysisProtocolCollection/SpectrumIdentificationProtocol/ModificationParams/SearchModification")))
   },namespaces=ns)))
@@ -680,40 +691,6 @@ read.mzid <- function(filename) {
         protein.mapping1,by="peptide.ev.ref")
 }
 
-## read.mgf
-.parse.spectrum <- function(input,reporterMasses,fragment.precision,recordNo) { 
-  firstChar = substr(input,1,1);
-  sel.numeric = firstChar == 1 & substr(input,4,4) == ".";
-  sel.alpha = firstChar %in% c("P","T")
-      
-  d <- unlist(strsplit(input[sel.alpha],"="))
-  d1 <- d[seq(2,length(d),by=2)]
-  names(d1) <-d[seq(1,length(d),by=2)]
-      
-  spectrumTitles[recordNo,] <<- d1[c("TITLE","PEPMASS")]
-# TODO: do not take closest but most intense peak?
-      
-  if (any(sel.numeric)) {
-    mzi <- do.call("rbind",strsplit(input[sel.numeric],"\\s"))[,1:2]
-    if (!is.null(nrow(mzi))) {
-      mzi.mass <- as.numeric(mzi[,1])
-      mzi.ions <- as.numeric(mzi[,2])
-      if (length(mzi.mass)>0) {
-        lapply(seq_along(reporterMasses),
-               function(i) {
-                 m <- abs(mzi.mass-reporterMasses[i])
-                 pos <- which(m == min(m))
-                 if (length(pos) > 0 & m[pos] < fragment.precision/2) {
-                   observedMasses[recordNo,i] <<- mzi.mass[pos]
-                   observedIntensities[recordNo,i] <<- mzi.ions[pos]
-                 }
-               }
-               )
-      }
-    }
-  }
-}
-
 ##' .read.mgf: read isobaric reporter tag masses and intensities from MGFs
 ##'
 ##' MGF files list m/z and intensities for each spectrum. .read.mgf
@@ -793,7 +770,7 @@ read.mzid <- function(filename) {
   }
   bnd$recordNo = seq_len(nrow(bnd))
   nSpectra <- nrow(bnd)
-  message(nSpectra," spectra")
+  message("  ",nSpectra," spectra in MGF file.")
 
   ## create list with all spectra (header+mass list) as entries
   all.spectra <- apply(bnd,1,function(x) input[x[1]:x[2]])
@@ -821,8 +798,13 @@ read.mzid <- function(filename) {
         m <- abs(y-mzi.mass)
         pos <- which(m == min(m))
       
-        if (length(pos) > 0 & m[pos] < fragment.precision/2)
-          return(c(mzi.mass[pos],mzi.ions[pos]))
+        if (sum(pos) > 0 & m[pos][1] < fragment.precision/2) {
+	  # take most intense if two oins have same distance
+	  posi <- 1
+	  if (sum(pos)>1) 
+	    posi <- which.max(mzi.ions[pos])[1]
+          return(c(mzi.mass[pos][posi],mzi.ions[pos][posi]))
+	}
         else
           return(c(NA,NA))
       }))) 
@@ -860,7 +842,7 @@ read.mzid <- function(filename) {
 
     ions[sel.prob] <- NA
     mass[sel.prob] <- NA
-    message("mass boundaries:\n\t",
+    message("\tmass boundaries:\n\t",
             paste(colnames(mass),sprintf("%.5f : %.5f",bnd[1,],bnd[2,]),sep="\t",collapse="\n\t"))
   }
 
@@ -972,9 +954,6 @@ read.mzid <- function(filename) {
       id.data[,.PROTEIN.COLS['PROTEINAC']] <- sapply(split.ac,function(x) x[1]) 
       id.data[,.PROTEIN.COLS['NAME']] <- sapply(split.ac,function(x) ifelse(length(x) == 2, x[2], NA))
     }
-
-    id.data[,c(.PROTEIN.COLS['PROTEINAC'],.PROTEIN.COLS['DATABASE'])] <- 
-      .set.database(id.data[,.PROTEIN.COLS['PROTEINAC']])
   }
 
   if (decode.titles)
@@ -983,29 +962,6 @@ read.mzid <- function(filename) {
   if (trim.titles)
     id.data[,.SPECTRUM.COLS['SPECTRUM']] <- .trim(id.data[,.SPECTRUM.COLS['SPECTRUM']])
   return(id.data)
-}
-
-.uniprot.pattern.ac <- "^[A-Z][0-9][A-Z0-9][A-Z0-9][A-Z0-9][0-9]-?[0-9]*$"
-.uniprot.pattern.id <- "^[A-Z0-9]{2,5}_[A-Z9][A-Z0-9]{2,5}$"
-.entrez.pattern.id <- "^gi\\|[0-9]{5,15}$"
-.numeric.pattern.ac <- "^[0-9]{5,15}$"
-
-.set.database <- function(acs) {
-  res <- cbind(acs,NA)
-  sel.uniprot <- grepl(.uniprot.pattern.ac,acs)
-  sel.entrez <- grepl(.entrez.pattern.id,acs)
-  sel.numeric <- grepl(.numeric.pattern.ac,acs)
-
-  if (any(sel.uniprot))
-    res[sel.uniprot,2] <- "UniprotKB"
-
-  if (any(sel.entrez))
-    res[sel.entrez,] <- cbind(sapply(strsplit(acs[sel.entrez],"|",fixed=TRUE),function(x) x[2]),"Entrez Protein")
-
-  if (any(sel.numeric))
-    res[sel.numeric,2] <- "numeric"
-
-  return(res)  
 }
 
 .read.rockerbox <- function(filename) {

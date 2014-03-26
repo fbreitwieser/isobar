@@ -13,7 +13,7 @@
 }
 \usage{
   calcProbXGreaterThanY(X, Y, min.q = 10^-6, n.steps = 1000)
-  calcProbXDiffNormals(X, mu_Y, sd_Y, ..., alternative = "greater")
+  calcProbXDiffNormals(X, mu_Y, sd_Y, ..., alternative = "greater", progress = FALSE)
   distrprint(X, round.digits = 5)
   twodistr.plot(X, Y, n.steps = 1000, min.q = 10^-3)
 }
@@ -26,6 +26,7 @@
   \item{sd_Y}{ Numeric vector of parameter sd of a Normal. }
   \item{\dots}{ Additional arguments to calcProbXGreaterThanY. }
   \item{alternative}{ "less", "greater", or "two-sided". }
+  \item{progress}{Show text progress bar?}
   \item{round.digits}{ Round digits for printing. }
 }
 \author{ Florian P. Breitwieser }

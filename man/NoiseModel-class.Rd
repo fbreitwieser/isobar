@@ -8,6 +8,7 @@
 \alias{ExponentialNoANoiseModel-class}
 \alias{InverseNoiseModel-class}
 \alias{InverseNoANoiseModel-class}
+\alias{GeneralNoiseModel-class}
 
 % Constructor:
 \alias{initialize,NoiseModel-method}
@@ -43,6 +44,9 @@
 % show method:
 \alias{show,NoiseModel-method}
 
+% plot method:
+\alias{plot.NoiseModel}
+
 \title{NoiseModel objects}
 
 \description{
@@ -62,7 +66,7 @@
           \code{InverseNoiseModel}, \code{InverseNoANoiseModel}}
         \item{\code{reporterTagNames}:}{When NULL, all channels from ibspectra are taken
           (i.e. \code{sampleNames(ibspectra)}). Otherwise, specify
-	  subset of names}
+	  subset of names, or a matrix which defines the desireed combination of channels (nrow=2).}
 	\item{\code{one.to.one}:}{Set to false to learn noise model one a non
 	  one-to-one dataset}
 	\item{\code{min.spectra}:}{When one.to.one=FALSE, only take proteins

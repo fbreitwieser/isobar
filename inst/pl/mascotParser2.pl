@@ -111,9 +111,21 @@ Minimum ion score to putput peptides for a selected protein.
 
 Set the parameters to defaults according to a set of predifined values. The default values set not using this parameter are more conservative. The command line changes overwrite the defaults. Hence it is possible to take a default set and to change a specific parameter through the command line.
 
-=item -lightxml
+=item -lightXML
 
-Flag to avoid outputing mass lists (much smaller XML)
+Flag to avoid outputing mass lists (much smaller XML). Default: yes.
+
+=item -no-lightXML
+
+Export mass lists.
+
+=item -modifconv-file=string
+
+File for conversion of modification strings to InsilicoSpectro equivalent. By default, the file modifconv.csv in the script directory is used.
+
+=item -no-modifconv
+
+Do not convert modifications.
 
 =back
 
@@ -150,8 +162,10 @@ my ($help, $verbose);
 my $instrument = 'n/a';
 my $modifconv_file = $Bin."/modifconv.csv";
 my $configFile = $Bin."/mascotParser.ini";
-my ($notOnlyBestPept, $distinctProt, $noFileLevel, 
+my ($notOnlyBestPept, $distinctProt, $noFileLevel, $no_modifconv,
     $parseAll, $newDefaults, $hcdDefaults, $lightXML, $proteinForce, $defaultSet);
+
+$lightXML=1;
 
 my $config = Config::IniFiles->new(-file=>$configFile,-default=>'DEFAULT') 
     or die ("Could not intialize configuration file: $!");
@@ -183,28 +197,30 @@ my $minNumPept       = $config->val(uc($defaultSet),'minNumPept');
 my $minLen           = $config->val(uc($defaultSet),'minLen');
 my $minBigRed        = $config->val(uc($defaultSet),'minBigRed');
 
+
 my $result = 
   GetOptions('help' => \$help,
-                'h' => \$help,
-		'parseall' => \$parseAll,
-		'notonlybestpept' => \$notOnlyBestPept,
-		'distinctprot' => \$distinctProt,
-		'nofilelevel' => \$noFileLevel,
-		'lightXML' => \$lightXML,
-		'proteinforce=s' => \$proteinForce,
-		'minbigred=i' => \$minBigRed,
-		'basicscore=f' => \$basicScore,
-		'savescore=f' => \$saveScore,
-		'defaultsavescore=f' => \$defaultSaveScore,
-		'minseqcovsph=f' => \$minSeqCovSPH,
-		'outputscore=f' => \$outputScore,
-		'minscore=f' => \$minScore,
-		'minnumpept=i' => \$minNumPept,
-		'minprotscore=f' => \$minProtScore,
-		'minlen=i' => \$minLen,
-		'instrument=s' => \$instrument,
-		'modifconv=s' => \$modifconv_file,
-                'verbose' => \$verbose);
+             'h' => \$help,
+             'parseall' => \$parseAll,
+             'notonlybestpept' => \$notOnlyBestPept,
+             'distinctprot' => \$distinctProt,
+             'nofilelevel' => \$noFileLevel,
+             'lightXML!' => \$lightXML,
+             'proteinforce=s' => \$proteinForce,
+             'minbigred=i' => \$minBigRed,
+             'basicscore=f' => \$basicScore,
+             'savescore=f' => \$saveScore,
+             'defaultsavescore=f' => \$defaultSaveScore,
+             'minseqcovsph=f' => \$minSeqCovSPH,
+             'outputscore=f' => \$outputScore,
+             'minscore=f' => \$minScore,
+             'minnumpept=i' => \$minNumPept,
+             'minprotscore=f' => \$minProtScore,
+             'minlen=i' => \$minLen,
+             'instrument=s' => \$instrument,
+             'no-modifconv' => \$no_modifconv,
+             'modifconv-file=s' => \$modifconv_file,
+             'verbose' => \$verbose);
 
 pod2usage(-verbose=>2, -exitval=>2) if (!$result);
 pod2usage(get_params()) if (defined($help) && defined($defaultSet));
@@ -341,9 +357,9 @@ foreach (@ARGV){
 	    foreach my $pept (keys(%{$distinct{$ac}})){
 	      my $pos = -1;
 	      while (($pos = index($seq, $pept, $pos+1)) != -1){
-		for (my $i = $pos; $i < $pos+length($pept); $i++){
-		  $seq[$i] = '*';
-		}
+          for (my $i = $pos; $i < $pos+length($pept); $i++){
+            $seq[$i] = '*';
+          }
 	      }
 	    }
 	    my $count;
@@ -779,9 +795,16 @@ sub parseMasses
       $nTermMass = $1;
     }
     elsif (/^FixedMod([1-9])=([^,]+),(.+)/){
-      $fixedModif[$1-1] = $modifConv->{trim($3)};
-      if (!$fixedModif[$1-1]){
-	die("Fixed modification [$3] cannot be converted in an InSilicoSpectro equivalent\n");
+      if ($no_modifconv) {
+        $fixedModif[$1-1] = replaceColon($3);
+      } else {
+        $fixedModif[$1-1] = $modifConv->{trim($3)};
+        if (!$fixedModif[$1-1]){
+          print STDERR "ERROR: No InSilicoSpectro equivalent defined for fixed modification [$3].\n";
+          print STDERR "       in modifconv file (--modifconv-file=$modifconv_file)\n.";
+          print STDERR "       Either defined the modification in the modifconv file, or set --no-modifconv\n";
+          exit 1;
+        }
       }
       $modifMassShift{$fixedModif[$1-1]} = $2;
     }
@@ -800,9 +823,16 @@ sub parseMasses
       }
     }
     elsif (/^delta([1-9])=([^,]+),(.+)/){
-      $variableModif[$1] = $modifConv->{trim($3)};
-      if (!$variableModif[$1]){
-	die("Variable modification [$3] cannot be converted in an InSilicoSpectro equivalent\n");
+      if ($no_modifconv) {
+        $fixedModif[$1-1] = replaceColon($3);
+      } else {
+        $variableModif[$1] = $modifConv->{trim($3)};
+        if (!$variableModif[$1]){
+          print STDERR "ERROR: No InSilicoSpectro equivalent defined for fixed modification [$3].\n";
+          print STDERR "       in modifconv file (--modifconv-file=$modifconv_file)\n.";
+          print STDERR "       Either defined the modification in the modifconv file, or set --no-modifconv\n";
+          exit 1;
+        }
       }
       $modifMassShift{$variableModif[$1]} = $2;
     }
@@ -821,6 +851,10 @@ sub parseMasses
 
 } # parseMasses
 
+sub replaceColon {
+  $_[0] =~ s/:/_/g;
+  return ($_[0]);
+}
 
 sub parseHeader
 {
@@ -832,16 +866,16 @@ sub parseHeader
     s/[\r\n]//go;
     if (/^version=(.+)/){
       if (defined($mascotVersion) && ($mascotVersion ne $1)){
-	die("Changed Mascot version [$mascotVersion, $1, $file]\n");
+        die("Changed Mascot version [$mascotVersion, $1, $file]\n");
       }
       $mascotVersion = $1;
     }
     elsif (/^release=.+_v(\d+\.\d+)_(\d+)/){
       if (defined($dbRelease) && ($dbRelease ne $1)){
-	die("Changed search database release [$dbRelease, $1, $file]\n");
+        die("Changed search database release [$dbRelease, $1, $file]\n");
       }
       if (defined($dbReleaseDate) && ($dbReleaseDate ne $2)){
-	die("Changed search database release date [$dbReleaseDate, $2, $file]\n");
+        die("Changed search database release date [$dbReleaseDate, $2, $file]\n");
       }
       $dbRelease = $1;
       $dbReleaseDate = $2;
@@ -874,16 +908,16 @@ sub parseOneExpSpectrum
     elsif (/rtinseconds=(.+)/){
       $rt = $1;
       if ($rt =~ /([\d\.]+)\-([\d\.]+)/){
-	# The retention time is given as a range, take the average
-	$rt = ($1+$2)*0.5;
+        # The retention time is given as a range, take the average
+        $rt = ($1+$2)*0.5;
       }
     }
     elsif (/Ions1=(.+)/){
       my @part = split(/,/, $1);
       undef($massList);
       foreach my $peak (@part){
-	my ($mass, $intensity) = split(/:/, $peak);
-	$massList .= "$mass $intensity ?\n";
+        my ($mass, $intensity) = split(/:/, $peak);
+        $massList .= "$mass $intensity ?\n";
       }
     }
   }
@@ -918,7 +952,7 @@ sub getPeptideMass
     if (defined($modif)){
       # Applies all the mass shifts
       foreach (@$modif){
-	$mass += $modifMassShift{$_} if (length($_) > 0);
+        $mass += $modifMassShift{$_} if (length($_) > 0);
       }
     }
     foreach (split(//, $pept)){
@@ -976,10 +1010,10 @@ sub read_csvhash {
 # Perl trim function to remove whitespace from the start and end of the string
 sub trim($)
 {
-	my $string = shift;
-	$string =~ s/^\s+//;
-	$string =~ s/\s+$//;
-	return $string;
+  my $string = shift;
+  $string =~ s/^\s+//;
+  $string =~ s/\s+$//;
+  return $string;
 }
 
 sub get_params {

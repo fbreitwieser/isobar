@@ -44,12 +44,12 @@ protein.group.template=NULL
 ## Via database or internet connection, informations on proteins (such
 ## as gene names and length) can be gathered. protein.info.f defines
 ## the function which takes a ProteinGroup object as argument
-protein.info.f=getProteinInfoFromUniprot
+protein.info.f=getProteinInfoFromTheInternet
 
 ## Where should cached files be saved? Will be created if it does not
 ## exist
-# cachedir="cache"
-cachedir="."
+# cachedir="."
+cachedir="cache"
 ## Regenerate cache files? By default, chache files are used.
 regen=FALSE
 
@@ -70,8 +70,12 @@ fragment.precision=0.01
 ## filter mass outliers
 fragment.outlier.prob=0.001
 
+## Additional arguments of readIBSpectra can be set here
+##  decode.titles should be set to TRUE for Mascot search results
+##  as Mascot encodes the spectrum title (e.g. space -> %20)
 readIBSpectra.args = list(
-    mapping.file=NULL
+    mapping.file=NULL,
+    decode.titles=FALSE
 )
 
 #####################################################################
@@ -109,19 +113,36 @@ noise.model.channels=NULL
 noise.model.is.technicalreplicates=FALSE
 noise.model.minspectra=50
 
-summarize=FALSE
-combn.method="interclass"
 ## class labels. Must by of type character and of same length as
 ## number of channels I. e. 4 for iTRAQ 4plex, 6 for TMT 6plex Example
 ## for iTRAQ 4plex:
+## Class definitions of the isobaric tag channels. 
+## A character vector with the same length as channels 
+##   (e.g. 4 for iTRAQ 4plex, 6 for TMT 6plex)
+## Example for iTRAQ 4plex:
 # class.labels=as.character(c(1,0,0,0))
 # class.labels=c("Treatment","Treatment","Control","Control")
 ## Also names are possible - these serves as description in the report
 ##  and less space is used in the rows
 # class.labels=c("Treatment"="T","Treatment"="T","Control"="C","Control"="C")
 class.labels=NULL
-cmbn=NULL
+
+## The following definitions define which ratios are calculated.
+
+## summarize ratios with equal class labels, set to TRUE when replicates are used
+summarize=FALSE
+
+## combn.method defines which ratios are calculated - versus a channel or a class,
+##   all the ratios within or across classes, or all possible combinatioins.
+## When summarize=TRUE is set, use "interclass", "versus.class", or "intraclass"
+# combn.method="global"
+# combn.method="versus.class"
+# combn.method="intraclass"
+# combn.method="interclass"
+combn.method="versus.channel"
 vs.class=NULL
+
+cmbn=NULL
 
 ## Arguments given to 'proteinRatios' function. See ?proteinRatios
 ratios.opts = list(
@@ -134,7 +155,6 @@ quant.w.grouppeptides=c()
 min.detect=NULL
 
 preselected=c()
-
 
 ### Biological Variability Ratio Distribution options
 ## ratiodistr can be set to a file or a 'Distribution object. ' If
@@ -267,3 +287,10 @@ zip=FALSE
 
 # warning level (see 'warn' in ?options)
 warning.level=1
+
+
+###########################################################
+## Novel options
+
+shrink.mean=TRUE
+use.t.stat=TRUE
