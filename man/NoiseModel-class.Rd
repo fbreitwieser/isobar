@@ -8,6 +8,7 @@
 \alias{ExponentialNoANoiseModel-class}
 \alias{InverseNoiseModel-class}
 \alias{InverseNoANoiseModel-class}
+\alias{GeneralNoiseModel-class}
 
 % Constructor:
 \alias{initialize,NoiseModel-method}
@@ -42,6 +43,9 @@
 
 % show method:
 \alias{show,NoiseModel-method}
+
+% plot method:
+\alias{plot.NoiseModel}
 
 \title{NoiseModel objects}
 

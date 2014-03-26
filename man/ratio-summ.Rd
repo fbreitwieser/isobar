@@ -23,7 +23,8 @@
 proteinRatios(ibspectra, noise.model, reporterTagNames = NULL,
                  proteins = reporterProteins(proteinGroup(ibspectra)),
                  peptide = NULL, cl = classLabels(ibspectra),
-                 combn.method = "global", symmetry = FALSE, summarize =
+                 combn.method = "global", combn.vs = NULL, 
+                 symmetry = FALSE, summarize =
                  FALSE, summarize.method = "mult.pval", min.detect =
                  NULL, strict.sample.pval = TRUE, strict.ratio.pval =
                  TRUE, orient.div = 0, sign.level = 0.05,
@@ -66,10 +67,10 @@ summarize.ratios(ratios, by.column = "ac", summarize.method = "mult.pval",
             all combinations against class \code{vs} are computed, 
             when \code{combn.method} is "verus.channel", all combinations 
             against channel \code{vs}.}
-  \item{combn.method}{"global", "interclass", or "intra-class". Defines which ratios
+  \item{combn.method}{"global", "interclass", "intra-class", "versus.class" or "versus.channel". Defines which ratios
      are computed, based on class labels cl}
-  \item{method}{"global", "interclass", or "intra-class". Defines which ratios
-     are computed, based on class labels cl}
+  \item{method}{See combn.method}
+  \item{combn.vs}{vs argument for combn, if combn.method is "versus.class" or "versus.channel".}
   \item{symmetry}{If true, reports also the inverse ratio}
   \item{summarize}{If true, ratios for each protein are summarized.}
   \item{summarize.method}{"isobar", for now.}
