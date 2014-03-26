@@ -104,7 +104,7 @@ cat(sprintf("\\newcommand{\\mrp}[1]{\\multirow{%s}{*}{\\parbox{\\linewidth}{#1}}
 
 %% Print class labels table, and column descriptions table
 <<echo=FALSE,results=tex>>=
-print_classlabels_tbl(cl,reporterTagNames(ibspectra))
+print_classlabels_tbl(classLabels(ibspectra),reporterTagNames(ibspectra))
 @
 \quad
 \grpdescriptionstbl{}
