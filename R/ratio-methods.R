@@ -690,22 +690,6 @@ estimateRatioForPeptide <- function(peptide,ibspectra,noise.model,channel1,chann
       return(r)
 }
 
-## shrink ratios towards zero using Rgbp
-shrinkMeans <- function(protein.ratios) {
-  require(Rgbp)
-  protein.ratios$se <- sqrt(protein.ratios$variance) / sqrt(protein.ratios$n.spectra)
-  sel=!is.na(protein.ratios$lratio) & is.finite(protein.ratios$se)
-
-  y <- protein.ratios[sel,"lratio"]
-  se <- protein.ratios[sel,"se"]
-  g <- gbp(y,se,model="gaussian",mean.PriorDist=0)
-
-  protein.ratios$post.mean[sel] <- g$post.mean
-  protein.ratios$post.sd[sel] <- g$post.sd
-
-  protein.ratios
-}
-
 # Calculate a T pvalue
 .ttest.pval <- function(mu,xbar,s,n=2,conf.level=0.95) {
   t <- (xbar-mu)/ (s/sqrt(n))
@@ -733,30 +717,6 @@ shrinkMeans <- function(protein.ratios) {
              ci.lower=xbar-tc*se,
              ci.upper=xbar+tc*se))
 }
-
-
-
-
-
-## calculate ratio p-value based on t-statistic posthoc
-calculateRatioTStat <- function(protein.ratios) {
-  .ttest.pval(mu=0,
-              xbar=protein.ratios[["lratio"]],
-              s=sqrt(protein.ratios[["variance"]]),
-              n=2)
-              #n=protein.ratios[["n.spectra"]])
-
-}
-
-calculatePostRatioTStat <- function(protein.ratios) {
-  .ttest.pval.se(mu=0,
-              xbar=protein.ratios[["post.mean"]],
-              se=protein.ratios[["post.sd"]],
-              n=2)
-#              n=protein.ratios[["n.spectra"]])
-}
-
-
 
 
 ### Handling NULL protein or peptide argument
@@ -1298,7 +1258,7 @@ proteinRatios <-
            sign.level=0.05,sign.level.rat=sign.level,sign.level.sample=sign.level,
            ratiodistr=NULL,zscore.threshold=NULL,variance.function="maxi",
            combine=FALSE,p.adjust=NULL,reverse=FALSE,
-           cmbn=NULL,before.summarize.f=NULL,shrink.ratios=FALSE,...) {
+           cmbn=NULL,before.summarize.f=NULL,...) {
 
   if ((!is.null(proteins) && !is.null(peptide)) ||
       (is.null(proteins) && is.null(peptide)))
@@ -1387,107 +1347,12 @@ proteinRatios <-
     ratios <- rbind(ratios,ratios.inv)
   }
 
-  if (shrink.ratios) {
-    message("shrinking mean [does not influence p-value calculation, yet!]")
-    ratios <- shrink.ratios(ratios)
-    ratios$p.value <- calcProbXDiffNormals(ratiodistr,
-                                           ratios$lratio,sqrt(ratios$variance/ratios$n.spectra),
-                                           alternative="two-sided")
-    ratios$is.significant <- ratios$p.value < 0.05
-
-    ## adjust p-value
-    comp.cols <- c("r1","r2","class1","class2")
-    comp.cols <- comp.cols[comp.cols %in% colnames(ratios)]
-    ratios <- ddply(ratios,comp.cols,function(x) {
-      x[,'p.value.adjusted'] <- p.adjust(x[,'p.value'], "fdr")
-      x[,'is.significant'] <- x[,'p.value.adjusted'] < 0.05
-      x
-    })
-  }
-
   if (!is.null(p.adjust)) 
     ratios <- adjust.ratio.pvalue(ratios,p.adjust,sign.level.rat)
 
   return(ratios)
 } # end proteinRatios
 
-shrink.ratios <- function(pr,do.plot=FALSE,nrand=10000) {
-  require(MASS)
-  require(LaplacesDemon)
-
-  ## fit inverse gamma distribution on sample variance (used as prior)
-  x <- pr$variance[!is.na(pr$variance)&pr$n.spectra>2]
-  (fit.gamma <- fitdistr(1/x,"gamma"))
-  
-  var.ks <- ks.test(1/x,pgamma,
-          shape=fit.gamma$estimate['shape'],
-          rate=fit.gamma$estimate['rate'])
-  message("fitting inverse gamma on variance (two-sided ks D=%.2f, p-value=%.3f)",
-          var.ks$statistic,var.ks$p.value)
-
-  ## calculate posterior variance
-  prior.alpha <- fit.gamma$estimate[1]
-  prior.beta <- fit.gamma$estimate[2]
-  sample.n <- pr$n.spectra
-  sample.var <- pr$variance
-
-  post.shape <- prior.alpha+sample.n/2-1/2
-  post.scale <- prior.beta+1/2*sample.var*pr$n.spectra
-  sel <- !is.na(pr$variance) 
-  post.var <- sapply(seq_len(nrand),function(i)
-       rinvgamma(sum(sel),post.shape[sel],post.scale[sel]))
-
-  if (do.plot) {
-    par(mfrow=c(2,2))
-    plot(density(x),"variance prior")
-    seqi <- seq(from=0,to=max(x),length.out=1000)
-    lines(seqi,LaplacesDemon::dinvgamma(seqi,
-                      shape=fit.gamma$estimate['shape'],
-                      scale=fit.gamma$estimate['rate']),
-            col="red",type="l")
-    plot(pr$variance[sel],rowMeans(post.var),
-         cex=sqrt(pr$n.spectra[sel])/10,
-         log="xy",col="#000000A0",main="sample vs posterior variance")
-    abline(0,1,col="red")
-  }
-  
-  ## fit normal distribution on sample mu (used as prior)
-  prior.mu.mu <- median(pr$lratio[sel])
-  prior.mu.var <- mad(pr$lratio[sel])**2
-
-  mu.ks <- ks.test(pr$lratio[sel],"dnorm",
-                   prior.mu.mu,sqrt(prior.mu.var))
-
-  message("fitting normal on mean (two-sided ks D=%.2f, p-value=%.3f)",
-          mu.ks$statistic,mu.ks$p.value)
-
-  ## calculate posterior mu
-  post.mu <- sapply(seq_len(nrand),function(i) {
-      mu.post.mu <- (prior.mu.mu+pr$n.spectra[sel]*pr$lratio[sel])/
-                     (pr$n.spectra[sel] + 1)
-      mu.post.var <- post.var[,i]/(pr$n.spectra[sel]+1)
-      rnorm(sum(sel),mu.post.mu,sqrt(mu.post.var))
-  })
-
-
-  if (do.plot) {
-    plot(density(pr$lratio[sel]),main="mean prior")
-    seqi <- seq(from=-max(abs(pr$lratio[sel])),
-                            to=max(abs(pr$lratio[sel])),length.out=10000)
-    lines(seqi,dnorm(seqi,prior.mu.mu,sqrt(prior.mu.var)),
-                col="red",type="l")
-
-    plot(pr$lratio[sel],rowMeans(post.mu),
-         cex=sqrt(pr$n.spectra[sel])/10,
-         log="xy",col="#000000A0",main="sample vs posterior mean")
-    abline(0,1,col="red")
-  }
- 
-  pr$lratio[sel] <- rowMeans(post.mu)
-  pr$variance[sel] <- rowMeans(post.var)
-
-  pr
-}
 
 summarize.ratios <-
   function(ratios,by.column="ac",summarize.method="mult.pval",min.detect=NULL,
