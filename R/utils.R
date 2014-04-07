@@ -14,6 +14,39 @@ if(!isGeneric("as.data.frame")) setGeneric("as.data.frame", useAsDefault=as.data
   x[ , y ]
 }
 
+.gg_theme <- function(...) {
+  if ( compareVersion(packageDescription("ggplot2")$Version,"0.9.1") > 0 )
+    theme(...)
+  else
+    opts(...)
+}
+
+.gg_element_text <- function(...) {
+  if ( compareVersion(packageDescription("ggplot2")$Version,"0.9.1") > 0 )
+    element_text(...)
+  else
+    theme_text(...)
+}
+
+.abbrev <- function(strings,n=4,collapse=NULL) {
+  ll <- length(strings)
+  if (ll > n) {
+    strings <- strings[seq_len(n-1)]
+    strings[n] <- sprintf("... (%s in total)",ll)
+  }
+  if (!is.null(collapse))
+    paste(strings,collapse=collapse)
+  else
+    strings
+}
+
+
+# are 'most' (default: 90%) of the values in x TRUE?
+.most <- function(x,fraction=0.9) {
+  if (is.null(dim(x)) || !is.logical(x)) stop(".most function works on logical vectors")
+  sum(x)/length(x) > fraction
+}
+
 .check.isfunction <- function(f) {
   if (!is.function(f))
     stop(paste(deparse(substitute(f)),"must be a function!"))
@@ -177,72 +210,6 @@ number.ranges <- function(numbers) {
       min.x)
 }
 
-### - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-### weightedVariance and weightedMean generics and functions
-### replace by Hmisc functions?
-
-setGeneric("weightedMean", function(data, weights,trim=0) standardGeneric("weightedMean"))
-setGeneric("weightedVariance", function(data, weights, mean.estimate,trim=0) standardGeneric("weightedVariance"))
-
-setMethod("weightedVariance",
-    signature(data = "numeric", weights = "numeric", mean.estimate = "missing"),
-    function(data, weights, trim=0) {
-      mean.estimate <- weightedMean(data,weights,trim=trim)
-      weightedVariance(data,weights=weights,mean.estimate=mean.estimate,trim=trim)
-    }
-)
-
-setMethod("weightedVariance",
-    signature(data = "numeric", weights = "numeric", mean.estimate = "numeric"),
-    function(data, weights, mean.estimate, trim=0) {
-      # Validation? if (length(data)==1) { return(0); }
-      # Should we rescale the weights? weights=1/sum(weights)
-      
-      # weighted sample variance - for not normally distributed data
-      # see http://www.gnu.org/software/gsl/manual/html_node/Weighted-Samples.html and
-      # http://en.wikipedia.org/wiki/Weighted_mean#Weighted_sample_variance
-      sel <- !is.na(data) & !is.na(weights)
-      weights <- weights[sel]
-      data <- data[sel]
-
-      if (trim < 0 || trim > 0.5)
-        stop("trim has to be between 0 and 0,5")
-
-      if (trim > 0) {
-        sel <- data > quantile(data,trim) & data < quantile(data,1-trim)
-        weights <- weights[sel]
-        data <- data[sel]
-      }
-      
-      V1 <- sum(weights)
-      V2 <- sum(weights**2)
-      variance <- ( V1 / (V1**2 - V2) ) * sum(weights*(data-mean.estimate)**2)
-      
-      return(variance)
-    }
-)
-
-setMethod("weightedMean",
-    signature(data = "numeric", weights = "numeric"),
-    function(data, weights, trim = 0) {
-      sel <- !is.na(data) & !is.na(weights)
-      weights <- weights[sel]
-      data <- data[sel]
-
-      if (trim < 0 | trim > 0.5)
-        stop("trim has to be between 0 and 0,5")
-
-      if (trim > 0) {
-        sel <- data > quantile(data,trim) & data < quantile(data,1-trim)
-        weights <- weights[sel]
-        data <- data[sel]
-      }
- 
-      return(
-          sum(data * weights) / sum(weights)
-      )
-    })
-
 
 # split string into named vector
 .strsplit_vector <- function(x,pattern) {
@@ -316,11 +283,15 @@ setMethod("weightedMean",
 .get.cmbn <- function(combn,tags,cl) {
   if (!all(unlist(combn) %in% cl))
     stop("incorrect combn specification")
-  sapply(combn,function(cc) 
-         c(tags[cl==cc[1]],
-           tags[cl==cc[2]],
-           cl[cl==cc[1]],
-           cl[cl==cc[2]]))
+
+  res <- c()
+  for (cc in combn)
+    for (tag1 in tags[cl==cc[1]&!is.na(cl)]) 
+      for (tag2 in tags[cl==cc[2]&!is.na(cl)])
+        res <- cbind(res,c(r1=tag1,r2=tag2,
+                     class1=cc[1],
+                     class2=cc[2]))
+  res
 }
 
 
@@ -328,9 +299,16 @@ setMethod("weightedMean",
   gsub("[^a-zA-Z\\.0-9_\\-]","", str)
 }
 
-weighted.cor <- function( x, y, w = rep(1,length(x))) {
+.weighted.cor <- function( x, y, w = rep(1,length(x)),use='complete.obs') {
   ## (c) Heather Turner, Vincent Zoonekynd at http://stackoverflow.com/questions/9460664/weighted-pearsons-correlation
   stopifnot(length(x) == dim(y)[2] )
+  if (use=='complete.obs') {
+    sel <- !is.na(x) & !is.na(y) & !is.na(w)
+    x <- x[sel]
+    y <- y[sel]
+    w <- w[sel]
+  }
+
   w <- w / sum(w)
   # Center x and y, using the weighted means
   x <- x - sum(x * w)

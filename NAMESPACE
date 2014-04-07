@@ -4,6 +4,7 @@ importClassesFrom(Biobase, AnnotatedDataFrame, AssayData, eSet,
                   Versioned, VersionedBiobase, Versions)
 
 import("distr")
+import("plyr")
 
 # EXPORT
 exportClasses(IBSpectra,ProteinGroup)

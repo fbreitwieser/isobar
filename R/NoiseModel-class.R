@@ -67,6 +67,18 @@ setClass("InverseNoANoiseModel",
     )
 )
 
+setClass("GeneralNoiseModel",
+    contains = "NoiseModel",
+    prototype = prototype(
+        new("VersionedBiobase",versions=c(classVersion("NoiseModel"),
+                                          GeneralNoiseModel="1.0.0")),
+        f = function(data,parameter) {   },
+        parameter = c(),
+        na.region = 0,
+        low.intensity = 0
+    )
+)
+
 
 ### - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 ### Validity.
@@ -94,9 +106,19 @@ setMethod("initialize","NoiseModel",
       if (!is.null(ibspectra))
       {
         if (is.null(reporterTagNames)) reporterTagNames <- reporterTagNames(ibspectra)
+        if (!is.character(reporterTagNames))
+          stop("reporterTagNames has to be of class character.")
         
-        ri <- reporterIntensities(ibspectra,na.rm=FALSE)  
-        reporterTagNames.combn <- combn(reporterTagNames,2)
+        if (is.matrix(reporterTagNames)) {
+          # a combination matrix is supplied
+          if (nrow(reporterTagNames) != 2)
+            stop("reporterTagNames has to be either a vector or a combination matrix (with two rows).")
+          reporterTagNames.combn <- reporterTagNames
+        } else {
+          reporterTagNames.combn <- combn(reporterTagNames,2)
+        }
+
+        ri <- reporterIntensities(ibspectra,na.rm=FALSE)
         
         if (plot & !pool)
           par(mfrow=rep(ceiling(sqrt(ncol(reporterTagNames.combn))),2))
@@ -257,7 +279,6 @@ setMethod("NoiseModel",signature(ibspectra="IBSpectra"),
   }
 )
 
-
 ### - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 ### .fitNoiseFunction and .averageParameters.
 ### (called by initialize)
@@ -272,9 +293,9 @@ setMethod(".fitNoiseFunction",
       initial.parameters="numeric"),
     function(data1,data2,f,initial.parameters,n.bins=30,min.n.bin=50,
         na.rm=is.null(set.na.to),set.na.to=NULL,...) {
-      fit.f <- function(param,x,y) {
-         -sum(dnorm(x,mean=0,sd=f(data=y,parameter=param),log=T))
-      }
+
+      fit.f <- function(param,x,y) 
+           -sum(dnorm(x,mean=0,sd=f(data=y,parameter=param),log=T))
       
       # remove points which are NA in both channels
       sel <- is.na(data1) & is.na(data2)
@@ -372,6 +393,11 @@ setGeneric("lowIntensity<-",function(x,value) standardGeneric("lowIntensity<-"))
 setGeneric("naRegion",function(x) standardGeneric("naRegion"))
 setGeneric("naRegion<-",function(x,value) standardGeneric("naRegion<-"))
 
+## could support switching to fitting of the square-root standard deviation 
+##  instead of the standard deviations themselves (as done in limma):
+#setMethod("noiseFunction","NoiseModel",function(x) function(...) x@f(...)**2)
+## as far as it was tested, it had little impact on the fit of the noise model
+
 setMethod("noiseFunction","NoiseModel",function(x) x@f)
 
 setMethod("variance",signature(x="NoiseModel",channel1="numeric",channel2="missing"),
@@ -414,7 +440,7 @@ setMethod("show",signature(object="NoiseModel"),
     function(object){
       cat(class(object),"\n")
       cat("  definition: ")
-      print(object@f)
+      print(noiseFunction(object))
       cat("  parameter:     [",paste(sprintf("%.2f",object@parameter),collapse="; "),"]\n")
       q <- quantile(object@na.region)
       cat("  na region:     [",paste(sprintf("%s",names(q)),sprintf("%.2f",q),collapse="; "),"]\n")
@@ -423,3 +449,11 @@ setMethod("show",signature(object="NoiseModel"),
 )
 
 
+plot.NoiseModel <- function(x,y=NULL,...) {
+  args = list(...)
+  if (is.null(args$xlim)) args$xlim = c(2,10)
+  ss <- seq(from=args$xlim[0],to=args$xlim[1],length.out=100)
+  nm.sd <- 1.96*sqrt(variance(x,ss))
+  plot(ss,10^nm.sd,ylim=c(10^-max(nm.sd),10^max(nm.sd)),col="red",lwd=2,type="l",log="y",xlab="log10 intensity",ylab="ratio",...)
+  lines(ss,10^(-nm.sd),col="red",lwd=2)
+}

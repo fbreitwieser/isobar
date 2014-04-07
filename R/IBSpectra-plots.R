@@ -2,7 +2,7 @@
 ### plotting methods.
 ###
 
-setGeneric("reporterMassPrecision", function(x,plot)
+setGeneric("reporterMassPrecision", function(x,plot,...)
            standardGeneric("reporterMassPrecision"))
 setGeneric("maplot",function(x,channel1,channel2,...) standardGeneric("maplot"))
 setGeneric("plotRatio",function(x,channel1,channel2,protein,...)
@@ -21,9 +21,9 @@ setGeneric("reporterIntensityPlot",function(x) standardGeneric("reporterIntensit
 # Calculates and displays the deviation from the 'true' tag mass 
 # - as specified in the IBSpectra object - of each channel.
 setMethod("reporterMassPrecision", signature=c(x="IBSpectra",plot="logical"),
-    function(x,plot=TRUE) {
+    function(x,plot=TRUE,nrow=NULL) {
       masses <- reporterMasses(x)
-      melt.masses <- data.frame(reporter=rep(colnames(masses),each=nrow(masses)),
+      melt.masses <- data.frame(reporter=factor(rep(colnames(masses),each=nrow(masses))),
                                 reporter.tag.mass=rep(reporterTagMasses(x),each=nrow(masses)),
                                 observed.moz=as.numeric(masses),stringsAsFactors=FALSE)
       melt.masses$mass.difference <-
@@ -36,18 +36,16 @@ setMethod("reporterMassPrecision", signature=c(x="IBSpectra",plot="logical"),
                  labels=sprintf("%s: m/z %.2f",
                    reporterTagNames(x),reporterTagMasses(x)))
        
-       if (compareVersion(packageDescription("ggplot2")$Version,"0.9.1") <= 0) {
-        opts.f <- opts; text.f <- theme_text;
-       } else {
-        opts.f <- theme; text.f <- element_text;
-       }
-       ggplot(melt.masses,aes(x=mass.difference)) + geom_vline(xintercept=0,alpha=0.8) +
-          geom_histogram(fill="white",aes(colour=factor(reporter)),alpha=0.8,
+       if (is.null(nrow))
+         nrow <- ceiling(ncol(masses)/5)
+
+       ggplot(melt.masses,aes_string(x="mass.difference")) + geom_vline(xintercept=0,alpha=0.8) +
+          geom_histogram(fill="white",aes_string(colour="reporter"),alpha=0.8,
                          binwidth=1/20*(max(melt.masses$mass.difference,na.rm=TRUE)-min(melt.masses$mass.difference,na.rm=TRUE))) + 
-            facet_wrap(~reporter,scales="fixed",nrow=1) + 
+            facet_wrap(~reporter,scales="fixed",nrow=nrow) + 
             theme_bw(base_size=10) + xlab("mass difference theoretical vs observed reporter tag mass") +
-              opts.f(legend.position="none",
-                   axis.text.x = text.f(angle=330,hjust=0,vjust=1,colour="grey50",size=7))
+              .gg_theme(legend.position="none",
+                   axis.text.x = .gg_element_text(angle=330,hjust=0,vjust=1,colour="grey50",size=7))
       } else {
         res <- ddply(melt.masses,'reporter',function(x) {
           c('true reporter mass'=x$reporter.tag.mass[1],
@@ -79,7 +77,7 @@ setMethod("reporterIntensityPlot",
             intensities.nn <- reporterData(x,element="ions_not_normalized") # null if not normalized
             
             melt.intensities <- data.frame(tag=rep(colnames(intensities),each=nrow(intensities)),
-                       normalized=ifelse(is.null(intensities.nn),"no","2. after normalization"),
+                       normalized=factor(ifelse(is.null(intensities.nn),"","2. after normalization")),
                        intensity=as.numeric(intensities),
                        stringsAsFactors=FALSE)
 
@@ -91,11 +89,12 @@ setMethod("reporterIntensityPlot",
                              stringsAsFactors=FALSE))
             }
             
-            ggplot(melt.intensities,aes(x=tag,y=intensity)) +
-              geom_boxplot(aes(color=factor(normalized)),size=0.5,alpha=0.6,
+            ggplot(melt.intensities,aes_string(x="tag",y="intensity")) +
+              geom_boxplot(aes_string(color="normalized"),size=0.5,alpha=0.6,
                            outlier.size=0.5,position=position_dodge(width=0.25)) + 
               xlab("isobaric reporter tag") +
-              scale_y_log10() + theme_bw(base_size=10) + scale_color_hue("") 
+              scale_y_log10() + theme_bw(base_size=10) + scale_color_hue("") +
+              .gg_theme(axis.text.x=.gg_element_text(angle=90, hjust=1))
           }
 )
 

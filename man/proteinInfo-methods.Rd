@@ -1,7 +1,9 @@
 \name{proteinInfo-methods}
 \alias{getProteinInfoFromBiomart}
 \alias{getProteinInfoFromUniprot}
+\alias{getProteinInfoFromTheInternet}
 \alias{getProteinInfoFromNextProt}
+\alias{getProteinInfoFromEntrez}
 \alias{getProteinInfoFromBioDb}
 \alias{proteinInfoIsOnSpliceVariants}
 \alias{proteinInfo}
@@ -40,12 +42,16 @@
 #                 gene_name = "genes", organism = "organism", length =
 #                 "length", sequence = "sequence"))
 
+
+  getProteinInfoFromTheInternet(x)
+
   getProteinInfoFromNextProt(x)
 
   getProteinInfoFromBiomart(x, database = "Uniprot")
 
   getProteinInfoFromBioDb(x, ..., con = NULL)
 
+  getProteinInfoFromEntrez(x, splice.by = 200)
 }
 \arguments{
   \item{x}{ProteinGroup object}

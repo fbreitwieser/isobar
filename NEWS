@@ -1,3 +1,35 @@
+CHANGES IN VERSION 1.9.3
+------------------------
+ - allow the use of a combination matrix in NoiseModel reporterTagNames
+ - added function getProteinInfoFromTheInternet which automatically recognizes Uniprot and Entrez ACs. Set now as default 'protein.info.f' in the report configuration.
+ - Overhauled isobar-analysis.Rnw
+   - use of ltxtables to allow optimal column widths (longer runtime, however)
+   - use [[ instead of $  for accession of lists
+   - better column and grouping description
+ - allow report generation without a proteinInfo object
+ - set report cache directory to 'cache' (instead of '.') by default
+ - 1.9.3.2:
+   - mascotParser2.pl: allow to skip modif-conversion with -no-modiconv
+   - mascotParser2.pl: set --lightXML as default
+   - report generation: set combn.method="versus.channel", which computes the ratios against the first channel
+   - various PDF report improvements
+ - 1.9.3.3:
+   - report tables are written into tables which are loaded with LTxtable
+      report generation takes longer now
+   - fixes in correct.peptide.ratios
+     - use combined protein group for peptide-protein mapping
+     - use only reporter proteins for mapping
+   - fix in creation of protein groups from template,
+      subset by peptide _and_ modif
+
+CHANGES IN VERSION 1.9.2
+------------------------
+ - fix issue of NA in 'n.spectra' when calculating summarized ratios
+ - various report improvements:
+   - use column of variable width to display class labels
+   - add attributes of quant table to summarized result table
+   - improved placement of tikz peptide group pictures
+
 CHANGES IN VERSION 1.7.6
 ------------------------
  - added TMT 10plex (contribution from Florent Gluck)

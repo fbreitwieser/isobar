@@ -169,6 +169,67 @@ The algorithm to infer protein groups works as follows:
 \end{enumerate}
 
 
+\subsection{Loading data from CID/HCD (or CID/MS3, etc) experiments}
+
+A combined CID/HCD approach, in which for each precursor two fragmentation
+spectra are acquired, has proven useful to increase the number of identified
+and quantified peptide-spectrum matches. Usually, the reporter intensity 
+information is taken from the HCD spectrum, and the peptide is identified 
+based on the fragment ions in the CID spectrum. 
+
+To import these experiments, a comma-separated 
+\emph{mapping file} is
+needed, which contains the association from \texttt{identification} to 
+\texttt{quantification} spectrum title.
+
+\paragraph{Example mapping file (\texttt{mapping.csv}):}
+\begin{verbatim}
+"hcd","cid"
+"spectrum 1","spectrum 2"
+"spectrum 3","spectrum 4"
+\end{verbatim}
+
+By calling \Rfunction{readIBSpectra} with \texttt{mapping.file="mapping.csv"}, the spectra titles
+in the \texttt{id.file} are matched to those in the \texttt{peaklist.file}. If the column names 
+for the quantification and identification spectrum are not \texttt{hcd} and \texttt{cid}, resp., 
+they can be set with the argument \texttt{mapping}=\texttt{c(identification.spectrum="column name 1",quantification.spectrum="column name 2")}.
+
+\textbf{Example mapping file \texttt{mapping2.csv}:}
+\begin{verbatim}
+"quant-spectrum-ms3","id-spectrum-ms2"
+"spectrum 1","spectrum 2"
+"spectrum 3","spectrum 4"
+\end{verbatim}
+
+<<eval=FALSE>>=
+readIBSpectra(...,
+              mapping.file="mapping2.csv",
+              mapping=c(identification.spectrum="id-spectrum-ms2",
+                        quantification.spectrum="quant-spectrum-ms3")
+              )
+@
+
+The argument \texttt{mapping.file} can take multiple files as argument (which are read and concatenated), or a \texttt{data.frame}.
+
+\subsection{Loading data from CID/HCD experiments with full HCD spectrum}
+
+If a full HCD spectrum was acquired, and both the HCD and CID spectrum are searched against a protein database, the argument \texttt{id.file.domap} to \texttt{readIBSpectra} can be used to merge both CID and HCD identifications:
+
+<<eval=FALSE>>=
+readIBSpectra("TMT6plexSpectra",
+              id.file="cid.identifications.csv",
+              peaklist.file="hcd.peaklist.mgf",
+              id.file.domap="hcd.identifications.csv",
+              mapping.file="mapping.csv",
+              ...
+              )
+@
+
+Here, the CID (\texttt{cid.identifications.csv}) and HCD identifications (\texttt{hcd.identifications.csv}) are
+combined and mapped according to \texttt{mapping.csv}. Diverging identifications are discarded.
+
+
+
 \subsection{\Rpackage{MSnbase} integration}
 \Rpackage{MSnbase} by Laurent Gatto provides data manipulation and
 processing methods for MS-based proteomics data. It provides import,
@@ -367,7 +428,6 @@ within classes, resp..
 
 <<protein-ratios>>=
 protein.ratios <- proteinRatios(ibspiked_set1,noise.model,cl=c("1","0","0","0"))
-str(protein.ratios)
 
 ## defined class 114 and 115 as class 'T', 116 and 117 as class 'C'
 classLabels(ibspiked_set1) <- c("T","T","C","C")

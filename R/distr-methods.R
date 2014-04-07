@@ -1,7 +1,7 @@
 
 
 
-calcProbXDiffNormals <- function(X,mu_Y,sd_Y,...,alternative="greater") {
+calcProbXDiffNormals <- function(X,mu_Y,sd_Y,...,alternative="greater",progress=FALSE) {
   # calculates an estimate of min(P(X>Y),P(Y>X))
   #  Y ~ N(mu_Y,sd_Y)
   require(distr)
@@ -9,10 +9,17 @@ calcProbXDiffNormals <- function(X,mu_Y,sd_Y,...,alternative="greater") {
   if (length(mu_Y) != length(sd_Y)) 
     stop("mu_Y and sd_Y should have equal length")
  
+  if (isTRUE(progress))
+    pb <- txtProgressBar(min=1,max=length(mu_Y))
+
   p.values <- sapply(seq_along(mu_Y),function(i) {
+    if (isTRUE(progress))
+      setTxtProgressBar(pb,i)
     if(is.na(mu_Y[i]) || is.na(sd_Y[i])) return(NA)
     calcProbXGreaterThanY(X,Norm(mu_Y[i],sd_Y[i]),...)
   })
+  if (isTRUE(progress))
+    close(pb)
 
   switch(alternative,
          greater=p.values,
@@ -65,7 +72,7 @@ twodistr.plot <- function(X,Y,n.steps=1000,min.q=10^-3) {
   steps <- sort(unique(c(q(X)(steps.seq),q(Y)(steps.seq))))
   ggplot(rbind(data.frame(x=steps,Distribution=paste0("X ~ ",distrprint(X)),density=d(X)(steps)),
                data.frame(x=steps,Distribution=paste0("Y ~ ",distrprint(Y)),density=d(Y)(steps)))) + 
-    geom_line(aes(x=x,y=density,color=Distribution)) +
+    geom_line(aes_string(x="x",y="density",color="Distribution")) +
     ggtitle(paste0(".5 P(X=Y) + P(X>Y) = ",round(calcProbXGreaterThanY(X,Y,n.steps=n.steps),7)))
  
 }

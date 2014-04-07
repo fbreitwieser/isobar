@@ -22,7 +22,7 @@ n.tags <- length(reporterTagNames(ibspectra))
 \usepackage{float}
 \usepackage{verbatim}
 \usepackage{fancyhdr}
-\setlength{\headheight}{13.6pt}
+\renewcommand{\headrulewidth}{0pt}
 \pagestyle{fancy}
 \lfoot{\today}
 \cfoot{\thepage}
@@ -38,6 +38,8 @@ write.tex.commands() # prints analysisname, analysisauthor, and isobarthanks com
   colorlinks=true,
   pdfauthor=\analysisauthor
 }
+\usepackage{titling}
+\setlength{\droptitle}{-5em}   % less space for title
 
 \title{Isobar QC Report \analysisname\isobarthanks}
 \author{\analysisauthor}
@@ -49,7 +51,7 @@ write.tex.commands() # prints analysisname, analysisauthor, and isobarthanks com
 
 \maketitle
 
-\subsection*{Reporter mass precision}
+\subsection*{Reporter Mass Precision}
 Histogram representing the distribution of the delta mass (in
 \emph{m/z}) for each reporter tag between theoretical and observed
 mass. Reporter tag ions were extracted from MS2 fragment spectra at
@@ -60,7 +62,7 @@ theoretical masses.
  print(reporterMassPrecision(ibspectra))
 @
 
-\subsection*{Reporter intensities and Normalization}
+\subsection*{Reporter Intensities Normalization}
 
 <<echo=FALSE,results=tex>>=
 reporter.tags <- reporterTagNames(ibspectra)
@@ -80,7 +82,7 @@ if (is.null(ri.nn)) {
   cat("Box-plot of the reporter intensities before and after the
        normalization process. Isobar applies a normalization factor to impose
        equal median or summed intensity in each channel. Some channels may be
-       excluded from normalization, as defined in \texttt{properties.R}.
+       excluded from normalization, as defined in the \\texttt{properties.R}.
        
        ")
 }
@@ -100,7 +102,7 @@ if (is.null(ri.nn)) {
        paste("","",
              "\\multicolumn{2}{c}{intensites}",sep=" & "),"\\\\",
        paste("tag",
-             "NA \\%\\footnote{Percentage of spectra with no quantitative information}",
+             "NA\\footnote{Percentage of spectra with no quantitative information}",
              "mean",
              "median",
              sep=" & "),
@@ -113,14 +115,14 @@ if (is.null(ri.nn)) {
        "\\end{tabular}",sep="\n")
 
 } else {
-    cat("\\begin{tabular}{rrrrrrr}\n",
+    cat("\\begin{tabular}{r@{\\hspace{1em}}rr@{\\hspace{1em}}rr@{\\hspace{1em}}rr}\n",
        paste("","",
              "\\multicolumn{2}{c}{before norm.}",
              "\\multicolumn{2}{c}{after norm.}",
 #"\\multicolumn{2}{c}{after n.\\footnote{Intensities before and after normalization}}",
              "",sep=" & "),"\\\\",
        paste("tag",
-             "NA \\%\\footnote{Percentage of spectra with no quantitative information}",
+             "NA\\footnote{Percentage of spectra with no quantitative information}",
              "mean",
              "median",
              "mean",
@@ -129,10 +131,10 @@ if (is.null(ri.nn)) {
        " \\\\ \\hline",
        paste(names(n.factors),
              sprintf("%.2f",100*colSums(is.na(ri.nn))/nrow(ri.nn)),
-             sprintf("%.2f",colMeans(ri.nn,na.rm=TRUE)),
-             sprintf("%.2f",apply(ri.nn,2,median,na.rm=TRUE)),
-             sprintf("%.2f",colMeans(ri,na.rm=TRUE)),             
-             sprintf("%.2f",apply(ri,2,median,na.rm=TRUE)),
+             sprintf("%.1f",colMeans(ri.nn,na.rm=TRUE)),
+             sprintf("%.1f",apply(ri.nn,2,median,na.rm=TRUE)),
+             sprintf("%.1f",colMeans(ri,na.rm=TRUE)),             
+             sprintf("%.1f",apply(ri,2,median,na.rm=TRUE)),
              n.factors,sep=" & ",collapse="\\\\ \n"),
        "\\end{tabular}",sep="\n")
    
@@ -141,9 +143,9 @@ if (is.null(ri.nn)) {
 \normalsize
 \end{minipage}
 
-\subsection*{Ratio distribution}
+\subsection*{Ratio Distribution}
 Distribution of the computed protein ratios (bars) and the probability density function of 
-a Cauchy distribution (solid line) fitted as described below.
+a \Sexpr{class(ratiodistr)}  distribution (solid line) fitted as described below.
 
 \begin{minipage}{0.45\textwidth}
 <<fig-ratiodistribution,fig=TRUE,echo=FALSE,width=3,height=2>>=
@@ -212,7 +214,7 @@ if (!is.null(ratiodistr)) {
 }
 @
 
-\subsection*{Individual ratio distributions}
+\subsection*{Individual Ratio Distributions}
 
 <<reporter-intensities-2,fig=TRUE,width=6.5,height=4.5,echo=F,results=hide>>=
 if (all(c("class1","class2") %in% colnames(quant.tbl)) && 
@@ -238,7 +240,6 @@ if (!is.null(ratiodistr)) {
   g <- g + geom_line(data=curve.distr,aes(x=x,y=y),colour="black",alpha=.5)
 }
 
-
 gg <- grid.arrange(g,
 tableGrob(ddply(quant.tbl,c('channels','class2','class1')[c('channels','class2','class1') %in% colnames(quant.tbl)],
                  function(x) c('number of ratios'=sum(!is.na(x$lratio)),
@@ -255,7 +256,7 @@ ncol=1)
 @
 %\includegraphics{reporter-intensities-2}
 
-\subsection*{Ratio-intensity plot}
+\subsection*{Ratio-intensity Plot}
 Display of the ratio (\emph{y-axis}) versus the log10 average signal intensity (\emph{x-axis}) for all the reporter ratio combinations. The noise model used by Isobar is indicated as a solid red line.
 
 <<fig-maplot,echo=FALSE,results=hide>>=

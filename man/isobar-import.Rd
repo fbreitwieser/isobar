@@ -26,18 +26,18 @@
 
 # reads id file
 \S4method{readIBSpectra}{character,character,character}(
-                type, id.file, peaklist.file, header = TRUE, sep =
-                 "\t", stringsAsFactors = FALSE, mapping.file = NULL,
-                 mapping = c(quantification.spectrum="hcd",identification.spectrum="cid"),
-                 id.file.domap = NULL, identifications.format = NULL,
-                 decode.titles = TRUE, ...)
+                 type, id.file, peaklist.file, sep = "\t", mapping.file
+                 = NULL, mapping = c(quantification.spectrum = "hcd",
+                 identification.spectrum = "cid"), id.file.domap =
+                 NULL, identifications.format = NULL, decode.titles =
+                 FALSE, ...)
 
 # reads peaklist file
 \S4method{readIBSpectra}{character,data.frame,character}(
-             type, id.file, peaklist.file, proteinGroupTemplate = NULL,
-             annotate.spectra.f = NULL, peaklist.format = NULL,
-             scan.lines = 0, fragment.precision = NULL,
-             fragment.outlier.prob = NULL, ...)
+                 type, id.file, peaklist.file, annotate.spectra.f =
+                 NULL, peaklist.format = NULL, scan.lines = 0,
+                 fragment.precision = NULL, fragment.outlier.prob =
+                 NULL, ...)
 }
 
 \arguments{
@@ -56,12 +56,12 @@
     Peaklist file, typically in MGF format, see \code{peaklist.format}.
     MGF must be centroid!
   }
-  \item{proteinGroupTemplate}{
-    When having technical or biological repeats: First a template
-    protein group is created which uses information from all runs,
-    then this template is applied.
-    It should increase comparability across runs.
-  }
+%  \item{proteinGroupTemplate}{
+%    When having technical or biological repeats: First a template
+%    protein group is created which uses information from all runs,
+%    then this template is applied.
+%    It should increase comparability across runs.
+%  }
   \item{mapping.file}{
     If defined, spectum titles from the peaklist file are linked to
     the identifications via this file. This can be used when running HCD
@@ -119,8 +119,6 @@
     Read files sequentially scan.lines lines at a time. Can help in
     case of memory issues, set to 10000 or higher, for example.
   }
-  \item{header}{header argument of read.table}
-  \item{stringsAsFactors}{stringsAsFactors argument of read.table}
   \item{sep}{sep argument of read.table}
   \item{\dots}{
     Further arguments handed down to \code{initialize}.

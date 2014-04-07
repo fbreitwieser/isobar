@@ -74,7 +74,7 @@ writePhosphoRSInput <-
   titles <- gsub("TITLE=","",grep("TITLE",input,value=TRUE),fixed=TRUE)
   if (!all(ids$spectrum %in% titles))
     stop("Not all id spectrum titles are in MGF titles!\n",
-         sum.bool.c(ids$spectrum %in% titles))
+         .sum.bool.c(ids$spectrum %in% titles))
   
   if (length(begin_ions) != length(end_ions))
     stop("mgf file is errorneous, non-matching number",
@@ -182,19 +182,34 @@ calc.pep.delta.score <- function(y,spectrum.col='spectrum',score.col='score',pep
 }
 
 
-filterSpectraDeltaScore <- function(data, min.delta.score=10, do.remove=FALSE) {
-  if (!"delta.score" %in% colnames(data))
-    data <- calc.delta.score(data)
+filterSpectraDeltaScore <- function(my.data, min.delta.score=10, do.remove=FALSE) {
+  if (!"delta.score" %in% colnames(my.data))
+    my.data <- calc.delta.score(my.data)
   
   if (!is.null(min.delta.score)) {
-    sel.mindeltascore <- data[,"delta.score"] >= min.delta.score
-    data[,"use.for.quant"] <- data[,"use.for.quant"] & sel.mindeltascore
+    sel.mindeltascore <- my.data[,"delta.score"] >= min.delta.score
+    my.data[,"use.for.quant"] <- my.data[,"use.for.quant"] & sel.mindeltascore
     if (isTRUE(do.remove))
-      data <- data[,sel.mindeltascore]
+      my.data <- my.data[,sel.mindeltascore]
   }
-  return(data)
+  return(my.data)
 }
 
+
+.getModifOnPosition <- function(modifstring,pos=NULL) {
+  splitmodif <- strsplit(paste0(modifstring," "),":")
+  sapply(seq_along(splitmodif),function(i) {
+    x <- splitmodif[[i]]
+    x[length(x)] <- sub(" $","",x[length(x)])
+    if (!is.null(pos))
+      if (length(pos)==1)
+        x[pos+1]
+      else
+        x[pos[i]+1]
+    else
+      x[seq(from=2,to=length(x)-1)]
+  })
+}
 
 .convertModifToPhosphoRS <- function(modifstring,modifs) {
   sapply(strsplit(paste0(modifstring," "),":"),function(x) {
@@ -205,7 +220,7 @@ filterSpectraDeltaScore <- function(data, min.delta.score=10, do.remove=FALSE) {
     for (i in seq_len(nrow(modifs))) 
       xx[grep(paste0("^",modifs[i,1]),x)] <- modifs[i,2]
 
-    if(any(is.na(xx))) stop("Could not convert modifstring ",modifstring)
+    if(any(is.na(xx))) stop("Could not convert [",paste0(x[is.na(xx)],collapse=" and "),"] modifstring ",modifstring)
 
     y <- c(xx[1],".",xx[2:(length(xx)-1)],".",xx[length(xx)]);
     paste(y,collapse="") })
@@ -448,7 +463,7 @@ observedKnownSites <- function(protein.group,protein.g,ptm.info,modif,modificati
 
   protein.length <- as.numeric(proteinInfo(protein.group,protein.ac=isoform.ac,select="length") )
   if(all(is.na(protein.length))) 
-    stop("no protein info for ",isoform.ac,"; need protein length an sequence")
+    stop("no protein info for ",isoform.ac,"; need protein length and sequence")
 
  
   obs.peptides <- observable.peptides(proteinInfo(protein.group,protein.ac=isoform.ac,select="sequence"),nmc=2)
@@ -499,10 +514,15 @@ observedKnownSites <- function(protein.group,protein.g,ptm.info,modif,modificati
 }
 
 
-getPeptideModifContext <- function(protein.group,modif,n.aa.up=5,n.aa.down=5) {
-  
-  peptide.info <- unique(peptideInfo(protein.group)[,c('modif','protein','peptide')])
-  protein.sequences <- paste0(paste0(rep("_",n.aa.down),collapse=""),gsub("I","L",proteinInfo(protein.group)[,'sequence']),paste0(rep("_",n.aa.up),collapse="")) # enlarge sequence in case peptide starts in the beginning / end
+getPeptideModifContext <- function(protein.group,modif,n.aa.up=7,n.aa.down=7) {
+  if (length(proteinInfo(protein.group)) == 0)
+    stop("no protein info attached to protein.group: see ?getProteinInfoFromUniprot on how to get it.")
+
+  peptide.info <- unique(peptideInfo(protein.group)[,c('modif','protein','peptide','real.peptide')])
+  protein.sequences <- paste0(paste0(rep("_",n.aa.down),collapse=""),
+                              #gsub("I","L",proteinInfo(protein.group)[,'sequence']),
+                              proteinInfo(protein.group)[,'sequence'],
+                              paste0(rep("_",n.aa.up),collapse="")) # enlarge sequence in case peptide starts in the beginning / end
   names(protein.sequences) <- proteinInfo(protein.group)[,'accession']
   
   pep.modif.context <- mapply(function(pepmodifs,protein.ac,pep) {
@@ -534,13 +554,14 @@ getPeptideModifContext <- function(protein.group,modif,n.aa.up=5,n.aa.down=5) {
     }),collapse=",")
   },strsplit(paste0(peptide.info[,'modif']," "),":"),
     peptide.info[,'protein'], 
-    peptide.info[,'peptide'])
+    peptide.info[,'real.peptide'])
 
   # get pep-modif context
   context.df <- unique(data.frame(peptide=peptide.info[,'peptide'],modif=peptide.info[,'modif'],context=pep.modif.context,stringsAsFactors=FALSE))
-  print(head(context.df))
   ddply(context.df,
         c("peptide","modif"),
-        function(x) data.frame(peptide=x[1,'peptide'],modif=x[1,'modif'],context=paste(x[,'context'],collapse=";"),stringsAsFactors=FALSE))
+        function(x) 
+          data.frame(peptide=x[1,'peptide'],modif=x[1,'modif'],
+                     context=paste(x[,'context'],collapse=";"),stringsAsFactors=FALSE))
 
 }

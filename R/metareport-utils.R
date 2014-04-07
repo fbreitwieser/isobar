@@ -103,7 +103,7 @@ create.meta.reports <- function(properties.file="meta-properties.R",
   
   if (include.not.localized) {
     csvname.nl <- paste0(properties.env$name,".not.localized-combined_report.csv")
-    write.table(tbl.pg.nl[order(tbl.pg.nl[,'ID'],tbl.pg[,'start.pos']),],file=csvname.nl,row.names=FALSE,sep="\t",na="")
+    write.table(tbl.pg.nl[order(tbl.pg.nl[,'ID'],tbl.pg.nl[,'start.pos']),],file=csvname.nl,row.names=FALSE,sep="\t",na="")
     perl.cl <- paste(perl.cl,shQuote(csvname.nl))
   }
   ## generate Excel report (using Spreadsheet::WriteExcel)
@@ -336,7 +336,7 @@ create.meta.reports <- function(properties.file="meta-properties.R",
 
   png(sprintf("scatter_plot%s.png",name),width=7,height=7)
   ggplot(my.table) + 
-     geom_point(aes(x=lratio.x,y=lratio.y,color=comp)) + 
+     geom_point(aes_string(x="lratio.x",y="lratio.y",color="comp")) + 
      facet_wrap(~comp)
 
 }
@@ -389,21 +389,4 @@ create.meta.reports <- function(properties.file="meta-properties.R",
   text(0.5,0.5, paste(s[[2]],sep=""),cex=cex)
   #text(0.5,0.5, paste(s[[2]],"\n vs ",s[[3]],sep=""),cex=cex)
 }
-
-### depr plots
-#  g <- ggplot(merged.table,aes(x=lratio,y=-log10(p.value.rat))) + 
-#    geom_point(aes(color=factor(comp)),alpha=0.8) + 
-#    facet_wrap(~comp,ncol=2) + 
-#    geom_rug(alpha=0.5) + 
-#    geom_hline(yintercept=-log10(0.05)) + 
-#    geom_text(data=ddply(merged.table,"comp",
-#                         function(x) c(x=Inf,y=-log10(0.05),isobar:::.sum.bool.na(x$p.value.rat < 0.05))),
-#              aes(x=x,y=y,label=`TRUE`),vjust=-0.5,hjust=1)
-
-#  pdf("lratio-pval.pdf")
-#  print(g)
-#  dev.off()
-
-  #rownames(pg.df) <- do.call(paste,pg.df[,ac.vars,drop=FALSE])
-
 

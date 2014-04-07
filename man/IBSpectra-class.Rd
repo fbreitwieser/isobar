@@ -15,7 +15,9 @@
 \alias{TMT2plexSpectra-class}
 \alias{TMT2plexSpectra}
 \alias{TMT6plexSpectra-class}
+\alias{TMT6plexSpectra2-class}
 \alias{TMT6plexSpectra}
+\alias{TMT6plexSpectra2}
 \alias{TMT10plexSpectra-class}
 \alias{TMT10plexSpectra}
 \alias{IBSpectra}
@@ -27,6 +29,7 @@
 % Coercion methods:
 \alias{coerce,IBSpectra,data.frame-method}
 \alias{as.data.frame,IBSpectra-method}
+\alias{as.data.frame.IBSpectra}
 
 % Accessor-like methods:
 \alias{proteinGroup}

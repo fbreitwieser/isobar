@@ -118,9 +118,9 @@ shared.ratios.sign <- function(ress,z.shared,min.spectra=1,plot=TRUE) {
     breaks <- c(0.1,0.25,0.5,1,2,3,4,5,10,20,30,40,50)
     breaks <- breaks[log10(breaks) %inrange% range(xx$ratio)]
 
-    print(ggplot(xx,aes(x=ratio,y=proteins)) +
+    print(ggplot(xx,aes_string(x="ratio",y="proteins")) +
           geom_vline(xintercept=0,alpha=0.5) + 
-          geom_point(aes(colour=factor(g),shape=factor(g),size=4)) + 
+          geom_point(aes_string(colour="g",shape="g"),size=4) + 
           geom_errorbarh(aes(xmax=ratio+sqrt(var),xmin=ratio-sqrt(var),colour=factor(g),height=0.2)) + 
           scale_x_continuous("Ratio",breaks=log10(breaks),labels=breaks) +
           scale_colour_manual("group",values = c("blue","darkgreen")) + 
