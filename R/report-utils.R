@@ -176,8 +176,9 @@ initialize.env <- function(env,properties.env) {
   env[["ratiodistr"]] <- .create.or.load.ratiodistr(env,properties.env)
   if (identical(properties.env[["report.level"]],"peptide") ) {
     env[["ptm.info"]]  <- .create.or.load.ptm.info(properties.env,proteinGroup(env[["ibspectra"]]))
-    env[["quant.tbl.notlocalized"]] <- .create.or.load.quant.table(env,properties.env,
-                                                                   name="quant.tbl.notlocalized",type="other-sites")
+    if ("pep.siteprobs" %in% colnames(fData(env[["ibspectra"]]))
+       env[["quant.tbl.notlocalized"]] <- .create.or.load.quant.table(env,properties.env,
+                                                                     name="quant.tbl.notlocalized",type="other-sites")
   }
   env[["quant.tbl"]] <- .create.or.load.quant.table(env,properties.env)
   if (!"ac" %in% colnames(env[["quant.tbl"]]) && "protein" %in% colnames(env[["quant.tbl"]]))
