@@ -110,6 +110,8 @@ setMethod("ProteinGroup",signature(from="data.frame",template="ProteinGroup",pro
           proteinInfo <- template@proteinInfo[template@proteinInfo$accession %in% isoforms$proteinac.wo.splicevariant,]
       }
 
+      attr(proteinInfo,"on.splice.variant") <- attr(template@proteinInfo,"on.splice.variant")
+
       message("done")
 
       return(
@@ -1674,10 +1676,11 @@ calculate.dNSAF <- function(protein.group,use.mw=FALSE,normalize=TRUE,combine.f=
     stop("no column 'length' in proteinInfo slot")
 
   ip <- indistinguishableProteins(protein.group)
-  if(proteinInfoIsOnSpliceVariants(proteinInfo(protein.group)))
+  if(proteinInfoIsOnSpliceVariants(proteinInfo(protein.group))) {
     get.to.acs <- function(my.protein.g) names(ip)[ip==my.protein.g]
-  else
+  } else {
     get.to.acs <- function(my.protein.g) unique(protein.ac(protein.group,my.protein.g))
+  }
 
   seqlength <- proteinInfo(protein.group)$length
   names(seqlength) <- proteinInfo(protein.group)$accession
