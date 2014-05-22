@@ -57,14 +57,16 @@ The first thing you need to do is load the package.
   library(isobar) ## load the isobar package
 @ 
 
-\section{Loading data}
+\section{Loading data}\label{sec:loading-data}
 \Rpackage{isobar} can read identifications and quantifications from
 tab-separated and MGF files. Perl scripts are supplied to generate a
 tab-separated version from the vendor formats of Mascot and Phenyx,
-see appendix \ref{sec:dependencies}. The format is simple and
-described in appendix \ref{app:fileformats}. Experimental support for
-the mzIdentML format within R is also available - please contact the
-mantainer in case of problems.
+see appendix \ref{sec:dependencies}.  The ``ID.CSV'' format is
+described in appendix \ref{app:fileformats}.  Rockerbox and MSGF+ CSV
+file formats can be read, too, and are recognized by their file
+extension (\texttt{peptides.csv} and \texttt{msgfp.csv}).
+Experimental support for the mzIdentML format is also available -
+please contact the maintainer in case of problems.
 
 \begin{description}
 \item[\small ID.CSV] tab-separated file containing peptide-spectra matches and
@@ -211,9 +213,13 @@ readIBSpectra(...,
 
 The argument \texttt{mapping.file} can take multiple files as argument (which are read and concatenated), or a \texttt{data.frame}.
 
-\subsection{Loading data from CID/HCD experiments with full HCD spectrum}
+\subsection{Loading data from CID/HCD experiments with full HCD
+  spectrum}
 
-If a full HCD spectrum was acquired, and both the HCD and CID spectrum are searched against a protein database, the argument \texttt{id.file.domap} to \texttt{readIBSpectra} can be used to merge both CID and HCD identifications:
+If a full HCD spectrum was acquired, and both the HCD and CID spectrum
+are searched against a protein database, the argument
+\texttt{id.file.domap} to \texttt{readIBSpectra} can be used to merge
+both CID and HCD identifications:
 
 <<eval=FALSE>>=
 readIBSpectra("TMT6plexSpectra",
@@ -225,12 +231,34 @@ readIBSpectra("TMT6plexSpectra",
               )
 @
 
-Here, the CID (\texttt{cid.identifications.csv}) and HCD identifications (\texttt{hcd.identifications.csv}) are
-combined and mapped according to \texttt{mapping.csv}. Diverging identifications are discarded.
+Here, the CID (\texttt{cid.identifications.csv}) and HCD
+identifications (\texttt{hcd.identifications.csv}) are combined and
+mapped according to \texttt{mapping.csv}. Diverging identifications
+are discarded.
 
+\subsection{Integrating and thresholding precursor purity measures}
+Savitzki et al., 2011 describe a measure for the precursor purity of
+fragment spectra. An implementation of the algorithm for the
+\texttt{multiplierz} platform is provided at
+\url{http://sourceforge.net/apps/trac/multiplierz/wiki/Precursors}. The
+script creates \texttt{_precursors.txt} files for each \texttt{RAW}
+file. To integrate and threshold based on the \texttt{s2i} measure,
+use the following code:
 
+<<eval=FALSE>>=
+precursors <- read.delim("file1_precursors.txt",header=TRUE,sep="\t",stringsAsFactors=FALSE)
+idfile <- read.delim("file1.id.csv",header=TRUE,sep="\t",stringsAsFactors=FALSE)
+
+idfile <- merge(idfile,precursors,by.x="
+
+... check /media/work/analysis/gwinter/raw-spectra/analysis.R
+@ 
 
 \subsection{\Rpackage{MSnbase} integration}
+NOTE: It has been reported that the conversion functions are not
+functional for current versions of the package. We will try to resolve
+this.
+
 \Rpackage{MSnbase} by Laurent Gatto provides data manipulation and
 processing methods for MS-based proteomics data. It provides import,
 representation and analysis of raw MS data stored in \texttt{mzXML},
@@ -246,6 +274,43 @@ coercion are implemented:
   as(ibspectra,"MSnSet")
   as(msnset,"IBSpectra")
 @ 
+
+
+
+\section{Data Analysis}
+\subsection{Reporter mass precision}
+The distribution of observed masses from the reporter tags can be used
+to visualize the precision of the MS setup on the fragment level and
+used to set the correct window for isolation.
+
+The expected masses of the reporter tags are in the slot
+\Rfunction{reporterTagMasses} of the implementations of the
+\Robject{IBSpectra} class. The experimental masses are in the matrix
+\Robject{mass} of \Robject{AssayData}; they can also be accessed by
+the method \Rfunction{reporterMasses(x)}.
+
+
+\subsection{\Rpackage{MSnbase} integration}
+NOTE: It has been reported that the conversion functions are not
+functional for current versions of the package. We will try to resolve
+this.
+
+\Rpackage{MSnbase} by Laurent Gatto provides data manipulation and
+processing methods for MS-based proteomics data. It provides import,
+representation and analysis of raw MS data stored in \texttt{mzXML},
+\texttt{mzML} and \texttt{mzData} using the \Rpackage{mzR} package and
+centroided and un-centroided {\small \texttt{MGF}} peak lists. It
+allows to use and preprocess raw data whereas \Rpackage{isobar}
+requires centroided peak lists. In the future, the \Rpackage{isobar}
+class \Robject{IBSpectra} might be based on or replaced by
+\Robject{MSnbase}'s class \Robject{MSnSet}.  For now, methods for
+coercion are implemented:
+
+<<eval=FALSE>>=
+  as(ibspectra,"MSnSet")
+  as(msnset,"IBSpectra")
+@ 
+
 
 
 \section{Data Analysis}
@@ -280,7 +345,7 @@ apply(mass,2,function(x) sprintf("%.4f",quantile(x,na.rm=TRUE,probs=c(0.025,0.97
 \end{figure}
 \end{center}
 
-\subsection{Normalization and isotope impurity correction}
+\subsection{Normalization and isotope impurity correction} \label{sec:norm-isot-impur}
 Isotope impurity correction factors are supplied by labelling reagent
 manufacturers. Default values that can be modified by the user are
 available in \Rpackage{isobar} and corrections are obtained by simple

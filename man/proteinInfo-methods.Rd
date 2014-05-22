@@ -1,6 +1,7 @@
 \name{proteinInfo-methods}
 \alias{getProteinInfoFromBiomart}
 \alias{getProteinInfoFromUniprot}
+\alias{getProteinInfoFromTheInternet}
 \alias{getProteinInfoFromNextProt}
 \alias{getProteinInfoFromEntrez}
 \alias{getProteinInfoFromBioDb}
@@ -40,6 +41,9 @@
 #                 = "entry%20name", protein_name = "protein%20names",
 #                 gene_name = "genes", organism = "organism", length =
 #                 "length", sequence = "sequence"))
+
+
+  getProteinInfoFromTheInternet(x)
 
   getProteinInfoFromNextProt(x)
 

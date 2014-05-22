@@ -797,14 +797,15 @@ read.mzid <- function(filename) {
       rr <- c(rr,do.call(c,lapply(reporterMasses,function(y) {
         m <- abs(y-mzi.mass)
         pos <- which(m == min(m))
-      
-        if (sum(pos) > 0 & m[pos][1] < fragment.precision/2) {
-	  # take most intense if two oins have same distance
-	  posi <- 1
-	  if (sum(pos)>1) 
-	    posi <- which.max(mzi.ions[pos])[1]
-          return(c(mzi.mass[pos][posi],mzi.ions[pos][posi]))
-	}
+        if (length(pos) > 1){
+          # (Jacques) added to address cases where 2 peaks (within the required precision) are at the same distance of the reporter theoretical mass
+          # Pick most intense
+          max.intens <- max(mzi.ions[pos])
+          pos <- pos[which(mzi.ions[pos]==max.intens)]
+          pos <- pos[1] # in case same intensity as well!
+        }
+        if (length(pos) > 0 & m[pos] < fragment.precision/2)
+          return(c(mzi.mass[pos],mzi.ions[pos]))
         else
           return(c(NA,NA))
       }))) 
