@@ -12,10 +12,12 @@ use strict;
 use warnings;
 use DBI;
 use Getopt::Long;
+use URI::Escape;
 
-my ($do_write,$use_deltaScore);
+my ($do_write,$use_deltaScore,$nounescape);
 GetOptions("do-write"=>\$do_write,
-           "deltascore" => \$use_deltaScore) or die $!;
+           "deltascore" => \$use_deltaScore,
+           "unescapetitle" => \$nounescape) or die $!;
 
 my ($protID, $peptide, $modif, $charge, $theo_mass, $exp_mass, 
     $parent_intens, $start_pos, $rtime, @search_engine, @score,@deltaScore,@pValue,$spectrum);
@@ -34,6 +36,7 @@ print $OUT $header unless $do_write;
 
 foreach my $psxFile (@ARGV) {
 eval{
+  my $intensityCount = 1;
   my $XML;
   my $is_stdin = 0;
   if (defined $psxFile){
@@ -64,9 +67,13 @@ eval{
     } elsif (/<idi:retentionTime>(.*)<\/idi:retentionTime>/) { $rtime = $1; 
     } elsif (/<ple:PeptideDescr>.!.CDATA.([^"]+)..><\/ple:PeptideDescr>/) {
         $spectrum = $1;
-    } elsif (/<ple:ParentMass><!.CDATA.($numb) ($numb) [0-9\.,]+..><\/ple:ParentMass>/) {
+    } elsif (/<ple:ParentMass><!\[CDATA\[($numb)\s+($numb)\s+[0-9\.,]+\]\]><\/ple:ParentMass>/) {
         $exp_mass = $1;
         $parent_intens = $2;
+    } elsif (/<ple:ParentMass><!\[CDATA\[($numb)\s+[0-9\.,]+\]\]><\/ple:ParentMass>/) {
+      # in case of no intensity data
+        $exp_mass = $1;
+        $parent_intens = 0;
     } elsif (/<idi:peptScore engine="([^"]+)" (.*)>(.*)<\/idi:peptScore>/) {
         my $i = scalar @search_engine;
         $deltaScore[$i] = undef;
@@ -81,12 +88,17 @@ eval{
     }
     elsif (/<\/idi:OneIdentification>/){
         die "not defined" if (!defined $spectrum);
+	if (!defined($exp_mass)){
+print STDERR "$_\n";
+exit(0);
+}
         print $OUT join ("\t",$protID, $peptide, $modif, $charge, 
                     $theo_mass, $exp_mass, $parent_intens, 
                     $start_pos, $rtime, 
                     join("|",@search_engine), join("|",@score), 
                     join("|",@pValue));
         print $OUT "\t".join("|",@deltaScore) if $use_deltaScore;
+	$spectrum = uri_unescape($spectrum) unless (defined($nounescape));
         print $OUT "\t".$spectrum."\n";
     
         undef $peptide;

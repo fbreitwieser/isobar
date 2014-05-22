@@ -18,7 +18,7 @@ load.tex.properties <- function(env) {
 write.tex.commands <- function() {
   get.property <- get("get.property")
   cat("\\newcommand{\\analysisname}{",sanitize(get.property('name'),dash=FALSE),"}\n")
-  cat("\\newcommand{\\analysisauthor}{",sanitize(get.property('author')),"}\n")
+  cat("\\newcommand{\\analysisauthor}{",sanitize(get.property('author'),dash=FALSE),"}\n")
 
   cat("\\newcommand{\\isobarthanks}{\\thanks{This report was 
     generated using the \\texttt{isobar} R package version ",
@@ -508,8 +508,8 @@ print_protein_quant_tbl <- function(file="",
   mycat <- function(...,append=TRUE,sep="") 
     cat(...,file=file,append=append,sep=sep)
 
-  mr <- function(text,...) ifelse(is.single.comparision,text,sprintf("\\mr{%s}",text))
-  mrp <- function(text,...) ifelse(is.single.comparision,text,sprintf("\\mrp{%s}",text))
+  mr <- function(text,...) if (is.single.comparision) { text } else { sprintf("\\mr{%s}",text) }
+  mrp <- function(text,...) if (is.single.comparision) { text } else {sprintf("\\mrp{%s}",text)}
 
   print_longtablehdr("protein",is.single.comparision,TRUE,file=file)
 

@@ -174,7 +174,25 @@ setMethod("estimateRatioNumeric",signature(channel1="numeric",channel2="numeric"
         else if (is.method("multiq"))
           return(c(lratio=NA,variance=NA,n.spectra=0,isum=NA))
         else if (is.method("test") || is.method("compare.all") || length(method) > 1)
-          return(NULL)
+          return(c(lratio=NA,
+               lratio.lm=NA,
+               lratio.wlm=NA,
+               unweighted.ratio  =NA,
+               n.spectra=NA,
+               variance=NA,
+               var.ev=NA,
+               var.sv=NA,
+               var.lm=NA,
+               var.lm.w=NA,
+               is.sign.isobar    =NA,
+               is.sign.isobar.ev =NA,
+               is.sign.lm        =NA,
+               is.sign.wlm       =NA,
+               is.sign.rat       =NA,
+               is.sign.sample    =NA,
+               is.sign.ttest     =NA,
+               is.sign.fc        =NA,
+               is.sign.fc.nw     =NA))
         else warning("no spectra, unknown method")
       }
       
@@ -249,7 +267,7 @@ setMethod("estimateRatioNumeric",signature(channel1="numeric",channel2="numeric"
       }
       if (is.a.method("ttest2")) {
 
-        p.value <- .ttest.pval(mu=center.var,
+        p.value <- .ttest.pval(mu=0,
                                xbar=lratio.n.var['lratio'],
                                s=sqrt(lratio.n.var['sample.variance']),
                                n=length(log.ratios))
@@ -1389,9 +1407,10 @@ proteinRatios <-
 
   if (shrink.ratios) {
     ratios <- shrink.ratios(ratios)
-    ratios$p.value <- calcProbXDiffNormals(ratiodistr,
-                                           ratios$lratio,sqrt(ratios$variance/ratios$n.spectra),
-                                           alternative="two-sided")
+    ratios$p.value <-
+        calcProbXDiffNormals(ratiodistr,
+                             ratios$lratio,sqrt(ratios$variance/ratios$n.spectra),
+                             alternative="two-sided")
     ratios$is.significant <- ratios$p.value < 0.05
 
     ## adjust p-value
@@ -1409,6 +1428,210 @@ proteinRatios <-
 
   return(ratios)
 } # end proteinRatios
+
+shrink.ratios2 <- function(pr,do.plot=0,nrand=10000,use.n=FALSE) {
+  ## using the formulas developed in http://www.cs.berkeley.edu/~jordan/courses/260-spring10/lectures/lecture5.pdf
+
+  require(MASS)
+  sel <- !is.na(pr$variance) 
+
+  ## fit gamma distribution on the inverse of the sample variance (used as prior)
+  x <- pr$variance[!is.na(pr$variance)&pr$n.spectra>2]
+  (fit.gamma <- fitdistr(1/x,"gamma"))
+  
+  var.ks <- ks.test(1/x,pgamma,
+          shape=fit.gamma$estimate['shape'],
+          rate=fit.gamma$estimate['rate'])
+  message(sprintf("fitting inverse gamma on variance (two-sided ks D=%.2f, p-value=%.3f)",
+          var.ks$statistic,var.ks$p.value))
+
+  ## fit normal distribution on sample mu (used as prior)
+  prior.mu.mu <- median(pr$lratio[sel])
+  prior.mu.var <- mad(pr$lratio[sel])**2
+
+  mu.ks <- ks.test(pr$lratio[sel],"dnorm",
+                   prior.mu.mu,sqrt(prior.mu.var))
+
+  message(sprintf("fitting normal on mean (two-sided ks D=%.2f, p-value=%.3f)",
+          mu.ks$statistic,mu.ks$p.value))
+
+
+  ## calculate posterior variance
+  prior.alpha <- fit.gamma$estimate[1]
+  prior.beta <- fit.gamma$estimate[2]
+
+  sample.n <- pr$n.spectra
+  sample.var <- pr$variance
+
+  # posterior alpha = prior.alpha + n/2
+  # posterior beta = prior.beta + 1/2*sum(x_i-\bar{x})^2 + 
+  if (use.n) {
+    post.shape <- prior.alpha + sample.n/2
+    post.scale <- prior.beta+1/2*sample.var*(pr$n.spectra-1) 
+  } else {
+    post.shape <- prior.alpha+sample.n/2 - 1/2
+    post.scale <- prior.beta+1/2*sample.var*(pr$n.spectra-1) 
+  }
+
+  post.shape <- prior.alpha+sample.n/2 - 1/2
+  post.scale <- prior.beta+1/2*sample.var*(pr$n.spectra-1) 
+
+  post.var <- sapply(seq_len(nrand),function(i)
+       1/rgamma(sum(sel),post.shape[sel],post.scale[sel]))
+
+  if (do.plot > 0) {
+    par(mfrow=c(do.plot,2))
+    if (do.plot > 1) {
+    plot(density(x),"variance prior")
+    seqi <- seq(from=min(x),to=max(x),length.out=1000)
+    lines(seqi,dgamma(1/seqi,
+                      shape=fit.gamma$estimate['shape'],
+                      scale=fit.gamma$estimate['rate']),
+            col="red",type="l")
+    }
+    plot(pr$variance[sel],rowMeans(post.var),
+         cex=sqrt(pr$n.spectra[sel])/10,
+         log="xy",col="#000000A0",main="sample vs posterior variance",
+         xlab="sample variance", ylab="posterior variance")
+    abline(0,1,col="red")
+  }
+ 
+  ## calculate posterior mu
+  post.mu <- sapply(seq_len(nrand),function(i) {
+      mu.post.mu <- (prior.mu.mu+pr$n.spectra[sel]*pr$lratio[sel])/
+                     (pr$n.spectra[sel] + 1)
+      mu.post.var <- post.var[,i]/(pr$n.spectra[sel]+1)
+      rnorm(sum(sel),mu.post.mu,sqrt(mu.post.var))
+  })
+
+
+  if (do.plot) {
+    if (do.plot > 1) {
+    plot(density(pr$lratio[sel]),main="mean prior")
+    seqi <- seq(from=-max(abs(pr$lratio[sel])),
+                            to=max(abs(pr$lratio[sel])),length.out=10000)
+    lines(seqi,dnorm(seqi,prior.mu.mu,sqrt(prior.mu.var)),
+                col="red",type="l")
+    }
+    plot(pr$lratio[sel],rowMeans(post.mu),
+         cex=sqrt(pr$n.spectra[sel])/10,
+         log="xy",col="#000000A0",main="sample vs posterior mean",
+         xlab="sample mean", ylab="posterior mean")
+    abline(0,1,col="red")
+  }
+ 
+  pr$lratio[sel] <- rowMeans(post.mu)
+  pr$variance[sel] <- rowMeans(post.var)
+
+  pr
+}
+
+
+
+shrink.ratios.gibbs <- function(pr,do.plot=0,S=10000,use.n=FALSE) {
+  ## using the formulas developed in http://www.cs.berkeley.edu/~jordan/courses/260-spring10/lectures/lecture5.pdf
+
+  require(MASS)
+  sel <- !is.na(pr$variance) 
+
+  ## fit gamma distribution on the inverse of the sample variance (used as prior)
+  x <- pr$variance[!is.na(pr$variance)&pr$n.spectra>2]
+  (fit.gamma <- fitdistr(1/x,"gamma"))
+  
+  var.ks <- ks.test(1/x,pgamma,
+          shape=fit.gamma$estimate['shape'],
+          rate=fit.gamma$estimate['rate'])
+  message(sprintf("fitting inverse gamma on variance (two-sided ks D=%.2f, p-value=%.3f)",
+          var.ks$statistic,var.ks$p.value))
+
+  ## fit normal distribution on sample mu (used as prior)
+  prior.mu.mu <- median(pr$lratio)
+  prior.mu.var <- mad(pr$lratio)**2
+
+  mu.ks <- ks.test(pr$lratio,"dnorm",
+                   prior.mu.mu,sqrt(prior.mu.var))
+
+  message(sprintf("fitting normal on mean (two-sided ks D=%.2f, p-value=%.3f)",
+          mu.ks$statistic,mu.ks$p.value))
+
+
+  ## calculate posterior variance
+  prior.alpha <- fit.gamma$estimate[1]
+  prior.beta <- fit.gamma$estimate[2]
+
+  sample.n <- pr$n.spectra
+  sample.var <- pr$variance
+
+  # Specify chain length
+  S <- 1000  # generate 1000 dependent samples
+  samples.mean <- matrix(nrow=S,ncol=length(pr$lratio))
+  samples.phisq <- matrix(nrow=S,ncol=length(pr$variance))
+
+  ### Starting values
+  samples.mean[1,] <- pr$lratio
+  samples.phisq[1,] <- 1/pr$variance
+
+  for (s in 2:S) {
+    ## Generate a new posterior value of mu from f(mu | prev value of phi.sq, data)
+    prev.phisq <- samples.phisq[s-1,] 
+    prev.mu <- samples.mean[s-1,]
+
+    post.shape <- prior.alpha + pr$n.spectra/2
+    #post.scale <- prior.beta + 1/2*sum((pr$lratio-prev.mu)^2)  ### HERE should be the actual data such that it works as Gibbs sampler; ie \sum_{i=1}^n x_i - prev.mu for EACH protein!!
+    post.scale <- prior.beta+1/2*sample.var*(pr$n.spectra-1)
+
+    new.phisq <- rgamma(ncol(samples.phisq),post.shape,post.scale)
+
+    ## Generate a new posterior value of phi.sq from f(phisq | prev value of mu, data)
+    mu.post.phisq <- 1/prior.mu.var + pr$n.spectra*new.phisq
+    mu.post.mu <- 1/mu.post.phisq * (prior.mu.mu/prior.mu.var + pr$n.spectra*pr$lratio*new.phisq)
+
+    new.mu <- rnorm(ncol(samples.mean),mu.post.mu,1/sqrt(mu.post.phisq))
+  
+    samples.mean[s,] <- new.mu
+    samples.phisq[s,] <- new.phisq
+  }
+  
+  if (do.plot > 0) {
+    par(mfrow=c(do.plot,2))
+
+    ## variance
+    if (do.plot > 1) {
+    plot(density(x),"variance prior")
+    seqi <- seq(from=min(x),to=max(x),length.out=1000)
+    lines(seqi,dgamma(1/seqi,
+                      shape=fit.gamma$estimate['shape'],
+                      scale=fit.gamma$estimate['rate']),
+            col="red",type="l")
+    }
+    plot(pr$variance,1/colMeans(samples.phisq),
+         cex=sqrt(pr$n.spectra)/10,
+         log="xy",col="#000000A0",main="sample vs posterior variance",
+         xlab="sample variance", ylab="posterior variance")
+    abline(0,1,col="red")
+
+    ## means
+    if (do.plot > 1) {
+    plot(density(pr$lratio),main="mean prior")
+    seqi <- seq(from=-max(abs(pr$lratio)),
+                            to=max(abs(pr$lratio)),length.out=10000)
+    lines(seqi,dnorm(seqi,prior.mu.mu,sqrt(prior.mu.var)),
+                col="red",type="l")
+    }
+    plot(pr$lratio,colMeans(samples.mean),
+         cex=sqrt(pr$n.spectra)/10,
+         log="xy",col="#000000A0",main="sample vs posterior mean",
+         xlab="sample mean", ylab="posterior mean")
+    abline(0,1,col="red")
+  }
+ 
+  pr$lratio <- colMeans(samples.mean)
+  pr$variance <- colMeans(1/samples.phisq)
+
+  pr
+}
+
+
 
 shrink.ratios <- function(pr,do.plot=FALSE,nrand=10000) {
   require(MASS)

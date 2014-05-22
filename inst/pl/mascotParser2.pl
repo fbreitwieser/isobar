@@ -181,7 +181,7 @@ for (my $i = 0; $i < @ARGV; $i++){
 }
 
 if (!defined($defaultSet) || !$config->SectionExists(uc($defaultSet))) {
-  print STDERR "Use on of the available parameter sets using --defaultset=SETNAME:\n".
+  print STDERR "Use one of the available parameter sets using --defaultset=SETNAME:\n".
       "\t",join("\n\t",$config->Sections())."\n";
   exit(1);
 }
@@ -665,11 +665,15 @@ sub mascotParse
     elsif (/^q(\d+)_p(\d+)=(.*)/){
       my $query = $1;
       $qryMatch = $2;
-      my ($nmc, $mass, $delta, $nIons, $pept, $nUsed1, $modif, $score, $ionSeries, $nUsed2, $nUsed3, @part) = split(/[,;:]/, $3);
+      my ($nmc, $mass, $delta, $nIons, $pept, $nUsed1, $modif, $score, $ionSeries, $nUsed2, $nUsed3, @part) = split(/[,;:](?![^,;:"]+")/, $3);
       if ($score >= $basicScore){
 	for (my $i = 0; $i < @part/5; $i++){
 	  my $ac = $part[5*$i];
 	  $ac =~ s/"//go;
+	  if ($ac eq "0"){
+	    print STDERR "$i > $_\n";
+	    exit(0);
+	  }
 	  my $qKey = "$fileNum-$query";
 	  if (!defined($prot{$ac}{queries}{$qKey}{score}) || ($prot{$ac}{queries}{$qKey}{score} < $score)){ # test in case the same spectrum matches several peptides in the same DB entry
 	    $prot{$ac}{queries}{$qKey} = {
