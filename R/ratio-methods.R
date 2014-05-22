@@ -1388,7 +1388,6 @@ proteinRatios <-
   }
 
   if (shrink.ratios) {
-    message("shrinking mean [does not influence p-value calculation, yet!]")
     ratios <- shrink.ratios(ratios)
     ratios$p.value <- calcProbXDiffNormals(ratiodistr,
                                            ratios$lratio,sqrt(ratios$variance/ratios$n.spectra),
@@ -1674,6 +1673,10 @@ setMethod("weightedVariance",
       return(c(variance,var_hat_vk))
     }
 )
+
+biasedWeightedVariance <- function(data,weights,mean.estimate) {
+  sum(weights*(data-mean.estimate)^2)/sum(weights) 
+}
 
 setMethod("weightedMean",
     signature(data = "numeric", weights = "numeric"),
