@@ -149,7 +149,7 @@ setMethod("estimateRatioNumeric",signature(channel1="numeric",channel2="numeric"
              sign.level=0.05,sign.level.rat=sign.level,sign.level.sample=sign.level,
              remove.outliers=TRUE,outliers.args=list(method="iqr",outliers.coef=1.5),
              method="isobar",fc.threshold=1.3,channel1.raw=NULL,channel2.raw=NULL,
-             use.na=FALSE,preweights=NULL) {
+             use.na=FALSE,preweights=NULL,ebayes.opts=NULL,n.peptides=1) {
       
       if (length(channel1) != length(channel2))
         stop("length of channel 1 does not equal length of channel 2")
@@ -173,27 +173,11 @@ setMethod("estimateRatioNumeric",signature(channel1="numeric",channel2="numeric"
           return(c(ch1=NA,ch2=NA))
         else if (is.method("multiq"))
           return(c(lratio=NA,variance=NA,n.spectra=0,isum=NA))
-        else if (is.method("test") || is.method("compare.all") || length(method) > 1)
-          return(c(lratio=NA,
-               lratio.lm=NA,
-               lratio.wlm=NA,
-               unweighted.ratio  =NA,
-               n.spectra=NA,
-               variance=NA,
-               var.ev=NA,
-               var.sv=NA,
-               var.lm=NA,
-               var.lm.w=NA,
-               is.sign.isobar    =NA,
-               is.sign.isobar.ev =NA,
-               is.sign.lm        =NA,
-               is.sign.wlm       =NA,
-               is.sign.rat       =NA,
-               is.sign.sample    =NA,
-               is.sign.ttest     =NA,
-               is.sign.fc        =NA,
-               is.sign.fc.nw     =NA))
-        else warning("no spectra, unknown method")
+        else if (is.method("ebayes"))
+          return(c(lratio=NA,variance=NA,sample.lratio=NA,sample.variance=NA,p.value=NA,is.significant=NA))
+        else if (is.method("test") || is.method("compare.all") || length(method) > 1) {
+          return(NULL)
+        } else warning("no spectra, unknown method")
       }
       
       sel <- !is.na(channel1) & !is.na(channel2) & channel1 > 0 & channel2 > 0
@@ -246,9 +230,10 @@ setMethod("estimateRatioNumeric",signature(channel1="numeric",channel2="numeric"
 
       ## weighted linear regression estimation
       if (is.a.method("weighted lm")) {
-        res.wlm <- .calc.weighted.lm(channel1,channel2,var.i,sign.level.sample,sign.level.rat,ratiodistr) 
+        res.wlm <- .calc.weighted.lm(channel1,channel2,var.i,
+                                     sign.level.sample,sign.level.rat,ratiodistr) 
         if (is.method("weighted lm")) return (res.wlm)
-      }      
+      }
        
       # First, compute ratios on spectra with intensities for both reporter ions
       lratio.n.var <-
@@ -296,10 +281,26 @@ setMethod("estimateRatioNumeric",signature(channel1="numeric",channel2="numeric"
             is.significant=abs(ratio.nw)>log10(fc.threshold))
         if (is.method("fc")) return(res.fc)
       }
- 
+
       weighted.ratio <- as.numeric(lratio.n.var['lratio'])
       calc.variance <- as.numeric(lratio.n.var['calc.variance'])
-      if (is.a.method("isobar") || is.a.method("isobar-combn")) {
+      if (is.a.method("ebayes") || is.a.method("isobar.ebayes")) {
+        if (is.null(ebayes.opts))
+          stop("ebayes.opts are required for method ebayes")
+        res <- gibbs.sample.normalgamma.singleprotein(log.ratios,var.i,ebayes.opts['prior.alpha'],ebayes.opts['prior.beta'],ebayes.opts['prior.mu'],ebayes.opts['prior.var'],S=ebayes.opts['S'])
+        p.value <- pt(res['mean'] * sqrt(res['phisq'] * length(log.ratios)),length(log.ratios))  ## degrees of freedom is n instead of n-1: challange that!
+        p.value <- min(p.value,1-p.value)*2
+        #p.value.isobar <- as.numeric(calculate.ratio.pvalue(res['mean'], 
+        #                                         1/res['phisq'], ratiodistr))  ## degrees of freedom is n instead of n-1: challange that!
+        
+        res.ebayes <- c(lratio=as.numeric(res['mean']),variance=as.numeric(1/res['phisq']),
+                        sample.lratio=weighted.ratio,sample.variance=calc.variance,
+                        p.value=p.value,is.significant=p.value<sign.level)
+        if (is.method("ebayes")) 
+          return(res.ebayes)
+      }
+ 
+      if (is.a.method("isobar") || is.a.method("isobar-combn") || is.a.method("isobar.ebayes")) {
         # Check for channels where one is NA
         sel.ch1na <- is.na(channel1) & !is.na(channel2)
         sel.ch2na <- is.na(channel2) & !is.na(channel1)
@@ -322,6 +323,25 @@ setMethod("estimateRatioNumeric",signature(channel1="numeric",channel2="numeric"
             (res.isobar['p.value.sample'] <= sign.level.sample) &&
             calculate.ratio.pvalue(weighted.ratio,lratio.n.var['estimator.variance'],
                                    ratiodistr) <= sign.level.rat
+
+        if (is.a.method("isobar.ebayes")) {
+          res.isobar.ebayes <- 
+            c(lratio=as.numeric(res.ebayes['lratio']), 
+              variance=as.numeric(res.ebayes['variance']),
+              n.spectra=length(log.ratios),
+              p.value.rat=as.numeric(calculate.ratio.pvalue(res.ebayes['lratio'], 
+                                                 res.ebayes['variance'], ratiodistr)),
+              p.value.sample=as.numeric(calculate.sample.pvalue(res.ebayes['lratio'], ratiodistr))*2,
+              is.significant=NA)
+          res.isobar.ebayes['is.significant'] <- 
+            (res.isobar.ebayes['p.value.sample'] <= sign.level.sample) && 
+            (res.isobar.ebayes['p.value.rat'] <= sign.level.rat)
+
+          res.ebayes['is.significant2'] <- res.ebayes['p.value'] <= sign.level.rat && (res.isobar.ebayes['p.value.sample'] <= sign.level.sample)
+
+          if (is.method("isobar.ebayes"))
+            return(res.isobar.ebayes)
+        }
 
         res.isobar['is.significant'] <- 
           (res.isobar['p.value.sample'] <= sign.level.sample) && 
@@ -349,6 +369,7 @@ setMethod("estimateRatioNumeric",signature(channel1="numeric",channel2="numeric"
       res <- c(lratio=weighted.ratio,
                lratio.lm=add.res("res.lm",'lratio'),
                lratio.wlm=add.res('res.wlm','lratio'),
+               lratio.ebayes=add.res('res.ebayes','lratio'),
                unweighted.ratio  = mean(log.ratios,na.rm=TRUE),
                n.spectra=length(log.ratios),
                variance=calc.variance,
@@ -356,6 +377,7 @@ setMethod("estimateRatioNumeric",signature(channel1="numeric",channel2="numeric"
                var.sv=as.numeric(lratio.n.var['sample.variance']),
                var.lm=add.res('res.lm','stderr')**2,
                var.lm.w=add.res('res.wlm','stderr')**2,
+               var.ebayes=add.res('res.ebayes','variance'),
                is.sign.isobar    = add.res('res.isobar','is.significant'),
                is.sign.isobar.ev = add.res('res.isobar','is.significant.ev'),
                is.sign.lm        = add.res('res.lm','is.significant'),
@@ -364,8 +386,12 @@ setMethod("estimateRatioNumeric",signature(channel1="numeric",channel2="numeric"
                is.sign.sample    = add.res('res.isobar','p.value.sample')<sign.level,
                is.sign.ttest     = add.res('res.ttest','is.significant'),
                is.sign.fc        = add.res('res.fc','is.significant'),
-               is.sign.fc.nw     = add.res('res.fc.nw','is.significant'))
+               is.sign.fc.nw     = add.res('res.fc.nw','is.significant'),
+               is.sign.ebayes    = add.res('res.ebayes','is.significant'),
+               is.sign.iebayes    = add.res('res.isobar.ebayes','is.significant'),
+               is.sign.iebayes2    = add.res('res.ebayes','is.significant2'))
                 
+      return(res)
     }
 )
 
@@ -662,7 +688,7 @@ estimateRatioForProtein <- function(protein,ibspectra,noise.model,channel1,chann
               variance=var(peptide.ratios$lratio)))
           }
 
-        } else if (method %in% c("isobar","lm","ttest","ttest2","fc","compare.all")) {
+        } else if (method %in% c("isobar","lm","ebayes","ttest","ttest2","fc","compare.all")) {
           .call.estimateRatio(protein,"protein",ibspectra,
                              noise.model,channel1,channel2,method=method,
                              specificity=specificity,...)
@@ -670,16 +696,19 @@ estimateRatioForProtein <- function(protein,ibspectra,noise.model,channel1,chann
           stop("method ",method," not known")
         }
       } else {
-        res <- ldply(protein,function(individual.protein) {
-             if (individual.protein %in% quant.w.grouppeptides) 
+        res <- ldply(seq_along(protein),function(protein.i) {
+             if (protein[protein.i] %in% quant.w.grouppeptides) 
                specificity <- c(GROUPSPECIFIC,specificity)
 
-             .call.estimateRatio(individual.protein,"protein",ibspectra,
+              my.res <- .call.estimateRatio(protein[protein.i],"protein",ibspectra,
                                 noise.model,channel1,channel2,method=method,...,
                                 specificity=specificity)
+             if (!is.null(my.res))
+               c(protein.i=protein.i,my.res)
             },.parallel=isTRUE(getOption('isobar.parallel'))
         )
-        rownames(res) <- protein
+        rownames(res) <- protein[res$protein.i]
+        res$protein.i <- NULL
         res
         #res[apply(res,2,!function(r) all(is.na(r))),]
       }
@@ -999,7 +1028,11 @@ setMethod("estimateRatio",
 
   # sample data for testing puposes (TP/FP estimation)
   if (!is.null(n.sample)) {
+    sel.i <- !is.na(i1) & !is.na(i2)
+    i1 <- i1[sel.i]
+    i2 <- i2[sel.i]
     if (n.sample <= length(i1)) {
+      
       indices <- sample(seq_along(i1),n.sample)
       i1 <- i1[indices]
       i2 <- i2[indices]
@@ -1012,6 +1045,9 @@ setMethod("estimateRatio",
       i1 <- i2 <- i1.raw <- i2.raw <- numeric()
    }
 
+  ## TODO: Wrong: Gives the total number of peptides (which is not true eg when n.sample is used)
+   n.peptides <- length(unique(fData(ibspectra)[sel,"peptide"]))
+
   ## use precursor purity for spectra weighting
   if (isTRUE(use.precursor.purity)) {
    if (!.SPECTRUM.COLS['PRECURSOR.PURITY'] %in% colnames(fData(ibspectra)))
@@ -1023,6 +1059,7 @@ setMethod("estimateRatio",
   }
 
    estimateRatioNumeric(channel1=i1,channel2=i2,noise.model=noise.model,...,
+                        n.peptides=n.peptides,
                         preweights=precursor.purity,
                         channel1.raw=i1.raw,channel2.raw=i2.raw)
 }
@@ -1446,11 +1483,11 @@ shrink.ratios2 <- function(pr,do.plot=0,nrand=10000,use.n=FALSE) {
           var.ks$statistic,var.ks$p.value))
 
   ## fit normal distribution on sample mu (used as prior)
-  prior.mu.mu <- median(pr$lratio[sel])
-  prior.mu.var <- mad(pr$lratio[sel])**2
+  prior.mu <- median(pr$lratio[sel])
+  prior.var <- mad(pr$lratio[sel])**2
 
   mu.ks <- ks.test(pr$lratio[sel],"dnorm",
-                   prior.mu.mu,sqrt(prior.mu.var))
+                   prior.mu,sqrt(prior.var))
 
   message(sprintf("fitting normal on mean (two-sided ks D=%.2f, p-value=%.3f)",
           mu.ks$statistic,mu.ks$p.value))
@@ -1498,7 +1535,7 @@ shrink.ratios2 <- function(pr,do.plot=0,nrand=10000,use.n=FALSE) {
  
   ## calculate posterior mu
   post.mu <- sapply(seq_len(nrand),function(i) {
-      mu.post.mu <- (prior.mu.mu+pr$n.spectra[sel]*pr$lratio[sel])/
+      mu.post.mu <- (prior.mu+pr$n.spectra[sel]*pr$lratio[sel])/
                      (pr$n.spectra[sel] + 1)
       mu.post.var <- post.var[,i]/(pr$n.spectra[sel]+1)
       rnorm(sum(sel),mu.post.mu,sqrt(mu.post.var))
@@ -1510,7 +1547,7 @@ shrink.ratios2 <- function(pr,do.plot=0,nrand=10000,use.n=FALSE) {
     plot(density(pr$lratio[sel]),main="mean prior")
     seqi <- seq(from=-max(abs(pr$lratio[sel])),
                             to=max(abs(pr$lratio[sel])),length.out=10000)
-    lines(seqi,dnorm(seqi,prior.mu.mu,sqrt(prior.mu.var)),
+    lines(seqi,dnorm(seqi,prior.mu,sqrt(prior.var)),
                 col="red",type="l")
     }
     plot(pr$lratio[sel],rowMeans(post.mu),
@@ -1527,64 +1564,94 @@ shrink.ratios2 <- function(pr,do.plot=0,nrand=10000,use.n=FALSE) {
 }
 
 
+fit.normal <- function(x,robust=FALSE) {
+  x <- x[!is.na(x)]
 
-shrink.ratios.gibbs <- function(pr,do.plot=0,S=10000,use.n=FALSE) {
-  ## using the formulas developed in http://www.cs.berkeley.edu/~jordan/courses/260-spring10/lectures/lecture5.pdf
+  if (robust) {
+    mu <- median(x)
+    variance <- mad(x)**2
+  } else {
+    mu <- mean(x)
+    variance <- sd(x)**2
+  }
 
+  mu.ks <- ks.test(x,"dnorm",
+                   mu,sqrt(variance))
+  message(sprintf("fitting normal on mean: mean=%.2f, variance=%.2f (two-sided ks D=%.2f, p-value=%.3f)",
+                  mu,variance,mu.ks$statistic,mu.ks$p.value))
+
+  c(mean=mu,variance=variance)
+}
+
+fit.gamma <- function(x) {
   require(MASS)
-  sel <- !is.na(pr$variance) 
 
-  ## fit gamma distribution on the inverse of the sample variance (used as prior)
-  x <- pr$variance[!is.na(pr$variance)&pr$n.spectra>2]
-  (fit.gamma <- fitdistr(1/x,"gamma"))
+  x <- x[!is.na(x)]
+  (fit.gamma <- fitdistr(x,"gamma"))
   
-  var.ks <- ks.test(1/x,pgamma,
+  var.ks <- ks.test(x,pgamma,
           shape=fit.gamma$estimate['shape'],
           rate=fit.gamma$estimate['rate'])
-  message(sprintf("fitting inverse gamma on variance (two-sided ks D=%.2f, p-value=%.3f)",
-          var.ks$statistic,var.ks$p.value))
-
-  ## fit normal distribution on sample mu (used as prior)
-  prior.mu.mu <- median(pr$lratio)
-  prior.mu.var <- mad(pr$lratio)**2
-
-  mu.ks <- ks.test(pr$lratio,"dnorm",
-                   prior.mu.mu,sqrt(prior.mu.var))
-
-  message(sprintf("fitting normal on mean (two-sided ks D=%.2f, p-value=%.3f)",
-          mu.ks$statistic,mu.ks$p.value))
+  message(sprintf("fitting inverse gamma on variance: alpha=%.2f, beta=%.2f (two-sided ks D=%.2f, p-value=%.3f)",
+                  fit.gamma$estimate[1],fit.gamma$estimate[2],var.ks$statistic,var.ks$p.value))
 
 
-  ## calculate posterior variance
-  prior.alpha <- fit.gamma$estimate[1]
-  prior.beta <- fit.gamma$estimate[2]
+  c(alpha=as.numeric(fit.gamma$estimate[1]),
+    beta=as.numeric(fit.gamma$estimate[2]))
+}
 
-  sample.n <- pr$n.spectra
-  sample.var <- pr$variance
+fit.normal.gamma <- function(pr) {
+  prior.mu <- fit.normal(pr$lratio[pr$n.spectra>3])
+  prior.phisq <- fit.gamma(1/pr$variance[pr$n.spectra>3])
 
-  # Specify chain length
-  S <- 1000  # generate 1000 dependent samples
-  samples.mean <- matrix(nrow=S,ncol=length(pr$lratio))
-  samples.phisq <- matrix(nrow=S,ncol=length(pr$variance))
+  c(prior.alpha=as.numeric(prior.phisq['alpha']),prior.beta=as.numeric(prior.phisq['beta']),
+    prior.mu=as.numeric(prior.mu['mean']),prior.var=as.numeric(prior.mu['variance']))
+}
+
+shrink.ratios.gibbs <- function(pr,do.plot=0,S=1000,use.n=FALSE) {
+  ## using the formulas developed in UW S509
+
+  ## fit priors
+  prior.mu <- fit.normal(pr$lratio)
+  prior.phisq <- fit.gamma(1/pr$variance[pr$n.spectra>3])
+
+  samples <- gibbs.sample.normalgamma(data.x=pr$lratio,data.var=pr$variance,n=pr$n.spectra,
+                                      prior.alpha=prior.phisq['alpha'],prior.beta=prior.phisq['beta'],
+                                      prior.mu=prior.mu['mean'],prior.var=prior.mu['variance'],S=S)
+ 
+  pr$lratio <- colMeans(samples$mean)
+  pr$variance <- colMeans(1/samples$phisq)
+
+  pr
+}
+
+gibbs.sample.normalgamma <- function(data.x,data.var,n,prior.alpha,prior.beta,prior.mu,prior.var,S=1000,do.plot=0) {
+  if (is.null(prior.alpha) || is.null(prior.beta) || is.null(prior.mu) || is.null(prior.var))
+    stop("Prior parameters may not be NULL")
+
+  dim.data <- length(data.x)
+
+  samples.mean <- matrix(nrow=S,ncol=dim.data)
+  samples.phisq <- matrix(nrow=S,ncol=dim.data)
 
   ### Starting values
-  samples.mean[1,] <- pr$lratio
-  samples.phisq[1,] <- 1/pr$variance
+  samples.mean[1,] <- data.x
+  samples.phisq[1,] <- 1/data.var
 
   for (s in 2:S) {
     ## Generate a new posterior value of mu from f(mu | prev value of phi.sq, data)
-    prev.phisq <- samples.phisq[s-1,] 
+    prev.phisq <- samples.phisq[s-1,]
     prev.mu <- samples.mean[s-1,]
 
-    post.shape <- prior.alpha + pr$n.spectra/2
+    post.shape <- prior.alpha + n/2
     #post.scale <- prior.beta + 1/2*sum((pr$lratio-prev.mu)^2)  ### HERE should be the actual data such that it works as Gibbs sampler; ie \sum_{i=1}^n x_i - prev.mu for EACH protein!!
-    post.scale <- prior.beta+1/2*sample.var*(pr$n.spectra-1)
+    post.scale <- prior.beta+1/2*data.var*(n-1)
 
     new.phisq <- rgamma(ncol(samples.phisq),post.shape,post.scale)
 
     ## Generate a new posterior value of phi.sq from f(phisq | prev value of mu, data)
-    mu.post.phisq <- 1/prior.mu.var + pr$n.spectra*new.phisq
-    mu.post.mu <- 1/mu.post.phisq * (prior.mu.mu/prior.mu.var + pr$n.spectra*pr$lratio*new.phisq)
+    mu.post.phisq <- 1/prior.var + n*new.phisq
+    mu.post.mu <- 1/mu.post.phisq * (prior.mu/prior.var + n*data.x*new.phisq)
 
     new.mu <- rnorm(ncol(samples.mean),mu.post.mu,1/sqrt(mu.post.phisq))
   
@@ -1597,40 +1664,85 @@ shrink.ratios.gibbs <- function(pr,do.plot=0,S=10000,use.n=FALSE) {
 
     ## variance
     if (do.plot > 1) {
-    plot(density(x),"variance prior")
-    seqi <- seq(from=min(x),to=max(x),length.out=1000)
+    plot(density(data.var),main="variance prior")
+    seqi <- seq(from=min(data.var),to=max(data.var),length.out=1000)
     lines(seqi,dgamma(1/seqi,
                       shape=fit.gamma$estimate['shape'],
                       scale=fit.gamma$estimate['rate']),
             col="red",type="l")
     }
-    plot(pr$variance,1/colMeans(samples.phisq),
-         cex=sqrt(pr$n.spectra)/10,
+    plot(data.var,1/colMeans(samples.phisq),
+         cex=sqrt(n)/10,
          log="xy",col="#000000A0",main="sample vs posterior variance",
          xlab="sample variance", ylab="posterior variance")
     abline(0,1,col="red")
 
     ## means
     if (do.plot > 1) {
-    plot(density(pr$lratio),main="mean prior")
-    seqi <- seq(from=-max(abs(pr$lratio)),
-                            to=max(abs(pr$lratio)),length.out=10000)
-    lines(seqi,dnorm(seqi,prior.mu.mu,sqrt(prior.mu.var)),
+    plot(density(data.x),main="mean prior")
+    seqi <- seq(from=-max(abs(data.x)),
+                            to=max(abs(data.x)),length.out=10000)
+    lines(seqi,dnorm(seqi,prior.mu,sqrt(prior.var)),
                 col="red",type="l")
     }
-    plot(pr$lratio,colMeans(samples.mean),
-         cex=sqrt(pr$n.spectra)/10,
+    plot(data.x,colMeans(samples.mean),
+         cex=sqrt(n)/10,
          log="xy",col="#000000A0",main="sample vs posterior mean",
          xlab="sample mean", ylab="posterior mean")
     abline(0,1,col="red")
   }
- 
-  pr$lratio <- colMeans(samples.mean)
-  pr$variance <- colMeans(1/samples.phisq)
 
-  pr
+  return(list(mean=samples.mean,phisq=samples.phisq))
 }
 
+gibbs.sample.normalgamma.singleprotein <- function(data.x,data.var,prior.alpha,prior.beta,prior.mu,prior.var,S=1000,just.means=TRUE) {    
+  if (is.null(prior.alpha) || is.null(prior.beta) || is.null(prior.mu) || is.null(prior.var))
+    stop("Prior parameters may not be NULL")
+
+  if (is.null(S) || is.na(S))
+    S <- 1000
+
+  dim.data <- 1
+  n <- length(data.x)
+
+  samples.mean <- matrix(nrow=S,ncol=dim.data)
+  samples.phisq <- matrix(nrow=S,ncol=dim.data)
+
+  data.mean <- weightedMean(data.x,1/data.var)
+
+  ### Starting values
+  samples.mean[1,] <- data.mean
+  if (length(data.var) == 1)
+      samples.phisq[1,] <- 1/data.var
+  else
+      samples.phisq[1,] <- 1/weightedVariance(data.x,1/data.var,mean.estimate=data.mean)[1]
+
+  for (s in 2:S) {
+    ## Generate a new posterior value of mu from f(mu | prev value of phi.sq, data)
+    prev.phisq <- samples.phisq[s-1,]
+    prev.mu <- samples.mean[s-1,]
+
+    post.shape <- prior.alpha + n/2
+    post.scale <- prior.beta + 1/2*sum((data.x-prev.mu)^2)  ## should this be weighted??
+
+    new.phisq <- rgamma(1,post.shape,post.scale)
+
+    ## Generate a new posterior value of phi.sq from f(phisq | prev value of mu, data)
+    mu.post.phisq <- 1/prior.var + n*new.phisq
+    mu.post.mu <- 1/mu.post.phisq * (prior.mu/prior.var + n*data.mean*new.phisq)
+
+    new.mu <- rnorm(1,mu.post.mu,1/sqrt(mu.post.phisq))
+  
+    samples.mean[s,] <- new.mu
+    samples.phisq[s,] <- new.phisq
+  }
+ 
+  if (just.means) {
+    return(c(mean=mean(samples.mean[,1]),phisq=mean(samples.phisq[,1])))
+  } else {
+    return(list(mean=samples.mean,phisq=samples.phisq))
+  }
+}
 
 
 shrink.ratios <- function(pr,do.plot=FALSE,nrand=10000) {
@@ -1674,18 +1786,18 @@ shrink.ratios <- function(pr,do.plot=FALSE,nrand=10000) {
   }
   
   ## fit normal distribution on sample mu (used as prior)
-  prior.mu.mu <- median(pr$lratio[sel])
-  prior.mu.var <- mad(pr$lratio[sel])**2
+  prior.mu <- median(pr$lratio[sel])
+  prior.var <- mad(pr$lratio[sel])**2
 
   mu.ks <- ks.test(pr$lratio[sel],"dnorm",
-                   prior.mu.mu,sqrt(prior.mu.var))
+                   prior.mu,sqrt(prior.var))
 
   message("fitting normal on mean (two-sided ks D=%.2f, p-value=%.3f)",
           mu.ks$statistic,mu.ks$p.value)
 
   ## calculate posterior mu
   post.mu <- sapply(seq_len(nrand),function(i) {
-      mu.post.mu <- (prior.mu.mu+pr$n.spectra[sel]*pr$lratio[sel])/
+      mu.post.mu <- (prior.mu+pr$n.spectra[sel]*pr$lratio[sel])/
                      (pr$n.spectra[sel] + 1)
       mu.post.var <- post.var[,i]/(pr$n.spectra[sel]+1)
       rnorm(sum(sel),mu.post.mu,sqrt(mu.post.var))
@@ -1696,7 +1808,7 @@ shrink.ratios <- function(pr,do.plot=FALSE,nrand=10000) {
     plot(density(pr$lratio[sel]),main="mean prior")
     seqi <- seq(from=-max(abs(pr$lratio[sel])),
                             to=max(abs(pr$lratio[sel])),length.out=10000)
-    lines(seqi,dnorm(seqi,prior.mu.mu,sqrt(prior.mu.var)),
+    lines(seqi,dnorm(seqi,prior.mu,sqrt(prior.var)),
                 col="red",type="l")
 
     plot(pr$lratio[sel],rowMeans(post.mu),
@@ -1842,6 +1954,8 @@ summarize.ratios <-
 
 
 .calc.zscore <- function(lratio) {
+  if (length(lratio) == 1)
+    return(NA)
   s.median <- median(lratio,na.rm=TRUE)
   s.mad <- mad(lratio,na.rm=TRUE)
   (lratio-s.median)/s.mad
@@ -1890,7 +2004,7 @@ setMethod("weightedVariance",
 
       n = length(data)
       wik = (data-mean.estimate)**2
-      w_bar_k = mean((data-mean.estimate)**2)
+      w_bar_k = mean(wik)
       var_hat_vk = median((wik-w_bar_k)**2)  ## for shrinkage..
       
       return(c(variance,var_hat_vk))
