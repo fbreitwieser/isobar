@@ -55,6 +55,62 @@ calcProbXGreaterThanY <- function(X,Y,min.q=10^-6,n.steps=1000) {
   dens.sum/dens.total
 }
 
+fitNormalGamma <- function(x,y,k0=1,min.q=10^-6,n.steps=1000) {
+  require(distr)
+
+  normal.gamma.llikelihood <- function(theta,x,y) {
+    #my.var <- 1/(k0*dgamma(y,theta[2],theta[3]))
+    return(-sum(c(dnorm(x,theta[1],sqrt(1/(k0*y)),log=TRUE),
+                  dgamma(y,theta[2],theta[3],log=TRUE)),na.rm=TRUE))
+  }
+
+  good <- !is.na(x) & !is.na(y)
+  x <- x[good]
+  y <- y[good]
+
+  fgamma <- fit.gamma(y)
+  theta.start <- c(mean=median(x),fgamma[1],fgamma[2])
+  normal.gamma.llikelihood(theta.start,x,y)
+  
+  res <- nlminb(theta.start,normal.gamma.llikelihood,
+                x=x,y=y,
+                lower=c(-10,10^-6,10^-6),upper=c(10,10^6,10^6))
+  
+  c(mean=as.numeric(res$par[1]),
+    alpha=as.numeric(res$par[2]),
+    beta=as.numeric(res$par[3]))
+}
+
+fit.gamma <- function(x) {
+  require(MASS)
+
+  x <- x[!is.na(x)]
+  (fit.gamma <- fitdistr(x,"gamma"))
+  
+  var.ks <- ks.test(x,pgamma,
+          shape=fit.gamma$estimate['shape'],
+          rate=fit.gamma$estimate['rate'])
+  message(sprintf("fitting inverse gamma on variance: alpha=%.2f, beta=%.2f (two-sided ks D=%.2f, p-value=%.3f)",
+                  fit.gamma$estimate[1],fit.gamma$estimate[2],var.ks$statistic,var.ks$p.value))
+
+
+  c(alpha=as.numeric(fit.gamma$estimate[1]),
+    beta=as.numeric(fit.gamma$estimate[2]))
+}
+
+fitCauchy <- function(x) {
+  cauchy.fit <- function(theta,x){
+    -sum(dcauchy(x,location=theta[1],scale=theta[2],log=TRUE),na.rm=T)
+  }
+  good <- !is.na(x) & !is.nan(x)
+  theta.start <- c(median(x[good]),IQR(x[good])/2)
+  res <- nlminb(theta.start,cauchy.fit,x=x[good],
+                lower=c(-10,1e-20),upper=c(10,10)) 
+  new("Cauchy",location=res$par[1],scale=res$par[2])
+}
+
+
+
 
 distrprint <- function(X,round.digits=5) {
   paste0(class(X)," [",

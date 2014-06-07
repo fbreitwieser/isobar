@@ -32,5 +32,6 @@ Collate: utils.R
    report-utils.R
    metareport-utils.R
    ptm-methods.R
+   ebayes-methods.R
    MSnSet-methods.R
 	 zzz.R
