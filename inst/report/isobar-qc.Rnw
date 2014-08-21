@@ -90,7 +90,7 @@ if (is.null(ri.nn)) {
 
 \begin{minipage}[c]{0.4\textwidth}
 <<fig-reporterIntensityPlot,fig=T,echo=F,width=2.5,height=2.3,results=hide>>=
- print(reporterIntensityPlot(ibspectra) + .gg_theme(legend.position="bottom"))
+ print(reporterIntensityPlot(ibspectra) + isobar:::.gg_theme(legend.position="bottom"))
 @
 \end{minipage}
 \hfill
@@ -162,8 +162,8 @@ g <- ggplot(quant.tbl,aes(x=lratio)) +
 #  scale_x_continuous("Ratio",breaks=log10(breaks),labels=breaks) +
   scale_x_continuous(expression(paste(log[10]," ratio"))) +
   theme_bw(base_size=10) +
-  .gg_theme(legend.position="none",
-       axis.text.x = .gg_element_text(colour="grey50"))
+  isobar:::.gg_theme(legend.position="none",
+       axis.text.x = isobar:::.gg_element_text(colour="grey50"))
 
 if (!is.null(ratiodistr)) {
   curve.distr <- data.frame(x=limits,y=d(ratiodistr)(limits))
@@ -233,7 +233,7 @@ g <- ggplot(quant.tbl,aes(x=lratio)) +
 #  scale_x_continuous("Ratio",breaks=log10(breaks),labels=breaks) +
   scale_x_continuous(expression(paste(log[10]," ratio"))) +
   theme_bw(base_size=10) +
-  .gg_theme(legend.position="none",axis.text.x = .gg_element_text(colour="grey50"))  + scale_fill_brewer(palette="Set1")
+  isobar:::.gg_theme(legend.position="none",axis.text.x = isobar:::.gg_element_text(colour="grey50"))  + scale_fill_brewer(palette="Set1")
 
 if (!is.null(ratiodistr)) {
   curve.distr <- data.frame(x=limits,y=d(ratiodistr)(limits))
