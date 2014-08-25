@@ -249,9 +249,9 @@ use the following code:
 precursors <- read.delim("file1_precursors.txt",header=TRUE,sep="\t",stringsAsFactors=FALSE)
 idfile <- read.delim("file1.id.csv",header=TRUE,sep="\t",stringsAsFactors=FALSE)
 
-idfile <- merge(idfile,precursors,by.x="
-
-... check /media/work/analysis/gwinter/raw-spectra/analysis.R
+idfile <- merge(idfile,precursors,
+                by.x=c("fixed_spectrum","scans.from"),
+                by.y=c("fixed_spectrum","SCAN"),all.x=TRUE) # FIXME see /work/analysis/gwinter/raw-spectra/analysis.R
 @ 
 
 \subsection{\Rpackage{MSnbase} integration}
