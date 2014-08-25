@@ -241,7 +241,7 @@ Savitzki et al., 2011 describe a measure for the precursor purity of
 fragment spectra. An implementation of the algorithm for the
 \texttt{multiplierz} platform is provided at
 \url{http://sourceforge.net/apps/trac/multiplierz/wiki/Precursors}. The
-script creates \texttt{_precursors.txt} files for each \texttt{RAW}
+script creates \texttt{\_precursors.txt} files for each \texttt{RAW}
 file. To integrate and threshold based on the \texttt{s2i} measure,
 use the following code:
 
