@@ -609,7 +609,13 @@ property <- function(x, envir, null.ok=TRUE,class=NULL) {
 
     if (!is.null(property('correct.peptide.ratios.with',properties.env))) {
       protein.quant.tbl <- .get.or.load("correct.peptide.ratios.with",properties.env)
-      correct.protein.group <- .get.or.load("correct.peptide.ratios.with_protein.group",properties.env)
+      correct.protein.group <- if ( !is.null(property('correct.peptide.ratios.with_protein.group',properties.env)) ) {
+        .get.or.load("correct.peptide.ratios.with_protein.group",properties.env)
+      } else {
+        warning( '"correct.peptide.ratios.with_protein.group" property not found, ',
+                 'using the existing protein group' )
+        .get.or.load("protein.group.template",properties.env)
+      }
       ratios.opts[["before.summarize.f"]] <- function(...)
         correct.peptide.ratios(..., protein.quant.tbl=protein.quant.tbl,
                                protein.group.combined = correct.protein.group,
