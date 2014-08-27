@@ -127,7 +127,7 @@ noise.model.minspectra=50
 # class.labels=c("Treatment"="T","Treatment"="T","Control"="C","Control"="C")
 class.labels=NULL
 
-## The following definitions define which ratios are calculated.
+## The following parameters define which ratios are calculated.
 
 ## summarize ratios with equal class labels, set to TRUE when replicates are used
 summarize=FALSE
