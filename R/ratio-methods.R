@@ -1131,8 +1131,8 @@ combn.protein.tbl <- function(cmbn, reverse=FALSE, ...) {
     else
      df <- data.frame(r,stringsAsFactors=FALSE)
 
-    if (!is.null(rownames(r))) 
-      df[,'ac']<- rownames(df)
+    if (!is.null(rownames(r)) && any(rownames(r) != as.character(seq_len(nrow(r))))) 
+      df[,'ac']<- rownames(r)
     rownames(df) <- NULL
 
     df$r1 <- x[1]; df$r2 <- x[2]
