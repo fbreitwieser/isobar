@@ -472,7 +472,7 @@ setMethod("readIBSpectra",
     data.titles <- .do.map(data.titles,unique(id.data[,.SPECTRUM.COLS[c('SPECTRUM','SPECTRUM.QUANT')]]))
     sel.na <- is.na(data.titles)
     if (any(is.na(data.titles))) {
-      message(" for ",sum(sel.na)," of ",length(data.titles)," spectra,",,
+      message(" for ",sum(sel.na)," of ",length(data.titles)," spectra,",
               " quantitative information is available,\n",
               "   but no peptide-spectrum match. Spectrum titles: \n\t",
               paste(data.titles.orig[sel.na][1:2],collapse=",\n\t"),", ...")
