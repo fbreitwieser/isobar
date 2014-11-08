@@ -227,8 +227,8 @@ initialize.env <- function(env,properties.env) {
   }
 }
 
-.create.or.load <- function(name,envir,f,msg.f=name,do.load=FALSE,class=NULL,error=stop,default.value=NULL,...) {
-  x <- tryCatch(.get.or.load(name,envir,msg.f,class,do.load=do.load),error=function(e) .DOES.NOT.EXIST)
+.create.or.load <- function(name,envir,f,msg.f=name,regenerate=FALSE,do.load=FALSE,class=NULL,error=stop,default.value=NULL,...) {
+  x <- if ( !regenerate ) tryCatch(.get.or.load(name,envir,msg.f,class,do.load=do.load),error=function(e) .DOES.NOT.EXIST) else .DOES.NOT.EXIST
   if (identical(x,.DOES.NOT.EXIST)) {
     message(paste("  creating",msg.f,"... "),appendLF=FALSE)
     tryCatch({
