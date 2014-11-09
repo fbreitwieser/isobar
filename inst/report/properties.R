@@ -210,6 +210,8 @@ ptm.info.f <- getPtmInfoFromNextprot
 ##  observed modified peptide ratios Needs to have the experimental
 ##  setup as the modified peptide experiment
 correct.peptide.ratios.with <- NULL
+## Protein groups to use with correct.peptide.ratios()
+correct.peptide.ratios.with_protein.group <- NULL
 
 ## The correlation between peptide and protein ratios defines the
 ## covariance
