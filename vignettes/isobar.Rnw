@@ -241,7 +241,7 @@ Savitzki et al., 2011 describe a measure for the precursor purity of
 fragment spectra. An implementation of the algorithm for the
 \texttt{multiplierz} platform is provided at
 \url{http://sourceforge.net/apps/trac/multiplierz/wiki/Precursors}. The
-script creates \texttt{_precursors.txt} files for each \texttt{RAW}
+script creates \texttt{\_precursors.txt} files for each \texttt{RAW}
 file. To integrate and threshold based on the \texttt{s2i} measure,
 use the following code:
 
@@ -249,9 +249,9 @@ use the following code:
 precursors <- read.delim("file1_precursors.txt",header=TRUE,sep="\t",stringsAsFactors=FALSE)
 idfile <- read.delim("file1.id.csv",header=TRUE,sep="\t",stringsAsFactors=FALSE)
 
-idfile <- merge(idfile,precursors,by.x="
-
-... check /media/work/analysis/gwinter/raw-spectra/analysis.R
+idfile <- merge(idfile,precursors,
+                by.x=c("fixed_spectrum","scans.from"),
+                by.y=c("fixed_spectrum","SCAN"),all.x=TRUE) # FIXME see /work/analysis/gwinter/raw-spectra/analysis.R
 @ 
 
 \subsection{\Rpackage{MSnbase} integration}

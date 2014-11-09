@@ -1018,7 +1018,7 @@ getMultUnifDensity <- function(x,n=NULL){
 ##     used when computing a intra-class ratio distribution 
 ##     for estimation of biological variability
 ##  - method "versus.class": all combinations against class vs
-##  - method "verus.channel": all combinations against channel vs
+##  - method "versus.channel": all combinations against channel vs
 combn.matrix <- function(x,method="global",cl=NULL,vs=NULL) {
   if (method != "global" & is.null(cl))
     stop("No class labels cl provided.")
