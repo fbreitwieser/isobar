@@ -352,22 +352,33 @@ setMethod("estimateRatioNumeric",signature(channel1="numeric",channel2="numeric"
 )
 
 calculate.ratio.pvalue <- function(lratio, variance, ratiodistr = NULL) {
-  center.val <-  ifelse(is.null(ratiodistr), 0 , distr::q(ratiodistr)(0.5))
-  sapply(seq_along(lratio),function(r.i) 
-    pnorm(lratio[r.i],mean=center.val,sd=sqrt(variance[r.i]),
-          lower.tail=lratio[r.i]<center.val)
-  )
+  center.val <-  ifelse(is.null(ratiodistr), 0, distr::q(ratiodistr)(0.5))
+  lt_mask <- !is.na(lratio) & lratio < center.val
+  ge_mask <- !is.na(lratio) & !lt_mask
+  res <- as.numeric( rep.int( NA, length(lratio) ) )
+  res[lt_mask] <- pnorm(lratio[lt_mask],
+                        mean=center.val, sd=sqrt(variance[lt_mask]),
+                        lower.tail=TRUE)
+  res[ge_mask] <- pnorm(lratio[ge_mask],
+                        mean=center.val, sd=sqrt(variance[ge_mask]),
+                        lower.tail=FALSE)
+  # FIXME should the P-values be doubled since actually hypotheses for both tails were checked?
+  return(res)
 }
 
 calculate.sample.pvalue <- function(lratio,ratiodistr) {
-  if (!is.null(ratiodistr))
+  res <- as.numeric( rep.int( NA, length(lratio) ) )
+  if (!is.null(ratiodistr)) {
     center.val <- distr::q(ratiodistr)(0.5)
-
-  sapply(lratio,function(r) {
-    if (is.null(ratiodistr) || is.na(lratio))
-      return(NA)
-    p(ratiodistr)(r,lower.tail=r<center.val)
-  })
+    lt_mask <- !is.na(lratio) & lratio < center.val
+    ge_mask <- !is.na(lratio) & !lt_mask
+    res[lt_mask] <- distr::p(ratiodistr)(lratio[lt_mask], lower.tail=TRUE)
+    res[ge_mask] <- distr::p(ratiodistr)(lratio[ge_mask], lower.tail=FALSE)
+    # FIXME should the P-values be doubled since actually hypotheses for both tails were checked?
+   } else {
+    warning('Sample P-value not calculated: missing ratio distribution')
+  }
+  return(res)
 }
 
 
