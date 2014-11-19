@@ -28,33 +28,19 @@ calcProbXDiffNormals <- function(X,mu_Y,sd_Y,...,alternative="greater",progress=
          stop("don't know alternative ",alternative))
 }
 
-calcProbXGreaterThanY <- function(X,Y,min.q=10^-6,n.steps=1000) {
-  # calculates an estimate of P(X>Y) + 0.5 P(X=Y)
-  #  a value of 0.5 represents complete overlap
+calcProbXGreaterThanY <- function(X, Y, rel.tol=.Machine$double.eps^0.25, subdivisions=100L)
+{
+  # numerically calculates P(X>=Y)
   require(distr)
   if (!is(X,"Distribution")) stop("X has to be of class Distribution")
   if (!is(Y,"Distribution")) stop("Y has to be of class Distribution")
+#  return ( distr::p(Y-X)(0) ) # the easiest way, but it does not seem to give accurate results for Norm+Tlsd
 
-  steps.seq <- seq(from=min.q,to=1-min.q,length.out=n.steps)
-  steps <- sort(unique(c(q(X)(steps.seq),q(Y)(steps.seq))))
-  nn.steps <- length(steps)
-           
-  dens.X <- d(X)(steps)
-  dens.Y <- d(Y)(steps)
-
-  dens.sum <- sum(dens.X*dens.Y)*.5 # P( X = Y )
-  dens.total <- sum(dens.X)*sum(dens.Y)
-  if (isTRUE(all.equal(dens.total,0))) return(0)
-
-  for (i in 1:nn.steps) {
-    dens.X <- dens.X[-1]
-    dens.Y <- dens.Y[-length(dens.Y)]
-    dens.sum <- dens.sum + sum(dens.X*dens.Y)
-  }
-
-  dens.sum/dens.total
+  # FIXME use the distribution info to deduce integration boundaries
+  return ( integrate( function(t) distr::d(X)(t)*distr::p(Y)(t),
+                      lower=-Inf, upper=Inf, subdivisions = subdivisions,
+                      rel.tol = rel.tol )$value )
 }
-
 
 distrprint <- function(X,round.digits=5) {
   paste0(class(X)," [",
@@ -73,7 +59,7 @@ twodistr.plot <- function(X,Y,n.steps=1000,min.q=10^-3) {
   ggplot(rbind(data.frame(x=steps,Distribution=paste0("X ~ ",distrprint(X)),density=d(X)(steps)),
                data.frame(x=steps,Distribution=paste0("Y ~ ",distrprint(Y)),density=d(Y)(steps)))) + 
     geom_line(aes_string(x="x",y="density",color="Distribution")) +
-    ggtitle(paste0(".5 P(X=Y) + P(X>Y) = ",round(calcProbXGreaterThanY(X,Y,n.steps=n.steps),7)))
+    ggtitle(paste0("P(X>=Y) = ",round(calcProbXGreaterThanY(X,Y),7)))
  
 }
 
