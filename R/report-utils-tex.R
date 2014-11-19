@@ -573,7 +573,7 @@ print_classlabels_tbl <- function(cl,reporterTagNames) {
     cl[is.na(cl)] <- ""
     if (!is.null(cl)) {
       if (is.null(names(cl))) {
-        cat("\\begin{tabular}{rV{4cm}}\n")
+        cat("\\begin{tabular}{rp{4cm}}\n")
         cat("Channel & Class \\\\ \\hline \\bigstrut[t]\n")
         cl <- paste("\\emph{",cl,"}",sep="")
       } else {

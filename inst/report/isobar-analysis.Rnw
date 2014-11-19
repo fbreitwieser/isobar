@@ -37,7 +37,7 @@ load.tex.properties(.GlobalEnv) # loads environments
 \usepackage{multirow}
 \usepackage{ctable} % for midrule, etc
 %\setlength{\tabcolsep}{5pt} %default value: 6pt
-\usepackage{varwidth} %for the varwidth minipage environment
+%\usepackage{varwidth} %for the varwidth minipage environment
 \newcolumntype{x}[1]{>{\raggedright}p{#1}}
 \newcolumntype{f}{>{\footnotesize}r} 
 

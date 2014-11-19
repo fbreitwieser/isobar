@@ -374,7 +374,7 @@ calculate.sample.pvalue <- function(lratio,ratiodistr) {
     res[lt_mask] <- distr::p(ratiodistr)(lratio[lt_mask], lower.tail=TRUE)
     res[ge_mask] <- distr::p(ratiodistr)(lratio[ge_mask], lower.tail=FALSE)
    } else {
-    warning('Sample P-value not calculated: missing ratio distribution')
+    #warning('Sample P-value not calculated: missing ratio distribution')
   }
   return(res)
 }
