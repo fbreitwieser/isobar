@@ -362,7 +362,6 @@ calculate.ratio.pvalue <- function(lratio, variance, ratiodistr = NULL) {
   res[ge_mask] <- pnorm(lratio[ge_mask],
                         mean=center.val, sd=sqrt(variance[ge_mask]),
                         lower.tail=FALSE)
-  # FIXME should the P-values be doubled since actually hypotheses for both tails were checked?
   return(res)
 }
 
@@ -374,7 +373,6 @@ calculate.sample.pvalue <- function(lratio,ratiodistr) {
     ge_mask <- !is.na(lratio) & !lt_mask
     res[lt_mask] <- distr::p(ratiodistr)(lratio[lt_mask], lower.tail=TRUE)
     res[ge_mask] <- distr::p(ratiodistr)(lratio[ge_mask], lower.tail=FALSE)
-    # FIXME should the P-values be doubled since actually hypotheses for both tails were checked?
    } else {
     warning('Sample P-value not calculated: missing ratio distribution')
   }
