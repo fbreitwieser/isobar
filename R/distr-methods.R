@@ -1,10 +1,14 @@
 
 
 
-calcProbXDiffNormals <- function(X,mu_Y,sd_Y,...,alternative="greater",progress=FALSE) {
-  # calculates an estimate of min(P(X>Y),P(Y>X))
-  #  Y ~ N(mu_Y,sd_Y)
+calcProbXDiffNormals <- function(X,mu_Y,sd_Y,...,alternative=c("greater","less","two-sided"),progress=FALSE) {
+  # calculates a vector of either P(X>=Y) or P(Y>=X)
+  # (depending on 'alternative' option),
+  # where Y ~ N(mu_Y,sd_Y)
+  alternative <- match.arg(alternative)
+
   require(distr)
+  if (!is(X,"Distribution")) stop("X has to be of class Distribution")
 
   if (length(mu_Y) != length(sd_Y)) 
     stop("mu_Y and sd_Y should have equal length")
@@ -12,20 +16,29 @@ calcProbXDiffNormals <- function(X,mu_Y,sd_Y,...,alternative="greater",progress=
   if (isTRUE(progress))
     pb <- txtProgressBar(min=1,max=length(mu_Y))
 
+  X_mode <- distr::q(X)(0.5)
   p.values <- sapply(seq_along(mu_Y),function(i) {
     if (isTRUE(progress))
       setTxtProgressBar(pb,i)
-    if(is.na(mu_Y[i]) || is.na(sd_Y[i])) return(NA)
-    calcProbXGreaterThanY(X,Norm(mu_Y[i],sd_Y[i]),...)
+    if (is.na(mu_Y[i]) || is.na(sd_Y[i])) {
+      return(NA)
+    }
+    else {
+      Y <- Norm(mu_Y[i],sd_Y[i])
+      # FIXME P-value not adjusted for two-sided case
+      if ( alternative == 'greater'
+        || (alternative == 'two-sided' && X_mode < mu_Y[i])
+      ){
+        calcProbXGreaterThanY(X,Y,...)
+      } else {
+        calcProbXGreaterThanY(Y,X,...)
+      }
+    }
   })
   if (isTRUE(progress))
     close(pb)
 
-  switch(alternative,
-         greater=p.values,
-         less=1-p.values,
-         "two-sided"=ifelse(p.values>0.5,1-p.values,p.values),
-         stop("don't know alternative ",alternative))
+  p.values
 }
 
 calcProbXGreaterThanY <- function(X, Y, rel.tol=.Machine$double.eps^0.25, subdivisions=100L)
