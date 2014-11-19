@@ -11,8 +11,8 @@ Author: Florian P Breitwieser <fbreitwieser@cemm.oeaw.ac.at> and
    Xavier Robin <xavier.robin@unige.ch> and Florent Gluck  <florent.gluck@unige.ch>
 Maintainer: Florian P Breitwieser <fbreitwieser@cemm.oeaw.ac.at>
 biocViews: Proteomics, MassSpectrometry, Bioinformatics, MultipleComparisons, QualityControl
-Depends: R (>= 2.10.0), Biobase, stats, methods, plyr
-Imports: distr
+Depends: R (>= 2.10.0), Biobase, stats, methods
+Imports: distr, plyr
 Suggests: MSnbase, OrgMassSpecR, XML, biomaRt, ggplot2, RJSONIO, Hmisc, gplots, RColorBrewer, gridExtra, limma, boot, distr, Rgbp, DBI, MASS
 LazyLoad: yes
 License: LGPL-2
