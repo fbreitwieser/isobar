@@ -81,7 +81,49 @@ calcProbXGreaterThanY.orig <- function(X,Y,min.q=10^-6, subdivisions=100L) {
   dens.sum/dens.total
 }
 
+calcCumulativeProbXGreaterThanY <- function(Xs, mu_Ys, sd_Ys,
+                                            alternative=c("greater","less","two-sided"),
+                                            rel.tol=.Machine$double.eps^0.25, subdivisions=100L)
+{
+  # numerically calculates P(X_cum>=Y_cum),
+  # where X_cum variable has the PDF of joint X distribution induced to the diagonal (x_1=x_2=..x_n),
+  # and Y_cum is the joint normal distribution induced to the diagonal as well
+  # it's assumed that the mode of all Xs is very close to zero
 
+  alternative <- match.arg(alternative)
+
+  # cumulative Y distribution is Gaussian with explicitly calculated parameters 
+  require(distr)
+  inv_vars <- sd_Ys^(-2)
+  var_Cum <- 1 / sum( inv_vars )
+  mu_cum_Y <- sum( as.numeric( mu_Ys %*% inv_vars ) * var_Cum )
+  # flip Norm around zero (the mode of X) for 'two-sided' or 'less' tests
+  if ( alternative == 'less' || (alternative == 'two-sided' && mu_cum_Y < 0 ) ) {
+    mu_cum_Y <- -mu_cum_Y
+  }
+  cum_Y <- distr::Norm( mu_cum_Y, sqrt( var_Cum ) )
+
+  d_Xs <- lapply( Xs, distr::d )
+  # multiplication of all X pdfs
+  # note that pdf_cum_X is not a real PDF,
+  # because it's not guaranteed to integrate to 1.0
+  pdf_cum_X <- function( t ) {
+    # apply each d_X to arguments
+    pdf_Xs <- lapply( d_Xs, function(d_X) d_X(t) )
+    # multiply all PDFs for each element in t
+    sapply( seq_along(t), function(ix) prod(sapply(pdf_Xs, function(pdf_X) pdf_X[[ix]])) )
+  } 
+
+  pdf_cum_XmY <- function( t ) pdf_cum_X(t) * distr::p( cum_Y )(t)
+
+  return ( integrate( pdf_cum_XmY,
+                      lower=-Inf, upper=Inf, subdivisions = subdivisions,
+                      rel.tol = rel.tol )$value /
+           # correct the scaling of cum_X
+           integrate( pdf_cum_X,
+                      lower=-Inf, upper=Inf, subdivisions = subdivisions,
+                      rel.tol = rel.tol )$value )
+}
 
 distrprint <- function(X,round.digits=5) {
   paste0(class(X)," [",
