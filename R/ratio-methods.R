@@ -352,22 +352,31 @@ setMethod("estimateRatioNumeric",signature(channel1="numeric",channel2="numeric"
 )
 
 calculate.ratio.pvalue <- function(lratio, variance, ratiodistr = NULL) {
-  center.val <-  ifelse(is.null(ratiodistr), 0 , distr::q(ratiodistr)(0.5))
-  sapply(seq_along(lratio),function(r.i) 
-    pnorm(lratio[r.i],mean=center.val,sd=sqrt(variance[r.i]),
-          lower.tail=lratio[r.i]<center.val)
-  )
+  center.val <-  ifelse(is.null(ratiodistr), 0, distr::q(ratiodistr)(0.5))
+  lt_mask <- !is.na(lratio) & lratio < center.val
+  ge_mask <- !is.na(lratio) & !lt_mask
+  res <- as.numeric( rep.int( NA, length(lratio) ) )
+  res[lt_mask] <- pnorm(lratio[lt_mask],
+                        mean=center.val, sd=sqrt(variance[lt_mask]),
+                        lower.tail=TRUE)
+  res[ge_mask] <- pnorm(lratio[ge_mask],
+                        mean=center.val, sd=sqrt(variance[ge_mask]),
+                        lower.tail=FALSE)
+  return(res)
 }
 
 calculate.sample.pvalue <- function(lratio,ratiodistr) {
-  if (!is.null(ratiodistr))
+  res <- as.numeric( rep.int( NA, length(lratio) ) )
+  if (!is.null(ratiodistr)) {
     center.val <- distr::q(ratiodistr)(0.5)
-
-  sapply(lratio,function(r) {
-    if (is.null(ratiodistr) || is.na(lratio))
-      return(NA)
-    p(ratiodistr)(r,lower.tail=r<center.val)
-  })
+    lt_mask <- !is.na(lratio) & lratio < center.val
+    ge_mask <- !is.na(lratio) & !lt_mask
+    res[lt_mask] <- distr::p(ratiodistr)(lratio[lt_mask], lower.tail=TRUE)
+    res[ge_mask] <- distr::p(ratiodistr)(lratio[ge_mask], lower.tail=FALSE)
+   } else {
+    #warning('Sample P-value not calculated: missing ratio distribution')
+  }
+  return(res)
 }
 
 
@@ -1018,7 +1027,7 @@ getMultUnifDensity <- function(x,n=NULL){
 ##     used when computing a intra-class ratio distribution 
 ##     for estimation of biological variability
 ##  - method "versus.class": all combinations against class vs
-##  - method "verus.channel": all combinations against channel vs
+##  - method "versus.channel": all combinations against channel vs
 combn.matrix <- function(x,method="global",cl=NULL,vs=NULL) {
   if (method != "global" & is.null(cl))
     stop("No class labels cl provided.")
@@ -1131,8 +1140,8 @@ combn.protein.tbl <- function(cmbn, reverse=FALSE, ...) {
     else
      df <- data.frame(r,stringsAsFactors=FALSE)
 
-    if (!is.null(rownames(r))) 
-      df[,'ac']<- rownames(df)
+    if (!is.null(rownames(r)) && any(rownames(r) != as.character(seq_len(nrow(r))))) 
+      df[,'ac']<- rownames(r)
     rownames(df) <- NULL
 
     df$r1 <- x[1]; df$r2 <- x[2]

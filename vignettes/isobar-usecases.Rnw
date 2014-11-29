@@ -1,0 +1,43 @@
+%\VignetteIndexEntry{Usecases for isobar package}
+%\VignetteDepends{}
+%\VignetteKeywords{Documentation}
+%\VignettePackage{isobar}
+\documentclass[11pt]{article}
+
+\SweaveOpts{keep.source=TRUE}
+<<init,echo=FALSE>>=
+  require(distr)
+  require(ggplot2)
+@ 
+
+\usepackage{times}
+\usepackage{hyperref}
+\usepackage[utf8]{inputenc}
+\usepackage{xcolor}
+\usepackage{listings}
+
+\textwidth=6.2in
+\textheight=8.5in
+\oddsidemargin=.1in
+\evensidemargin=.1in
+\headheight=-.3in
+
+\newcommand{\Rfunction}[1]{{\texttt{#1}}}
+\newcommand{\Robject}[1]{{\texttt{#1}}}
+\newcommand{\Rpackage}[1]{{\texttt{#1}}}
+\newcommand{\isobar}{\Rpackage{isobar}}
+
+\title{Usecases for the \emph{isobar} package}
+\author{Florian P.\ Breitwieser, Jacques Colinge}
+
+\begin{document}
+
+\maketitle
+\tableofcontents
+
+\section{}
+
+
+\end{document}
+
+\bibliographystyle{plainnat}

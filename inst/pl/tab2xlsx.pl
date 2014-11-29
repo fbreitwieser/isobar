@@ -78,7 +78,7 @@ for (my $file_i=0; $file_i <= $#ARGV; ++$file_i) {
 
 	my ($file,$props) = get_props($ARGV[$file_i],":");
 
-  print STDERR "$file\n";
+  #print STDERR "$file\n";
 
   my $name = $props->{'name'};
   #if (!defined $name) { ($name) = getname(fileparse($file,".csv")); }

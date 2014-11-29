@@ -86,9 +86,9 @@ setClass("TMT10plexSpectra",
     contains = "TMTSpectra",
     prototype = prototype(
       reporterTagNames = c("126","127N","127C","128N","128C","129N","129C","130N","130C","131N"),
-      reporterTagMasses = c(126.1277261,127.1310809,127.124761,
-                            128.1344357,128.1281158,129.1377905,
-                            129.1314706,130.1411453,130.1348254,
+      reporterTagMasses = c(126.1277261,127.124761,127.1310809,
+                            128.1281158,128.1344357,129.1314706,
+                            129.1377905,130.1348254,130.1411453,
                             131.1381802),
        isotopeImpurities = diag(nrow=10)
        )

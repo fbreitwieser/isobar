@@ -227,8 +227,8 @@ initialize.env <- function(env,properties.env) {
   }
 }
 
-.create.or.load <- function(name,envir,f,msg.f=name,do.load=FALSE,class=NULL,error=stop,default.value=NULL,...) {
-  x <- tryCatch(.get.or.load(name,envir,msg.f,class,do.load=do.load),error=function(e) .DOES.NOT.EXIST)
+.create.or.load <- function(name,envir,f,msg.f=name,regenerate=FALSE,do.load=FALSE,class=NULL,error=stop,default.value=NULL,...) {
+  x <- if ( !regenerate ) tryCatch(.get.or.load(name,envir,msg.f,class,do.load=do.load),error=function(e) .DOES.NOT.EXIST) else .DOES.NOT.EXIST
   if (identical(x,.DOES.NOT.EXIST)) {
     message(paste("  creating",msg.f,"... "),appendLF=FALSE)
     tryCatch({
@@ -609,7 +609,13 @@ property <- function(x, envir, null.ok=TRUE,class=NULL) {
 
     if (!is.null(property('correct.peptide.ratios.with',properties.env))) {
       protein.quant.tbl <- .get.or.load("correct.peptide.ratios.with",properties.env)
-      correct.protein.group <- .get.or.load("correct.peptide.ratios.with_protein.group",properties.env)
+      correct.protein.group <- if ( !is.null(property('correct.peptide.ratios.with_protein.group',properties.env)) ) {
+        .get.or.load("correct.peptide.ratios.with_protein.group",properties.env)
+      } else {
+        warning( '"correct.peptide.ratios.with_protein.group" property not found, ',
+                 'using the existing protein group' )
+        .get.or.load("protein.group.template",properties.env)
+      }
       ratios.opts[["before.summarize.f"]] <- function(...)
         correct.peptide.ratios(..., protein.quant.tbl=protein.quant.tbl,
                                protein.group.combined = correct.protein.group,

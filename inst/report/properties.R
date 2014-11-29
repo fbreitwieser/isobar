@@ -127,7 +127,7 @@ noise.model.minspectra=50
 # class.labels=c("Treatment"="T","Treatment"="T","Control"="C","Control"="C")
 class.labels=NULL
 
-## The following definitions define which ratios are calculated.
+## The following parameters define which ratios are calculated.
 
 ## summarize ratios with equal class labels, set to TRUE when replicates are used
 summarize=FALSE
@@ -210,6 +210,8 @@ ptm.info.f <- getPtmInfoFromNextprot
 ##  observed modified peptide ratios Needs to have the experimental
 ##  setup as the modified peptide experiment
 correct.peptide.ratios.with <- NULL
+## Protein groups to use with correct.peptide.ratios()
+correct.peptide.ratios.with_protein.group <- NULL
 
 ## The correlation between peptide and protein ratios defines the
 ## covariance
