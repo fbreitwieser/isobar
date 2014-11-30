@@ -6,13 +6,13 @@
 \title{Functions for distribution calculations
 }
 \description{
-  calcProbXGreaterThanY calculates the probability that P(X) > P(Y) + .5 P(X)=P(Y).
+  calcProbXGreaterThanY calculates the probability that X >= Y.
   calcProbXDiffNormals calculates the probabilities of a set of normals, defined 
   by the vectors mu_Y and sd_Y are greater or less than the reference distribution
   Y.                                                              
 }
 \usage{
-  calcProbXGreaterThanY(X, Y, min.q = 10^-6, n.steps = 1000)
+  calcProbXGreaterThanY(X, Y, rel.tol = 1E-20, subdivisions = 100L)
   calcProbXDiffNormals(X, mu_Y, sd_Y, ..., alternative = "greater", progress = FALSE)
   distrprint(X, round.digits = 5)
   twodistr.plot(X, Y, n.steps = 1000, min.q = 10^-3)

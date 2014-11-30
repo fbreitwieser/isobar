@@ -39,22 +39,48 @@
 \tableofcontents
 
 \section{Introduction}
-The \Rpackage{isobar} package is designed as an extensible and
-interactive environment for data analysis and exploration of data
-produced by Mass Spectrometry analysis of proteins and peptides
-labelled with isobaric tags, such as iTRAQ and TMT.  \Rpackage{isobar}
-implements the theory presented in Breitwieser et al., Journal of
-Proteome Research 2011.
+The \Rpackage{isobar} package is an extensible and interactive
+environment for the data analysis and exploration of iTRAQ and TMT
+data.  \Rpackage{isobar} implements the theory presented in
+Breitwieser et al., Journal of Proteome Research 2011. Further
+extensions for the analysis of \small{PTM} data are presented in
+Breitwieser and Colinge, Journal of Proteomics 2013.
 
-\Rpackage{isobar} allows analyzing iTRAQ 4plex and 8plex, and TMT
-2plex and 6plex experiments representing them as \Robject{IBSpectra}
-objects. The respective classes are \Robject{iTRAQ4plexSpectra},
-\Robject{iTRAQ8plexSpectra}, \Robject{TMT2plexSpectra},
-\Robject{TMT6plexSpectra} and \Robject{TMT10plexSpectra}.
+\subsection{Installation}
+\Rpackage{isobar} is part of
+\href{http://www.bioconductor.org/packages/release/bioc/html/isobar.html}{Bioconductor}. To
+install the latest stable version available for your version of R, start R and
+enter:
 
+<<eval=FALSE>>=
+source("http://bioconductor.org/biocLite.R")
+biocLite("isobar")
+@ 
+
+Bioconductor has semi-annual releases, and the releases are tied to
+specific to R versions. The latest development version of
+\Rpackage{isobar} are always available at GitHub
+(\url{https://github.com/fbreitwieser/isobar}). Use the
+\Rpackage{devtools} package to install it from the source:
+
+<<eval=FALSE>>=
+library(devtools)
+install_github("fbreitwieser/isobar")
+@ 
+
+\subsection{Loading package}
 The first thing you need to do is load the package.
 <<load-isobar,results=hide>>=
   library(isobar) ## load the isobar package
+@ 
+
+Check the installed version of isobar:
+<<eval=FALSE>>=
+packageVersion("isobar")
+@ 
+or equivalently for older versions of R:
+<<eval=FALSE>>=
+packageDescription("isobar")$Version
 @ 
 
 \section{Loading data}\label{sec:loading-data}
@@ -181,7 +207,7 @@ based on the fragment ions in the CID spectrum.
 
 To import these experiments, a comma-separated 
 \emph{mapping file} is
-needed, which contains the association from \texttt{identification} to 
+needed, which contains the association from the \texttt{identification} to the
 \texttt{quantification} spectrum title.
 
 \paragraph{Example mapping file (\texttt{mapping.csv}):}
