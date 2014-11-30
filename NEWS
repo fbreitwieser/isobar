@@ -1,7 +1,7 @@
 CHANGES IN VERSION 1.9.5
 ------------------------
  - FIX FOR TMT-10plex tags: previous version had wrong annotation of N and C for 127,128,129,130
- - Speed improvements for p-value calculation
+ - Speed improvements for p-value calculation by vectorization, contributed by A. Stukalov
 
 CHANGES IN VERSION 1.9.3
 ------------------------
