@@ -55,6 +55,34 @@ calcProbXGreaterThanY <- function(X, Y, rel.tol=.Machine$double.eps^0.25, subdiv
                       rel.tol = rel.tol )$value )
 }
 
+calcProbXGreaterThanY.orig <- function(X,Y,min.q=10^-6, subdivisions=100L) {
+  # numerically calculates P(X>=Y)
+  require(distr)
+  if (!is(X,"Distribution")) stop("X has to be of class Distribution")
+  if (!is(Y,"Distribution")) stop("Y has to be of class Distribution")
+
+  steps.seq <- seq(from=min.q,to=1-min.q,length.out=subdivisions)
+  steps <- sort(unique(c(q(X)(steps.seq),q(Y)(steps.seq))))
+  nsubdivisions <- length(steps)
+           
+  dens.X <- d(X)(steps)
+  dens.Y <- d(Y)(steps)
+
+  dens.sum <- sum(dens.X*dens.Y)*.5 # P( X = Y )
+  dens.total <- sum(dens.X)*sum(dens.Y)
+  if (isTRUE(all.equal(dens.total,0))) return(0)
+
+  for (i in 1:nsubdivisions) {
+    dens.X <- dens.X[-1]
+    dens.Y <- dens.Y[-length(dens.Y)]
+    dens.sum <- dens.sum + sum(dens.X*dens.Y)
+  }
+
+  dens.sum/dens.total
+}
+
+
+
 distrprint <- function(X,round.digits=5) {
   paste0(class(X)," [",
          paste(sapply(setdiff(slotNames(param(X)),'name'),
