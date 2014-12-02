@@ -1,6 +1,6 @@
 CHANGES IN VERSION 1.13.0
 -------------------------
- - calcCumulativeProbXGreaterThanY() contributed by A. Stukalov, for calculating cummulative p-values with technical replicates
+ - calcCumulativeProbXGreaterThanY() contributed by A. Stukalov, for calculating cummulative p-values with replicates
  - Bioconductor version increment
 
 CHANGES IN VERSION 1.11.0
