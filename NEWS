@@ -1,3 +1,12 @@
+CHANGES IN VERSION 1.13.0
+-------------------------
+ - calcCumulativeProbXGreaterThanY() contributed by A. Stukalov, for calculating cummulative p-values with technical replicates
+ - Bioconductor version increment
+
+CHANGES IN VERSION 1.11.0
+-------------------------
+ - Bioconductor version increment
+
 CHANGES IN VERSION 1.9.5
 ------------------------
  - FIX FOR TMT-10plex tags: previous version had wrong annotation of N and C for 127,128,129,130
