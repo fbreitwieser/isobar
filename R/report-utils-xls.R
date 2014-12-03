@@ -2,7 +2,16 @@
 #########################################
 ## Functions for XLS Report Generation 
 
+testPerl <- function(perl.cmd) {
+  if (system(perl.cmd) != 0)
+    stop(perl.cmd," does not seem to work. It is required for spreadsheet reports in XLS and XLSX formats. ",
+         "Either set 'write.xls.report=FALSE', or 'perl.cmd' to a different executable.") 
+}
+
 write.xls.report <- function(properties.env,report.env,file="isobar-analysis.xls") {
+
+    testPerl(properties.env[["perl.cmd"]])
+
     write.t <- function(...,sep="\t",row.names=FALSE,quote=FALSE)
       write.table(...,sep=sep,row.names=row.names,quote=quote,na="")
 
@@ -124,13 +133,13 @@ write.xls.report <- function(properties.env,report.env,file="isobar-analysis.xls
 
 
     shq <- function(...) shQuote(paste0(...))
-
+    
     .get.perlcl <- function(name,include.identifications=TRUE) {
       fname <- paste0(ifelse(properties.env[["use.name.for.report"]],
                              sprintf("%s.%s",properties.env[["name"]],name),"isobar-analysis"),
                        ".",properties.env[["spreadsheet.format"]])
 
-      perl.cl <- paste("perl",tab2spreadsheet.cmd,shQuote(fname),
+      perl.cl <- paste(properties.env[["perl.cmd"]],tab2spreadsheet.cmd,shQuote(fname),
                        shq(":autofilter,freeze_col=4,name=Quantifications:",protein.quant.f))
       
       if (file.exists(quant.notlocalized.f))
