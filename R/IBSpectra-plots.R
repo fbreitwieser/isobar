@@ -146,8 +146,8 @@ setMethod("plotRatio",
 
 maplot.protein <- function(x,relative.to,protein,noise.model=NULL,
         channels=NULL,xlim=NULL,ylim=NULL,identify=FALSE,add=FALSE,pchs=NULL,log="xy",
-        legend.pos="topright",names=NULL,legend.cex=0.8,cols=pchs,ltys=NULL,
-        main=protein,xlab=NULL,ylab=NULL,type="ma",...) {
+        legend.pos="topright",names=NULL,legend.cex=0.8,cols=pchs,ltys=1,
+        main=protein,xlab=NULL,ylab=NULL,type="ma",show.lm=FALSE,...) {
  	  if (is(x,"IBSpectra"))
       x <- c(x)
    
@@ -188,7 +188,7 @@ maplot.protein <- function(x,relative.to,protein,noise.model=NULL,
           else
             legend$text <- c(legend$text,names[i])
           legend$pch <- c(legend$pch,pchs[i])
-          legend$lty <- c(legend$pch,ltys[i])
+          legend$lty <- c(legend$lty,ltys[i])
         }
 
         if (type=="ma") {
@@ -223,11 +223,13 @@ maplot.protein <- function(x,relative.to,protein,noise.model=NULL,
 
           if (type=="ma") {
             abline(h=10^ratio[1],lty=1,col=cols[i],...)
-            abline(h=ratio.lm['ratio'],lty=2,col=cols[i],...)
+            if (show.lm)
+              abline(h=ratio.lm['ratio'],lty=2,col=cols[i],...)
           } else {
             #abline(0,10^ratio[1],lty=1,col=cols[i],...)
             abline(0,10^ratio[1],lty=1,col=cols[i],untf=TRUE,...)
-            abline(0,ratio.lm['ratio'],lty=2,col=cols[i],untf=TRUE,...)
+            if (show.lm)
+              abline(0,ratio.lm['ratio'],lty=2,col=cols[i],untf=TRUE,...)
           }
 
           if (!is.na(ratio[1]))
