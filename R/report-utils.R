@@ -90,7 +90,7 @@ create.reports <- function(properties.file="properties.R",
     .call.cmd(sprintf("%s CMD pdflatex -halt-on-error -output-directory=%s %s.tex",r.cmd,dir,name),
               paste(dir,"/",basename(name),".stdout",sep=""))
     cat(" 2")
-    .call.cmd(sprintf("R CMD pdflatex -halt-on-error -output-directory=%s %s.tex",r.cmddir,name),
+    .call.cmd(sprintf("%s CMD pdflatex -halt-on-error -output-directory=%s %s.tex",r.cmd,dir,name),
               paste(dir,"/",basename(name),".stdout",sep=""))
     cat(" done!\n\n")
     file.copy(file.path(dir,paste0(name,".pdf")),file.path(getwd(),paste0(name,".pdf")),overwrite=TRUE)
