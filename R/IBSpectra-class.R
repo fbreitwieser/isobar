@@ -598,7 +598,7 @@ normalize <- function(x,f=median,target="intensity",
       for (channels.set in channels)
         x <- normalize(x,f=f,target=target,exclude.protein=exclude.protein,
                        use.protein=use.protein,peptide.specificity=peptide.specificity,
-                       f.doapply=f.doapply,
+                       f.doapply=f.doapply,per.file=per.file,
                        log=log,channels=channels.set,na.rm=na.rm,...)
       return(x)
     } else {
@@ -618,7 +618,7 @@ normalize <- function(x,f=median,target="intensity",
   
   if (!is.null(use.protein)) 
     ri <- ri[spectrumSel(x,protein=use.protein,
-                         specificity=if(is.null(peptide.specificity)) REPORTERSPECIFIC else peptide.specificity),]
+                         specificity=if(is.null(peptide.specificity)) REPORTERSPECIFIC else peptide.specificity),,drop=FALSE]
 
   if (na.rm) 
     sel.na <- apply(!is.na(ri),1,all)
