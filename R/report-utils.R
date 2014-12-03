@@ -1,4 +1,12 @@
 
+testPdflatex <- function(pdflatex.cmd) {
+  if (system(pdflatex.cmd) != 0) 
+    stop("pdflatex does not seem to be installed. ",
+         "Install LaTeX using the TeXLive or MiKTex distribution to generate ",
+         "PDF reports with isobar. Set 'write.qc.report=FALSE' and 'write.report=FALSE', otherwise.")
+}
+    
+
 create.reports <- function(properties.file="properties.R",
                            global.properties.file=system.file("report","properties.R",package="isobar"),
                            args=NULL,...,recreate.properties.env=TRUE,recreate.report.env=TRUE) {
@@ -74,12 +82,15 @@ create.reports <- function(properties.file="properties.R",
 }
 
   .compile.tex <- function(name,zip.files) {
+    r.cmd = shQuote(file.path(R.home("bin"),"R"))
+    testPdflatex(paste(r.cmd,"CMD","pdflatex -version"))
+    
     dir <- tempdir()
     cat("compiling ",name,".tex ...  1",sep="")
-    .call.cmd(sprintf("R CMD pdflatex -halt-on-error -output-directory=%s %s.tex",dir,name),
+    .call.cmd(sprintf("%s CMD pdflatex -halt-on-error -output-directory=%s %s.tex",r.cmd,dir,name),
               paste(dir,"/",basename(name),".stdout",sep=""))
     cat(" 2")
-    .call.cmd(sprintf("R CMD pdflatex -halt-on-error -output-directory=%s %s.tex",dir,name),
+    .call.cmd(sprintf("%s CMD pdflatex -halt-on-error -output-directory=%s %s.tex",r.cmd,dir,name),
               paste(dir,"/",basename(name),".stdout",sep=""))
     cat(" done!\n\n")
     file.copy(file.path(dir,paste0(name,".pdf")),file.path(getwd(),paste0(name,".pdf")),overwrite=TRUE)
