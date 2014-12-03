@@ -271,6 +271,12 @@ xls.report.columns <- c("ratio","is.significant","ratio.minus.sd",
                         "ratio.plus.sd","p.value.ratio","p.value.sample",
                         "log10.ratio","log10.variance")
 
+## Perl command to be used for Excel report generation
+# perl.cmd = "C:/Strawberry/perl/bin/perl.exe"
+# perl.cmd = "C:/Perl/bin/perl.exe"
+# perl.cmd = "perl5"
+perl.cmd = "perl"
+
 #####################################################################
 ## Etc
 
