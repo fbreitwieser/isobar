@@ -139,7 +139,9 @@ write.xls.report <- function(properties.env,report.env,file="isobar-analysis.xls
                              sprintf("%s.%s",properties.env[["name"]],name),"isobar-analysis"),
                        ".",properties.env[["spreadsheet.format"]])
 
-      perl.cl <- paste(properties.env[["perl.cmd"]],tab2spreadsheet.cmd,shQuote(fname),
+      perl.cl <- paste(properties.env[["perl.cmd"]],
+                       shQuoute(tab2spreadsheet.cmd),
+                       shQuote(fname),
                        shq(":autofilter,freeze_col=4,name=Quantifications:",protein.quant.f))
       
       if (file.exists(quant.notlocalized.f))
