@@ -10,8 +10,8 @@
 maplot.protein(x, relative.to, protein, noise.model = NULL, channels = NULL, 
                xlim = NULL, ylim = NULL, identify = FALSE, add = FALSE, 
                pchs = NULL, log="xy", legend.pos = "topright", names = NULL, 
-               legend.cex = 0.8, cols = pchs, ltys = NULL, main = protein, 
-               xlab = NULL, ylab = NULL, type="ma", ...)
+               legend.cex = 0.8, cols = pchs, ltys = 1, main = protein, 
+               xlab = NULL, ylab = NULL, type="ma", show.lm = FALSE, ...)
 }
 %- maybe also 'usage' for other objects documented here.
 \arguments{
@@ -80,5 +80,6 @@ maplot.protein(x, relative.to, protein, noise.model = NULL, channels = NULL,
   \item{\dots}{
     passed to \code{\link{plot}}.
   }
+  \item{show.lm}{show LM}
 }
 \author{Florian P. Breitwieser}

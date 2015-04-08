@@ -55,7 +55,7 @@ calcProbXGreaterThanY <- function(X, Y, rel.tol=.Machine$double.eps^0.25, subdiv
                       rel.tol = rel.tol )$value )
 }
 
-calcProbXGreaterThanY.orig <- function(X,Y,min.q=10^-6, subdivisions=100L) {
+.calcProbXGreaterThanY.orig <- function(X,Y,min.q=10^-6, subdivisions=100L) {
   # numerically calculates P(X>=Y)
   require(distr)
   if (!is(X,"Distribution")) stop("X has to be of class Distribution")

@@ -28,6 +28,9 @@
 \alias{print_protein_quant_tbl}
 \alias{print_sign_proteins_tbl}
 
+\alias{testPdflatex}
+\alias{testPerl}
+
 \title{Isobar reports}
 
 \description{
