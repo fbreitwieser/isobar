@@ -164,10 +164,10 @@ setMethod("estimateRatioNumeric",signature(channel1="numeric",channel2="numeric"
         if (is.method("isobar"))
           return(c(lratio=NA,variance=NA,var_hat_vk=NA,
                    n.spectra=NA,n.na1=NA,n.na2=NA,
-                   p.value.rat=NA,p.value.sample=NA,is.significant=FALSE))
+                   p.value.rat=NA,p.value.sample=NA,p.value=NA,is.significant=FALSE))
         if (is.method("isobar-combn"))
           return(c(lratio=NA,variance=NA,n.spectra=NA,n.na1=NA,n.na2=NA,
-                   p.value.rat=NA,p.value.sample=NA,is.significant=FALSE,is.significant.ev=NA,
+                   p.value.rat=NA,p.value.sample=NA,p.value=NA,is.significant=FALSE,is.significant.ev=NA,
                    p.value.combined=NA))
         else if (is.method("libra") || is.method("pep"))
           return(c(ch1=NA,ch2=NA))
@@ -297,6 +297,7 @@ setMethod("estimateRatioNumeric",signature(channel1="numeric",channel2="numeric"
             n.na1=sum(sel.ch1na),n.na2=sum(sel.ch2na),
             p.value.rat=calculate.ratio.pvalue(weighted.ratio, calc.variance, ratiodistr),
             p.value.sample=calculate.sample.pvalue(weighted.ratio, ratiodistr),
+            p.value=if (!is.null(ratiodistr)) calcProbXDiffNormals(ratiodistr, weighted.ratio, sqrt(calc.variance), alternative="two-sided") else 1,
             is.significant=NA)
         
         if (!is.method("isobar"))
@@ -306,8 +307,7 @@ setMethod("estimateRatioNumeric",signature(channel1="numeric",channel2="numeric"
                                    ratiodistr) <= sign.level.rat
 
         res.isobar['is.significant'] <- 
-          (res.isobar['p.value.sample'] <= sign.level.sample) && 
-          (res.isobar['p.value.rat'] <= sign.level.rat)
+          (res.isobar['p.value'] <= sign.level)
 
         if (is.method("isobar-combn")) {
           p.value.combined <- NA
@@ -394,16 +394,18 @@ calculate.mult.sample.pvalue <- function(lratio,ratiodistr,strict.pval,lower.tai
   return(pval)
 }
 
-adjust.ratio.pvalue <- function(quant.tbl,p.adjust,sign.level.rat,globally=FALSE) {
+adjust.ratio.pvalue <- function(quant.tbl,p.adjust,sign.level,globally=FALSE) {
   if (globally) {
     quant.tbl[,'p.value.rat.adjusted'] <- p.adjust(quant.tbl[,'p.value.rat'], p.adjust)
-    quant.tbl[,'is.significant'] <- quant.tbl[,'is.significant'] & quant.tbl[,'p.value.rat.adjusted'] < sign.level.rat
+    quant.tbl[,'p.value.adjusted'] <- p.adjust(quant.tbl[,'p.value'], p.adjust)
+    quant.tbl[,'is.significant'] <- quant.tbl[,'is.significant'] & quant.tbl[,'p.value.adjusted'] < sign.level
   } else {
     comp.cols <- c("r1","r2","class1","class2")
     comp.cols <- comp.cols[comp.cols %in% colnames(quant.tbl)]
     quant.tbl <- ddply(quant.tbl,comp.cols,function(x) {
       x[,'p.value.rat.adjusted'] <- p.adjust(x[,'p.value.rat'], p.adjust)
-      x[,'is.significant'] <- x[,'is.significant'] & x[,'p.value.rat.adjusted'] < sign.level.rat
+      x[,'p.value.adjusted'] <- p.adjust(x[,'p.value'], p.adjust)
+      x[,'is.significant'] <- x[,'is.significant'] & x[,'p.value.adjusted'] < sign.level
       x
     })
   }
@@ -449,8 +451,8 @@ correct.peptide.ratios <- function(ibspectra, peptide.quant.tbl, protein.quant.t
     ratiodistr <- attr(peptide.quant.tbl,'ratiodistr')
     tbl[,'p.value.rat'] <- calculate.ratio.pvalue(tbl[,'lratio'], tbl[,'variance'], ratiodistr)
     tbl[,'p.value.sample'] <- calculate.sample.pvalue(tbl[,'lratio'], ratiodistr)
-    tbl[,'is.significant'] <- tbl[,'p.value.rat'] <= attr(peptide.quant.tbl,'sign.level.rat') &
-                              tbl[,'p.value.sample'] <= attr(peptide.quant.tbl,'sign.level.sample') 
+    tbl[,'p.value'] <- calcProbXDiffNormals( ratiodistr, tbl[,'lratio'], sqrt(tbl[,'variance']), alternative="two-sided" )
+    tbl[,'is.significant'] <- tbl[,'p.value'] <= attr(peptide.quant.tbl,'sign.level')
   }
   attrs$names <- colnames(tbl)
   attrs$row.names <- rownames(tbl)
@@ -1345,7 +1347,7 @@ proteinRatios <-
 
   ratios[,'zscore'] <- .calc.zscore(ratios[,'lratio'])
   if (!is.null(zscore.threshold))
-    ratios[,'is.significant'] <- ratios[,'p.value.rat'] < sign.level.rat & abs(ratios[,'zscore']) > zscore.threshold
+    ratios[,'is.significant'] <- ratios[,'p.value'] < sign.level & abs(ratios[,'zscore']) > zscore.threshold
 
   if (symmetry) {
     ratios.inv <- ratios
@@ -1411,7 +1413,7 @@ summarize.ratios <-
 
           if (!any(ac.sel)) { ## no data for AC and classes
             return(data.frame(lratio=NA,variance=NA,n.spectra=0,n.pos=0,n.neg=0,
-                              p.value.rat=1,p.value.sample=1,is.significant=FALSE,r1=class1,r2=class2,
+                              p.value.rat=1,p.value.sample=1,p.value=1,is.significant=FALSE,r1=class1,r2=class2,
                               class1=class1,class2=class2,stringsAsFactors=FALSE))
           }
           
@@ -1450,16 +1452,17 @@ summarize.ratios <-
             ac.ratios, ratiodistr, strict.pval=strict.sample.pval, lower.tail=n.neg>n.pos,
             n.possible.val = n.combination.c, n.observed.val = sum(ac.sel))
 
+          p.value <- calcProbXDiffNormals(ratiodistr,mean.r,sqrt(variance),alternative="two-sided")
+
           min.detect.c <- ifelse(is.matrix(min.detect),min.detect[class1,class2],min.detect)
           ## significance
-          is.significant <- (p.value.sample <= sign.level.sample) &&
-            (p.value.rat <= sign.level.rat) &&
+          is.significant <- (p.value <= sign.level) &&
             (sum(ac.sel) >= min.detect.c) &&
             (is.pos | is.neg)
 
           return(data.frame(lratio=lratio,variance=variance,
                             n.spectra=min(ratios.subset$n.spectra[good.sel],na.rm=TRUE),n.pos=n.pos,n.neg=n.neg,
-                            p.value.rat=p.value.rat,p.value.sample=p.value.sample,
+                            p.value.rat=p.value.rat,p.value.sample=p.value.sample,p.value=p.value,
                             is.significant=is.significant,r1=class1,r2=class2,
                             class1=class1,class2=class2,stringsAsFactors=FALSE))
         })
