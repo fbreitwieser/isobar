@@ -287,7 +287,8 @@ writeHscoreData <- function(outfile,ids,massfile="defs.txt") {
              pep.prob <- round(pep.prob*round.to.frac)/round.to.frac
            prob[pep.pos] <- pep.prob
 
-           pep[prob>=0] <- paste0(pep[prob>=0],"(",prob[prob>=0],")")
+           prob_mask <- !is.na(prob) & prob>=0
+           pep[prob_mask] <- paste0(pep[prob_mask],"(",prob[prob_mask],")")
            paste0(pep,collapse="")
          },
          strsplit(peptide,""),
