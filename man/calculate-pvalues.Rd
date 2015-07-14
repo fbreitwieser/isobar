@@ -19,7 +19,7 @@
   calculate.mult.sample.pvalue(lratio, ratiodistr, strict.pval, 
                                lower.tail, n.possible.val, n.observed.val)
 
-  adjust.ratio.pvalue(quant.tbl, p.adjust, sign.level.rat, globally = FALSE)
+  adjust.ratio.pvalue(quant.tbl, p.adjust, sign.level, globally = FALSE)
 }
 
 \arguments{
@@ -34,7 +34,7 @@
 
   \item{quant.tbl}{Quantification table (from proteinRatios or peptideRatios).}
   \item{p.adjust}{p-value adjustment method (see ?p.adjust).}
-  \item{sign.level.rat}{Ratio significance level.}
+  \item{sign.level}{Ratio significance level.}
   \item{globally}{Whether the p-values should be adjusted over all conditions,
                   or individually in each condition.}
 

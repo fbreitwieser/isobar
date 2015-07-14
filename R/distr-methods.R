@@ -6,9 +6,12 @@ calcProbXDiffNormals <- function(X,mu_Y,sd_Y,...,alternative=c("greater","less",
   # (depending on 'alternative' option),
   # where Y ~ N(mu_Y,sd_Y)
   alternative <- match.arg(alternative)
+  if (is.null(X)) {
+	return(rep(NA,seq_along(mu_Y)))
+  }
 
   require(distr)
-  if (!is(X,"Distribution")) stop("X has to be of class Distribution")
+  if (!is(X,"Distribution")) stop("X has to be of class Distribution (is ",class(X),")")
 
   if (length(mu_Y) != length(sd_Y)) 
     stop("mu_Y and sd_Y should have equal length")
