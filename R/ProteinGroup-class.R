@@ -620,8 +620,11 @@ getPtmInfoFromPhosphoSitePlus <- function(protein.group,file.name=NULL,modif="PH
 
   sites <- sites[gsub("-.*","",sites[,ac.column]) %in% gsub("-.*","",names(indistinguishableProteins(protein.group))),]
 
-  sites$PUBMED_LTP[!is.na(sites$PUBMED_LTP)] <- paste("n.publ ltp:",sites$PUBMED_LTP[!is.na(sites$PUBMED_LTP)])
-  sites$PUBMED_MS2[!is.na(sites$PUBMED_MS2)] <- paste("n.publ htp:",sites$PUBMED_MS2[!is.na(sites$PUBMED_MS2)])
+  lit_colnames = c(PUBMED_LTP="n.publ ltp", PUBMED_MS2="n.publ htp",
+		   LS_LIT="n.publ ltp", MS_LIT="n.publ htp")
+  for (coln in names(lit_colnames)) {
+    sites[!is.na(sites[[coln]]), coln] <- paste0(lit_colnames[[coln]],": ",sites[!is.na(sites[[coln]]), coln])
+  }
 
   data.frame(.id=sites[,ac.column],
              isoform_ac=sapply(sites[,ac.column],function(ac) ifelse(grepl("-[0-9]$",ac),ac,paste0(ac,"-1"))),
@@ -633,7 +636,7 @@ getPtmInfoFromPhosphoSitePlus <- function(protein.group,file.name=NULL,modif="PH
                                  y <- paste0(y," (domain ",x['IN_DOMAIN'],")")
                                y
                              }),
-             evidence=apply(sites[,c("PUBMED_LTP","PUBMED_MS2")],1,
+             evidence=apply(sites[,intersect(colnames(sites),names(lit_colnames))],1,
                             function(x) { x<-x[!is.na(x)]; paste(x,collapse=";")}),
              position=as.integer(substr(sites[,residue.column],2,nchar(sites[,residue.column]))),
              stringsAsFactors=FALSE)
