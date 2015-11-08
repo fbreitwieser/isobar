@@ -615,7 +615,7 @@ getPtmInfoFromPhosphoSitePlus <- function(protein.group,file.name=NULL,modif="PH
   sites <- read.delim(file.name,
                       sep="\t",header=TRUE,skip=3,stringsAsFactors=FALSE)
   ac.column <- ifelse("ACC_ID" %in% colnames(sites),"ACC_ID","ACC.")
-  species.column <- ifelse("ORG" %in% colnames(sites),"ORG","SPECIES")
+  species.column <- intersect(c("ORG", "ORGANISM", "SPECIES"), colnames(sites))
   residue.column <- ifelse("MOD_RSD" %in% colnames(sites),"MOD_RSD","RSD")
 
   sites <- sites[gsub("-.*","",sites[,ac.column]) %in% gsub("-.*","",names(indistinguishableProteins(protein.group))),]
