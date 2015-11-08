@@ -618,6 +618,15 @@ getPtmInfoFromPhosphoSitePlus <- function(protein.group,file.name=NULL,modif="PH
   species.column <- intersect(c("ORG", "ORGANISM", "SPECIES"), colnames(sites))
   residue.column <- ifelse("MOD_RSD" %in% colnames(sites),"MOD_RSD","RSD")
   domain.column <- intersect(c("DOMAIN", "IN_DOMAIN"), colnames(sites))
+  if (!("MOD_TYPE" %in% colnames(sites))) {
+    sites$MOD_TYPE = sapply(gsub("^.+-", "", sites$MOD_RSD), function(mod_code) {
+                       switch(mod_code,
+                         p = "PHOSPHORYLATION",
+                         { warning("unknown PTM code: ", mod_code)
+                           mod_code })
+		     })
+    sites$MOD_RSD = gsub("-.+$", "", sites$MOD_RSD)
+  }
 
   sites <- sites[gsub("-.*","",sites[,ac.column]) %in% gsub("-.*","",names(indistinguishableProteins(protein.group))),]
 
