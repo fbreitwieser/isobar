@@ -617,6 +617,7 @@ getPtmInfoFromPhosphoSitePlus <- function(protein.group,file.name=NULL,modif="PH
   ac.column <- ifelse("ACC_ID" %in% colnames(sites),"ACC_ID","ACC.")
   species.column <- intersect(c("ORG", "ORGANISM", "SPECIES"), colnames(sites))
   residue.column <- ifelse("MOD_RSD" %in% colnames(sites),"MOD_RSD","RSD")
+  domain.column <- intersect(c("DOMAIN", "IN_DOMAIN"), colnames(sites))
 
   sites <- sites[gsub("-.*","",sites[,ac.column]) %in% gsub("-.*","",names(indistinguishableProteins(protein.group))),]
 
@@ -632,8 +633,8 @@ getPtmInfoFromPhosphoSitePlus <- function(protein.group,file.name=NULL,modif="PH
              modification.name=tolower(sites[,'MOD_TYPE']),
              description=apply(sites,1,function(x) {
                                y <- tolower(x['MOD_TYPE'])
-                               if (nchar(x['IN_DOMAIN']) > 0)
-                                 y <- paste0(y," (domain ",x['IN_DOMAIN'],")")
+                               if (nchar(x[domain.column]) > 0)
+                                 y <- paste0(y," (domain ",x[domain.column],")")
                                y
                              }),
              evidence=apply(sites[,intersect(colnames(sites),names(lit_colnames))],1,
