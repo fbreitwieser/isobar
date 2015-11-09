@@ -615,13 +615,26 @@ getPtmInfoFromPhosphoSitePlus <- function(protein.group,file.name=NULL,modif="PH
   sites <- read.delim(file.name,
                       sep="\t",header=TRUE,skip=3,stringsAsFactors=FALSE)
   ac.column <- ifelse("ACC_ID" %in% colnames(sites),"ACC_ID","ACC.")
-  species.column <- ifelse("ORG" %in% colnames(sites),"ORG","SPECIES")
+  species.column <- intersect(c("ORG", "ORGANISM", "SPECIES"), colnames(sites))
   residue.column <- ifelse("MOD_RSD" %in% colnames(sites),"MOD_RSD","RSD")
+  domain.column <- intersect(c("DOMAIN", "IN_DOMAIN"), colnames(sites))
+  if (!("MOD_TYPE" %in% colnames(sites))) {
+    sites$MOD_TYPE = sapply(gsub("^.+-", "", sites$MOD_RSD), function(mod_code) {
+                       switch(mod_code,
+                         p = "PHOSPHORYLATION",
+                         { warning("unknown PTM code: ", mod_code)
+                           mod_code })
+		     })
+    sites$MOD_RSD = gsub("-.+$", "", sites$MOD_RSD)
+  }
 
   sites <- sites[gsub("-.*","",sites[,ac.column]) %in% gsub("-.*","",names(indistinguishableProteins(protein.group))),]
 
-  sites$PUBMED_LTP[!is.na(sites$PUBMED_LTP)] <- paste("n.publ ltp:",sites$PUBMED_LTP[!is.na(sites$PUBMED_LTP)])
-  sites$PUBMED_MS2[!is.na(sites$PUBMED_MS2)] <- paste("n.publ htp:",sites$PUBMED_MS2[!is.na(sites$PUBMED_MS2)])
+  lit_colnames = c(PUBMED_LTP="n.publ ltp", PUBMED_MS2="n.publ htp",
+		   LS_LIT="n.publ ltp", MS_LIT="n.publ htp")
+  for (coln in names(lit_colnames)) {
+    sites[!is.na(sites[[coln]]), coln] <- paste0(lit_colnames[[coln]],": ",sites[!is.na(sites[[coln]]), coln])
+  }
 
   data.frame(.id=sites[,ac.column],
              isoform_ac=sapply(sites[,ac.column],function(ac) ifelse(grepl("-[0-9]$",ac),ac,paste0(ac,"-1"))),
@@ -629,11 +642,11 @@ getPtmInfoFromPhosphoSitePlus <- function(protein.group,file.name=NULL,modif="PH
              modification.name=tolower(sites[,'MOD_TYPE']),
              description=apply(sites,1,function(x) {
                                y <- tolower(x['MOD_TYPE'])
-                               if (nchar(x['IN_DOMAIN']) > 0)
-                                 y <- paste0(y," (domain ",x['IN_DOMAIN'],")")
+                               if (nchar(x[domain.column]) > 0)
+                                 y <- paste0(y," (domain ",x[domain.column],")")
                                y
                              }),
-             evidence=apply(sites[,c("PUBMED_LTP","PUBMED_MS2")],1,
+             evidence=apply(sites[,intersect(colnames(sites),names(lit_colnames))],1,
                             function(x) { x<-x[!is.na(x)]; paste(x,collapse=";")}),
              position=as.integer(substr(sites[,residue.column],2,nchar(sites[,residue.column]))),
              stringsAsFactors=FALSE)
