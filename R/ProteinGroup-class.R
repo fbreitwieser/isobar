@@ -962,7 +962,8 @@ proteinGroup.as.concise.data.frame <-
                          sel <- ptm.info[,"isoform_ac"]==ac
                        else
                          sel <- ptm.info[,"isoform_ac"]==paste(ac,"-1",sep="")
-                       sel  <- sel  & ptm.info[,"position"]==pp
+                       sel <- sel & ptm.info[,"position"]==pp
+                       sel[is.na(sel)] <- FALSE
 
                        if (any(sel)) {
                          res <- apply(ptm.info[sel,],1,
