@@ -9,12 +9,18 @@ Description: isobar provides methods for preprocessing, normalization, and
   Include modules for validating and integrating data focussing on
   post-translational protein modifications (isobar-PTM).
 
-Version: 1.13.3
-
 Authors: Florian P Breitwieser <florian.bw@gmail.com>, 
    Jacques Colinge <jcolinge@cemm.oeaw.ac.at>, with contributions from
    Alexey Stukalov <astukalov@gmail.com>,
    Xavier Robin <xavier.robin@unige.ch> and Florent Gluck  <florent.gluck@unige.ch>
+
+Installation: The official Bioconductor version can be found at http://bioconductor.org/packages/release/bioc/html/isobar.html
+
+To install isobar from Bioconductor, call
+
+    ## try http:// if https:// URLs are not supported
+    source("https://bioconductor.org/biocLite.R")
+    biocLite("isobar")
 
 References: 
 
