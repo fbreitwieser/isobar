@@ -146,7 +146,7 @@ ib.ceru <- subsetIBSpectra(ibspiked_set1,protein=ceru.acs,direction="include")
 
 # write it to a file
 tf <- tempfile("isobar")
-write.table(as.data.frame(ib.ceru),sep="\t",file=tf)
+write.table(as.data.frame(ib.ceru),sep="\t",file=tf,quote=FALSE)
 
 # read it again into an IBSpectra object
 ib.ceru2 <- readIBSpectra("iTRAQ4plexSpectra",tf,identifications.format="ibspectra")

@@ -180,7 +180,7 @@ setValidity("IBSpectra",.valid.IBSpectra)
 
 
 writeIBSpectra <- function(ibspectra,file,sep="\t",row.names=FALSE,...) {
-  write.table(as.data.frame(ibspectra),file=file,sep=sep,row.names=row.names,...)
+  write.table(as.data.frame(ibspectra),file=file,sep=sep,row.names=row.names,quote=FALSE, ...)
   message("finished writing ibspectra to ",file)
 }
 
