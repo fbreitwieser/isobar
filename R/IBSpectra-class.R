@@ -528,7 +528,7 @@ setMethod("correctIsotopeImpurities",signature(x="IBSpectra"),
             ok <- !is.na(b)
             if (sum(ok) > 1){
               A <- AA[ok,ok]
-              x <- base::solve(A,b[ok])
+              x <- base::solve(t(A),b[ok])
               b[ok] <-x
             }
             return(b)
