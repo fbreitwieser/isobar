@@ -241,19 +241,24 @@ if (!is.null(ratiodistr)) {
   g <- g + geom_line(data=curve.distr,aes(x=x,y=y),colour="black",alpha=.5)
 }
 
-gg <- grid.arrange(g,
-tableGrob(ddply(quant.tbl,c('channels','class2','class1')[c('channels','class2','class1') %in% colnames(quant.tbl)],
-                 function(x) c('number of ratios'=sum(!is.na(x$lratio)),
-                               'significantly\ndownregulated'=sum(x$is.significant[x$lratio<0],na.rm=TRUE),
-                               'significantly\nupregulated'=sum(x$is.significant[x$lratio>0],na.rm=TRUE))),
-           gpar.coretext = gpar(fontsize=9), gpar.coltext=gpar(fontsize=10), gpar.rowtext=gpar(fontsize=10)),
-ncol=1)
+#gg <- grid.arrange(g,
+#tableGrob(ddply(quant.tbl,c('channels','class2','class1')[c('channels','class2','class1') %in% colnames(quant.tbl)],
+#                 function(x) c('number of ratios'=sum(!is.na(x$lratio)),
+#                               'significantly\ndownregulated'=sum(x$is.significant[x$lratio<0],na.rm=TRUE),
+#                               'significantly\nupregulated'=sum(x$is.significant[x$lratio>0],na.rm=TRUE))),
+#           gpar.coretext = gpar(fontsize=9), gpar.coltext=gpar(fontsize=10), gpar.rowtext=gpar(fontsize=10)),
+#ncol=1)
 
+print(g)
 #width <- max(6.5,nrow(unique(quant.tbl[,c('r1','r2')])) * 2)
 #width<- 6.5
 #pdf("reporter-intensities-2.pdf",width=width,height=4.5)
 #print(gg)
-#dev.off()   
+#dev.off()
+print(ddply(quant.tbl,c('channels','class2','class1')[c('channels','class2','class1') %in% colnames(quant.tbl)],
+                 function(x) c('number of ratios'=sum(!is.na(x$lratio)),
+                               'significantly\ndownregulated'=sum(x$is.significant[x$lratio<0],na.rm=TRUE),
+                               'significantly\nupregulated'=sum(x$is.significant[x$lratio>0],na.rm=TRUE))))
 @
 %\includegraphics{reporter-intensities-2}
 
