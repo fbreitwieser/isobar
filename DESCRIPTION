@@ -17,7 +17,8 @@ Imports: distr, plyr
 Suggests: MSnbase, OrgMassSpecR, XML, biomaRt, ggplot2, RJSONIO, Hmisc, gplots, RColorBrewer, gridExtra, limma, boot, distr, DBI, MASS
 LazyLoad: yes
 License: LGPL-2
-URL: http://www.ms-isobar.org
+URL: https://github.com/fbreitwieser/isobar
+BugReports: https://github.com/fbreitwieser/isobar/issues
 Collate: utils.R
 	 ProteinGroup-class.R
 	 IBSpectra-class.R
