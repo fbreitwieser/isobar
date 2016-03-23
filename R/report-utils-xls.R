@@ -3,7 +3,7 @@
 ## Functions for XLS Report Generation 
 
 testPerl <- function(perl.cmd) {
-  if (system(perl.cmd) != 0)
+  if (system(paste(perl.cmd,"-v")) != 0)
     stop(perl.cmd," does not seem to work. It is required for spreadsheet reports in XLS and XLSX formats. ",
          "Either set 'write.xls.report=FALSE', or 'perl.cmd' to a different executable.") 
 }

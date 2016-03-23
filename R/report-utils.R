@@ -386,7 +386,7 @@ property <- function(x, envir, null.ok=TRUE,class=NULL) {
 
     ibspectra <- do.call(readIBSpectra,readIBSpectra.args)
     if (grepl(".csv",get.property('ibspectra'))) {
-        write.table(as.data.frame(ibspectra),sep="\t",row.names=F,file=get.property('ibspectra'))
+        write.table(as.data.frame(ibspectra),sep="\t",row.names=F,file=get.property('ibspectra'),quote=FALSE)
     } else if (grepl(".rda",get.property("ibspectra"))) {
         save(ibspectra,file=get.property("ibspectra"),compress=TRUE)
     }  else {

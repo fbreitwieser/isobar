@@ -1,3 +1,8 @@
+CHANGES IN VERSION 1.17.1
+-------------------------
+ - Important fix to the isotope impurity correction - previous model used a transposed impurity matrix.
+   Fix is thanks to Dario Strbenac (https://support.bioconductor.org/p/74301)
+
 CHANGES IN VERSION 1.13.0
 -------------------------
  - calcCumulativeProbXGreaterThanY() contributed by A. Stukalov, for calculating cummulative p-values with replicates
