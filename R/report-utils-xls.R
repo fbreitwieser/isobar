@@ -3,7 +3,8 @@
 ## Functions for XLS Report Generation 
 
 testPerl <- function(perl.cmd) {
-  if (system(perl.cmd) != 0)
+  test.cmd <- paste(perl.cmd, "-h")
+  if (system(test.cmd) != 0)
     stop(perl.cmd," does not seem to work. It is required for spreadsheet reports in XLS and XLSX formats. ",
          "Either set 'write.xls.report=FALSE', or 'perl.cmd' to a different executable.") 
 }
@@ -439,7 +440,15 @@ write.xls.report <- function(properties.env,report.env,file="isobar-analysis.xls
       x <- x[x[,'end.pos'] <= protein.length,]
       if (nrow(x) == 0) return(c(seq.cov=NA))
       seqq <- rep(FALSE,protein.length);
-      for (i in seq_along(nrow(x))) seqq[x[i,'start.pos']:x[i,'end.pos']] <-  TRUE
+      for (i in seq_along(nrow(x))) {
+        # ignore cases where either the start or end position are missing
+        if (is.na(x[i,'start.pos']) || is.nan(x[i,'start.pos']) ||
+            is.na(x[i,'end.pos'] ) || is.nan(x[i,'end.pos'])) {
+          next
+        }
+
+        seqq[x[i,'start.pos']:x[i,'end.pos']] <-  TRUE
+      }
       return(c(seq.cov=sum(seqq)/length(seqq)))
     },.parallel=isTRUE(options('isobar.parallel')))
   
