@@ -7,6 +7,7 @@ suppressPackageStartupMessages(require(ggplot2))
 suppressPackageStartupMessages(library(isobar))
 suppressPackageStartupMessages(library(gridExtra))
 suppressPackageStartupMessages(library(plyr))
+suppressPackageStartupMessages(library(grid))
 options(encoding="UTF-8")  
 pdf.options(pointsize=6)
 
