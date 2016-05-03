@@ -437,16 +437,14 @@ write.xls.report <- function(properties.env,report.env,file="isobar-analysis.xls
     seq.covs <- ddply(peptide.info,"protein",function(x) {
       protein.length <- protein.lengths[x[1,'protein']]
       if (is.na(protein.length)) return(c(seq.cov=NA))
-      x <- x[x[,'end.pos'] <= protein.length,]
+      # remove invalid cases
+      invalid.peptides <- x[,'end.pos'] > protein.length | is.na(x[,'start.pos']) | 
+          is.nan(x[,'end.pos']) | is.na(x[, 'end.pos']) | is.nan(x[, 'end.pos'])
+      x <- x[!invalid.peptides, ]
+      
       if (nrow(x) == 0) return(c(seq.cov=NA))
       seqq <- rep(FALSE,protein.length);
       for (i in seq_along(nrow(x))) {
-        # ignore cases where either the start or end position are missing
-        if (is.na(x[i,'start.pos']) || is.nan(x[i,'start.pos']) ||
-            is.na(x[i,'end.pos'] ) || is.nan(x[i,'end.pos'])) {
-          next
-        }
-
         seqq[x[i,'start.pos']:x[i,'end.pos']] <-  TRUE
       }
       return(c(seq.cov=sum(seqq)/length(seqq)))
