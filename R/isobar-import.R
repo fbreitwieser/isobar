@@ -1449,7 +1449,7 @@ read.mzid <- function(filename) {
 .convert.msgfp.pepmodif <- function(peptide,modif.masses=
                                       c(iTRAQ4plex=144.102,Cys_CAM=57.021,Oxidation=15.995,
                                         iTRAQ4_ACET="144.102+42.011",ACET=42.011,
-					TMT6plex=229.163,
+                                        TMT6plex=229.163,
                                         METH=14.016,BIMETH=28.031,TRIMETH=42.047
                                         )) {
   modif.masses.r <- setNames(c(names(modif.masses)),c(paste0("+",modif.masses)))
