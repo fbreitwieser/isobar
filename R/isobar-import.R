@@ -1424,7 +1424,7 @@ read.mzid <- function(filename) {
     id.data <- read.delim(filename, sep="\t", stringsAsFactors=FALSE,quote="")
 
   if (! "PepQValue" %in% colnames(id.data)) {
-    stop("No q-values found in result files.\nPlease repeat the MSGF+ search using a\ntarget-decoy search (option -tda 1)")
+    stop("No q-values found in MSGF+ result files.\nPlease repeat the MSGF+ search using a\ntarget-decoy search (option -tda 1)")
   }
 
   ib.df <- data.frame(Protein=id.data[,'Protein'],
