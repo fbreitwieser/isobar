@@ -3,7 +3,8 @@
 ## Functions for XLS Report Generation 
 
 testPerl <- function(perl.cmd) {
-  if (system(paste(perl.cmd,"-v")) != 0)
+  test.cmd <- paste(perl.cmd, "-v")
+  if (system(test.cmd) != 0)
     stop(perl.cmd," does not seem to work. It is required for spreadsheet reports in XLS and XLSX formats. ",
          "Either set 'write.xls.report=FALSE', or 'perl.cmd' to a different executable.") 
 }
@@ -436,10 +437,16 @@ write.xls.report <- function(properties.env,report.env,file="isobar-analysis.xls
     seq.covs <- ddply(peptide.info,"protein",function(x) {
       protein.length <- protein.lengths[x[1,'protein']]
       if (is.na(protein.length)) return(c(seq.cov=NA))
-      x <- x[x[,'end.pos'] <= protein.length,]
+      # remove invalid cases
+      invalid.peptides <- x[,'end.pos'] > protein.length | is.na(x[,'start.pos']) | 
+          is.nan(x[,'end.pos']) | is.na(x[, 'end.pos']) | is.nan(x[, 'end.pos'])
+      x <- x[!invalid.peptides, ]
+      
       if (nrow(x) == 0) return(c(seq.cov=NA))
       seqq <- rep(FALSE,protein.length);
-      for (i in seq_along(nrow(x))) seqq[x[i,'start.pos']:x[i,'end.pos']] <-  TRUE
+      for (i in seq_along(nrow(x))) {
+        seqq[x[i,'start.pos']:x[i,'end.pos']] <-  TRUE
+      }
       return(c(seq.cov=sum(seqq)/length(seqq)))
     },.parallel=isTRUE(options('isobar.parallel')))
   
